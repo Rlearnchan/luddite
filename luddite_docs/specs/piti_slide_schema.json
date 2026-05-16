@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PitiSlide",
+  "type": "object",
+  "required": [
+    "slide_type",
+    "headline",
+    "body",
+    "source_urls",
+    "image_urls",
+    "notes"
+  ],
+  "properties": {
+    "slide_type": {
+      "type": "string",
+      "enum": [
+        "title",
+        "section_title",
+        "hook",
+        "explainer",
+        "quote",
+        "data",
+        "comparison",
+        "image_centered",
+        "bridge",
+        "punchline",
+        "closing_question",
+        "source_heavy"
+      ]
+    },
+    "headline": {
+      "type": "string"
+    },
+    "body": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "image_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "needs_fact_check": {
+      "type": "boolean",
+      "default": false
+    },
+    "needs_source": {
+      "type": "boolean",
+      "default": false
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/riskFlag"
+      }
+    }
+  },
+  "$defs": {
+    "riskFlag": {
+      "type": "string",
+      "enum": [
+        "political_sensitivity",
+        "religion_ethnicity_sensitivity",
+        "minority_group_sensitivity",
+        "corporate_promo_risk",
+        "single_source_dependency",
+        "copyright_image_risk",
+        "subscription_source_only",
+        "medical_claim_risk",
+        "investment_advice_risk",
+        "crime_or_drug_sensitivity",
+        "live_news_volatility",
+        "bdc_conflict",
+        "needs_human_review"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

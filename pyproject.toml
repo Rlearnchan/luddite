@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luddite"
+version = "0.1.0"
+description = "Corpus tooling and agent scaffolding for the Luddite project."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "jsonschema>=4.23",
+    "openpyxl>=3.1",
+    "pydantic>=2.8",
+    "python-pptx>=1.0",
+    "rich>=13.7",
+    "striprtf>=0.0.26",
+    "typer>=0.12",
+]
+
+[project.scripts]
+luddite = "luddite.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

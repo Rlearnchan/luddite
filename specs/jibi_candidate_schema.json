@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JibiCandidate",
+  "type": "object",
+  "required": [
+    "candidate_id",
+    "title",
+    "seed_url",
+    "source",
+    "seed_type",
+    "summary",
+    "why_interesting",
+    "scores",
+    "risk_flags",
+    "status"
+  ],
+  "properties": {
+    "candidate_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "seed_url": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "published_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "seed_type": {
+      "type": "string",
+      "enum": [
+        "absurd_foreign",
+        "life_change",
+        "cost_asymmetry",
+        "policy_market_shock",
+        "political_fracture",
+        "geopolitical_prequel",
+        "industry_disruption",
+        "meme_bridge",
+        "science_technology",
+        "labor_society",
+        "bdc_candidate",
+        "other"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "why_interesting": {
+      "type": "string"
+    },
+    "possible_expansions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "korea_bridge": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "punchline_candidate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_needed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/riskFlag"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "collected",
+        "scored",
+        "shortlisted",
+        "sent_to_anny",
+        "archived",
+        "rejected",
+        "candidate"
+      ]
+    }
+  },
+  "$defs": {
+    "riskFlag": {
+      "type": "string",
+      "enum": [
+        "political_sensitivity",
+        "religion_ethnicity_sensitivity",
+        "minority_group_sensitivity",
+        "corporate_promo_risk",
+        "single_source_dependency",
+        "copyright_image_risk",
+        "subscription_source_only",
+        "medical_claim_risk",
+        "investment_advice_risk",
+        "crime_or_drug_sensitivity",
+        "live_news_volatility",
+        "bdc_conflict",
+        "needs_human_review"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

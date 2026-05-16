@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceCluster",
+  "type": "object",
+  "required": [
+    "cluster_id",
+    "candidate_id",
+    "core_claim",
+    "sources"
+  ],
+  "properties": {
+    "cluster_id": {
+      "type": "string"
+    },
+    "candidate_id": {
+      "type": "string"
+    },
+    "core_claim": {
+      "type": "string"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "url",
+          "source_type",
+          "claim_supported"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claim_supported": {
+            "type": "string"
+          },
+          "reliability": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unknown"
+            ]
+          },
+          "usage": {
+            "type": "string",
+            "enum": [
+              "core",
+              "background",
+              "image",
+              "quote",
+              "fact_check"
+            ]
+          }
+        }
+      }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/riskFlag"
+      }
+    }
+  },
+  "$defs": {
+    "riskFlag": {
+      "type": "string",
+      "enum": [
+        "political_sensitivity",
+        "religion_ethnicity_sensitivity",
+        "minority_group_sensitivity",
+        "corporate_promo_risk",
+        "single_source_dependency",
+        "copyright_image_risk",
+        "subscription_source_only",
+        "medical_claim_risk",
+        "investment_advice_risk",
+        "crime_or_drug_sensitivity",
+        "live_news_volatility",
+        "bdc_conflict",
+        "needs_human_review"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

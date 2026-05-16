@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PitiDeckPlan",
+  "type": "object",
+  "required": [
+    "deck_id",
+    "title",
+    "slides"
+  ],
+  "properties": {
+    "deck_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string",
+      "default": "syuka_default_v0"
+    },
+    "slides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "slide_no",
+          "slide_type",
+          "headline",
+          "body",
+          "notes"
+        ],
+        "properties": {
+          "slide_no": {
+            "type": "integer"
+          },
+          "slide_type": {
+            "type": "string",
+            "enum": [
+              "title",
+              "section_title",
+              "hook",
+              "explainer",
+              "quote",
+              "data",
+              "comparison",
+              "image_centered",
+              "bridge",
+              "punchline",
+              "closing_question",
+              "source_heavy"
+            ]
+          },
+          "headline": {
+            "type": "string"
+          },
+          "body": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "layout": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "font_family": {
+            "type": "string",
+            "default": "Malgun Gothic"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "image_slots": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  }
+}

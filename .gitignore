@@ -1,0 +1,34 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Raw private corpus stays local by default.
+data/storylines/raw/*
+!data/storylines/raw/.gitkeep
+data/ppt/latest/raw/*
+!data/ppt/latest/raw/.gitkeep
+data/ppt/legacy/raw/*
+!data/ppt/legacy/raw/.gitkeep
+
+# Generated corpus artifacts can be recreated.
+data/manifests/*
+!data/manifests/.gitkeep
+data/storylines/*.jsonl
+data/ppt/*.jsonl
+data/sheets/*.jsonl
+data/sheets/parsed/*
+!data/sheets/parsed/.gitkeep
+data/sheets/raw/*
+!data/sheets/raw/.gitkeep
+eval/reports/*
+!eval/reports/.gitkeep
+outputs/

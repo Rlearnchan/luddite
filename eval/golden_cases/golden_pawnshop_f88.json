@@ -1,0 +1,22 @@
+{
+  "case_id": "golden_pawnshop_f88",
+  "source_file": "전당포 주식회사_배형찬.pptx",
+  "category": [
+    "absurd_foreign",
+    "finance",
+    "industry_structure"
+  ],
+  "target_slide_count": 55,
+  "expected_sections": [
+    "상장에 도전하는 베트남 전당포",
+    "한국의 전당포 이미지",
+    "서민들의 자금줄 오담대",
+    "F88 성장의 그림자"
+  ],
+  "key_patterns": [
+    "낯선 해외 기업",
+    "한국식 배경 설명",
+    "신흥국 금융 구조",
+    "창업자 서사와 규제 리스크"
+  ]
+}

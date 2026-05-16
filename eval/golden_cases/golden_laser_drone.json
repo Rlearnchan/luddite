@@ -1,0 +1,22 @@
+{
+  "case_id": "golden_laser_drone",
+  "source_file": "요즘 뜨는 레이저 치료_김동찬.pptx",
+  "category": [
+    "cost_asymmetry",
+    "science_technology",
+    "meme_bridge"
+  ],
+  "target_slide_count": 85,
+  "expected_sections": [
+    "드론 비용 비대칭",
+    "가성비 대응책",
+    "레이저 무기 경쟁",
+    "한국식 레이저 회수"
+  ],
+  "key_patterns": [
+    "비용 충격",
+    "기술 설명",
+    "한국 방산 연결",
+    "말장난 punchline"
+  ]
+}

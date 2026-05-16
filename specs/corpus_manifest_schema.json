@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CorpusManifestItem",
+  "type": "object",
+  "required": [
+    "corpus_id",
+    "type",
+    "title",
+    "source"
+  ],
+  "properties": {
+    "corpus_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "pptx",
+        "rtf",
+        "sheet",
+        "notion_page",
+        "notion_db",
+        "article",
+        "report",
+        "other"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "local",
+        "google_drive",
+        "google_sheet",
+        "notion",
+        "web",
+        "file_upload",
+        "other"
+      ]
+    },
+    "local_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "remote_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "modified_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parsed_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "used_by": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "jibi",
+          "anny",
+          "piti",
+          "eval"
+        ]
+      }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/riskFlag"
+      }
+    }
+  },
+  "$defs": {
+    "riskFlag": {
+      "type": "string",
+      "enum": [
+        "political_sensitivity",
+        "religion_ethnicity_sensitivity",
+        "minority_group_sensitivity",
+        "corporate_promo_risk",
+        "single_source_dependency",
+        "copyright_image_risk",
+        "subscription_source_only",
+        "medical_claim_risk",
+        "investment_advice_risk",
+        "crime_or_drug_sensitivity",
+        "live_news_volatility",
+        "bdc_conflict",
+        "needs_human_review"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

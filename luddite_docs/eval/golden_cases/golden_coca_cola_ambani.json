@@ -1,0 +1,22 @@
+{
+  "case_id": "golden_coca_cola_ambani",
+  "source_file": "코카콜라를 이기는 방법_김성원.pptx",
+  "category": [
+    "absurd_foreign",
+    "industry_disruption",
+    "A_to_B"
+  ],
+  "target_slide_count": 55,
+  "expected_sections": [
+    "코카인 하마",
+    "암바니 가문",
+    "릴라이언스식 시장 교란",
+    "캄파콜라와 가격전쟁"
+  ],
+  "key_patterns": [
+    "이색 동물 hook",
+    "인물/재벌 전환",
+    "시장 전략",
+    "제목 회수"
+  ]
+}
