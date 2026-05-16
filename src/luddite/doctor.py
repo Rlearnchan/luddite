@@ -79,6 +79,12 @@ def collect_checks() -> list[Check]:
             )
         )
 
+    return checks
+
+
+def collect_corpus_checks() -> list[Check]:
+    checks: list[Check] = []
+
     storyline_count = _count_files(paths.STORYLINE_RAW_DIR, "*.rtf")
     checks.append(
         Check(
@@ -97,14 +103,26 @@ def collect_checks() -> list[Check]:
         )
     )
 
+    sheet_count = sum(
+        _count_files(paths.SHEETS_RAW_DIR, pattern) for pattern in ("*.csv", "*.tsv", "*.xlsx")
+    )
+    checks.append(
+        Check(
+            name="corpus:sheets_raw_dir",
+            ok=paths.SHEETS_RAW_DIR.is_dir(),
+            detail=f"exists, {sheet_count} local export files"
+            if paths.SHEETS_RAW_DIR.is_dir()
+            else "missing",
+        )
+    )
+
     return checks
 
 
-def run_doctor() -> bool:
+def _render_checks(title: str, checks: list[Check]) -> bool:
     console = Console()
-    checks = collect_checks()
 
-    table = Table(title="Luddite Doctor")
+    table = Table(title=title)
     table.add_column("Check")
     table.add_column("Status")
     table.add_column("Detail")
@@ -114,3 +132,11 @@ def run_doctor() -> bool:
 
     console.print(table)
     return all(check.ok for check in checks)
+
+
+def run_doctor() -> bool:
+    return _render_checks("Luddite Doctor", collect_checks())
+
+
+def run_corpus_doctor() -> bool:
+    return _render_checks("Luddite Corpus Doctor", collect_corpus_checks())

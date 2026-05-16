@@ -1,6 +1,8 @@
 import csv
 import json
 
+import pytest
+
 from luddite import paths
 from luddite.parsers.parse_pptx import parse_directory, parse_presentation
 
@@ -13,6 +15,7 @@ def _golden_cases() -> list[dict]:
     return cases
 
 
+@pytest.mark.corpus
 def test_parse_pptx_golden_cases() -> None:
     cases = _golden_cases()
     assert cases
@@ -29,6 +32,7 @@ def test_parse_pptx_golden_cases() -> None:
         assert any(slide["notes"] for slide in record["slides"])
 
 
+@pytest.mark.corpus
 def test_parse_latest_ppts_against_metrics(tmp_path) -> None:
     output = tmp_path / "parsed_latest_ppts.jsonl"
     records = parse_directory(paths.LATEST_PPT_RAW_DIR, output)

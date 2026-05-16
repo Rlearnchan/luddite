@@ -27,3 +27,5 @@ SHEETS_PARSED_JSONL = SHEETS_DIR / "parsed_sheets.jsonl"
 CORPUS_MANIFEST_JSONL = MANIFESTS_DIR / "corpus_manifest.jsonl"
 
 OUTPUTS_DIR = REPO_ROOT / "outputs"
+REPORTS_DIR = OUTPUTS_DIR / "reports"
+PARSER_SMOKE_REPORT = REPORTS_DIR / "parser_smoke_report.md"

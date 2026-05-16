@@ -33,6 +33,14 @@
   - `리서치 인수인계`
   - `슈카월드 채널`
 
+현재 MVP 구현 방침:
+
+- Google Sheets API 직접 연동은 아직 하지 않는다.
+- 사용자가 Google Sheet를 `.xlsx` 또는 `.csv`로 export한다.
+- export 파일은 `data/sheets/raw/`에 둔다.
+- `fetch_sheets.py`는 local export를 읽고 redaction 후 `data/sheets/parsed_sheets.jsonl`과 redacted CSV를 만든다.
+- Google Sheets API auth/direct fetch는 v0.2 이후 작업으로 둔다.
+
 ### 3.1 `주제 찾기`
 
 초기 확인 결과 앞쪽 컬럼은 다음 구조에 가깝다.
