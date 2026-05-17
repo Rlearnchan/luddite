@@ -3,6 +3,7 @@
 import typer
 
 from luddite.doctor import run_corpus_doctor, run_doctor
+from luddite.eval.anny_reconstruction_eval import app as anny_reconstruction_eval_app
 from luddite.eval.jibi_seed_eval import app as jibi_seed_eval_app
 from luddite.eval.validate_golden import app as validate_golden_app
 from luddite.parsers.build_corpus_manifest import app as build_corpus_manifest_app
@@ -19,6 +20,7 @@ app.add_typer(build_corpus_manifest_app, name="build-corpus-manifest")
 app.add_typer(corpus_smoke_app, name="corpus-smoke")
 app.add_typer(validate_golden_app, name="validate-golden")
 app.add_typer(jibi_seed_eval_app, name="eval-jibi-seeds")
+app.add_typer(anny_reconstruction_eval_app, name="eval-anny-reconstruction")
 
 
 @app.callback()

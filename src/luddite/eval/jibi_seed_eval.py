@@ -54,6 +54,12 @@ GRADE_BANDS = {
     "rejected_or_not_pursued": {"ok": {"C", "D"}, "fail": {"A", "B"}},
 }
 
+# TODO: Consider adding `editorial_review` as a recommended_action once a human
+# review queue exists.
+# TODO: Pending/unknown cases currently treat A as overconfident. Future evals
+# may split out an `acceptable_overconfident` status for exceptionally strong
+# pending cases with unusually deep evidence.
+
 
 @dataclass
 class EvalSummary:
