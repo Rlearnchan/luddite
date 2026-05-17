@@ -20,6 +20,9 @@
 8. `scores`
 9. `label_guess`: `positive | produced_but_rejected | pending_or_unknown | rejected_or_not_pursued | unlabeled`
 10. `final_grade`: `A | B | C | D`
+11. `broadcast_potential`: `high | medium | low`
+12. `risk_level`: `high | medium | low`
+13. `recommended_action`: `send_to_anny | gather_more_evidence | keep_for_later | reject`
 
 ## Final Grade
 
@@ -31,6 +34,26 @@
 `produced_but_rejected`는 무조건 `D`가 아니다. 제작할 만한 장점이 있었지만
 방송 흐름, timing, 특정 기업 과다 노출, 패턴 진부함, 서브급 소재 등의 이유로
 밀린 경우가 많다. 이런 경우는 보통 `B` 또는 `C`로 두고, 왜 밀렸는지를 설명한다.
+
+## Potential vs Risk
+
+좋은 소재와 위험한 소재를 분리해서 판단한다.
+
+- `broadcast_potential`은 소재가 방송 전개로 살아날 가능성이다.
+- `risk_level`은 정치/의료/투자/기업홍보/저작권/live-news 등 처리 위험이다.
+- `final_grade`는 potential과 risk를 함께 반영한다.
+- potential이 높아도 risk가 높으면 `A`가 아니라 `B` 또는 `C`가 될 수 있다.
+- risk가 높다고 무조건 버리지 말고, `recommended_action`으로 다음 행동을 정한다.
+
+Recommended action:
+
+- `send_to_anny`: 바로 storyline 후보로 넘긴다.
+- `gather_more_evidence`: 공식자료, 반례, 추가 source를 먼저 확보한다.
+- `keep_for_later`: 킵하거나 다른 소재의 보조 장면으로 둔다.
+- `reject`: 현재 기준으로 버린다.
+
+`pending_or_unknown`은 positive/negative로 단정하지 않는다. 방송 여부가 비어 있는
+케이스는 potential, risk, evidence gap을 설명하고 보수적으로 action을 정한다.
 
 ## Scoring
 

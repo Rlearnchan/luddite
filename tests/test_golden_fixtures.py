@@ -62,15 +62,18 @@ def test_jibi_seed_eval_cases_have_expected_mix() -> None:
 
     assert len(records) == 30
     assert labels["positive"] == 10
-    assert labels["produced_but_rejected"] == 10
-    assert labels["pending_or_unknown"] == 5
+    assert labels["produced_but_rejected"] == 8
+    assert labels["pending_or_unknown"] == 7
     assert labels["rejected_or_not_pursued"] == 5
+    assert Counter(record["case_type"] for record in records)["risk_probe"] == 2
     for record in records:
         assert set(record) == {
             "title",
             "source_url",
             "sheet_label",
             "expected_label",
+            "expected_action",
+            "case_type",
             "reason",
             "expected_strengths",
             "expected_weaknesses",
