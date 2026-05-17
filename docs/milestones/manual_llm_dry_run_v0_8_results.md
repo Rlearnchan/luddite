@@ -53,12 +53,14 @@ Default report result:
 - Failed: 0
 - Average key beat recall: 1.00
 - Average critical beat recall: 1.00
+- Candidate source reporting: enabled
 
 Important note:
 
-Only `pawnshop_f88` was supplied by GPT Pro. The current eval runner falls back
-to golden fixtures for missing cases, so the default report also included
-`coca_cola_ambani` as a deterministic golden candidate.
+Only `pawnshop_f88` was supplied by GPT Pro. The eval runner now marks
+`pawnshop_f88` as `model_output` and `coca_cola_ambani` as `golden_fallback`, so
+dry-run reports show clearly which cases came from GPT Pro and which were
+deterministic fixture fallbacks.
 
 Pawnshop-only check:
 
@@ -85,28 +87,29 @@ PYTHONPATH=src .venv/bin/python -m luddite eval-piti-deck-plan \
 Default report result:
 
 - Total decks: 2
-- Passed: 1
-- Failed: 1
+- Passed: 2
+- Failed: 0
+- Candidate source reporting: enabled
+- `golden_pawnshop_f88_deck_plan`: `model_output`
+- `golden_coca_cola_ambani_deck_plan`: `golden_fallback`
 
 Important note:
 
-Only `golden_pawnshop_f88_deck_plan` was supplied by GPT Pro. The current eval
-runner falls back to golden fixtures for missing deck IDs, so the default report
-also included `golden_coca_cola_ambani_deck_plan` as a deterministic golden
-candidate.
+Only `golden_pawnshop_f88_deck_plan` was supplied by GPT Pro. The eval runner
+now marks `golden_coca_cola_ambani_deck_plan` as `golden_fallback` in both JSONL
+and Markdown reports.
 
 Pawnshop-only check:
 
-- Passed: 0/1
+- Passed: 1/1
 - schema_valid: true
 - slide_no_integrity: true
 - required_slide_types: true
 - source_image_overlap_count: 0
 - editability_ok: true
-- source_note_integrity: false
-- Issue: slide 8 image URL missing from notes
+- source_note_integrity: true
 
-Root cause:
+Resolved issue:
 
 Slide 8 uses a Wikipedia URL with a `#` fragment:
 
@@ -124,9 +127,12 @@ The image slot keeps the full fragment URL, so the eval runner treats them as
 different URLs. This is a narrow URL normalization/eval hygiene issue, not a
 fundamental deck-plan failure.
 
-## Follow-up
+The eval runner now canonicalizes `image_slots.source_url` before comparing it
+with notes URLs, so the GPT Pro deck plan passes.
 
-Before or during Milestone 0.9, consider two small eval hygiene patches:
+## Eval hygiene patches
+
+Completed:
 
 - Canonicalize URLs before comparing notes URLs with `image_slots`.
 - Report when an eval case used golden fallback because no model output was
@@ -140,4 +146,4 @@ Reason:
 
 - jibi dry run passed 6/6 with no missing outputs.
 - anny `pawnshop_f88` reconstruction passed all required checks.
-- piti only failed on a narrow URL fragment normalization issue.
+- piti `pawnshop_f88` deck plan now passes after URL canonicalization.

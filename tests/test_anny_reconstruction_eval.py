@@ -114,3 +114,19 @@ def test_anny_reconstruction_eval_writes_report(tmp_path) -> None:
         if line.strip()
     ]
     assert len(written) == 2
+
+
+def test_anny_reconstruction_eval_marks_golden_fallback(tmp_path) -> None:
+    output_jsonl = tmp_path / "latest.jsonl"
+    output_md = tmp_path / "latest.md"
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    results = anny_reconstruction_eval.run_eval(
+        model_output_path=model_dir,
+        output_jsonl=output_jsonl,
+        output_md=output_md,
+    )
+
+    assert all(result["candidate_source"] == "golden_fallback" for result in results)
+    assert "Golden Fallbacks" in output_md.read_text(encoding="utf-8")

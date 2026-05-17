@@ -19,7 +19,7 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.utils.jsonl import write_jsonl
-from luddite.utils.urls import extract_urls
+from luddite.utils.urls import canonicalize_url, extract_urls
 
 app = typer.Typer(no_args_is_help=False)
 console = Console()
@@ -71,7 +71,7 @@ def _notes_urls(slide: dict[str, Any]) -> set[str]:
 
 def _image_slot_urls(slide: dict[str, Any]) -> set[str]:
     return {
-        slot.get("source_url")
+        canonicalize_url(slot.get("source_url", ""))
         for slot in slide.get("image_slots", [])
         if slot.get("source_url")
     }
@@ -117,7 +117,9 @@ def _source_note_integrity(deck_plan: dict[str, Any]) -> tuple[bool, list[str]]:
             if url not in notes_urls:
                 issues.append(f"slide {slide.get('slide_no')}: content URL missing from notes")
         for url in image_urls:
-            has_image_label = any(url in line and "[이미지" in line for line in notes.splitlines())
+            has_image_label = any(
+                url in extract_urls(line) and "[이미지" in line for line in notes.splitlines()
+            )
             if url not in notes_urls:
                 issues.append(f"slide {slide.get('slide_no')}: image URL missing from notes")
             elif not has_image_label:
@@ -208,7 +210,11 @@ def evaluate_deck_plan(path: Path, deck_plan: dict[str, Any]) -> dict[str, Any]:
     )
     return {
         "deck_id": deck_plan.get("deck_id", path.stem),
-        "file": str(path.relative_to(paths.REPO_ROOT)) if path.is_absolute() else str(path),
+        "file": (
+            str(path.relative_to(paths.REPO_ROOT))
+            if path.is_absolute() and path.is_relative_to(paths.REPO_ROOT)
+            else str(path)
+        ),
         "schema_valid": schema_valid,
         "schema_errors": schema_errors,
         "slide_count": len(deck_plan.get("slides", [])),
@@ -246,19 +252,20 @@ def write_markdown_report(path: Path, results: list[dict[str, Any]], summary: Ev
         "## Deck Results",
         "",
         (
-            "| Deck | Slides | Schema | Slide Nos | Required Types | Source Notes | "
+            "| Deck | Candidate | Slides | Schema | Slide Nos | Required Types | Source Notes | "
             "Overlaps | Editability | Passed |"
         ),
-        "|---|---:|---|---|---|---|---:|---|---|",
+        "|---|---|---:|---|---|---|---|---:|---|---|",
     ]
     for result in results:
         row_template = (
-            "| {deck} | {slides} | {schema} | {numbers} | {types} | {sources} | "
+            "| {deck} | {candidate} | {slides} | {schema} | {numbers} | {types} | {sources} | "
             "{overlaps} | {edit} | {passed} |"
         )
         lines.append(
             row_template.format(
                 deck=result["deck_id"],
+                candidate=result.get("candidate_source", "unknown"),
                 slides=result["slide_count"],
                 schema="yes" if result["schema_valid"] else "no",
                 numbers="yes" if result["slide_no_integrity"] else "no",
@@ -277,6 +284,15 @@ def write_markdown_report(path: Path, results: list[dict[str, Any]], summary: Ev
         else:
             for warning in warnings:
                 lines.append(f"- {result['deck_id']}: {warning}")
+    fallback_results = [
+        result for result in results if result.get("candidate_source") == "golden_fallback"
+    ]
+    if fallback_results:
+        lines.extend(["", "## Golden Fallbacks", ""])
+        for result in fallback_results:
+            lines.append(
+                f"- {result['deck_id']}: no model output supplied; evaluated golden fixture."
+            )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -288,10 +304,19 @@ def run_eval(
 ) -> list[dict[str, Any]]:
     model_outputs = _model_outputs_from_path(model_output_path)
     fixtures = load_deck_plans(fixture_dir)
-    candidates = [
-        (path, model_outputs.get(deck.get("deck_id"), deck)) for path, deck in fixtures
-    ]
-    results = [evaluate_deck_plan(path, deck) for path, deck in candidates]
+    results = []
+    for path, deck in fixtures:
+        deck_id = deck.get("deck_id")
+        candidate = model_outputs.get(deck_id, deck)
+        result = evaluate_deck_plan(path, candidate)
+        if model_output_path is None:
+            result["candidate_source"] = "golden_fixture"
+        elif deck_id in model_outputs:
+            result["candidate_source"] = "model_output"
+        else:
+            result["candidate_source"] = "golden_fallback"
+            result["warnings"].append("no model output supplied; evaluated golden fixture")
+        results.append(result)
     summary = summarize(results)
     output_jsonl.parent.mkdir(parents=True, exist_ok=True)
     write_jsonl(output_jsonl, results)

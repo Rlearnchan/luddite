@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from luddite.eval import piti_deck_plan_eval
@@ -50,6 +51,27 @@ def test_source_note_integrity_calculation() -> None:
     assert not piti_deck_plan_eval._source_note_integrity(bad_deck)[0]
 
 
+def test_source_note_integrity_canonicalizes_image_slot_urls() -> None:
+    deck = {
+        "slides": [
+            {
+                "slide_no": 1,
+                "notes": "[이미지] https://en.wikipedia.org/wiki/Pawn_Stars#/media/File:Pawn_Stars_cast.png",
+                "image_slots": [
+                    {
+                        "source_url": (
+                            "https://en.wikipedia.org/wiki/Pawn_Stars#/media/"
+                            "File:Pawn_Stars_cast.png"
+                        )
+                    }
+                ],
+            }
+        ]
+    }
+
+    assert piti_deck_plan_eval._source_note_integrity(deck)[0]
+
+
 def test_source_image_overlap_detection() -> None:
     deck = {
         "slides": [
@@ -78,3 +100,57 @@ def test_piti_deck_plan_eval_writes_report(tmp_path) -> None:
     assert output_md.exists()
     assert "piti Deck Plan Eval Report" in output_md.read_text(encoding="utf-8")
     assert output_jsonl.is_relative_to(Path(tmp_path))
+
+
+def test_piti_deck_plan_eval_marks_golden_fallback(tmp_path) -> None:
+    fixture_dir = tmp_path / "fixtures"
+    model_dir = tmp_path / "model"
+    fixture_dir.mkdir()
+    model_dir.mkdir()
+    deck = {
+        "deck_id": "fallback_deck",
+        "title": "Fallback",
+        "theme": "test",
+        "slides": [
+            {
+                "slide_no": 1,
+                "slide_type": "title",
+                "headline": "Title",
+                "body": [],
+                "notes": "",
+                "image_slots": [],
+            },
+            {
+                "slide_no": 2,
+                "slide_type": "section_title",
+                "headline": "A",
+                "body": [],
+                "notes": "",
+                "image_slots": [],
+            },
+            {
+                "slide_no": 3,
+                "slide_type": "section_title",
+                "headline": "B",
+                "body": [],
+                "notes": "",
+                "image_slots": [],
+            },
+        ],
+    }
+    (fixture_dir / "fallback_deck.json").write_text(
+        json.dumps(deck),
+        encoding="utf-8",
+    )
+
+    output_jsonl = tmp_path / "latest.jsonl"
+    output_md = tmp_path / "latest.md"
+    results = piti_deck_plan_eval.run_eval(
+        fixture_dir=fixture_dir,
+        model_output_path=model_dir,
+        output_jsonl=output_jsonl,
+        output_md=output_md,
+    )
+
+    assert results[0]["candidate_source"] == "golden_fallback"
+    assert "Golden Fallbacks" in output_md.read_text(encoding="utf-8")

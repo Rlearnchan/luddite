@@ -21,6 +21,7 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.utils.jsonl import write_jsonl
+from luddite.utils.urls import canonicalize_url
 
 app = typer.Typer(no_args_is_help=False)
 console = Console()
@@ -111,7 +112,13 @@ def _source_image_overlap_count(storyline: dict[str, Any]) -> int:
     count = 0
     for section in storyline.get("sections", []):
         for slide in section.get("slides", []):
-            if set(slide.get("source_urls", [])) & set(slide.get("image_urls", [])):
+            source_urls = {
+                canonicalize_url(url) for url in slide.get("source_urls", []) if url
+            }
+            image_urls = {
+                canonicalize_url(url) for url in slide.get("image_urls", []) if url
+            }
+            if source_urls & image_urls:
                 count += 1
     return count
 
@@ -246,13 +253,16 @@ def _model_outputs_from_path(path: Path | None) -> dict[str, dict[str, Any]]:
 def _candidate_for_case(
     case: dict[str, Any],
     model_outputs: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
+    model_output_supplied: bool = False,
+) -> tuple[dict[str, Any], str]:
     candidate = model_outputs.get(case["case_id"])
     if candidate and "sections" in candidate:
-        return candidate
+        return candidate, "model_output"
     if candidate and "storyline" in candidate:
-        return candidate["storyline"]
-    return _load_json(_repo_path(case["golden_storyline_path"]))
+        return candidate["storyline"], "model_output"
+    if model_output_supplied:
+        return _load_json(_repo_path(case["golden_storyline_path"])), "golden_fallback"
+    return _load_json(_repo_path(case["golden_storyline_path"])), "golden_fixture"
 
 
 def summarize(results: list[dict[str, Any]]) -> EvalSummary:
@@ -309,20 +319,21 @@ def write_markdown_report(
             "## Case Results",
             "",
             (
-                "| Case | Schema | Sections | Key Beat Recall | Critical Recall | Source OK | "
-                "Overlaps | Fact Checks | Passed |"
+                "| Case | Candidate | Schema | Sections | Key Beat Recall | "
+                "Critical Recall | Source OK | Overlaps | Fact Checks | Passed |"
             ),
-            "|---|---|---:|---:|---:|---|---:|---|---|",
+            "|---|---|---|---:|---:|---:|---|---:|---|---|",
         ]
     )
     for result in results:
         row_template = (
-            "| {case} | {schema} | {sections} | {recall:.2f} | {critical:.2f} | {source} | "
-            "{overlaps} | {checks} | {passed} |"
+            "| {case} | {candidate} | {schema} | {sections} | {recall:.2f} | "
+            "{critical:.2f} | {source} | {overlaps} | {checks} | {passed} |"
         )
         lines.append(
             row_template.format(
                 case=result["case_id"],
+                candidate=result.get("candidate_source", "unknown"),
                 schema="yes" if result["schema_valid"] else "no",
                 sections=result["section_count"],
                 recall=float(result["key_beat_recall"]),
@@ -353,6 +364,16 @@ def write_markdown_report(
             for warning in warnings:
                 lines.append(f"- {result['case_id']}: {warning}")
 
+    fallback_results = [
+        result for result in results if result.get("candidate_source") == "golden_fallback"
+    ]
+    if fallback_results:
+        lines.extend(["", "## Golden Fallbacks", ""])
+        for result in fallback_results:
+            lines.append(
+                f"- {result['case_id']}: no model output supplied; evaluated golden fixture."
+            )
+
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -365,14 +386,18 @@ def run_eval(
     cases = load_cases(cases_path)
     model_outputs = _model_outputs_from_path(model_output_path)
     schema_validator = _schema_validator()
-    results = [
-        evaluate_storyline(
+    results = []
+    for case in cases:
+        candidate, candidate_source = _candidate_for_case(
             case,
-            _candidate_for_case(case, model_outputs),
-            schema_validator,
+            model_outputs,
+            model_output_path is not None,
         )
-        for case in cases
-    ]
+        result = evaluate_storyline(case, candidate, schema_validator)
+        result["candidate_source"] = candidate_source
+        if candidate_source == "golden_fallback":
+            result["warnings"].append("no model output supplied; evaluated golden fixture")
+        results.append(result)
     summary = summarize(results)
     output_jsonl.parent.mkdir(parents=True, exist_ok=True)
     write_jsonl(output_jsonl, results)
