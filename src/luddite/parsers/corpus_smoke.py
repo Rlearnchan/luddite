@@ -44,11 +44,19 @@ def _write_report(
     total_storyline_urls = sum(storyline_url_counts)
     avg_storyline_urls = mean(storyline_url_counts) if storyline_url_counts else 0
 
-    notes_success = all(
+    parsed_ppt_records = [
+        record for record in ppt_records if record.get("parse_status") == "parsed"
+    ]
+    notes_success: str
+    if not parsed_ppt_records:
+        notes_success = "n/a"
+    elif all(
         any(slide.get("notes") for slide in record.get("slides", []))
-        for record in ppt_records
-        if record.get("parse_status") == "parsed"
-    )
+        for record in parsed_ppt_records
+    ):
+        notes_success = "yes"
+    else:
+        notes_success = "no"
     sheet_redactions = sum(1 for record in sheet_records if record.get("credential_risk"))
     validation_failures = [
         item for item in manifest_items if item.get("validation_status") != "passed"
@@ -70,7 +78,7 @@ def _write_report(
         "## PPT",
         "",
         f"- File count: {len(ppt_records)}",
-        f"- Notes extraction success: {'yes' if notes_success else 'no'}",
+        f"- Notes extraction success: {notes_success}",
         "",
         "| File | Slides | URL Count | Slides With URLs | Notes Extracted |",
         "|---|---:|---:|---:|---|",

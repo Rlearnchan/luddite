@@ -240,7 +240,7 @@ def parse_presentation(path: Path) -> dict[str, Any]:
                 if not note["is_image"]
                 for url in note["urls"]
             ]
-            if not source_urls:
+            if not source_urls and not source_notes:
                 source_urls = notes_urls
 
             slides.append(

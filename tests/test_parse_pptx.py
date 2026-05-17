@@ -5,6 +5,7 @@ import pytest
 
 from luddite import paths
 from luddite.parsers.parse_pptx import parse_directory, parse_presentation
+from luddite.utils.security import extract_source_notes, redact_sensitive_text
 
 
 def _golden_cases() -> list[dict]:
@@ -13,6 +14,29 @@ def _golden_cases() -> list[dict]:
         with path.open(encoding="utf-8") as source:
             cases.append(json.load(source))
     return cases
+
+
+def test_extract_source_notes_accepts_loose_labels() -> None:
+    notes = "\n".join(
+        [
+            "이미지 - https://example.com/image-source",
+            "사진: https://example.com/photo-source",
+            "[내용] https://example.com/content-source",
+        ]
+    )
+
+    source_notes = extract_source_notes(notes)
+
+    assert len(source_notes) == 3
+    assert source_notes[0]["is_image"]
+    assert source_notes[1]["is_image"]
+    assert not source_notes[2]["is_image"]
+
+
+def test_redaction_does_not_mask_url_query_ids() -> None:
+    url = "https://play.google.com/store/apps/dev?id=123456789"
+
+    assert redact_sensitive_text(url) == url
 
 
 @pytest.mark.corpus

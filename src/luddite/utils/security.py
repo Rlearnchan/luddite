@@ -23,7 +23,8 @@ SENSITIVE_LABELS = [
 ]
 
 LABEL_RE = re.compile(
-    rf"({'|'.join(re.escape(label) for label in SENSITIVE_LABELS)})\s*[:：=]\s*[^\s,;|/]+",
+    rf"(?<![A-Za-z0-9?&/=])({'|'.join(re.escape(label) for label in SENSITIVE_LABELS)})"
+    r"\s*[:：=]\s*[^\s,;|/]+",
     re.IGNORECASE,
 )
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
@@ -38,6 +39,10 @@ RISK_KEYWORDS = {
 }
 
 SOURCE_NOTE_RE = re.compile(r"^\s*\[(?P<label>[^\]]+)\]\s*(?P<value>.+?)\s*$")
+LOOSE_SOURCE_NOTE_RE = re.compile(
+    r"^\s*(?P<label>내용|이미지|사진|출처|자료)\s*[-:：]\s*(?P<value>.+?)\s*$",
+    re.IGNORECASE,
+)
 
 
 def redact_sensitive_text(text: str | None) -> str:
@@ -88,6 +93,8 @@ def extract_source_notes(notes: str | None) -> list[dict[str, Any]]:
     for line in notes.splitlines():
         match = SOURCE_NOTE_RE.match(line)
         if not match:
+            match = LOOSE_SOURCE_NOTE_RE.match(line)
+        if not match:
             continue
         label = match.group("label").strip()
         value = match.group("value").strip()
@@ -96,7 +103,7 @@ def extract_source_notes(notes: str | None) -> list[dict[str, Any]]:
                 "label": label,
                 "value": redact_sensitive_text(value),
                 "urls": extract_urls(value),
-                "is_image": "이미지" in label,
+                "is_image": "이미지" in label or "사진" in label,
                 "is_todo": "TODO" in label.upper(),
                 "is_gpt_generated": "GPT 생성" in value,
             }
