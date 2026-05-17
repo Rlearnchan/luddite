@@ -13,6 +13,7 @@ def test_specs_are_valid_json_schemas() -> None:
         "piti_slide_schema.json",
         "deck_schema.json",
         "corpus_manifest_schema.json",
+        "article_schema.json",
     ]
 
     for schema_name in schema_names:

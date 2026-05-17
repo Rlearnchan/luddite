@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Article",
+  "type": "object",
+  "required": [
+    "article_id",
+    "title",
+    "url",
+    "source",
+    "published_at",
+    "collected_at",
+    "language",
+    "region",
+    "raw_summary",
+    "collector",
+    "tags"
+  ],
+  "properties": {
+    "article_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "published_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "collected_at": {
+      "type": "string"
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "region": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "raw_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "collector": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

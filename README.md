@@ -89,6 +89,11 @@ make validate-golden
 make eval-jibi-seeds
 make eval-anny-reconstruction
 make eval-piti-deck-plan
+make import-articles
+make normalize-candidates
+make score-candidates
+make render-daily-digest
+make jibi-digest
 ```
 
 `make doctor-corpus`, `make test-corpus`, and `make corpus-smoke` require local
@@ -100,4 +105,37 @@ data/ppt/parsed_latest_ppts.jsonl
 data/sheets/parsed_sheets.jsonl
 data/manifests/corpus_manifest.jsonl
 outputs/reports/parser_smoke_report.md
+```
+
+## jibi Daily Digest MVP
+
+Milestone 0.9 starts with local/manual article input only. It does not call an
+LLM, fetch RSS continuously, append to Google Sheets, or post to Slack.
+
+Sample input:
+
+```text
+examples/articles/sample_articles.jsonl
+```
+
+Local generated outputs:
+
+```text
+data/candidates/raw_articles.jsonl
+data/candidates/jibi_candidates.jsonl
+data/candidates/jibi_scored_candidates.jsonl
+outputs/daily_digest/YYYY-MM-DD.md
+outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv
+```
+
+Run the sample pipeline:
+
+```bash
+make jibi-digest
+```
+
+For real local input, place CSV/JSONL files under `data/inbox/articles/` and run:
+
+```bash
+luddite jibi-digest --input-dir data/inbox/articles
 ```

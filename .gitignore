@@ -29,6 +29,11 @@ data/sheets/parsed/*
 !data/sheets/parsed/.gitkeep
 data/sheets/raw/*
 !data/sheets/raw/.gitkeep
+data/inbox/articles/*
+!data/inbox/articles/.gitkeep
+data/candidates/*.jsonl
+data/candidates/*.md
+!data/candidates/.gitkeep
 eval/reports/*
 !eval/reports/.gitkeep
 outputs/

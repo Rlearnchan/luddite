@@ -1,0 +1,43 @@
+sources:
+  - id: manual
+    name: Manual Input
+    type: manual
+    region: global
+    category_hint: general
+    priority: 3
+    subscription: false
+  - id: google_sheet_topic_finding
+    name: Google Sheet 주제 찾기
+    type: sheet
+    region: kr
+    category_hint: research_workflow
+    priority: 4
+    subscription: false
+  - id: nikkei_asia
+    name: Nikkei Asia
+    type: subscription_manual
+    region: asia
+    category_hint: business
+    priority: 4
+    subscription: true
+  - id: reuters
+    name: Reuters
+    type: rss
+    region: global
+    category_hint: business
+    priority: 4
+    subscription: false
+  - id: ap_news
+    name: AP News
+    type: rss
+    region: global
+    category_hint: general
+    priority: 3
+    subscription: false
+  - id: slack_manual
+    name: Slack Manual Drop
+    type: slack
+    region: kr
+    category_hint: team_input
+    priority: 3
+    subscription: false

@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction eval-piti-deck-plan
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction eval-piti-deck-plan import-articles normalize-candidates score-candidates render-daily-digest jibi-digest
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -52,3 +52,18 @@ eval-anny-reconstruction:
 
 eval-piti-deck-plan:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite eval-piti-deck-plan
+
+import-articles:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite import-articles
+
+normalize-candidates:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite normalize-candidates
+
+score-candidates:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite score-candidates
+
+render-daily-digest:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-daily-digest
+
+jibi-digest:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite jibi-digest --input-dir examples/articles
