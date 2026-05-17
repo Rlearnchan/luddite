@@ -6,6 +6,29 @@ ShukaWorld-style seed selection, storyline generation, and editable PPT drafts.
 This repository currently contains project scaffolding only. Raw PPT and RTF
 corpus files are kept local and ignored by git by default.
 
+## Current Direction
+
+The first usable product target is not automatic PPT production. It is a
+research topic selection assistant.
+
+Short-term priorities:
+
+1. `jibi` Daily Digest MVP
+2. Google Sheet append
+3. Luddite Slack bot
+4. `anny` DB-based storyline
+5. `syuka-ops` similarity/performance bridge
+6. `piti` renderer/PPTX draft
+
+The first demo should be a weekday morning digest of 10 candidate topics. `jibi`
+can collect every day even when human research time is constrained by PPT
+production. Google Sheet integration should append bot rows only, mark them as
+`jibi`, and visually distinguish them from human rows. Slack integration starts
+as a dedicated Luddite bot rather than being merged into `syuka-ops`.
+
+See `docs/status/current_product_direction.md` for the v0.8/v0.8.1 design
+checkpoint summary.
+
 ## Setup
 
 ```bash
@@ -62,6 +85,10 @@ make parse-pptx
 make fetch-sheets
 make manifest
 make corpus-smoke
+make validate-golden
+make eval-jibi-seeds
+make eval-anny-reconstruction
+make eval-piti-deck-plan
 ```
 
 `make doctor-corpus`, `make test-corpus`, and `make corpus-smoke` require local
