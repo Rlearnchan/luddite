@@ -1,8 +1,10 @@
 import json
+from collections import Counter
 
 from jsonschema import Draft202012Validator
 
 from luddite import paths
+from luddite.eval.validate_golden import validate_golden
 
 
 def _load_json(path):
@@ -43,3 +45,34 @@ def test_golden_deck_plan_fixtures_validate() -> None:
         assert [slide["slide_no"] for slide in payload["slides"]] == list(
             range(1, len(payload["slides"]) + 1)
         )
+
+
+def test_validate_golden_harness_passes() -> None:
+    assert validate_golden() == []
+
+
+def test_jibi_seed_eval_cases_have_expected_mix() -> None:
+    path = paths.EVAL_DIR / "golden_cases" / "jibi_seed_eval_cases.jsonl"
+    records = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    labels = Counter(record["expected_label"] for record in records)
+
+    assert len(records) == 30
+    assert labels["positive"] == 10
+    assert labels["produced_but_rejected"] == 10
+    assert labels["pending_or_unknown"] == 5
+    assert labels["rejected_or_not_pursued"] == 5
+    for record in records:
+        assert set(record) == {
+            "title",
+            "source_url",
+            "sheet_label",
+            "expected_label",
+            "reason",
+            "expected_strengths",
+            "expected_weaknesses",
+            "expected_risk_flags",
+        }

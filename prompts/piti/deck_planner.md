@@ -96,6 +96,21 @@ closing_question: 슈카콜라 회수
 - `punchline`: 내부 농담/밈 회수.
 - `closing_question`: 리스크나 질문으로 닫을 때.
 
+## Self-Check
+
+출력 직전에 아래를 스스로 점검한다.
+
+- section_title이 너무 자주 나오지 않는가?
+- section_title 없이 긴 구간이 너무 오래 이어지지는 않는가?
+- quote slide가 너무 길지 않은가?
+- data slide가 한 장에 너무 많은 숫자를 넣지 않는가?
+- 한 slide에 두 개 이상의 메시지를 넣지 않았는가?
+- image source가 speaker notes에 `[이미지]`로 남아 있는가?
+- GPT 생성 이미지는 speaker notes에 `GPT 생성`으로 표시했는가?
+- `source_urls`와 `image_urls`가 겹치지 않는가?
+- notes에서 `[내용]`과 `[이미지]`가 섞이지 않았는가?
+- 사람이 열었을 때 바로 고칠 수 있는 draft deck인가?
+
 ## Do Not
 
 - 출처를 삭제하지 마라.

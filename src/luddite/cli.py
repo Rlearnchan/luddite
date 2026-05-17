@@ -3,6 +3,7 @@
 import typer
 
 from luddite.doctor import run_corpus_doctor, run_doctor
+from luddite.eval.validate_golden import app as validate_golden_app
 from luddite.parsers.build_corpus_manifest import app as build_corpus_manifest_app
 from luddite.parsers.corpus_smoke import app as corpus_smoke_app
 from luddite.parsers.fetch_sheets import app as fetch_sheets_app
@@ -15,6 +16,7 @@ app.add_typer(parse_pptx_app, name="parse-pptx")
 app.add_typer(fetch_sheets_app, name="fetch-sheets")
 app.add_typer(build_corpus_manifest_app, name="build-corpus-manifest")
 app.add_typer(corpus_smoke_app, name="corpus-smoke")
+app.add_typer(validate_golden_app, name="validate-golden")
 
 
 @app.callback()

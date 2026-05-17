@@ -24,9 +24,9 @@
           "body": [],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 1; source needed before production.",
+          "notes": "원본 PPT section/title slide; source optional by fixture rule.",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": []
         },
         {
@@ -135,9 +135,9 @@
           "body": [],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 11; source needed before production.",
+          "notes": "원본 PPT section/title slide; source optional by fixture rule.",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": []
         },
         {
@@ -208,9 +208,9 @@
           "body": [],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 18; source needed before production.",
+          "notes": "원본 PPT section/title slide; source optional by fixture rule.",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": []
         },
         {
@@ -311,9 +311,9 @@
           "body": [],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 43; source needed before production.",
+          "notes": "원본 PPT section/title slide; source optional by fixture rule.",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": []
         },
         {

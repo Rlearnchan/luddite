@@ -24,9 +24,9 @@
           "body": [],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 1; source needed before production.",
+          "notes": "원본 PPT slide 1",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": []
         },
         {
@@ -37,51 +37,84 @@
           ],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 2; source needed before production.",
+          "notes": "원본 PPT slide 2",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": [
             "crime_or_drug_sensitivity"
           ]
         },
         {
-          "slide_type": "image_centered",
-          "headline": "콜롬비아 코카인 하마가 인도로 간다?",
+          "slide_type": "hook",
+          "headline": "코카인 하마???",
           "body": [
-            "파블로 에스코바르가 남긴 하마 문제가 다시 국제 뉴스가 됐다."
+            "파블로 에스코바르가 남긴 하마들이 콜롬비아의 골칫거리가 됐다."
           ],
-          "source_urls": [],
+          "source_urls": [
+            "https://www.nytimes.com/2026/04/29/world/asia/indian-tycoon-ambani-hippos-colombia-escobar.html?searchResultPosition=2"
+          ],
           "image_urls": [
             "https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar"
           ],
-          "notes": "[이미지] https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar",
+          "notes": "[내용] https://www.nytimes.com/2026/04/29/world/asia/indian-tycoon-ambani-hippos-colombia-escobar.html?searchResultPosition=2\n[이미지] https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "그런데 하마는 그냥 옮기기도, 그냥 두기도 어렵다",
+          "body": [
+            "덩치가 크고 번식력이 강해 생태계와 주민 안전 문제가 동시에 커진다."
+          ],
+          "source_urls": [
+            "https://theweek.com/world-news/hippos-pablo-escobar-colombia-cocaine-ambani"
+          ],
+          "image_urls": [
+            "https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia"
+          ],
+          "notes": "[내용] https://theweek.com/world-news/hippos-pablo-escobar-colombia-cocaine-ambani\n[이미지] https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "quote",
+          "headline": "처리하려고 하면 바로 안락사 논란이 붙는다",
+          "body": [
+            "살처분, 불임 수술, 해외 이송 사이에서 해법이 계속 흔들린다."
+          ],
+          "source_urls": [
+            "https://www.theguardian.com/world/2021/oct/22/vet-sterilising-pablo-escobar-hippos"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.theguardian.com/world/2021/oct/22/vet-sterilising-pablo-escobar-hippos",
           "needs_fact_check": false,
           "needs_source": false,
           "risk_flags": []
         },
         {
           "slide_type": "image_centered",
-          "headline": "문제는 하마가 너무 많아졌다는 점",
+          "headline": "그래서 나온 선택지: 해외로 보내자",
           "body": [
-            "콜롬비아 입장에서는 생태계와 안전 문제를 동시에 처리해야 한다."
+            "콜롬비아는 일부 하마를 해외 보호시설로 보내는 방안을 검토해 왔다."
           ],
-          "source_urls": [],
+          "source_urls": [
+            "https://www.nytimes.com/2026/05/11/world/americas/pablo-escobar-hippos-colombia.html"
+          ],
           "image_urls": [
-            "https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia"
+            "https://www.theguardian.com/environment/2023/mar/14/pablo-escobar-hippos-colombia-export-aoe"
           ],
-          "notes": "[이미지] https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia",
+          "notes": "[내용] https://www.nytimes.com/2026/05/11/world/americas/pablo-escobar-hippos-colombia.html\n[이미지] https://www.theguardian.com/environment/2023/mar/14/pablo-escobar-hippos-colombia-export-aoe",
           "needs_fact_check": false,
           "needs_source": false,
           "risk_flags": []
         },
         {
           "slide_type": "data",
-          "headline": "자신이 운영 중인 여의도 4배 크기의 동물센터로 이송하겠다는 것",
+          "headline": "그때 암바니가 구원투수처럼 등장한다",
           "body": [
-            "He also runs a 3,000-acre (about 1,200-hectare) animal rescue center in Gujarat state’s Jamnagar, the family’s hometown.",
-            "그는 가족의 고향인 구자라트 주",
-            "잠나가르에서 약 1,200헥타르 규모의 동물 구조 센터를 운영하고 있다.",
-            "<- 모디 총리와 함께"
+            "인도 구자라트 잠나가르의 대형 동물 구조 센터가 하마 이송 후보지로 거론됐다."
           ],
           "source_urls": [
             "https://apnews.com/article/india-ambani-merchant-wedding-mumbai-9fe22be18241d5c228c7ad98f94079e3"
@@ -185,9 +218,9 @@
           "image_urls": [
             "https://www.ril.com/businesses/digital-services-jio"
           ],
-          "notes": "[이미지] https://www.ril.com/businesses/digital-services-jio",
+          "notes": "[이미지] https://www.ril.com/businesses/digital-services-jio\n[TODO] content source needed; image source is retained separately.",
           "needs_fact_check": false,
-          "needs_source": false,
+          "needs_source": true,
           "risk_flags": []
         },
         {
@@ -220,9 +253,9 @@
           ],
           "source_urls": [],
           "image_urls": [],
-          "notes": "원본 PPT slide 39; source needed before production.",
+          "notes": "원본 PPT section/title slide; source optional by fixture rule.",
           "needs_fact_check": false,
-          "needs_source": true,
+          "needs_source": false,
           "risk_flags": []
         },
         {
@@ -250,9 +283,9 @@
           "image_urls": [
             "https://www.coca-cola.com/in/en"
           ],
-          "notes": "[이미지] https://www.coca-cola.com/in/en",
+          "notes": "[이미지] https://www.coca-cola.com/in/en\n[TODO] content source needed; image source is retained separately.",
           "needs_fact_check": false,
-          "needs_source": false,
+          "needs_source": true,
           "risk_flags": []
         },
         {

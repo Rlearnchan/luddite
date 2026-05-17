@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -40,3 +40,6 @@ manifest:
 
 corpus-smoke:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite.parsers.corpus_smoke
+
+validate-golden:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-golden

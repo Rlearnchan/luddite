@@ -1,1 +1,1 @@
-"""Evaluation runners and golden-set helpers."""
+"""Evaluation helpers for Luddite golden fixtures."""

@@ -21,6 +21,17 @@
 9. `label_guess`: `positive | produced_but_rejected | pending_or_unknown | rejected_or_not_pursued | unlabeled`
 10. `final_grade`: `A | B | C | D`
 
+## Final Grade
+
+- `A`: 바로 `anny`로 넘길 수 있다. 이상징후, 확장성, 근거, 한국 연결이 모두 있다.
+- `B`: 추가 근거 확보 후 가능하다. 구조는 보이지만 핵심 통계, 공식자료, 반례 확인이 더 필요하다.
+- `C`: 킵/서브 후보. 방송 한 꼭지로는 약하지만 다른 소재의 보조 장면이나 짧은 회수로 쓸 수 있다.
+- `D`: 버린다. 검증 위험, 홍보/비판 리스크, 확장성 부족, 민감도 문제가 크다.
+
+`produced_but_rejected`는 무조건 `D`가 아니다. 제작할 만한 장점이 있었지만
+방송 흐름, timing, 특정 기업 과다 노출, 패턴 진부함, 서브급 소재 등의 이유로
+밀린 경우가 많다. 이런 경우는 보통 `B` 또는 `C`로 두고, 왜 밀렸는지를 설명한다.
+
 ## Scoring
 
 가산:

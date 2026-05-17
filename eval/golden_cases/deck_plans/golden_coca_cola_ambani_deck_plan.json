@@ -10,7 +10,7 @@
       "body": [],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "원본 PPT slide 1; source needed before production.",
+      "notes": "원본 PPT slide 1",
       "image_slots": []
     },
     {
@@ -22,19 +22,19 @@
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "원본 PPT slide 2; source needed before production.",
+      "notes": "원본 PPT slide 2",
       "image_slots": []
     },
     {
       "slide_no": 3,
-      "slide_type": "image_centered",
-      "headline": "콜롬비아 코카인 하마가 인도로 간다?",
+      "slide_type": "hook",
+      "headline": "코카인 하마???",
       "body": [
-        "파블로 에스코바르가 남긴 하마 문제가 다시 국제 뉴스가 됐다."
+        "파블로 에스코바르가 남긴 하마들이 콜롬비아의 골칫거리가 됐다."
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "[이미지] https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar",
+      "notes": "[내용] https://www.nytimes.com/2026/04/29/world/asia/indian-tycoon-ambani-hippos-colombia-escobar.html?searchResultPosition=2\n[이미지] https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar",
       "image_slots": [
         {
           "slot_id": "image_3_1",
@@ -45,14 +45,14 @@
     },
     {
       "slide_no": 4,
-      "slide_type": "image_centered",
-      "headline": "문제는 하마가 너무 많아졌다는 점",
+      "slide_type": "explainer",
+      "headline": "그런데 하마는 그냥 옮기기도, 그냥 두기도 어렵다",
       "body": [
-        "콜롬비아 입장에서는 생태계와 안전 문제를 동시에 처리해야 한다."
+        "덩치가 크고 번식력이 강해 생태계와 주민 안전 문제가 동시에 커진다."
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "[이미지] https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia",
+      "notes": "[내용] https://theweek.com/world-news/hippos-pablo-escobar-colombia-cocaine-ambani\n[이미지] https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia",
       "image_slots": [
         {
           "slot_id": "image_4_1",
@@ -63,13 +63,40 @@
     },
     {
       "slide_no": 5,
-      "slide_type": "data",
-      "headline": "자신이 운영 중인 여의도 4배 크기의 동물센터로 이송하겠다는 것",
+      "slide_type": "quote",
+      "headline": "처리하려고 하면 바로 안락사 논란이 붙는다",
       "body": [
-        "He also runs a 3,000-acre (about 1,200-hectare) animal rescue center in Gujarat state’s Jamnagar, the family’s hometown.",
-        "그는 가족의 고향인 구자라트 주",
-        "잠나가르에서 약 1,200헥타르 규모의 동물 구조 센터를 운영하고 있다.",
-        "<- 모디 총리와 함께"
+        "살처분, 불임 수술, 해외 이송 사이에서 해법이 계속 흔들린다."
+      ],
+      "layout": null,
+      "font_family": "Malgun Gothic",
+      "notes": "[내용] https://www.theguardian.com/world/2021/oct/22/vet-sterilising-pablo-escobar-hippos",
+      "image_slots": []
+    },
+    {
+      "slide_no": 6,
+      "slide_type": "image_centered",
+      "headline": "그래서 나온 선택지: 해외로 보내자",
+      "body": [
+        "콜롬비아는 일부 하마를 해외 보호시설로 보내는 방안을 검토해 왔다."
+      ],
+      "layout": null,
+      "font_family": "Malgun Gothic",
+      "notes": "[내용] https://www.nytimes.com/2026/05/11/world/americas/pablo-escobar-hippos-colombia.html\n[이미지] https://www.theguardian.com/environment/2023/mar/14/pablo-escobar-hippos-colombia-export-aoe",
+      "image_slots": [
+        {
+          "slot_id": "image_6_1",
+          "source_url": "https://www.theguardian.com/environment/2023/mar/14/pablo-escobar-hippos-colombia-export-aoe",
+          "status": "placeholder"
+        }
+      ]
+    },
+    {
+      "slide_no": 7,
+      "slide_type": "data",
+      "headline": "그때 암바니가 구원투수처럼 등장한다",
+      "body": [
+        "인도 구자라트 잠나가르의 대형 동물 구조 센터가 하마 이송 후보지로 거론됐다."
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
@@ -77,7 +104,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 6,
+      "slide_no": 8,
       "slide_type": "data",
       "headline": "콜롬비아 하마들을 전부 인도로 보내는 것만 해도 최소 60억원",
       "body": [
@@ -92,7 +119,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 7,
+      "slide_no": 9,
       "slide_type": "explainer",
       "headline": "이처럼 모든 문제를",
       "body": [
@@ -105,7 +132,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 8,
+      "slide_no": 10,
       "slide_type": "image_centered",
       "headline": "결혼식도 글로벌 이벤트로 만드는 가문",
       "body": [
@@ -117,7 +144,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 9,
+      "slide_no": 11,
       "slide_type": "image_centered",
       "headline": "인도 최대급 기업집단 릴라이언스",
       "body": [
@@ -129,7 +156,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 10,
+      "slide_no": 12,
       "slide_type": "image_centered",
       "headline": "릴라이언스 창립자",
       "body": [
@@ -141,7 +168,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 11,
+      "slide_no": 13,
       "slide_type": "image_centered",
       "headline": "Jio로 통신 시장까지 흔든 경험",
       "body": [
@@ -149,17 +176,17 @@
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "[이미지] https://www.ril.com/businesses/digital-services-jio",
+      "notes": "[이미지] https://www.ril.com/businesses/digital-services-jio\n[TODO] content source needed; image source is retained separately.",
       "image_slots": [
         {
-          "slot_id": "image_11_1",
+          "slot_id": "image_13_1",
           "source_url": "https://www.ril.com/businesses/digital-services-jio",
           "status": "placeholder"
         }
       ]
     },
     {
-      "slide_no": 12,
+      "slide_no": 14,
       "slide_type": "image_centered",
       "headline": "싸게 풀고, 사용자를 모으고, 판을 바꾼다",
       "body": [
@@ -171,7 +198,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 13,
+      "slide_no": 15,
       "slide_type": "section_title",
       "headline": "최근에는 콜라 산업까지",
       "body": [
@@ -179,11 +206,11 @@
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "원본 PPT slide 39; source needed before production.",
+      "notes": "원본 PPT section/title slide; source optional by fixture rule.",
       "image_slots": []
     },
     {
-      "slide_no": 14,
+      "slide_no": 16,
       "slide_type": "explainer",
       "headline": "암바니의 다음 전장은 콜라",
       "body": [
@@ -195,7 +222,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 15,
+      "slide_no": 17,
       "slide_type": "image_centered",
       "headline": "상대는 이미 인도에 자리 잡은 코카콜라",
       "body": [
@@ -203,17 +230,17 @@
       ],
       "layout": null,
       "font_family": "Malgun Gothic",
-      "notes": "[이미지] https://www.coca-cola.com/in/en",
+      "notes": "[이미지] https://www.coca-cola.com/in/en\n[TODO] content source needed; image source is retained separately.",
       "image_slots": [
         {
-          "slot_id": "image_15_1",
+          "slot_id": "image_17_1",
           "source_url": "https://www.coca-cola.com/in/en",
           "status": "placeholder"
         }
       ]
     },
     {
-      "slide_no": 16,
+      "slide_no": 18,
       "slide_type": "image_centered",
       "headline": "옛 브랜드를 다시 꺼내온 이유",
       "body": [
@@ -225,7 +252,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 17,
+      "slide_no": 19,
       "slide_type": "image_centered",
       "headline": "콜라 전쟁은 냉장고 전쟁이기도 하다",
       "body": [
@@ -237,7 +264,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 18,
+      "slide_no": 20,
       "slide_type": "image_centered",
       "headline": "싸게 팔 수 있는 사람이 시장을 바꾼다",
       "body": [
@@ -249,7 +276,7 @@
       "image_slots": []
     },
     {
-      "slide_no": 19,
+      "slide_no": 21,
       "slide_type": "closing_question",
       "headline": "언젠가는 슈카콜라가 캄파콜라와 경쟁해야 하는 날이 올 수도?",
       "body": [],
