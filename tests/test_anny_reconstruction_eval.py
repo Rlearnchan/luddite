@@ -8,6 +8,8 @@ def test_anny_reconstruction_eval_cases_load() -> None:
 
     assert {case["case_id"] for case in cases} == {"pawnshop_f88", "coca_cola_ambani"}
     assert all(case["key_beats"] for case in cases)
+    assert all(case["critical_beats"] for case in cases)
+    assert all(case["fixture_mode"] == "representative_reconstruction" for case in cases)
 
 
 def test_key_beat_recall_calculation() -> None:
@@ -52,6 +54,7 @@ def test_golden_pawnshop_case_evaluates() -> None:
 
     assert result["passed"]
     assert result["key_beat_recall"] >= 0.70
+    assert result["critical_beat_recall"] >= 0.80
     assert result["source_image_overlap_count"] == 0
 
 
@@ -69,6 +72,7 @@ def test_golden_coca_cola_case_evaluates() -> None:
 
     assert result["passed"]
     assert result["key_beat_recall"] >= 0.70
+    assert result["critical_beat_recall"] >= 0.80
     assert result["source_image_overlap_count"] == 0
 
 

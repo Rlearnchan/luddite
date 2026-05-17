@@ -38,6 +38,7 @@ class EvalSummary:
     passed: int
     failed: int
     average_key_beat_recall: float
+    average_critical_beat_recall: float
     warnings: int
 
 
@@ -134,6 +135,7 @@ def _fact_check_hygiene(storyline: dict[str, Any]) -> tuple[bool, list[str]]:
 def _compression_warnings(
     storyline: dict[str, Any],
     expected_length_mode: str,
+    fixture_mode: str | None = None,
 ) -> list[str]:
     slide_count = sum(len(section.get("slides", [])) for section in storyline.get("sections", []))
     ranges = {
@@ -144,9 +146,15 @@ def _compression_warnings(
     low, high = ranges.get(expected_length_mode, ranges["standard"])
     if low <= slide_count <= high:
         return []
+    if fixture_mode == "representative_reconstruction":
+        severity = "warning"
+    elif fixture_mode == "full_reconstruction":
+        severity = "strict warning"
+    else:
+        severity = "warning"
     return [
         f"{expected_length_mode} mode usually expects {low}-{high} slides; "
-        f"candidate has {slide_count}. This is a warning for representative fixtures."
+        f"candidate has {slide_count}. This is a {severity} for {fixture_mode or 'default'}."
     ]
 
 
@@ -166,6 +174,10 @@ def evaluate_storyline(
         storyline,
         case.get("key_beats", []),
     )
+    critical_recall, matched_critical_beats, missing_critical_beats = key_beat_recall(
+        storyline,
+        case.get("critical_beats", []),
+    )
     source_integrity_ok, source_issues = _source_integrity(storyline)
     overlap_count = _source_image_overlap_count(storyline)
     fact_checks_present, fact_check_warnings = _fact_check_hygiene(storyline)
@@ -173,12 +185,19 @@ def evaluate_storyline(
         *schema_errors,
         *source_issues,
         *fact_check_warnings,
-        *_compression_warnings(storyline, case.get("expected_length_mode", "standard")),
+        *_compression_warnings(
+            storyline,
+            case.get("expected_length_mode", "standard"),
+            case.get("fixture_mode"),
+        ),
     ]
+    if missing_critical_beats:
+        warnings.append(f"missing critical beats: {', '.join(missing_critical_beats)}")
     passed = (
         schema_valid
         and section_count_ok
         and recall >= 0.70
+        and critical_recall >= 0.80
         and source_integrity_ok
         and overlap_count == 0
         and fact_checks_present
@@ -187,6 +206,7 @@ def evaluate_storyline(
         "case_id": case["case_id"],
         "expected_archetype": case.get("expected_archetype"),
         "expected_length_mode": case.get("expected_length_mode"),
+        "fixture_mode": case.get("fixture_mode"),
         "schema_valid": schema_valid,
         "schema_errors": schema_errors,
         "section_count": section_count,
@@ -194,6 +214,9 @@ def evaluate_storyline(
         "key_beat_recall": recall,
         "matched_key_beats": matched_beats,
         "missing_key_beats": missing_beats,
+        "critical_beat_recall": critical_recall,
+        "matched_critical_beats": matched_critical_beats,
+        "missing_critical_beats": missing_critical_beats,
         "source_integrity_ok": source_integrity_ok,
         "source_integrity_issues": source_issues,
         "source_image_overlap_count": overlap_count,
@@ -236,12 +259,18 @@ def summarize(results: list[dict[str, Any]]) -> EvalSummary:
     total = len(results)
     passed = sum(1 for result in results if result.get("passed"))
     recalls = [float(result.get("key_beat_recall", 0)) for result in results]
+    critical_recalls = [
+        float(result.get("critical_beat_recall", 1.0)) for result in results
+    ]
     warnings = sum(len(result.get("warnings", [])) for result in results)
     return EvalSummary(
         total=total,
         passed=passed,
         failed=total - passed,
         average_key_beat_recall=sum(recalls) / len(recalls) if recalls else 0,
+        average_critical_beat_recall=(
+            sum(critical_recalls) / len(critical_recalls) if critical_recalls else 0
+        ),
         warnings=warnings,
     )
 
@@ -265,6 +294,7 @@ def write_markdown_report(
         f"- Passed: {summary.passed}",
         f"- Failed: {summary.failed}",
         f"- Average key beat recall: {summary.average_key_beat_recall:.2f}",
+        f"- Average critical beat recall: {summary.average_critical_beat_recall:.2f}",
         f"- Warnings: {summary.warnings}",
         "",
         "## Status Counts",
@@ -279,15 +309,15 @@ def write_markdown_report(
             "## Case Results",
             "",
             (
-                "| Case | Schema | Sections | Key Beat Recall | Source OK | "
+                "| Case | Schema | Sections | Key Beat Recall | Critical Recall | Source OK | "
                 "Overlaps | Fact Checks | Passed |"
             ),
-            "|---|---|---:|---:|---|---:|---|---|",
+            "|---|---|---:|---:|---:|---|---:|---|---|",
         ]
     )
     for result in results:
         row_template = (
-            "| {case} | {schema} | {sections} | {recall:.2f} | {source} | "
+            "| {case} | {schema} | {sections} | {recall:.2f} | {critical:.2f} | {source} | "
             "{overlaps} | {checks} | {passed} |"
         )
         lines.append(
@@ -296,6 +326,7 @@ def write_markdown_report(
                 schema="yes" if result["schema_valid"] else "no",
                 sections=result["section_count"],
                 recall=float(result["key_beat_recall"]),
+                critical=float(result["critical_beat_recall"]),
                 source="yes" if result["source_integrity_ok"] else "no",
                 overlaps=result["source_image_overlap_count"],
                 checks="yes" if result["required_fact_checks_present"] else "no",
@@ -306,6 +337,11 @@ def write_markdown_report(
     lines.extend(["", "## Missing Beats", ""])
     for result in results:
         missing = ", ".join(result.get("missing_key_beats", [])) or "-"
+        lines.append(f"- {result['case_id']}: {missing}")
+
+    lines.extend(["", "## Missing Critical Beats", ""])
+    for result in results:
+        missing = ", ".join(result.get("missing_critical_beats", [])) or "-"
         lines.append(f"- {result['case_id']}: {missing}")
 
     lines.extend(["", "## Warnings", ""])
