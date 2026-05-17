@@ -24,6 +24,8 @@ def test_normalize_article_sets_risk_and_hints() -> None:
     assert candidate["seed_type"] == "absurd_foreign"
     assert "crime_or_drug_sensitivity" in candidate["risk_flags"]
     assert candidate["title_hook_hint"] == "high"
+    assert len(candidate["possible_expansions"]) >= 3
+    assert "코카인 하마" in candidate["why_interesting"]
 
 
 def test_normalize_candidates_writes_jsonl(tmp_path) -> None:

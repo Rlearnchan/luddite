@@ -25,8 +25,12 @@ Stored daily candidates: 30-50
 Preferred order:
 
 1. Markdown report
-2. Google Sheet append
+2. Google Sheet append to `jibi 후보`
 3. Luddite Slack bot digest/query
+
+`jibi 후보` is a staging tab in the same shared spreadsheet. The existing
+`주제 찾기` tab remains human-curated. Humans promote selected rows from
+`jibi 후보` to `주제 찾기` after review.
 
 ## Ranking principles
 
@@ -55,7 +59,10 @@ risk_penalty
 
 ## Absolute no-go
 
-- direct evaluation of a specific party or president
+- direct evaluation of a specific party, president, or party/president approval
+  framing
+
+These should be `reject` or policy-blocked, not `editorial_review`.
 
 ## Editorial review
 
@@ -69,3 +76,8 @@ Most other sensitive topics are not always forbidden but must be escalated:
 - entertainment/sports
 - history
 - crime/drugs
+
+## Digest display rule
+
+Rejected or policy-blocked items should not occupy Top Candidates slots. They
+may appear only in an `Excluded / Rejected` section.

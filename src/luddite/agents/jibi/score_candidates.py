@@ -30,6 +30,15 @@ HIGH_RISK_FLAGS = {
     "crime_or_drug_sensitivity",
     "live_news_volatility",
 }
+DIRECT_POLITICAL_EVAL_TERMS = {
+    "대통령",
+    "정당",
+    "양당",
+    "지지율",
+    "선거",
+    "party approval",
+    "president",
+}
 
 SCORING_WEIGHTS = {
     "broadcast_potential_proxy": 25,
@@ -75,12 +84,21 @@ def _recommended_action(
     evidence_depth: int,
     numbers_strength: int,
     broadcast_potential_proxy: int,
+    blocked_reason: str | None = None,
 ) -> str:
+    if blocked_reason:
+        return "reject"
     if "political_sensitivity" in risk_flags:
         return "editorial_review"
     if risk_level == "high" and final_grade in {"A", "B", "C"}:
         return "editorial_review"
     if broadcast_potential_proxy >= 3 and (evidence_depth < 3 or numbers_strength < 3):
+        return "gather_more_evidence"
+    if (
+        "investment_advice_risk" in risk_flags
+        and evidence_depth >= 3
+        and final_grade in {"A", "B", "C"}
+    ):
         return "gather_more_evidence"
     if final_grade in {"A", "B"} and evidence_depth >= 3 and risk_level in {"low", "medium"}:
         return "send_to_anny"
@@ -101,6 +119,9 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         " ".join(candidate.get("risk_flags", [])),
     )
     risk_flags = list(candidate.get("risk_flags", []))
+    blocked_reason = None
+    if "political_sensitivity" in risk_flags and contains_any(text, DIRECT_POLITICAL_EVAL_TERMS):
+        blocked_reason = "direct_president_party_evaluation"
     weird_hook = _bounded(1 + count_any(text, WEIRD_TERMS), high=5)
     structural_expansion = _bounded(1 + count_any(text, STRUCTURAL_TERMS), high=5)
     numbers_strength = _bounded(
@@ -153,6 +174,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         total_score -= 8
     if "corporate_promo_risk" in risk_flags and broadcast_potential_proxy <= 2:
         total_score -= 10
+    if blocked_reason:
+        total_score = min(total_score, 20)
     total_score = round(max(0, total_score), 1)
     final_grade = _score_band(int(total_score), risk_penalty)
     risk_level = _risk_level(risk_flags, risk_penalty)
@@ -163,6 +186,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         evidence_depth=evidence_depth,
         numbers_strength=numbers_strength,
         broadcast_potential_proxy=broadcast_potential_proxy,
+        blocked_reason=blocked_reason,
     )
     scored = {
         **candidate,
@@ -182,6 +206,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         "final_grade": final_grade,
         "risk_level": risk_level,
         "recommended_action": recommended_action,
+        "blocked_reason": blocked_reason,
         "status": "scored",
     }
     return scored

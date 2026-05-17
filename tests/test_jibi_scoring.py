@@ -2,7 +2,7 @@ from luddite.agents.jibi.score_candidates import score_candidate, score_candidat
 from luddite.utils.jsonl import write_jsonl
 
 
-def test_score_candidate_recommends_editorial_review_for_politics() -> None:
+def test_score_candidate_rejects_direct_president_party_evaluation() -> None:
     candidate = {
         "candidate_id": "jibi_1",
         "title": "대통령 발언 직후 증시 급등락",
@@ -15,7 +15,8 @@ def test_score_candidate_recommends_editorial_review_for_politics() -> None:
 
     scored = score_candidate(candidate)
 
-    assert scored["recommended_action"] == "editorial_review"
+    assert scored["recommended_action"] == "reject"
+    assert scored["blocked_reason"] == "direct_president_party_evaluation"
     assert scored["risk_level"] == "high"
     assert "total_score" in scored["scores"]
     assert scored["scores"]["weights"]["broadcast_potential_proxy"] == 25
@@ -48,6 +49,22 @@ def test_score_candidate_gathers_more_evidence_for_strong_hook_with_weak_evidenc
         "risk_flags": [],
         "published_at": "2026-05-17",
         "evidence_depth_hint": "low",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "gather_more_evidence"
+
+
+def test_score_candidate_gathers_more_evidence_for_investment_risk() -> None:
+    candidate = {
+        "candidate_id": "jibi_f88",
+        "title": "베트남 전당포 F88, 메인 증시 이전 상장 추진",
+        "summary": "전당포 상장과 신흥국 금융시장 구조",
+        "why_interesting": "엥? hook과 구조 확장",
+        "risk_flags": ["investment_advice_risk"],
+        "published_at": "2026-05-17",
+        "evidence_depth_hint": "medium",
     }
 
     scored = score_candidate(candidate)

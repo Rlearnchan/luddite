@@ -2,37 +2,46 @@
 
 ## Purpose
 
-`jibi` should participate in the team's shared topic collection workflow by appending candidate rows to the shared Google Sheet.
+`jibi` should participate in the team's shared topic collection workflow by
+appending candidate rows to a dedicated staging tab in the shared Google Sheet.
 
 ## Operating principle
 
-The sheet remains a shared human+bot workspace.
+The spreadsheet remains shared, but `jibi` should not write directly into the
+human-operated `주제 찾기` tab during the MVP.
 
-`jibi` may append rows, but bot rows must be easy to distinguish and easy to ignore/delete.
+`jibi` may append rows to a staging tab. Humans can review those rows and promote
+selected candidates into `주제 찾기`.
 
 ## Target sheet
 
 Initial target:
 
 ```text
+jibi 후보
+```
+
+Promotion target:
+
+```text
 주제 찾기
 ```
 
-## Visual distinction
+## Staging distinction
 
-Use at least two of the following:
+The dedicated `jibi 후보` tab should still preserve bot metadata:
 
-- dedicated `작성자` or `source` value: `jibi`
-- background color/highlight for bot rows
-- muted or distinct font color
-- note/comment prefix: `[jibi]`
-- separate `수집일` or `created_at` timestamp
+- dedicated `jibi_id`
+- `status`
+- `수집일`
 - `recommended_action` field
+- `review_result`
+- `promoted_to_topic_finding`
 
 ## Append behavior
 
 Allowed:
-- append new candidate rows
+- append new candidate rows to `jibi 후보`
 - add bot metadata in appropriate columns
 - write concise reason/summary
 
@@ -40,39 +49,44 @@ Not allowed:
 - overwrite human rows
 - edit human labels
 - mark final adoption status
+- write directly to `주제 찾기` in the MVP
 - insert subscription article full text into visible sheet
 
 ## Hard MVP rules
 
-- Target only the `주제 찾기` sheet.
-- Mark every bot row with `jibi` in a `source` or `작성자` style field.
-- Use background color, font styling, highlight, or another visible cue so bot rows are distinguishable from human rows.
+- Target only the `jibi 후보` staging sheet for bot append.
+- Keep the existing `주제 찾기` sheet human-centered.
+- Promote selected rows from `jibi 후보` to `주제 찾기` only after human review.
 - Treat the sheet as append-only for the MVP.
 - Never overwrite, reorder, relabel, or silently update human rows.
 - Do not implement status updates in the append MVP; design that separately after the team has used bot rows.
 - Do not place full subscription article text in the visible sheet.
 - Prefer links, short summaries, `why_interesting`, `risk_flags`, and `recommended_action`.
 
-## Suggested row payload
+## Suggested `jibi 후보` columns
 
-```json
-{
-  "title": "...",
-  "source_url": "...",
-  "source_name": "...",
-  "published_at": "...",
-  "jibi_collected_at": "...",
-  "seed_type": "...",
-  "final_grade": "A|B|C|D",
-  "broadcast_potential": "high|medium|low",
-  "risk_level": "high|medium|low",
-  "recommended_action": "send_to_anny|gather_more_evidence|keep_for_later|editorial_review|reject",
-  "why_interesting": "...",
-  "possible_expansions": ["...", "..."],
-  "evidence_needed": ["...", "..."],
-  "risk_flags": ["...", "..."],
-  "source": "jibi"
-}
+```text
+수집일
+jibi_id
+rank
+status
+주제명
+링크
+출처
+source_type
+jibi_grade
+total_score
+recommended_action
+risk_level
+risk_flags
+why_interesting
+possible_expansions
+evidence_needed
+중복후보
+reviewer
+review_result
+promoted_to_topic_finding
+notes
 ```
 
 ## Subscription source display rule

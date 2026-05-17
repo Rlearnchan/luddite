@@ -53,11 +53,13 @@ discarded automatically; it should usually become `editorial_review`.
 - high potential
 - enough evidence
 - low or medium risk
+- concrete possible_expansions
 
 `gather_more_evidence`
 
 - hook is strong
 - evidence, numbers, or official sources are still thin
+- structure is visible but support is weak
 
 `editorial_review`
 
@@ -65,25 +67,60 @@ discarded automatically; it should usually become `editorial_review`.
 - risk is high
 - political, corporate, medical, crime/drug, investment, or sensitive framing
   needs a person before it moves forward
+- risky but strong items belong here
 
 `keep_for_later`
 
 - mildly interesting
 - sub-candidate
 - timing is not right yet
+- could improve when paired with another seed
 
 `reject`
 
+- policy-blocked item
 - source is weak
 - verification burden is too high
 - too one-off
 - direct party/president evaluation
 - looks like stock recommendation or pure corporate promotion
 
+Direct president/party/approval-rating framing should be `reject` with
+`blocked_reason: direct_president_party_evaluation`, not `editorial_review`.
+
+Risky and strong means `editorial_review`.
+
+Risky and weak means `reject`.
+
+Policy-blocked means `reject` or later `blocked_policy`.
+
+## Digest Display
+
+Top Candidates may include:
+
+- `send_to_anny`
+- `gather_more_evidence`
+- `editorial_review`
+- `keep_for_later`
+
+Rejected or blocked items must not occupy Top Candidates slots. They can be
+shown in `Excluded / Rejected`.
+
+## Sheet Output
+
+The preview CSV is for the `jibi 후보` staging tab, not direct append to
+`주제 찾기`.
+
+Flow:
+
+```text
+jibi 후보 -> human review -> promote selected rows to 주제 찾기
+```
+
 ## Current Caveats
 
 - Rule-based Korean/English keyword matching is intentionally rough.
-- `possible_expansions` is still mostly placeholder.
+- `possible_expansions` is rule-based and should contain at least three strings.
 - `evidence_needed` is rule-based and should be improved with real source
   quality signals later.
 - The digest ranking is a research triage surface, not a final broadcast

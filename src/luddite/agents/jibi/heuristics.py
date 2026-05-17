@@ -39,9 +39,14 @@ WEIRD_TERMS = {
     "heatwave",
 }
 STRUCTURAL_TERMS = {
+    "ai",
     "시장",
     "규제",
     "산업",
+    "라벨",
+    "브랜드",
+    "진정성",
+    "창작자",
     "비용",
     "전력",
     "변압기",
@@ -55,6 +60,8 @@ STRUCTURAL_TERMS = {
     "industry",
     "cost",
     "grid",
+    "brand",
+    "label",
 }
 PUNCHLINE_TERMS = {"밈", "농담", "웃", "meme", "joke", "콜라", "반바지", "레이저"}
 NUMBER_TERMS = {"%", "배", "억", "조", "million", "billion", "trillion", "percent"}

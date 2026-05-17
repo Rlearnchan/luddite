@@ -22,7 +22,10 @@ ACTION_LABELS = {
     "editorial_review": "사람 검토 필요",
     "keep_for_later": "킵 후보",
     "reject": "제외/거절",
+    "blocked_policy": "제외/거절",
 }
+TOP_ACTIONS = {"send_to_anny", "gather_more_evidence", "editorial_review", "keep_for_later"}
+EXCLUDED_ACTIONS = {"reject", "blocked_policy"}
 
 
 def _digest_date(value: str | None = None) -> str:
@@ -34,14 +37,31 @@ def _score_band(candidate: dict[str, Any]) -> str:
 
 
 def top_candidates(candidates: list[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
+    eligible = [
+        candidate
+        for candidate in candidates
+        if candidate.get("recommended_action", "keep_for_later") in TOP_ACTIONS
+    ]
     return sorted(
-        candidates,
+        eligible,
         key=lambda item: (
             item.get("scores", {}).get("total_score", 0),
             item.get("scores", {}).get("broadcast_potential_proxy", 0),
         ),
         reverse=True,
     )[:limit]
+
+
+def excluded_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        [
+            candidate
+            for candidate in candidates
+            if candidate.get("recommended_action") in EXCLUDED_ACTIONS
+        ],
+        key=lambda item: item.get("scores", {}).get("total_score", 0),
+        reverse=True,
+    )
 
 
 def _action_counts(candidates: list[dict[str, Any]]) -> dict[str, int]:
@@ -57,8 +77,13 @@ def _bullet_lines(values: list[str] | None, fallback: list[str]) -> list[str]:
     return items or fallback
 
 
-def render_markdown(candidates: list[dict[str, Any]], digest_date: str) -> str:
-    counts = _action_counts(candidates)
+def render_markdown(
+    candidates: list[dict[str, Any]],
+    digest_date: str,
+    excluded: list[dict[str, Any]] | None = None,
+) -> str:
+    excluded = excluded or []
+    counts = _action_counts([*candidates, *excluded])
     lines = [
         f"# Luddite Daily Digest — {digest_date}",
         "",
@@ -75,7 +100,7 @@ def render_markdown(candidates: list[dict[str, Any]], digest_date: str) -> str:
         f"- 킵 후보: {counts.get('keep_for_later', 0)}개",
         f"- 제외/거절: {counts.get('reject', 0)}개",
         "",
-        "## Top 10",
+        "## Top Candidates",
         "",
     ]
     if not candidates:
@@ -98,22 +123,35 @@ def render_markdown(candidates: list[dict[str, Any]], digest_date: str) -> str:
                 f"### {rank}. {candidate['title']}",
                 "",
                 (
-                    f"- Grade / Action / Risk: {_score_band(candidate)} "
-                    f"({scores.get('total_score', 0)}) / "
-                    f"{candidate.get('recommended_action', 'keep_for_later')} / "
-                    f"{candidate.get('risk_level', 'medium')}"
+                    f"`{_score_band(candidate)} · "
+                    f"{candidate.get('recommended_action', 'keep_for_later')} · "
+                    f"{candidate.get('risk_level', 'medium')} risk · "
+                    f"{scores.get('total_score', 0)}`"
                 ),
-                f"- Source / Link: {candidate['source']} / {candidate['seed_url']}",
-                f"- Risk flags: {risk_flags}",
-                "- 왜 볼 만한가:",
+                "",
+                f"Source / Link: {candidate['source']} / {candidate['seed_url']}",
+                "",
+                "왜 보나:",
                 f"  - {candidate.get('why_interesting', '')}",
-                "- 확장 가능성:",
+                "",
+                "확장:",
                 *[f"  - {item}" for item in expansions[:3]],
-                "- 필요한 추가자료:",
+                "",
+                "필요:",
                 *[f"  - {item}" for item in evidence_needed[:3]],
+                "",
+                f"Risk flags: {risk_flags}",
                 "",
             ]
         )
+    if excluded:
+        lines.extend(["## Excluded / Rejected", ""])
+        for candidate in excluded:
+            reason = candidate.get("blocked_reason") or ", ".join(candidate.get("risk_flags", []))
+            lines.append(
+                f"- {candidate['title']}: {candidate.get('recommended_action', 'reject')} "
+                f"({reason or 'not suitable for digest'})"
+            )
     return "\n".join(lines)
 
 
@@ -121,40 +159,54 @@ def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_dat
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "수집일",
+        "jibi_id",
+        "rank",
+        "status",
         "주제명",
         "링크",
-        "제작 여부",
-        "방송 활용 여부",
-        "이유(채택/사용/미사용)",
-        "작성자/source",
+        "출처",
+        "source_type",
         "jibi_grade",
+        "total_score",
         "recommended_action",
         "risk_level",
         "risk_flags",
         "why_interesting",
         "possible_expansions",
         "evidence_needed",
+        "중복후보",
+        "reviewer",
+        "review_result",
+        "promoted_to_topic_finding",
+        "notes",
     ]
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        for candidate in candidates:
+        for rank, candidate in enumerate(candidates, start=1):
             writer.writerow(
                 {
                     "수집일": digest_date,
+                    "jibi_id": candidate["candidate_id"],
+                    "rank": rank,
+                    "status": "new",
                     "주제명": candidate["title"],
                     "링크": candidate["seed_url"],
-                    "제작 여부": "",
-                    "방송 활용 여부": "",
-                    "이유(채택/사용/미사용)": candidate.get("why_interesting", ""),
-                    "작성자/source": "jibi",
+                    "출처": candidate["source"],
+                    "source_type": candidate.get("source_type", ""),
                     "jibi_grade": _score_band(candidate),
+                    "total_score": candidate.get("scores", {}).get("total_score", 0),
                     "recommended_action": candidate.get("recommended_action", "keep_for_later"),
                     "risk_level": candidate.get("risk_level", "medium"),
                     "risk_flags": ",".join(candidate.get("risk_flags", [])),
                     "why_interesting": candidate.get("why_interesting", ""),
                     "possible_expansions": " | ".join(candidate.get("possible_expansions", [])),
                     "evidence_needed": " | ".join(candidate.get("evidence_needed", [])),
+                    "중복후보": "",
+                    "reviewer": "",
+                    "review_result": "",
+                    "promoted_to_topic_finding": "",
+                    "notes": candidate.get("blocked_reason") or "",
                 }
             )
 
@@ -168,10 +220,11 @@ def render_daily_digest(
     date_value = _digest_date(digest_date)
     candidates = read_jsonl(input_path) if input_path.exists() else []
     top = top_candidates(candidates, limit=limit)
+    excluded = excluded_candidates(candidates)
     md_path = output_dir / f"{date_value}.md"
     csv_path = output_dir / f"{date_value}_sheet_append_preview.csv"
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    md_path.write_text(render_markdown(top, date_value), encoding="utf-8")
+    md_path.write_text(render_markdown(top, date_value, excluded), encoding="utf-8")
     write_sheet_preview(csv_path, top, date_value)
     return md_path, csv_path, top
 

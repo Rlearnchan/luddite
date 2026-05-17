@@ -77,7 +77,9 @@ risk_penalty             -0~30
 }
 ```
 
-`editorial_review`는 다음 단계에서 추가하는 것을 권장한다. 정치/기업/의료/마약/선정성 소재는 단순 `gather_more_evidence`가 아니라 사람 판단이 필요할 수 있다.
+`editorial_review`는 정치/기업/의료/마약/선정성/투자 소재처럼 방송 가능성은 있으나 사람이 먼저 판단해야 하는 후보에 사용한다.
+
+직접 대통령/정당/지지율 평가 프레임은 `editorial_review`가 아니라 `reject` 또는 정책상 block 처리한다.
 
 ## 5. risk policy
 
@@ -122,56 +124,98 @@ risk_penalty             -0~30
 Markdown/Slack 카드 예:
 
 ```md
-## 1. 베트남 전당포가 상장한다고?
+# Luddite Daily Digest — YYYY-MM-DD
 
-- grade: B+
-- broadcast_potential: high
-- risk_level: medium
-- source_richness: high
-- seed_type: absurd_foreign + finance
-- 왜 클릭할 만한가: 낯선 전당포 회사가 숫자로 증명되는 성장 스토리를 갖고 있음.
-- 가능한 전개: F88 상장 -> 한국 전당포 기억 -> 베트남 신용시장 -> 오토바이 담보대출 -> 규제 리스크
-- 더 찾을 자료: 베트남 은행 접근성, F88 공시, 현지 규제
-- risk: 단일 기사 의존, 금융/투자 오해
-- action: gather_more_evidence
+## 오늘의 추천
+
+- 바로 볼 만한 후보: N개
+- 자료 보강 필요: N개
+- 사람 검토 필요: N개
+- 킵 후보: N개
+- 제외/거절: N개
+
+## Top Candidates
+
+### 1. 베트남 전당포가 상장한다고?
+
+`B · gather_more_evidence · medium risk`
+
+왜 보나:
+- 낯선 전당포 회사가 숫자로 증명되는 성장 스토리를 갖고 있음.
+
+확장:
+- F88 상장
+- 한국 전당포 기억
+- 베트남 신용시장과 오토바이 담보대출
+
+필요:
+- 베트남 은행 접근성
+- F88 공시
+- 현지 규제/추심 리스크
+
+## Excluded / Rejected
+
+- 대통령/정당 직접 평가 소재: direct_president_party_evaluation
 ```
+
+Reject 또는 block 후보는 Top Candidates slot을 차지하지 않는다. 필요하면 `Excluded / Rejected` 섹션에 짧게 남긴다.
 
 ## 8. Google Sheet output
 
-추천 컬럼:
+MVP append target은 기존 `주제 찾기` 탭이 아니라 같은 공유 문서 안의 새 staging 탭이다.
+
+추천 탭:
 
 ```text
-created_at
+jibi 후보
+```
+
+운영 원칙:
+
+```text
+jibi 후보 -> human review -> selected rows promoted/copied to 주제 찾기
+```
+
+`주제 찾기`는 사람 중심 운영 sheet로 유지한다.
+
+`jibi 후보` 추천 컬럼:
+
+```text
+수집일
+jibi_id
 rank
-title
-seed_url
-source
-source_region
-seed_type
-broadcast_potential
-risk_level
-view_potential_proxy
-source_richness
-why_click
-possible_expansions
-korea_bridge
-punchline_candidate
-evidence_needed
-risk_flags
-recommended_action
 status
-owner
-human_note
+주제명
+링크
+출처
+source_type
+jibi_grade
+total_score
+recommended_action
+risk_level
+risk_flags
+why_interesting
+possible_expansions
+evidence_needed
+중복후보
+reviewer
+review_result
+promoted_to_topic_finding
+notes
 ```
 
 status 예:
 
 ```text
 new
-saved
-assigned
-storyline_requested
-used
-rejected
-archived
+```
+
+review_result 예:
+
+```text
+keep
+promote
+needs_more_evidence
+editorial_review
+reject
 ```
