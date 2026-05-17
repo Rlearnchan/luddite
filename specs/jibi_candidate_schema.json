@@ -24,13 +24,51 @@
     "seed_url": {
       "type": "string"
     },
+    "source_url_canonical": {
+      "type": "string"
+    },
+    "duplicate_key": {
+      "type": "string"
+    },
     "source": {
+      "type": "string"
+    },
+    "source_type": {
       "type": "string"
     },
     "published_at": {
       "type": [
         "string",
         "null"
+      ]
+    },
+    "collected_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "first_seen_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_seen_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "bdc"
       ]
     },
     "seed_type": {
@@ -92,6 +130,49 @@
         "$ref": "#/$defs/riskFlag"
       }
     },
+    "failure_modes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/failureMode"
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "recommended_action": {
+      "type": "string",
+      "enum": [
+        "send_to_anny",
+        "gather_more_evidence",
+        "editorial_review",
+        "keep_for_later",
+        "reject",
+        "blocked_policy"
+      ]
+    },
+    "past_video_matches": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "past_performance_proxy": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "recent_cooldown_risk": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -121,7 +202,27 @@
         "crime_or_drug_sensitivity",
         "live_news_volatility",
         "bdc_conflict",
+        "brand_safety_risk",
+        "advertiser_claim_risk",
+        "legal_review_needed",
+        "overly_promotional",
         "needs_human_review"
+      ]
+    },
+    "failureMode": {
+      "type": "string",
+      "enum": [
+        "sub_item_only",
+        "too_obvious_pattern",
+        "single_company_frame",
+        "single_stock_investment_frame",
+        "weak_structural_expansion",
+        "thin_evidence",
+        "sensitive_high_low_gain",
+        "live_news_volatility",
+        "political_direct_eval",
+        "recent_cooldown",
+        "copyright_heavy"
       ]
     },
     "url": {

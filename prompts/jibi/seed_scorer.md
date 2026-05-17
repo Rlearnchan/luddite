@@ -22,7 +22,7 @@
 10. `final_grade`: `A | B | C | D`
 11. `broadcast_potential`: `high | medium | low`
 12. `risk_level`: `high | medium | low`
-13. `recommended_action`: `send_to_anny | gather_more_evidence | keep_for_later | reject`
+13. `recommended_action`: `send_to_anny | gather_more_evidence | editorial_review | keep_for_later | reject`
 
 ## Final Grade
 
@@ -47,10 +47,19 @@
 
 Recommended action:
 
-- `send_to_anny`: 바로 storyline 후보로 넘긴다.
+- `send_to_anny`: storyline 작성으로 넘어갈 만큼 근거가 충분하다.
 - `gather_more_evidence`: 공식자료, 반례, 추가 source를 먼저 확보한다.
+- `editorial_review`: 위험하지만 구조적 가치가 있어 사람이 먼저 판단한다.
 - `keep_for_later`: 킵하거나 다른 소재의 보조 장면으로 둔다.
 - `reject`: 현재 기준으로 버린다.
+
+`send_to_anny`는 “재미있다”가 아니라 “근거가 충분하다”는 뜻이다. 실제
+원문 링크가 있고, 독립 출처 2개 이상 또는 공식자료 1개 이상이 있으며,
+`possible_expansions`가 구체적이고, risk가 low/medium이고,
+`evidence_needed`가 generic하지 않을 때만 사용한다.
+
+단일 기사 기반이거나 원문/독립 출처/숫자 자료 요구가 남아 있으면
+`gather_more_evidence`가 기본값이다.
 
 `pending_or_unknown`은 positive/negative로 단정하지 않는다. 방송 여부가 비어 있는
 케이스는 potential, risk, evidence gap을 설명하고 보수적으로 action을 정한다.
@@ -124,6 +133,11 @@ blank                -> unlabeled
 - 중국 기업 띄워주기, 국내 기업 직접 홍보/비판, 흑인/이스라엘 비판,
   사짜 직업 비판은 높은 risk로 둔다.
 - Getty/Shutterstock/SNS 이미지는 저작권/노출 리스크를 표시한다.
+- 국내 대통령/정당 직접 평가, 특정 정당 지지/비판, 국내 정쟁성 실시간
+  발언은 hard reject한다.
+- 해외 정치 균열은 그 자체로 hard reject하지 않는다. 포퓰리즘, 지역
+  격차, 채권시장, 이민, 노동자 계층 이동처럼 경제/사회 구조로 확장되면
+  `editorial_review` 또는 `gather_more_evidence`로 둔다.
 
 평가 기준은 `docs/02_syuka_content_grammar.md`,
 `docs/03_jibi_seed_selection_playbook.md`,

@@ -14,6 +14,8 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
                 "candidate_id": "jibi_1",
                 "title": "전당포 주식회사",
                 "seed_url": "https://example.com/f88",
+                "source_url_canonical": "https://example.com/f88",
+                "duplicate_key": "https://example.com/f88",
                 "source": "Manual Input",
                 "final_grade": "A",
                 "recommended_action": "send_to_anny",
@@ -24,6 +26,8 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
                 "possible_expansions": ["베트남 신용시장"],
                 "scores": {"total_score": 30, "broadcast_potential_proxy": 5},
                 "source_type": "manual",
+                "collected_at": "2026-05-17T00:00:00+00:00",
+                "last_seen_at": "2026-05-17T00:00:00+00:00",
             },
             {
                 "candidate_id": "jibi_reject",
@@ -63,6 +67,11 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert rows[0]["status"] == "new"
     assert rows[0]["recommended_action"] == "send_to_anny"
     assert rows[0]["주제명"] == "전당포 주식회사"
+    assert rows[0]["digest_date"] == "2026-05-17"
+    assert rows[0]["collected_at"] == "2026-05-17T00:00:00+00:00"
+    assert rows[0]["last_seen_at"] == "2026-05-17T00:00:00+00:00"
+    assert rows[0]["duplicate_key"] == "https://example.com/f88"
+    assert rows[0]["source_url_canonical"] == "https://example.com/f88"
 
 
 def test_top_candidates_excludes_rejects() -> None:

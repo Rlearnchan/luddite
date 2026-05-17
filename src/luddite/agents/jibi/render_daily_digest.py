@@ -12,6 +12,7 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.utils.jsonl import read_jsonl
+from luddite.utils.urls import canonicalize_url
 
 app = typer.Typer(no_args_is_help=False)
 console = Console()
@@ -81,9 +82,11 @@ def render_markdown(
     candidates: list[dict[str, Any]],
     digest_date: str,
     excluded: list[dict[str, Any]] | None = None,
+    all_candidates: list[dict[str, Any]] | None = None,
 ) -> str:
     excluded = excluded or []
-    counts = _action_counts([*candidates, *excluded])
+    counts = _action_counts(all_candidates or [*candidates, *excluded])
+    excluded_count = counts.get("reject", 0) + counts.get("blocked_policy", 0)
     lines = [
         f"# Luddite Daily Digest — {digest_date}",
         "",
@@ -98,13 +101,23 @@ def render_markdown(
         f"- 자료 보강 필요: {counts.get('gather_more_evidence', 0)}개",
         f"- 사람 검토 필요: {counts.get('editorial_review', 0)}개",
         f"- 킵 후보: {counts.get('keep_for_later', 0)}개",
-        f"- 제외/거절: {counts.get('reject', 0)}개",
+        f"- 제외/거절: {excluded_count}개",
         "",
         "## Top Candidates",
         "",
     ]
     if not candidates:
-        lines.append("No candidates available.")
+        lines.append("No top candidates available.")
+        if excluded:
+            lines.extend(["", "## Excluded / Rejected", ""])
+            for candidate in excluded:
+                reason = candidate.get("blocked_reason") or ", ".join(
+                    candidate.get("risk_flags", [])
+                )
+                lines.append(
+                    f"- {candidate['title']}: {candidate.get('recommended_action', 'reject')} "
+                    f"({reason or 'not suitable for digest'})"
+                )
         return "\n".join(lines) + "\n"
 
     for rank, candidate in enumerate(candidates, start=1):
@@ -158,8 +171,12 @@ def render_markdown(
 def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_date: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
-        "수집일",
+        "digest_date",
+        "collected_at",
+        "last_seen_at",
         "jibi_id",
+        "duplicate_key",
+        "source_url_canonical",
         "rank",
         "status",
         "주제명",
@@ -184,10 +201,18 @@ def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_dat
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
         for rank, candidate in enumerate(candidates, start=1):
+            source_url_canonical = candidate.get("source_url_canonical") or canonicalize_url(
+                str(candidate.get("seed_url", ""))
+            )
             writer.writerow(
                 {
-                    "수집일": digest_date,
+                    "digest_date": digest_date,
+                    "collected_at": candidate.get("collected_at", ""),
+                    "last_seen_at": candidate.get("last_seen_at")
+                    or candidate.get("collected_at", ""),
                     "jibi_id": candidate["candidate_id"],
+                    "duplicate_key": candidate.get("duplicate_key") or source_url_canonical,
+                    "source_url_canonical": source_url_canonical,
                     "rank": rank,
                     "status": "new",
                     "주제명": candidate["title"],
@@ -221,10 +246,14 @@ def render_daily_digest(
     candidates = read_jsonl(input_path) if input_path.exists() else []
     top = top_candidates(candidates, limit=limit)
     excluded = excluded_candidates(candidates)
+    excluded_to_render = excluded if len(top) < limit else []
     md_path = output_dir / f"{date_value}.md"
     csv_path = output_dir / f"{date_value}_sheet_append_preview.csv"
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    md_path.write_text(render_markdown(top, date_value, excluded), encoding="utf-8")
+    md_path.write_text(
+        render_markdown(top, date_value, excluded_to_render, all_candidates=candidates),
+        encoding="utf-8",
+    )
     write_sheet_preview(csv_path, top, date_value)
     return md_path, csv_path, top
 

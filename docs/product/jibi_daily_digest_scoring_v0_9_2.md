@@ -1,4 +1,4 @@
-# jibi Daily Digest Scoring v0.9.2
+# jibi Daily Digest Scoring v0.9.2 + v0.9.3 Corrections
 
 ## Scope
 
@@ -51,9 +51,11 @@ discarded automatically; it should usually become `editorial_review`.
 `send_to_anny`
 
 - high potential
-- enough evidence
+- real source link exists
+- at least two independent sources or one official source exists
 - low or medium risk
 - concrete possible_expansions
+- evidence_needed is not just generic source/number requests
 
 `gather_more_evidence`
 
@@ -82,17 +84,38 @@ discarded automatically; it should usually become `editorial_review`.
 - source is weak
 - verification burden is too high
 - too one-off
-- direct party/president evaluation
+- domestic party/president direct evaluation
 - looks like stock recommendation or pure corporate promotion
 
-Direct president/party/approval-rating framing should be `reject` with
+Domestic president/party/approval-rating framing should be `reject` with
 `blocked_reason: direct_president_party_evaluation`, not `editorial_review`.
+The hard reject criterion is not "a party appears in the title." It is direct
+evaluation of a domestic president, party, politician, or real-time partisan
+statement.
+
+Overseas political fracture can be `editorial_review` or
+`gather_more_evidence` when it expands into economic/social structure such as
+populism, regional gaps, bond markets, immigration, or working-class movement.
 
 Risky and strong means `editorial_review`.
 
 Risky and weak means `reject`.
 
 Policy-blocked means `reject` or later `blocked_policy`.
+
+Failure modes may use the v0.9.3 negative taxonomy:
+
+- `sub_item_only`
+- `too_obvious_pattern`
+- `single_company_frame`
+- `single_stock_investment_frame`
+- `weak_structural_expansion`
+- `thin_evidence`
+- `sensitive_high_low_gain`
+- `live_news_volatility`
+- `political_direct_eval`
+- `recent_cooldown`
+- `copyright_heavy`
 
 ## Digest Display
 
@@ -116,6 +139,14 @@ Flow:
 ```text
 jibi 후보 -> human review -> promote selected rows to 주제 찾기
 ```
+
+Required duplicate/append-only columns:
+
+- `digest_date`
+- `collected_at`
+- `last_seen_at`
+- `duplicate_key`
+- `source_url_canonical`
 
 ## Current Caveats
 

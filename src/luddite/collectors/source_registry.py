@@ -14,10 +14,13 @@ class Source:
     id: str
     name: str
     type: str
+    group: str | None = None
+    role: str | None = None
     region: str | None = None
     category_hint: str | None = None
     priority: int = 3
     subscription: bool = False
+    auto_fetch: bool = False
 
 
 def _parse_scalar(value: str) -> str | int | bool | None:
@@ -69,12 +72,15 @@ def load_sources(path: Path = paths.SOURCE_REGISTRY_YAML) -> list[Source]:
             id=str(item["id"]),
             name=str(item.get("name", item["id"])),
             type=str(item.get("type", "manual")),
+            group=item.get("group") if isinstance(item.get("group"), str) else None,
+            role=item.get("role") if isinstance(item.get("role"), str) else None,
             region=item.get("region") if isinstance(item.get("region"), str) else None,
             category_hint=(
                 item.get("category_hint") if isinstance(item.get("category_hint"), str) else None
             ),
             priority=int(item.get("priority", 3) or 3),
             subscription=bool(item.get("subscription", False)),
+            auto_fetch=bool(item.get("auto_fetch", False)),
         )
         for item in sources
         if item.get("id")

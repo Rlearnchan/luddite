@@ -20,6 +20,7 @@ from luddite.agents.jibi.heuristics import (
 )
 from luddite.collectors.source_registry import source_by_id
 from luddite.utils.jsonl import read_jsonl, write_jsonl
+from luddite.utils.urls import canonicalize_url
 
 app = typer.Typer(no_args_is_help=False)
 console = Console()
@@ -105,6 +106,44 @@ def _template_insights(seed_type: str) -> tuple[str, list[str]]:
 
 def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None:
     text = text_blob(title, summary)
+    if ("드론" in text or "drone" in text) and (
+        "미사일" in text or "비용" in text or "cost" in text
+    ):
+        return (
+            (
+                "값싼 드론 하나를 막기 위해 수백만 달러짜리 미사일을 태우는 구조라, "
+                "전쟁이 무기 성능보다 비용 교환비 싸움으로 바뀌는 장면을 보여줌"
+            ),
+            [
+                "우크라이나/중동 전장에서 드론이 비용 구조를 바꾼 사례",
+                "싼 공격 수단을 비싼 미사일로 막는 방어자 딜레마",
+                "레이저/전자전/그물총 같은 저비용 대응책 경쟁",
+            ],
+        )
+    if any(term in text for term in ["반바지", "폭염", "heatwave", "shorts"]):
+        return (
+            (
+                "5월 폭염이 단순 날씨 뉴스가 아니라 회사 복장 규정, 전력 수요, "
+                "에어컨 비용, 쿨비즈 문화로 이어질 수 있음"
+            ),
+            [
+                "5월 폭염과 일본 40도 용어",
+                "에너지 가격과 오피스 복장 변화",
+                "한국 기업 쿨비즈/반바지 문화",
+            ],
+        )
+    if any(term in text for term in ["공룡", "티라노", "t-rex", "dinosaur"]):
+        return (
+            (
+                "공룡 취향이라는 가벼운 질문에서 어른들의 낭만, 과학 대중문화, "
+                "세대별 캐릭터 소비 방식으로 자연스럽게 넓어질 수 있음"
+            ),
+            [
+                "T-Rex가 공룡 대표 이미지가 된 문화적 배경",
+                "어른이 되며 사라지는 취향/낭만 설문",
+                "영화/완구/박물관이 만든 공룡 인기 지도",
+            ],
+        )
     if "f88" in text or "전당포" in text:
         return (
             (
@@ -148,6 +187,7 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
 
 def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     title = article["title"]
+    source_url_canonical = canonicalize_url(article["url"])
     summary = article.get("raw_summary") or ""
     tags = article.get("tags", [])
     seed_type = infer_seed_type(title, summary, tags)
@@ -163,9 +203,9 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     specific_insights = _specific_insights(title, summary)
     template_rationale, possible_expansions = specific_insights or _template_insights(seed_type)
     why_bits = [template_rationale]
-    if weird_hook:
+    if weird_hook and specific_insights is None:
         why_bits.append("제목에서 바로 엥? 하는 hook이 생김")
-    if structural:
+    if structural and specific_insights is None:
         why_bits.append("시장/규제/산업 구조로 확장 가능")
     if numbers:
         why_bits.append("숫자나 통계로 증명할 여지가 있음")
@@ -174,12 +214,18 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "candidate_id": f"jibi_{article['article_id'].removeprefix('article_')}",
         "article_id": article["article_id"],
         "title": title,
-        "seed_url": article["url"],
+        "seed_url": source_url_canonical,
+        "source_url_canonical": source_url_canonical,
+        "duplicate_key": article.get("duplicate_key") or source_url_canonical,
         "source": article["source"],
         "source_id": article.get("source_id"),
         "source_type": source.type if source else article.get("collector", "manual"),
         "published_at": article.get("published_at"),
         "collected_at": article["collected_at"],
+        "first_seen_at": article.get("first_seen_at") or article["collected_at"],
+        "last_seen_at": article.get("last_seen_at") or article["collected_at"],
+        "source_count": int(article.get("source_count") or 1),
+        "mode": article.get("mode") or "normal",
         "seed_type": seed_type,
         "summary": summary or title,
         "why_interesting": why_interesting,

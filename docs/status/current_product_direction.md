@@ -1,11 +1,11 @@
-# Current Product Direction after v0.8.1
+# Current Product Direction after v0.9.3 Research Pack
 
 Status date: 2026-05-17
 
 ## Current checkpoint
 
 Luddite is at the v0.7 eval harness checkpoint plus v0.8/v0.8.1 design
-alignment.
+alignment and v0.9.3 jibi Daily Digest quality calibration.
 
 Completed:
 
@@ -16,6 +16,13 @@ Completed:
 - `eval-jibi-seeds`
 - `eval-anny-reconstruction`
 - `eval-piti-deck-plan`
+- Manual LLM Dry Run
+- jibi / anny / piti dry runs evaluable through the eval harness
+- jibi source/RSS strategy documented
+- syuka-ops bridge designed as a read-only/search proxy
+- Google Sheet append direction moved to the `jibi 후보` staging sheet
+- anny direction expanded to Article -> Candidate -> Cluster -> Story Seed -> Storyline
+- BDC mode kept open as design, outside the MVP implementation scope
 
 Not started:
 
@@ -27,6 +34,7 @@ Not started:
 - Slack bot implementation
 - full PPT generator
 - image auto collection
+- syuka-ops DB bridge
 
 ## Product priority
 
@@ -47,23 +55,38 @@ Short-term implementation priority:
 - `jibi` collects every day.
 - Humans may collect less on Wednesday/Thursday/Friday because PPT production is
   heavier then, but the bot has no such limitation.
-- `jibi` may append rows directly to the Google Sheet.
-- Bot rows must be visually distinguishable from human rows.
+- `jibi` may append rows to a dedicated Google Sheet staging tab.
+- Bot rows must stay separate from human-operated rows.
 - Slack should start as a separate Luddite bot, not as a direct extension of
   `syuka-ops`.
+- `syuka-ops` is the past-video metadata/transcript/view database; Luddite is
+  the future-candidate discovery database.
+- BDC is not an MVP target, but candidate/storyline schemas should leave room
+  for `mode: normal | bdc`.
 
 ## Google Sheet append principles
 
-- Target sheet: `주제 찾기`
-- Mark `jibi` rows with `source`, `작성자`, or equivalent field.
-- Visually distinguish bot rows with background color, muted font, highlight, or
-  a similar style.
+- Target sheet: `jibi 후보`
+- Keep existing `주제 찾기` as the human-operated sheet.
 - Never overwrite human rows.
 - `jibi` append is append-only for MVP.
-- Status updates require a later explicit design.
+- Humans mark `review_result` as blank, keep, promote, needs_more_evidence,
+  editorial_review, or reject.
+- Later, only `review_result=promote` rows may be promoted/copied to
+  `주제 찾기`.
 - Do not put subscription article full text in the visible sheet.
 - Store link, short summary, `why_interesting`, `risk_flags`, and
   `recommended_action` instead.
+
+Required staging metadata:
+
+```text
+digest_date
+collected_at
+last_seen_at
+duplicate_key
+source_url_canonical
+```
 
 ## Slack bot principles
 

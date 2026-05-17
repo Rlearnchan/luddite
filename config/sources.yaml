@@ -1,43 +1,420 @@
+# jibi source registry v0.9.3
+#
+# This is a design/runtime registry for local/manual MVP scoring. It does not
+# enable an RSS collector by itself.
+#
+# Source lifecycle:
+#   rss_candidate -> fetch test passes -> rss_verified
+#
+# Operational rules:
+#   - overseas seed discovery first; domestic bridge/evidence second
+#   - subscription_manual sources are never auto-fetched
+#   - official_release sources strengthen evidence/numbers, not primary seed rank
+
 sources:
   - id: manual
     name: Manual Input
     type: manual
+    group: manual_input
+    role: seed_discovery
     region: global
     category_hint: general
     priority: 3
     subscription: false
-  - id: google_sheet_topic_finding
-    name: Google Sheet 주제 찾기
+    auto_fetch: false
+
+  - id: google_sheet_jibi_candidates
+    name: Google Sheet jibi 후보
     type: sheet
+    group: workflow
+    role: staging_append
     region: kr
     category_hint: research_workflow
     priority: 4
     subscription: false
-  - id: nikkei_asia
-    name: Nikkei Asia
-    type: subscription_manual
-    region: asia
-    category_hint: business
-    priority: 4
-    subscription: true
-  - id: reuters
-    name: Reuters
-    type: rss
-    region: global
-    category_hint: business
-    priority: 4
-    subscription: false
-  - id: ap_news
-    name: AP News
-    type: rss
-    region: global
-    category_hint: general
+    auto_fetch: false
+
+  - id: google_sheet_topic_finding
+    name: Google Sheet 주제 찾기
+    type: sheet
+    group: workflow
+    role: human_operations
+    region: kr
+    category_hint: research_workflow
     priority: 3
     subscription: false
+    auto_fetch: false
+
+  - id: reuters_manual
+    name: Reuters
+    type: subscription_manual
+    group: primary_wire
+    role: seed_discovery
+    region: global
+    category_hint: business
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: ap_rss_candidate
+    name: Associated Press
+    type: rss_candidate
+    group: primary_wire
+    role: seed_discovery
+    region: global
+    category_hint: general
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: bbc_rss_candidate
+    name: BBC News
+    type: rss_candidate
+    group: primary_wire
+    role: seed_discovery
+    region: global
+    category_hint: world
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: guardian_rss_candidate
+    name: The Guardian
+    type: rss_candidate
+    group: primary_wire
+    role: seed_discovery
+    region: global
+    category_hint: world_business_environment
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: npr_rss_candidate
+    name: NPR
+    type: rss_candidate
+    group: primary_wire
+    role: seed_discovery
+    region: global
+    category_hint: social_culture
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: lemonde_rss_candidate
+    name: Le Monde
+    type: rss_candidate
+    group: primary_wire
+    role: seed_discovery
+    region: europe
+    category_hint: europe_world
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: bloomberg_manual
+    name: Bloomberg
+    type: subscription_manual
+    group: premium_manual
+    role: seed_and_context
+    region: global
+    category_hint: business
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: ft_manual
+    name: Financial Times
+    type: subscription_manual
+    group: premium_manual
+    role: seed_and_context
+    region: global
+    category_hint: business
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: wsj_manual
+    name: Wall Street Journal
+    type: subscription_manual
+    group: premium_manual
+    role: seed_and_context
+    region: global
+    category_hint: business
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: nyt_manual
+    name: New York Times
+    type: subscription_manual
+    group: premium_manual
+    role: seed_and_context
+    region: global
+    category_hint: world_business
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: economist_manual
+    name: The Economist
+    type: subscription_manual
+    group: premium_manual
+    role: seed_and_context
+    region: global
+    category_hint: business_politics
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: nikkei_asia_manual
+    name: Nikkei Asia
+    type: subscription_manual
+    group: premium_manual
+    role: seed_and_context
+    region: asia
+    category_hint: business
+    priority: 5
+    subscription: true
+    auto_fetch: false
+
+  - id: yonhap_rss_candidate
+    name: 연합뉴스
+    type: rss_candidate
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: business_policy
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: infomax_manual
+    name: 연합인포맥스
+    type: manual
+    group: korea_business
+    role: numbers_bridge
+    region: kr
+    category_hint: markets
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: hankyung_manual
+    name: 한국경제
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: business
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: mk_manual
+    name: 매일경제
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: business
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: chosunbiz_manual
+    name: 조선비즈
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: business
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: sedaily_manual
+    name: 서울경제
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: business
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: joongang_manual
+    name: 중앙일보
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: society_business
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: news1_manual
+    name: 뉴스1
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: society_business
+    priority: 3
+    subscription: false
+    auto_fetch: false
+
+  - id: newsis_manual
+    name: 뉴시스
+    type: manual
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: society_business
+    priority: 3
+    subscription: false
+    auto_fetch: false
+
+  - id: bok
+    name: 한국은행
+    type: official_release
+    group: official_evidence
+    role: numbers_evidence
+    region: kr
+    category_hint: macro
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: kosis
+    name: KOSIS/통계청
+    type: official_release
+    group: official_evidence
+    role: numbers_evidence
+    region: kr
+    category_hint: statistics
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: kma
+    name: 기상청
+    type: official_release
+    group: official_evidence
+    role: fact_check
+    region: kr
+    category_hint: weather
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: world_bank
+    name: World Bank
+    type: official_release
+    group: official_evidence
+    role: numbers_evidence
+    region: global
+    category_hint: macro_development
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: imf
+    name: IMF
+    type: official_release
+    group: official_evidence
+    role: numbers_evidence
+    region: global
+    category_hint: macro
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: oecd
+    name: OECD
+    type: official_release
+    group: official_evidence
+    role: numbers_evidence
+    region: global
+    category_hint: macro_social
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: ilo
+    name: ILOSTAT
+    type: official_release
+    group: official_evidence
+    role: numbers_evidence
+    region: global
+    category_hint: labor
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: the_conversation
+    name: The Conversation
+    type: rss_candidate
+    group: weird_culture_science
+    role: weird_hook
+    region: global
+    category_hint: science_society
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: atlas_obscura
+    name: Atlas Obscura
+    type: rss_candidate
+    group: weird_culture_science
+    role: weird_hook
+    region: global
+    category_hint: culture_weird
+    priority: 2
+    subscription: false
+    auto_fetch: false
+
+  - id: yougov
+    name: YouGov
+    type: manual
+    group: weird_culture_science
+    role: numbers_hook
+    region: global
+    category_hint: survey
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: pew
+    name: Pew Research
+    type: manual
+    group: weird_culture_science
+    role: numbers_hook
+    region: global
+    category_hint: survey
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: gallup
+    name: Gallup
+    type: manual
+    group: weird_culture_science
+    role: numbers_hook
+    region: global
+    category_hint: survey
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
   - id: slack_manual
     name: Slack Manual Drop
     type: slack
+    group: workflow
+    role: team_input
     region: kr
     category_hint: team_input
     priority: 3
     subscription: false
+    auto_fetch: false

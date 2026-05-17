@@ -1,0 +1,173 @@
+# Source registry recommendation for jibi v0.9.3
+# Status: design draft; RSS endpoints must be verified before being promoted to rss_verified.
+
+source_groups:
+  primary_wire:
+    role: seed_discovery
+    sources:
+      - id: reuters_manual
+        name: Reuters
+        type: subscription_manual
+        priority: high
+        region: global
+        notes: "High-quality seed/context source; use links + short summaries. Verify public feed/API availability separately."
+      - id: ap_rss_candidate
+        name: Associated Press
+        type: rss_candidate
+        priority: high
+        region: global
+        notes: "Verify topic feed endpoints before using."
+      - id: bbc_rss_candidate
+        name: BBC News
+        type: rss_candidate
+        priority: medium
+        region: global
+        candidate_feeds:
+          - https://feeds.bbci.co.uk/news/rss.xml
+          - https://feeds.bbci.co.uk/news/world/rss.xml
+      - id: guardian_rss_candidate
+        name: The Guardian
+        type: rss_candidate
+        priority: medium
+        region: global
+        candidate_feeds:
+          - https://www.theguardian.com/world/rss
+          - https://www.theguardian.com/business/rss
+          - https://www.theguardian.com/environment/rss
+      - id: npr_rss_candidate
+        name: NPR
+        type: rss_candidate
+        priority: medium
+        region: global
+        notes: "Use only verified feeds; often useful for U.S. social/life/culture angles."
+      - id: lemonde_rss_candidate
+        name: Le Monde
+        type: rss_candidate
+        priority: medium
+        region: europe
+        notes: "Terms may restrict non-personal/commercial use; verify before automated operation."
+
+  premium_manual:
+    role: seed_and_context
+    sources:
+      - id: bloomberg_manual
+        name: Bloomberg
+        type: subscription_manual
+        priority: high
+      - id: ft_manual
+        name: Financial Times
+        type: subscription_manual
+        priority: high
+      - id: wsj_manual
+        name: Wall Street Journal
+        type: subscription_manual
+        priority: high
+      - id: nyt_manual
+        name: New York Times
+        type: subscription_manual
+        priority: high
+      - id: economist_manual
+        name: The Economist
+        type: subscription_manual
+        priority: high
+      - id: nikkei_asia_manual
+        name: Nikkei Asia
+        type: subscription_manual
+        priority: high
+
+  korea_business:
+    role: domestic_bridge
+    sources:
+      - id: yonhap_manual_or_rss
+        name: 연합뉴스
+        type: rss_candidate
+        priority: high
+      - id: infomax_manual
+        name: 연합인포맥스
+        type: manual
+        priority: high
+      - id: hankyung_manual
+        name: 한국경제
+        type: manual
+        priority: high
+      - id: mk_manual
+        name: 매일경제
+        type: manual
+        priority: medium
+      - id: chosunbiz_manual
+        name: 조선비즈
+        type: manual
+        priority: medium
+      - id: sedaily_manual
+        name: 서울경제
+        type: manual
+        priority: medium
+      - id: joongang_manual
+        name: 중앙일보
+        type: manual
+        priority: medium
+
+  official_evidence:
+    role: evidence
+    sources:
+      - id: bok
+        name: 한국은행
+        type: official_release
+        priority: high
+      - id: kosis
+        name: KOSIS/통계청
+        type: official_release
+        priority: high
+      - id: kma
+        name: 기상청
+        type: official_release
+        priority: medium
+      - id: world_bank
+        name: World Bank
+        type: official_release
+        priority: high
+      - id: imf
+        name: IMF
+        type: official_release
+        priority: high
+      - id: oecd
+        name: OECD
+        type: official_release
+        priority: medium
+      - id: ilo
+        name: ILOSTAT
+        type: official_release
+        priority: medium
+
+  weird_culture_science:
+    role: hook_discovery
+    sources:
+      - id: the_conversation
+        name: The Conversation
+        type: rss_candidate
+        priority: medium
+      - id: atlas_obscura
+        name: Atlas Obscura
+        type: rss_candidate
+        priority: low
+      - id: yougov
+        name: YouGov
+        type: manual
+        priority: medium
+      - id: pew
+        name: Pew Research
+        type: manual
+        priority: medium
+      - id: gallup
+        name: Gallup
+        type: manual
+        priority: medium
+
+fetch_policy:
+  default_timeout_seconds: 20
+  default_interval_minutes: 60
+  use_etag: true
+  use_last_modified: true
+  user_agent: "luddite-jibi/0.9.3 (internal research assistant; contact configured locally)"
+  full_article_scrape_default: false
+  subscription_full_text_visible_sheet: false

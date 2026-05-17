@@ -22,9 +22,14 @@ Short-term priorities:
 
 The first demo should be a weekday morning digest of 10 candidate topics. `jibi`
 can collect every day even when human research time is constrained by PPT
-production. Google Sheet integration should append bot rows only, mark them as
-`jibi`, and visually distinguish them from human rows. Slack integration starts
-as a dedicated Luddite bot rather than being merged into `syuka-ops`.
+production. Google Sheet integration targets a dedicated `jibi 후보` staging
+sheet, with later human promotion into `주제 찾기`. Slack integration starts as a
+dedicated Luddite bot rather than being merged into `syuka-ops`; the syuka-ops
+bridge remains a future read-only/search proxy for past videos.
+
+v0.9.3 also documents the source/RSS strategy, keeps BDC as a future
+`mode: normal | bdc` design option, and points `anny` toward an
+Article -> Candidate -> Cluster -> Story Seed -> Storyline flow.
 
 See `docs/status/current_product_direction.md` for the v0.8/v0.8.1 design
 checkpoint summary.

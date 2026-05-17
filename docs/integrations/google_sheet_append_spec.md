@@ -33,7 +33,11 @@ The dedicated `jibi 후보` tab should still preserve bot metadata:
 
 - dedicated `jibi_id`
 - `status`
-- `수집일`
+- `digest_date`
+- `collected_at`
+- `last_seen_at`
+- `duplicate_key`
+- `source_url_canonical`
 - `recommended_action` field
 - `review_result`
 - `promoted_to_topic_finding`
@@ -66,8 +70,12 @@ Not allowed:
 ## Suggested `jibi 후보` columns
 
 ```text
-수집일
+digest_date
+collected_at
+last_seen_at
 jibi_id
+duplicate_key
+source_url_canonical
 rank
 status
 주제명
