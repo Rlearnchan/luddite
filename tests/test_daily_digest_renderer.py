@@ -34,8 +34,12 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     )
 
     assert len(top) == 1
-    assert "전당포 주식회사" in md_path.read_text(encoding="utf-8")
+    markdown = md_path.read_text(encoding="utf-8")
+    assert "Luddite Daily Digest" in markdown
+    assert "오늘의 추천" in markdown
+    assert "전당포 주식회사" in markdown
     with csv_path.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
-    assert rows[0]["source_marker"] == "jibi"
+    assert rows[0]["작성자/source"] == "jibi"
     assert rows[0]["recommended_action"] == "send_to_anny"
+    assert rows[0]["주제명"] == "전당포 주식회사"

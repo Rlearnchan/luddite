@@ -25,17 +25,27 @@ WEIRD_TERMS = {
     "공룡",
     "돼지",
     "전당포",
+    "드론",
+    "폭염",
+    "반바지",
     "우버이츠",
     "이상",
+    "비용 역전",
     "weird",
     "hippo",
     "dinosaur",
     "pawn",
+    "drone",
+    "heatwave",
 }
 STRUCTURAL_TERMS = {
     "시장",
     "규제",
     "산업",
+    "비용",
+    "전력",
+    "변압기",
+    "데이터센터",
     "공급망",
     "인플레이션",
     "신용",
@@ -43,8 +53,10 @@ STRUCTURAL_TERMS = {
     "market",
     "regulation",
     "industry",
+    "cost",
+    "grid",
 }
-PUNCHLINE_TERMS = {"밈", "농담", "웃", "meme", "joke", "콜라", "반바지"}
+PUNCHLINE_TERMS = {"밈", "농담", "웃", "meme", "joke", "콜라", "반바지", "레이저"}
 NUMBER_TERMS = {"%", "배", "억", "조", "million", "billion", "trillion", "percent"}
 
 

@@ -16,6 +16,14 @@ from luddite.utils.jsonl import read_jsonl
 app = typer.Typer(no_args_is_help=False)
 console = Console()
 
+ACTION_LABELS = {
+    "send_to_anny": "바로 볼 만한 후보",
+    "gather_more_evidence": "자료 보강 필요",
+    "editorial_review": "사람 검토 필요",
+    "keep_for_later": "킵 후보",
+    "reject": "제외/거절",
+}
+
 
 def _digest_date(value: str | None = None) -> str:
     return value or date.today().isoformat()
@@ -36,16 +44,38 @@ def top_candidates(candidates: list[dict[str, Any]], limit: int = 10) -> list[di
     )[:limit]
 
 
+def _action_counts(candidates: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {action: 0 for action in ACTION_LABELS}
+    for candidate in candidates:
+        action = candidate.get("recommended_action", "keep_for_later")
+        counts[action] = counts.get(action, 0) + 1
+    return counts
+
+
+def _bullet_lines(values: list[str] | None, fallback: list[str]) -> list[str]:
+    items = [str(value).strip() for value in values or [] if str(value).strip()]
+    return items or fallback
+
+
 def render_markdown(candidates: list[dict[str, Any]], digest_date: str) -> str:
+    counts = _action_counts(candidates)
     lines = [
-        f"# jibi Daily Digest - {digest_date}",
+        f"# Luddite Daily Digest — {digest_date}",
         "",
         (
             "Local/manual-input MVP digest. No LLM, RSS collector, Google Sheet "
             "append, or Slack bot was used."
         ),
         "",
-        "## Top 10 Candidates",
+        "## 오늘의 추천",
+        "",
+        f"- 바로 볼 만한 후보: {counts.get('send_to_anny', 0)}개",
+        f"- 자료 보강 필요: {counts.get('gather_more_evidence', 0)}개",
+        f"- 사람 검토 필요: {counts.get('editorial_review', 0)}개",
+        f"- 킵 후보: {counts.get('keep_for_later', 0)}개",
+        f"- 제외/거절: {counts.get('reject', 0)}개",
+        "",
+        "## Top 10",
         "",
     ]
     if not candidates:
@@ -55,21 +85,32 @@ def render_markdown(candidates: list[dict[str, Any]], digest_date: str) -> str:
     for rank, candidate in enumerate(candidates, start=1):
         scores = candidate.get("scores", {})
         risk_flags = ", ".join(candidate.get("risk_flags", [])) or "-"
-        evidence_needed = ", ".join(candidate.get("evidence_needed", [])) or "추가 근거 확인"
-        expansions = ", ".join(candidate.get("possible_expansions", [])) or "추가 리서치 후 작성"
+        evidence_needed = _bullet_lines(
+            candidate.get("evidence_needed"),
+            ["추가 독립 출처 확인"],
+        )
+        expansions = _bullet_lines(
+            candidate.get("possible_expansions"),
+            ["배경 설명", "구조적 확장", "한국 시청자 연결 지점"],
+        )
         lines.extend(
             [
                 f"### {rank}. {candidate['title']}",
                 "",
-                f"- URL: {candidate['seed_url']}",
-                f"- Source: {candidate['source']}",
-                f"- Grade: {_score_band(candidate)} / score {scores.get('total_score', 0)}",
-                f"- Recommended action: {candidate.get('recommended_action', 'keep_for_later')}",
-                f"- Risk level: {candidate.get('risk_level', 'medium')}",
+                (
+                    f"- Grade / Action / Risk: {_score_band(candidate)} "
+                    f"({scores.get('total_score', 0)}) / "
+                    f"{candidate.get('recommended_action', 'keep_for_later')} / "
+                    f"{candidate.get('risk_level', 'medium')}"
+                ),
+                f"- Source / Link: {candidate['source']} / {candidate['seed_url']}",
                 f"- Risk flags: {risk_flags}",
-                f"- Why interesting: {candidate.get('why_interesting', '')}",
-                f"- Possible expansions: {expansions}",
-                f"- Evidence needed: {evidence_needed}",
+                "- 왜 볼 만한가:",
+                f"  - {candidate.get('why_interesting', '')}",
+                "- 확장 가능성:",
+                *[f"  - {item}" for item in expansions[:3]],
+                "- 필요한 추가자료:",
+                *[f"  - {item}" for item in evidence_needed[:3]],
                 "",
             ]
         )
@@ -79,35 +120,41 @@ def render_markdown(candidates: list[dict[str, Any]], digest_date: str) -> str:
 def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_date: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
-        "rank",
-        "title",
-        "url",
-        "source",
-        "source_marker",
-        "final_grade",
+        "수집일",
+        "주제명",
+        "링크",
+        "제작 여부",
+        "방송 활용 여부",
+        "이유(채택/사용/미사용)",
+        "작성자/source",
+        "jibi_grade",
         "recommended_action",
         "risk_level",
         "risk_flags",
         "why_interesting",
-        "digest_date",
+        "possible_expansions",
+        "evidence_needed",
     ]
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        for rank, candidate in enumerate(candidates, start=1):
+        for candidate in candidates:
             writer.writerow(
                 {
-                    "rank": rank,
-                    "title": candidate["title"],
-                    "url": candidate["seed_url"],
-                    "source": candidate["source"],
-                    "source_marker": "jibi",
-                    "final_grade": _score_band(candidate),
+                    "수집일": digest_date,
+                    "주제명": candidate["title"],
+                    "링크": candidate["seed_url"],
+                    "제작 여부": "",
+                    "방송 활용 여부": "",
+                    "이유(채택/사용/미사용)": candidate.get("why_interesting", ""),
+                    "작성자/source": "jibi",
+                    "jibi_grade": _score_band(candidate),
                     "recommended_action": candidate.get("recommended_action", "keep_for_later"),
                     "risk_level": candidate.get("risk_level", "medium"),
                     "risk_flags": ",".join(candidate.get("risk_flags", [])),
                     "why_interesting": candidate.get("why_interesting", ""),
-                    "digest_date": digest_date,
+                    "possible_expansions": " | ".join(candidate.get("possible_expansions", [])),
+                    "evidence_needed": " | ".join(candidate.get("evidence_needed", [])),
                 }
             )
 

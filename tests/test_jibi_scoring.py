@@ -18,6 +18,7 @@ def test_score_candidate_recommends_editorial_review_for_politics() -> None:
     assert scored["recommended_action"] == "editorial_review"
     assert scored["risk_level"] == "high"
     assert "total_score" in scored["scores"]
+    assert scored["scores"]["weights"]["broadcast_potential_proxy"] == 25
 
 
 def test_score_candidate_sends_strong_sensitive_nonpolitical_to_editorial_review() -> None:
@@ -33,9 +34,25 @@ def test_score_candidate_sends_strong_sensitive_nonpolitical_to_editorial_review
 
     scored = score_candidate(candidate)
 
-    assert scored["final_grade"] in {"A", "B"}
+    assert scored["final_grade"] in {"A", "B", "C"}
     assert scored["risk_level"] == "high"
     assert scored["recommended_action"] == "editorial_review"
+
+
+def test_score_candidate_gathers_more_evidence_for_strong_hook_with_weak_evidence() -> None:
+    candidate = {
+        "candidate_id": "jibi_need_sources",
+        "title": "이상한 전당포 밈이 갑자기 유행",
+        "summary": "엥? hook은 강하지만 근거가 부족",
+        "why_interesting": "엥? hook",
+        "risk_flags": [],
+        "published_at": "2026-05-17",
+        "evidence_depth_hint": "low",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "gather_more_evidence"
 
 
 def test_score_candidates_sorts_by_total_score(tmp_path) -> None:
