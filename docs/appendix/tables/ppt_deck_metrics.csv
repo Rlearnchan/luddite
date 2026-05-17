@@ -1,0 +1,9 @@
+﻿file,slides,url_count,unique_url_count,slides_with_urls,notes_slides,content_notes,image_notes,gpt_image_notes,section_slides,slide_type_counts,avg_headline_chars,avg_body_lines,source_image_overlap
+국민도 주주가 되는가_배형찬.pptx,114,219,30,88,114,150,66,4,"[2, 9, 10, 20, 27, 31, 40, 47, 52, 57, 87, 96, 103]","{'title': 1, 'section_title': 13, 'image_centered': 39, 'data': 5, 'quote': 40, 'punchline': 4, 'explainer': 6, 'closing_question': 5, 'source_heavy': 1}",24.4,3.16,0
+대혼돈의 영국_김동찬 김성원.pptx,99,112,44,92,99,4,21,0,"[2, 33, 57]","{'title': 1, 'section_title': 3, 'image_centered': 91, 'explainer': 4}",10.1,0.24,0
+미중 정상회담_김동찬.pptx,92,84,23,84,92,0,0,0,"[2, 3, 4, 5, 6, 39, 67]","{'title': 1, 'section_title': 7, 'image_centered': 78, 'explainer': 6}",10.0,0.03,0
+슈승님의 은혜_김동찬.pptx,79,74,26,70,79,0,0,0,"[5, 6, 8, 14, 17]","{'title': 1, 'hook': 1, 'image_centered': 63, 'section_title': 5, 'explainer': 9}",10.0,0.15,0
+여름에 회사에서 반바지 입어도 되나요_김동찬.pptx,75,67,30,67,75,0,0,0,"[2, 68, 74, 75]","{'title': 1, 'section_title': 4, 'image_centered': 60, 'explainer': 9, 'comparison': 1}",10.0,0.11,0
+요즘 뜨는 레이저 치료_김동찬.pptx,85,81,40,76,85,0,0,0,"[3, 9, 24, 52, 59, 77, 85]","{'title': 1, 'hook': 1, 'section_title': 7, 'image_centered': 72, 'explainer': 4}",17.8,0.04,0
+전당포 주식회사_배형찬.pptx,55,75,27,50,55,55,32,11,"[2, 11, 18, 43]","{'title': 1, 'section_title': 4, 'image_centered': 21, 'data': 10, 'explainer': 7, 'hook': 1, 'quote': 8, 'closing_question': 3}",24.6,3.16,0
+코카콜라를 이기는 방법_김성원.pptx,55,61,30,50,55,0,10,0,"[2, 39, 55]","{'title': 1, 'section_title': 3, 'image_centered': 46, 'data': 2, 'explainer': 3}",15.0,0.25,0

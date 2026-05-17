@@ -1,0 +1,456 @@
+{
+  "storyline_id": "golden_pawnshop_f88_storyline",
+  "title": "전당포 주식회사",
+  "subtitle": "상장에 도전하는 베트남 전당포 F88",
+  "one_liner": "베트남 전당포 F88의 상장 도전을 통해 신흥국 신용시장의 빈틈과 제도권화 리스크를 설명한다.",
+  "estimated_slide_count": 55,
+  "risk_flags": [
+    "crime_or_drug_sensitivity",
+    "investment_advice_risk"
+  ],
+  "required_fact_checks": [
+    "F88의 HOSE 이전 상장 추진 상태와 최신 공시 확인",
+    "베트남 임금 및 GDP 성장률 수치의 기준 연도 확인",
+    "2023년 F88 채권추심 관련 경찰 조사 후속 결과 확인"
+  ],
+  "sections": [
+    {
+      "section_title": "상장에 도전하는 베트남 전당포",
+      "purpose": "낯선 회사의 상장 뉴스로 hook을 만들고 전당포라는 반전을 제시한다.",
+      "slides": [
+        {
+          "slide_type": "title",
+          "headline": "전당포 주식회사",
+          "body": [],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 1; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "최근 상장에 도전하는 금융 회사가 있다",
+          "body": [
+            "바로 베트남의 “F88”",
+            "- F는 금융(Finance)",
+            "- 88은 베트남, 아시아권 길한 숫자로 여겨지는 8을 두 번 쓴 것",
+            "(문구) “꼭 필요할 때만 빌리세요”"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://play.google.com/store/apps/dev?id=5763432159326606488&hl=zh_HK"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://play.google.com/store/apps/dev?id=5763432159326606488&hl=zh_HK",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "정확히 말하면, 현재 2부 리그 격인 UPCoM 시장에 있지만",
+          "body": [
+            "- 베트남 증권거래소는 3곳 (HOSE, HNX, UPCoM)",
+            "- UPCoM: 비상장 공기업, 준상장 기업 거래시장"
+          ],
+          "source_urls": [
+            "https://vinacapital.com/wp-content/uploads/2022/08/VinaCapital-Insights-What-You-Need-to-Know-About-Vietnams-Three-Stock-Exchanges.pdf"
+          ],
+          "image_urls": [
+            "https://kr.tradingview.com/symbols/UPCOM-F88?timeframe=1M"
+          ],
+          "notes": "[내용] https://vinacapital.com/wp-content/uploads/2022/08/VinaCapital-Insights-What-You-Need-to-Know-About-Vietnams-Three-Stock-Exchanges.pdf\n[이미지] https://kr.tradingview.com/symbols/UPCOM-F88?timeframe=1M",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "메인 증시인 HOSE로의 이전 상장을 추진한다는 것",
+          "body": [
+            "호찌민 증권거래소(Hochiminh Stock Exchange)",
+            "- 베트남 최대 증권거래소",
+            "- 우리로 치면 코스피"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://commons.wikimedia.org/wiki/File:HOSE_logo.jpg"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://commons.wikimedia.org/wiki/File:HOSE_logo.jpg",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "data",
+          "headline": "그도 그럴 것이, 매출은 몇 년 사이 10배 이상으로 늘었고",
+          "body": [
+            "The company's revenue in 2025 was more than 10 times its 2019 level, reaching 3.1 trillion dong ($118 million)",
+            "F88의 2025년 매출은 3조1천억 동으로2019년보다 10배 이상 늘었다",
+            "- 한화로 약 1,750억 원?"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://f88.vn/aboutf88"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://f88.vn/aboutf88",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "문제는 이 회사가 바로 “전당포”라는 점이다",
+          "body": [
+            "Vietnam's largest \"new-generation\" pawnshop chain",
+            "베트남 최대의 “신세대 전당포” 체인"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://f88.vn/vietcap-du-bao-loi-nhuan-f88-tang-40-nam-2026-nho-dong-gop-lon-tu-mang-bao-hiem"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://f88.vn/vietcap-du-bao-loi-nhuan-f88-tang-40-nam-2026-nho-dong-gop-lon-tu-mang-bao-hiem",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        }
+      ]
+    },
+    {
+      "section_title": "한국의 전당포 이미지",
+      "purpose": "한국 시청자가 가진 전당포 기억으로 낯선 베트남 금융 뉴스를 번역한다.",
+      "slides": [
+        {
+          "slide_type": "section_title",
+          "headline": "전당포 주식회사- 한국의 전당포 이미지",
+          "body": [],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 11; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "엥 전당포요?",
+          "body": [
+            "전당포(典當舖)",
+            "- 물건, 유가증권 등을 담보로 돈을 빌려주고 이자를 받음",
+            "- 일종의 사금융업",
+            "- 솔직히 알면 MZ 아님"
+          ],
+          "source_urls": [
+            "https://encykorea.aks.ac.kr/Article/E0049335"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://encykorea.aks.ac.kr/Article/E0049335",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "제가 아는 건 빡빡이 아저씨인데…",
+          "body": [
+            "Pawn Stars (전당포 사나이들)",
+            "- 2009년부터 방영 중인",
+            "미국의 리얼리티 쇼",
+            "- 차라리 이 쪽은 유튜브 쇼츠·영상이 많아서"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://en.wikipedia.org/wiki/Pawn_Stars"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://en.wikipedia.org/wiki/Pawn_Stars",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "하지만 베트남은 상황이 조금 다를 수 있다",
+          "body": [
+            "우리도 지금의 금융 시스템이",
+            "갖춰지기 전 과도기 시절에는",
+            "여러 사금융 제도가 있었으니까?",
+            "- 전당포도 그 중 하나"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        }
+      ]
+    },
+    {
+      "section_title": "서민들의 자금줄, 오담대",
+      "purpose": "베트남의 젊은 인구와 금융 접근성 문제를 오토바이 담보대출로 구체화한다.",
+      "slides": [
+        {
+          "slide_type": "section_title",
+          "headline": "전당포 주식회사- 서민들의 자금줄 “오담대”",
+          "body": [],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 18; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "무엇보다 중위 연령이 32세에 불과한 젊은 나라로",
+          "body": [
+            "2026년 1월, 베트남 통계청",
+            "- 중위 연령 약 32세 (한국은 45세 안팎)",
+            "- 생산가능인구 비중 약 68~69%"
+          ],
+          "source_urls": [
+            "https://www.segye.com/newsView/20260106510939"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.segye.com/newsView/20260106510939",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "매년 높은 경제 성장률을 기록하고 있으니",
+          "body": [
+            "베트남 실질 GDP 성장률(%)",
+            "(출처: World Bank)"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "quote",
+          "headline": "그래서 “등록증”을 받고 돈을 빌려준다",
+          "body": [
+            "Lending with motorbike titles, the motorbike not in custody, having cash and a motorbike at the same time",
+            "오토바이 등록증을 담보로 대출을 받되, 오토바이는 맡기지 않아도 되어 현금과 오토바이를 동시에 보유할 수 있음"
+          ],
+          "source_urls": [
+            "https://f88.vn/english"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://f88.vn/english",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "data",
+          "headline": "햄버거급 돈 나오는 속도",
+          "body": [
+            "Cash receipt after 15 minutes15분 만에 현금 수령 가능",
+            "Lending up to 30 million최대 3,000만 동 대출 가능 → 약 3.3개월 치 임금 (한화 170만 원)",
+            "Reasonable borrowing costs합리적인 대출 비용 → 은행보다 높은 월 2.6~4.6% 금리"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+            "https://f88.vn/english",
+            "https://tradingeconomics.com/vietnam/wages"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[내용] https://f88.vn/english\n[내용] https://tradingeconomics.com/vietnam/wages",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "data",
+          "headline": "“저희 (담보물) 오토바이 잘 있죠?”",
+          "body": [
+            "with average loan tenors of five to eight months",
+            "(오담대, 차담대) 평균 대출 기간은 5~8개월 수준이다",
+            "Vehicles are tracked via GPS, allowing centralized monitoring across the network",
+            "차량에는 GPS 추적 시스템이 적용돼 전국 점포망에서 중앙화된 모니터링이 가능하다"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        }
+      ]
+    },
+    {
+      "section_title": "F88 성장의 그림자",
+      "purpose": "창업자 서사에서 제도권화와 추심 규제 리스크로 확장한다.",
+      "slides": [
+        {
+          "slide_type": "section_title",
+          "headline": "전당포 주식회사- F88 성장의 그림자",
+          "body": [],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 43; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "올해 42세인 창립자 뚜언, 그도 스타트업을 운영한 적이 있다",
+          "body": [
+            "When Phung Anh Tuan was a 20-year-old university student two decades ago, he ran out of cash to pay staff at a cybersecurity startup",
+            "약 20년 전, 대학생이던 풍 아인 뚜언은 자신이 운영하던 사이버보안 스타트업 직원들에게 급여를 지급할 돈이 부족했다",
+            "F88 창립자",
+            "Phung Anh Tuan"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://nhadautu.f88.vn/en"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://nhadautu.f88.vn/en",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "당시, 직원들 월급을 주기 위해 급히 전당포를 찾았는데",
+          "body": [
+            "A bank loan was out of reach on such short notice, so he walked into a pawnshop, pledged what he had and borrowed enough to keep the business going",
+            "은행 대출을 받기에는 시간이 너무 촉박했고, 결국 그는 전당포를 찾아가 가진 물건을 맡기고 급전을 빌렸다",
+            "F88 창립자",
+            "Phung Anh Tuan"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://nhadautu.f88.vn/en"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://nhadautu.f88.vn/en",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "quote",
+          "headline": "하지만 전당포 비즈니스의 가능성을 봤던 뚜언은",
+          "body": [
+            "\"But from the perspective of a genuine borrower with real collateral, I saw it as a useful business”",
+            "(그러나) “진짜 담보가 있는 정상 차입자 입장에서 보면, 전당포는 유용한 사업이었다”",
+            "- 빠르고 편리하게 자금 수요 충족이 가능",
+            "F88 창립자",
+            "Phung Anh Tuan"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [
+            "https://nhadautu.f88.vn/en"
+          ],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream\n[이미지] https://nhadautu.f88.vn/en",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "물론, 쉽지 않은 일이다",
+          "body": [
+            "But formalizing a business with a long history of mistrust comes with risks",
+            "하지만 오랜 불신의 역사를 가진 사업을 제도권화 하는 데는 위험도 따른다"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "한 번은 뚜언 본인도 경찰에 불려갔는데",
+          "body": [
+            "In 2023, several F88 stores and employees, including Tuan himself, were investigated by police over debt-collection practices",
+            "2023년에는 F88 일부 매장과 직원들이 채권추심 관행과 관련해 경찰 조사를 받았다. 뚜언 본인도 조사 대상에 포함됐다",
+            "F88 창립자",
+            "Phung Anh Tuan"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": [
+            "crime_or_drug_sensitivity"
+          ]
+        },
+        {
+          "slide_type": "quote",
+          "headline": "어디까지가 사법적 경계 내에 있는지가 모호한 탓",
+          "body": [
+            "“One employee sent threatening messages to a customer, which was considered extortion,\"“한 직원이 고객에게 협박성 메시지를 보냈고, 이는 공갈로 간주됐다”",
+            "“That violated [national] regulations”",
+            "뚜언은 “국가 규정을 위반한 일이었다”고 신중하게 말했다"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "closing_question",
+          "headline": "전당포의 시스템화, 그리고 HOSE 상장까지 가능할까?",
+          "body": [
+            "The company has since tightened compliance, particularly around collections and internal audits",
+            "회사는 이후 특히 추심과 내부 감사에서 컴플라이언스를 강화했지만",
+            "Still, managing behavior across a large branch network remains a challenge",
+            "대규모 지점망 전체에서 직원 행동을 관리하는 것은 여전히 과제다"
+          ],
+          "source_urls": [
+            "https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://asia.nikkei.com/spotlight/asean-money/from-stigma-to-listing-f88-brings-vietnam-pawnshops-into-the-mainstream",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": [
+            "crime_or_drug_sensitivity"
+          ]
+        }
+      ]
+    }
+  ]
+}

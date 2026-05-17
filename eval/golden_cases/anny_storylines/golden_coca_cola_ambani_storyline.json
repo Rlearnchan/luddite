@@ -1,0 +1,323 @@
+{
+  "storyline_id": "golden_coca_cola_ambani_storyline",
+  "title": "코카콜라를 이기는 방법",
+  "subtitle": "코카인 하마에서 시작해 암바니의 인도 콜라 전쟁으로 넘어가는 이야기",
+  "one_liner": "콜롬비아 코카인 하마 이송 뉴스라는 이상한 hook을 암바니 가문, 릴라이언스, 캄파콜라의 인도 소비재 전략으로 전환한다.",
+  "estimated_slide_count": 55,
+  "risk_flags": [
+    "crime_or_drug_sensitivity",
+    "corporate_promo_risk"
+  ],
+  "required_fact_checks": [
+    "콜롬비아 하마 인도 이송 계획의 최신 진행 상태 확인",
+    "암바니 가문 및 릴라이언스 관련 수치의 최신 기준 확인",
+    "캄파콜라 가격 전략과 코카콜라/펩시 대응 자료 추가 확인"
+  ],
+  "sections": [
+    {
+      "section_title": "코카인 하마의 인도행 뉴스",
+      "purpose": "제목만으로 엥?이 생기는 동물 뉴스에서 시작한다.",
+      "slides": [
+        {
+          "slide_type": "title",
+          "headline": "코카콜라를 이기는 방법",
+          "body": [],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 1; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "section_title",
+          "headline": "최근 발표된 콜롬비아",
+          "body": [
+            "코카인 하마의 인도행 뉴스"
+          ],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 2; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": [
+            "crime_or_drug_sensitivity"
+          ]
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "콜롬비아 코카인 하마가 인도로 간다?",
+          "body": [
+            "파블로 에스코바르가 남긴 하마 문제가 다시 국제 뉴스가 됐다."
+          ],
+          "source_urls": [],
+          "image_urls": [
+            "https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar"
+          ],
+          "notes": "[이미지] https://www.theguardian.com/world/2026/apr/13/colombia-hippo-hunt-pablo-escobar",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "문제는 하마가 너무 많아졌다는 점",
+          "body": [
+            "콜롬비아 입장에서는 생태계와 안전 문제를 동시에 처리해야 한다."
+          ],
+          "source_urls": [],
+          "image_urls": [
+            "https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia"
+          ],
+          "notes": "[이미지] https://www.theguardian.com/world/article/2024/aug/27/cocaine-kingpin-wildest-legacy-pablo-escobar-marauding-hippos-colombia",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "data",
+          "headline": "자신이 운영 중인 여의도 4배 크기의 동물센터로 이송하겠다는 것",
+          "body": [
+            "He also runs a 3,000-acre (about 1,200-hectare) animal rescue center in Gujarat state’s Jamnagar, the family’s hometown.",
+            "그는 가족의 고향인 구자라트 주",
+            "잠나가르에서 약 1,200헥타르 규모의 동물 구조 센터를 운영하고 있다.",
+            "<- 모디 총리와 함께"
+          ],
+          "source_urls": [
+            "https://apnews.com/article/india-ambani-merchant-wedding-mumbai-9fe22be18241d5c228c7ad98f94079e3"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://apnews.com/article/india-ambani-merchant-wedding-mumbai-9fe22be18241d5c228c7ad98f94079e3",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "data",
+          "headline": "콜롬비아 하마들을 전부 인도로 보내는 것만 해도 최소 60억원",
+          "body": [
+            "It would be no small feat to ship the hippos to India and would probably come with a hefty price tag, possibly more than $4m.",
+            "하마들을 인도로 운송하는 것은",
+            "결코 쉬운 일이 아니며, 아마도",
+            "400만 달러(한화 약 59억 원) 이상의 상당한 비용이 들 것으로 예상된다."
+          ],
+          "source_urls": [
+            "https://www.theguardian.com/world/2026/apr/29/indian-billionaire-son-anant-ambani-offers-house-pablo-escobar-hippos"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.theguardian.com/world/2026/apr/29/indian-billionaire-son-anant-ambani-offers-house-pablo-escobar-hippos",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        }
+      ]
+    },
+    {
+      "section_title": "모든 문제를 돈으로 푸는 암바니식 경영",
+      "purpose": "하마 이송 비용에서 인도 재벌 가문의 스케일로 확장한다.",
+      "slides": [
+        {
+          "slide_type": "explainer",
+          "headline": "이처럼 모든 문제를",
+          "body": [
+            "돈으로 쉽게 해결하는",
+            "인도 암바니식 경영"
+          ],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 19; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "결혼식도 글로벌 이벤트로 만드는 가문",
+          "body": [
+            "암바니 가문의 소비와 동원력은 뉴스 자체가 된다."
+          ],
+          "source_urls": [
+            "https://apnews.com/article/india-tycoon-mukesh-ambani-son-prewedding-bash-d36e73d8b83229b7684e6253d84e23d5"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://apnews.com/article/india-tycoon-mukesh-ambani-son-prewedding-bash-d36e73d8b83229b7684e6253d84e23d5",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "인도 최대급 기업집단 릴라이언스",
+          "body": [
+            "시장가치와 사업 포트폴리오로 암바니 가문의 체급을 보여준다."
+          ],
+          "source_urls": [
+            "https://companiesmarketcap.com/"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://companiesmarketcap.com/",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "릴라이언스 창립자",
+          "body": [
+            "디루바이 암바니"
+          ],
+          "source_urls": [
+            "https://www.nytimes.com/2008/06/15/business/worldbusiness/15ambani.html"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.nytimes.com/2008/06/15/business/worldbusiness/15ambani.html",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "Jio로 통신 시장까지 흔든 경험",
+          "body": [
+            "가격과 유통망으로 시장 판을 흔드는 방식이 반복된다."
+          ],
+          "source_urls": [],
+          "image_urls": [
+            "https://www.ril.com/businesses/digital-services-jio"
+          ],
+          "notes": "[이미지] https://www.ril.com/businesses/digital-services-jio",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "싸게 풀고, 사용자를 모으고, 판을 바꾼다",
+          "body": [
+            "Jio식 확장 공식은 소비재 시장에서도 중요한 전조가 된다."
+          ],
+          "source_urls": [
+            "https://www.ril.com/about/our-history",
+            "https://restofworld.org/2020/how-india-mobile-data-became-worlds-cheapest"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.ril.com/about/our-history\n[내용] https://restofworld.org/2020/how-india-mobile-data-became-worlds-cheapest",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        }
+      ]
+    },
+    {
+      "section_title": "최근에는 콜라 산업까지",
+      "purpose": "하마 뉴스의 진짜 본론을 캄파콜라와 인도 음료 시장으로 전환한다.",
+      "slides": [
+        {
+          "slide_type": "section_title",
+          "headline": "최근에는 콜라 산업까지",
+          "body": [
+            "진출한 암바니 가문 근황"
+          ],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 39; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "암바니의 다음 전장은 콜라",
+          "body": [
+            "캄파콜라 재출시가 코카콜라와 펩시의 인도 전략을 흔든다."
+          ],
+          "source_urls": [
+            "https://www.bloomberg.com/news/articles/2026-05-12/ambani-s-cola-war-with-coke-pepsi-spurs-fridge-bonanza-in-india?srnd=phx-industries"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.bloomberg.com/news/articles/2026-05-12/ambani-s-cola-war-with-coke-pepsi-spurs-fridge-bonanza-in-india?srnd=phx-industries",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "상대는 이미 인도에 자리 잡은 코카콜라",
+          "body": [
+            "글로벌 브랜드와 현지 가격 전략이 맞붙는다."
+          ],
+          "source_urls": [],
+          "image_urls": [
+            "https://www.coca-cola.com/in/en"
+          ],
+          "notes": "[이미지] https://www.coca-cola.com/in/en",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "옛 브랜드를 다시 꺼내온 이유",
+          "body": [
+            "캄파콜라는 향수와 가격 경쟁력을 동시에 가진 카드다."
+          ],
+          "source_urls": [
+            "https://www.forbes.com/sites/yessarrosendar/2025/10/08/indias-richest-man-adds-fizz-to-countrys-cola-market-with-relaunch-of-iconic-brand"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.forbes.com/sites/yessarrosendar/2025/10/08/indias-richest-man-adds-fizz-to-countrys-cola-market-with-relaunch-of-iconic-brand",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "콜라 전쟁은 냉장고 전쟁이기도 하다",
+          "body": [
+            "소매점 냉장고와 유통 장악력이 실제 전장의 일부가 된다."
+          ],
+          "source_urls": [
+            "https://www.msn.com/en-in/news/insight/ambani-s-campa-cola-battle-with-coke-pepsi-fuels-cooler-boom/gm-GMCFA1C740?gemSnapshotKey=GMCFA1C740-snapshot-8&uxmode=ruby"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.msn.com/en-in/news/insight/ambani-s-campa-cola-battle-with-coke-pepsi-fuels-cooler-boom/gm-GMCFA1C740?gemSnapshotKey=GMCFA1C740-snapshot-8&uxmode=ruby",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        },
+        {
+          "slide_type": "image_centered",
+          "headline": "싸게 팔 수 있는 사람이 시장을 바꾼다",
+          "body": [
+            "가격, 유통, 자본력이 결합하면 글로벌 브랜드도 방어전을 치르게 된다."
+          ],
+          "source_urls": [
+            "https://www.ft.com/content/b3a87155-9a89-4490-b627-74e95cb143a0?syn-25a6b1a6=1"
+          ],
+          "image_urls": [],
+          "notes": "[내용] https://www.ft.com/content/b3a87155-9a89-4490-b627-74e95cb143a0?syn-25a6b1a6=1",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "risk_flags": []
+        }
+      ]
+    },
+    {
+      "section_title": "슈카콜라 회수",
+      "purpose": "인도 콜라 전쟁을 내부 농담으로 닫는다.",
+      "slides": [
+        {
+          "slide_type": "closing_question",
+          "headline": "언젠가는 슈카콜라가 캄파콜라와 경쟁해야 하는 날이 올 수도?",
+          "body": [],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "원본 PPT slide 55; source needed before production.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "risk_flags": []
+        }
+      ]
+    }
+  ]
+}
