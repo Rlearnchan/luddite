@@ -18,7 +18,7 @@ app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 ACTION_LABELS = {
-    "send_to_anny": "바로 볼 만한 후보",
+    "send_to_anny": "즉시 스토리라인 후보",
     "gather_more_evidence": "자료 보강 필요",
     "editorial_review": "사람 검토 필요",
     "keep_for_later": "킵 후보",
@@ -97,9 +97,10 @@ def render_markdown(
         "",
         "## 오늘의 추천",
         "",
-        f"- 바로 볼 만한 후보: {counts.get('send_to_anny', 0)}개",
-        f"- 자료 보강 필요: {counts.get('gather_more_evidence', 0)}개",
-        f"- 사람 검토 필요: {counts.get('editorial_review', 0)}개",
+        f"- Top Candidates: {len(candidates)}개",
+        f"- 즉시 스토리라인 후보: {counts.get('send_to_anny', 0)}개",
+        f"- 자료 보강 후보: {counts.get('gather_more_evidence', 0)}개",
+        f"- 사람 검토 후보: {counts.get('editorial_review', 0)}개",
         f"- 킵 후보: {counts.get('keep_for_later', 0)}개",
         f"- 제외/거절: {excluded_count}개",
         "",

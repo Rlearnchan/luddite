@@ -294,10 +294,11 @@ Editorial review:
 0.9.x에서는 RSS 구현 전 source registry만 정리한다.
 
 1. `config/sources.yaml` schema 확정
-2. feed endpoint 검증 command 추가
-3. validated endpoint만 `rss_verified`로 승격
-4. 구독 매체는 `subscription_manual`
-5. official sources는 seed보다 evidence cluster에 붙인다
+2. `rss_candidate`는 아직 endpoint가 검증되지 않은 후보 상태로 둔다
+3. RSS collector 구현 전 endpoint discovery / fetch test / parse test를 수행한다
+4. validated endpoint만 `rss_verified`로 승격
+5. 구독 매체는 `subscription_manual`로 두고 자동 fetch하지 않는다
+6. official sources는 seed보다 evidence cluster에 붙인다
 
 ## 11. Initial Source Registry
 

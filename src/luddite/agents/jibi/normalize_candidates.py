@@ -144,6 +144,21 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "영화/완구/박물관이 만든 공룡 인기 지도",
             ],
         )
+    if ("영국" in text or "britain" in text or "uk" in text) and (
+        "개혁당" in text or "양당" in text or "reform party" in text
+    ):
+        return (
+            (
+                "영국 양당제 균열에서 시작해 지역 격차, 포퓰리즘, 경제 불만, "
+                "채권시장/정책 리스크, 노동자 계층 이동까지 이어지는 해외 정치 구조 이슈"
+            ),
+            [
+                "양당제 균열과 지역 격차",
+                "포퓰리즘과 경제 불만",
+                "채권시장/정책 리스크",
+                "노동자 계층 이동과 이민 이슈",
+            ],
+        )
     if "f88" in text or "전당포" in text:
         return (
             (
@@ -202,14 +217,14 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     numbers = contains_any(text, NUMBER_TERMS) or any(char.isdigit() for char in text)
     specific_insights = _specific_insights(title, summary)
     template_rationale, possible_expansions = specific_insights or _template_insights(seed_type)
-    why_bits = [template_rationale]
-    if weird_hook and specific_insights is None:
-        why_bits.append("제목에서 바로 엥? 하는 hook이 생김")
-    if structural and specific_insights is None:
-        why_bits.append("시장/규제/산업 구조로 확장 가능")
+    score_reason: list[str] = []
+    if weird_hook:
+        score_reason.append("제목에서 바로 엥? 하는 hook이 생김")
+    if structural:
+        score_reason.append("시장/규제/산업 구조로 확장 가능")
     if numbers:
-        why_bits.append("숫자나 통계로 증명할 여지가 있음")
-    why_interesting = "; ".join(why_bits) or "수동 후보로 들어온 방송 소재"
+        score_reason.append("숫자나 통계로 증명할 여지가 있음")
+    why_interesting = template_rationale or "수동 후보로 들어온 방송 소재"
     return {
         "candidate_id": f"jibi_{article['article_id'].removeprefix('article_')}",
         "article_id": article["article_id"],
@@ -229,6 +244,7 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "seed_type": seed_type,
         "summary": summary or title,
         "why_interesting": why_interesting,
+        "score_reason": score_reason,
         "possible_expansions": possible_expansions,
         "korea_bridge": None,
         "punchline_candidate": None,

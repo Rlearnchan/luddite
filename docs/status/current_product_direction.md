@@ -1,11 +1,12 @@
-# Current Product Direction after v0.9.3 Research Pack
+# Current Product Direction after v0.9.4 Digest Polish
 
-Status date: 2026-05-17
+Status date: 2026-05-18
 
 ## Current checkpoint
 
 Luddite is at the v0.7 eval harness checkpoint plus v0.8/v0.8.1 design
-alignment and v0.9.3 jibi Daily Digest quality calibration.
+alignment, v0.9.3 jibi Daily Digest quality calibration, and v0.9.4 final
+digest polish before Google Sheet append.
 
 Completed:
 
@@ -23,6 +24,10 @@ Completed:
 - Google Sheet append direction moved to the `jibi 후보` staging sheet
 - anny direction expanded to Article -> Candidate -> Cluster -> Story Seed -> Storyline
 - BDC mode kept open as design, outside the MVP implementation scope
+- v0.9.4 digest summary wording clarified so `send_to_anny=0` is not confused
+  with zero useful Top Candidates
+- visible `why_interesting` reduced generic scoring clauses; generic signals can
+  live in `score_reason`
 
 Not started:
 
@@ -88,6 +93,16 @@ duplicate_key
 source_url_canonical
 ```
 
+## Source registry status
+
+- `rss_candidate` entries are still unverified endpoint candidates.
+- Before implementing the RSS collector, each candidate source needs endpoint
+  discovery, fetch test, and parse test.
+- A source should only move from `rss_candidate` to `rss_verified` after fetch
+  and parse tests pass.
+- `subscription_manual` sources must not be auto-fetched; use links and short
+  summaries only.
+
 ## Slack bot principles
 
 - Luddite starts as a separate Slack bot.
@@ -136,7 +151,7 @@ Milestone 0.9: jibi Daily Digest MVP
 - Google Sheet append preparation
 - later Slack bot integration
 
-Milestone 1.0: Google Sheet / Slack output integration
+Milestone 1.0: Google Sheet `jibi 후보` append implementation
 
 Milestone 1.1: anny DB-based Storyline MVP
 

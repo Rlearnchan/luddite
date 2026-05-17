@@ -180,6 +180,14 @@ def _is_direct_domestic_political_evaluation(text: str) -> bool:
     return has_domestic_target and has_direct_frame
 
 
+def _is_overseas_political_fracture(candidate: dict[str, Any], text: str) -> bool:
+    seed_type = str(candidate.get("seed_type") or "")
+    return (
+        seed_type == "political_fracture"
+        or contains_any(text, OVERSEAS_POLITICAL_CONTEXT_TERMS)
+    ) and contains_any(text, STRUCTURAL_POLITICAL_CONTEXT_TERMS)
+
+
 def _source_count(candidate: dict[str, Any]) -> int:
     explicit = candidate.get("source_count")
     if isinstance(explicit, int):
@@ -336,6 +344,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         candidate.get("title"),
         candidate.get("summary"),
         candidate.get("why_interesting"),
+        " ".join(candidate.get("score_reason", [])),
         " ".join(candidate.get("risk_flags", [])),
     )
     risk_flags = list(candidate.get("risk_flags", []))
@@ -358,7 +367,12 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         weird_hook + structural_expansion + punchline_potential - 3,
         high=5,
     )
-    risk_penalty = min(5, len(risk_flags) + (2 if contains_any(text, POLITICAL_TERMS) else 0))
+    political_risk_extra = (
+        0
+        if _is_overseas_political_fracture(candidate, text)
+        else 2 if contains_any(text, POLITICAL_TERMS) else 0
+    )
+    risk_penalty = min(5, len(risk_flags) + political_risk_extra)
     score_components = {
         "broadcast_potential_proxy": round(
             _weighted_score(
@@ -397,6 +411,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         total_score -= 10
     if blocked_reason:
         total_score = min(total_score, 20)
+    if not blocked_reason and _is_overseas_political_fracture(candidate, text):
+        total_score = max(total_score, 35)
     total_score = round(max(0, total_score), 1)
     final_grade = _score_band(int(total_score), risk_penalty)
     risk_level = _risk_level(risk_flags, risk_penalty)

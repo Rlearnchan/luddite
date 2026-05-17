@@ -42,6 +42,7 @@ def test_score_candidate_keeps_overseas_political_fracture_out_of_hard_reject() 
     scored = score_candidate(candidate)
 
     assert scored["blocked_reason"] is None
+    assert scored["final_grade"] in {"B", "C"}
     assert scored["recommended_action"] in {"editorial_review", "gather_more_evidence"}
     assert "political_direct_eval" not in scored["failure_modes"]
 

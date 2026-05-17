@@ -58,6 +58,9 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     markdown = md_path.read_text(encoding="utf-8")
     assert "Luddite Daily Digest" in markdown
     assert "오늘의 추천" in markdown
+    assert "- Top Candidates: 1개" in markdown
+    assert "- 즉시 스토리라인 후보: 1개" in markdown
+    assert "바로 볼 만한 후보" not in markdown
     assert "전당포 주식회사" in markdown
     assert "## Excluded / Rejected" in markdown
     assert "속보: 대통령 발언 직후 증시 급등락" in markdown
