@@ -231,6 +231,16 @@ Run contract scaffold:
 - `luddite anny-run-storyline` validates manually prepared storyline JSON and
   writes run manifests/reports. It does not call an LLM and is not a production
   anny agent.
+- Run manifests include sha256 checksums for the input bundle, evidence pack,
+  output storyline, hygiene sidecar, and prompt file when those files exist.
+  Missing optional files use `null` checksums.
+- Run manifests also copy `output_contract_version`, `prompt_version`,
+  `validator_version`, and `schema_version` so future eval changes can be
+  tracked.
+- `data/manifests/anny_runs/index.jsonl` is a local run registry index for
+  comparing manual, fixture, and future API experiment runs.
+- Every run report must include the warning:
+  `This run does not imply production readiness.`
 
 Readiness states:
 

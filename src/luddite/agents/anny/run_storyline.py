@@ -6,6 +6,7 @@ against the current anny contract and writes run manifests/reports.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -17,6 +18,7 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.eval.anny_dry_run_eval import validate_dry_run_storyline
+from luddite.utils.jsonl import write_jsonl
 from luddite.utils.schemas import validate_with_schema
 
 app = typer.Typer(no_args_is_help=False)
@@ -25,6 +27,10 @@ console = Console()
 RUN_INPUT_DIR = paths.MANIFESTS_DIR / "anny_run_inputs"
 RUN_MANIFEST_DIR = paths.MANIFESTS_DIR / "anny_runs"
 RUN_REPORT_DIR = paths.REPORTS_DIR / "anny_runs"
+RUN_INDEX_PATH = RUN_MANIFEST_DIR / "index.jsonl"
+DEFAULT_OUTPUT_CONTRACT_VERSION = "anny_mvp_storyline_v1.7"
+DEFAULT_VALIDATOR_VERSION = "anny_dry_run_eval_v1.7.1"
+DEFAULT_SCHEMA_VERSION = "anny_run_manifest_schema_v1"
 
 
 @dataclass(frozen=True)
@@ -38,7 +44,7 @@ class AnnyRunCase:
     hygiene_jsonl_path: Path
     evidence_pack_path: Path | None
     length_mode: str = "standard_representative_outline"
-    output_contract_version: str = "anny_mvp_storyline_v1.7"
+    output_contract_version: str = DEFAULT_OUTPUT_CONTRACT_VERSION
     prompt_version: str = "prompts/anny/storyline_writer.md"
     mode: str = "manual"
     model_source: str = "manual_gpt_pro"
@@ -108,6 +114,27 @@ def _now() -> str:
 
 def _path_or_none(path: Path | None) -> str | None:
     return str(path) if path else None
+
+
+def sha256_file(path: Path | None) -> str | None:
+    if not path or not path.exists() or not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _prompt_path(case: AnnyRunCase) -> Path | None:
+    prompt_path = Path(case.prompt_version)
+    if prompt_path.is_absolute():
+        return prompt_path
+    return paths.REPO_ROOT / prompt_path
+
+
+def _file_exists(path: Path | None) -> bool:
+    return bool(path and path.exists())
 
 
 def build_run_input(case: AnnyRunCase, *, requested_by: str, created_at: str) -> dict[str, Any]:
@@ -190,7 +217,7 @@ def run_storyline_case(
 def _pending_manifest(
     case: AnnyRunCase, *, created_at: str, report_path: Path
 ) -> dict[str, Any]:
-    return {
+    manifest = {
         "run_id": case.run_id,
         "status": "pending_manual_output",
         "input_bundle_path": str(case.input_bundle_path),
@@ -203,6 +230,8 @@ def _pending_manifest(
         "created_at": created_at,
         "notes": ["Manual storyline output is missing; no LLM API was called."],
     }
+    manifest.update(_reproducibility_fields(case))
+    return manifest
 
 
 def _manifest_from_eval(
@@ -213,7 +242,7 @@ def _manifest_from_eval(
     report_path: Path,
 ) -> dict[str, Any]:
     status = "passed" if eval_result["passed"] else "failed"
-    return {
+    manifest = {
         "run_id": case.run_id,
         "status": status,
         "input_bundle_path": str(case.input_bundle_path),
@@ -246,6 +275,57 @@ def _manifest_from_eval(
         ),
         "do_not_claim_violations": eval_result["do_not_claim_violations"],
     }
+    manifest.update(_reproducibility_fields(case))
+    return manifest
+
+
+def _reproducibility_fields(case: AnnyRunCase) -> dict[str, Any]:
+    prompt_path = _prompt_path(case)
+    return {
+        "output_contract_version": case.output_contract_version,
+        "prompt_version": case.prompt_version,
+        "validator_version": DEFAULT_VALIDATOR_VERSION,
+        "schema_version": DEFAULT_SCHEMA_VERSION,
+        "input_bundle_sha256": sha256_file(case.input_bundle_path),
+        "evidence_pack_sha256": sha256_file(case.evidence_pack_path),
+        "output_storyline_sha256": sha256_file(case.output_storyline_path),
+        "hygiene_sidecar_sha256": sha256_file(case.hygiene_jsonl_path),
+        "prompt_file_sha256": sha256_file(prompt_path),
+        "input_bundle_exists": _file_exists(case.input_bundle_path),
+        "evidence_pack_exists": _file_exists(case.evidence_pack_path),
+        "output_storyline_exists": _file_exists(case.output_storyline_path),
+        "hygiene_sidecar_exists": _file_exists(case.hygiene_jsonl_path),
+        "prompt_file_exists": _file_exists(prompt_path),
+    }
+
+
+def write_run_index(index_path: Path, manifests: list[dict[str, Any]]) -> int:
+    records = []
+    for manifest in manifests:
+        records.append(
+            {
+                "run_id": manifest["run_id"],
+                "case_id": manifest.get("case_id"),
+                "story_seed_title": _title_for_run(manifest["run_id"]),
+                "status": manifest["status"],
+                "model_source": manifest["model_source"],
+                "input_bundle_path": manifest["input_bundle_path"],
+                "output_storyline_path": manifest["output_storyline_path"],
+                "eval_report_path": manifest["eval_report_path"],
+                "created_at": manifest["created_at"],
+                "schema_valid": manifest["schema_valid"],
+                "hygiene_passed": manifest["hygiene_passed"],
+                "ready_for_production_agent": False,
+            }
+        )
+    return write_jsonl(index_path, records)
+
+
+def _title_for_run(run_id: str) -> str | None:
+    for case in KNOWN_RUNS:
+        if case.run_id == run_id:
+            return case.story_seed_title
+    return None
 
 
 def _write_manifest(path: Path, manifest: dict[str, Any]) -> None:
@@ -275,6 +355,30 @@ def _report_markdown(
         f"- output_storyline_path: {case.output_storyline_path}",
         "- llm_api_called: false",
         "- production_anny_agent: false",
+        "- warning: This run does not imply production readiness.",
+        "",
+        "## Versions",
+        "",
+        f"- output_contract_version: {manifest.get('output_contract_version')}",
+        f"- prompt_version: {manifest.get('prompt_version')}",
+        f"- validator_version: {manifest.get('validator_version')}",
+        f"- schema_version: {manifest.get('schema_version')}",
+        "",
+        "## File Existence",
+        "",
+        f"- input_bundle_exists: {manifest.get('input_bundle_exists')}",
+        f"- evidence_pack_exists: {manifest.get('evidence_pack_exists')}",
+        f"- output_storyline_exists: {manifest.get('output_storyline_exists')}",
+        f"- hygiene_sidecar_exists: {manifest.get('hygiene_sidecar_exists')}",
+        f"- prompt_file_exists: {manifest.get('prompt_file_exists')}",
+        "",
+        "## Checksums",
+        "",
+        f"- input_bundle_sha256: {manifest.get('input_bundle_sha256')}",
+        f"- evidence_pack_sha256: {manifest.get('evidence_pack_sha256')}",
+        f"- output_storyline_sha256: {manifest.get('output_storyline_sha256')}",
+        f"- hygiene_sidecar_sha256: {manifest.get('hygiene_sidecar_sha256')}",
+        f"- prompt_file_sha256: {manifest.get('prompt_file_sha256')}",
         "",
         "## Readiness",
         "",
@@ -336,6 +440,7 @@ def main(
         run_storyline_case(case, requested_by=requested_by)
         for case in cases
     ]
+    write_run_index(RUN_INDEX_PATH, [result["manifest"] for result in results])
     passed = sum(1 for result in results if result["manifest"]["status"] == "passed")
     console.print(
         "[green]Wrote anny run manifests/reports "

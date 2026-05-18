@@ -148,3 +148,25 @@ make anny-run-storyline
 The runner validates manually prepared storyline JSON, calls the existing
 dry-run validator, and writes run input/manifest/report files. It never calls an
 LLM API.
+
+Reproducibility fields:
+
+- `input_bundle_sha256`
+- `evidence_pack_sha256`
+- `output_storyline_sha256`
+- `hygiene_sidecar_sha256`
+- `prompt_file_sha256`
+- `output_contract_version`
+- `prompt_version`
+- `validator_version`
+- `schema_version`
+
+Run registry:
+
+```text
+data/manifests/anny_runs/index.jsonl
+```
+
+The index records run id, case id, title, status, model source, input/output
+paths, report path, schema/hygiene pass state, and
+`ready_for_production_agent=false`.

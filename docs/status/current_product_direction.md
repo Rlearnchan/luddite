@@ -338,6 +338,18 @@ Milestone 1.7: Anny DB-based MVP Design / Run Contract Scaffold
   `ready_for_api_experiment=false`, `ready_for_production_agent=false`,
   `ready_for_broadcast=false`.
 
+Milestone 1.7.1: Run Registry Polish + Reproducibility
+
+- Add run manifest checksums for input bundle, evidence pack, output storyline,
+  hygiene sidecar, and prompt file.
+- Copy output contract, prompt, validator, and schema versions into every run
+  manifest/report.
+- Generate `data/manifests/anny_runs/index.jsonl` as a local registry of anny
+  manual runs.
+- Reports include file existence, checksum summaries, readiness state, and the
+  warning that a passing run does not imply production readiness.
+- Keep `ready_for_api_experiment=false` and `ready_for_production_agent=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

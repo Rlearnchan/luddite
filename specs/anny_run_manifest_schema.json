@@ -11,6 +11,15 @@
     "model_source",
     "schema_valid",
     "hygiene_passed",
+    "output_contract_version",
+    "prompt_version",
+    "validator_version",
+    "schema_version",
+    "input_bundle_sha256",
+    "evidence_pack_sha256",
+    "output_storyline_sha256",
+    "hygiene_sidecar_sha256",
+    "prompt_file_sha256",
     "created_at",
     "notes"
   ],
@@ -53,6 +62,63 @@
       "type": "boolean"
     },
     "hygiene_passed": {
+      "type": "boolean"
+    },
+    "output_contract_version": {
+      "type": "string"
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "validator_version": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "input_bundle_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_pack_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output_storyline_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hygiene_sidecar_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "prompt_file_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "input_bundle_exists": {
+      "type": "boolean"
+    },
+    "evidence_pack_exists": {
+      "type": "boolean"
+    },
+    "output_storyline_exists": {
+      "type": "boolean"
+    },
+    "hygiene_sidecar_exists": {
+      "type": "boolean"
+    },
+    "prompt_file_exists": {
       "type": "boolean"
     },
     "created_at": {
