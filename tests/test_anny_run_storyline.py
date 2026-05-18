@@ -69,8 +69,10 @@ def test_run_storyline_case_writes_manifest_and_report(tmp_path, monkeypatch) ->
     assert manifest["status"] == "passed"
     assert manifest["schema_valid"] is True
     assert manifest["hygiene_passed"] is True
-    assert manifest["output_contract_version"] == "anny_mvp_storyline_v1.7"
-    assert manifest["validator_version"] == "anny_dry_run_eval_v1.7.1"
+    assert manifest["output_contract_version"] == "anny_mvp_storyline_v1.8"
+    assert manifest["validator_version"] == "anny_dry_run_eval_v1.8"
+    assert manifest["ready_for_api_experiment_prep"] is True
+    assert manifest["ready_for_api_experiment"] is False
     assert manifest["input_bundle_sha256"] == sha256_file(_case(tmp_path).input_bundle_path)
     assert len(manifest["output_storyline_sha256"]) == 64
     assert manifest["production_checklist_included"] is True
@@ -78,6 +80,7 @@ def test_run_storyline_case_writes_manifest_and_report(tmp_path, monkeypatch) ->
     report = result["report_path"].read_text(encoding="utf-8")
     assert report.startswith("# Anny Run Report")
     assert "This run does not imply production readiness" in report
+    assert "ready_for_api_experiment_prep: true" in report
     assert "input_bundle_sha256" in report
 
 

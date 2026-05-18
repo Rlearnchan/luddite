@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnnyFailureModeRecord",
+  "type": "object",
+  "required": [
+    "failure_mode",
+    "severity",
+    "description"
+  ],
+  "properties": {
+    "failure_mode": {
+      "$ref": "#/$defs/failureMode"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "blocked"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "detected_by": {
+      "type": "string"
+    },
+    "requires_manual_review": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "failureMode": {
+      "type": "string",
+      "enum": [
+        "invalid_json",
+        "schema_error",
+        "missing_required_fields",
+        "source_hallucination",
+        "unsupported_claim",
+        "do_not_claim_violation",
+        "source_image_overlap",
+        "counterpoint_missing",
+        "needs_fact_check_removed_too_aggressively",
+        "production_checklist_misused",
+        "investment_advice_violation",
+        "policy_promotion_violation",
+        "korea_bridge_overreach",
+        "key_beat_drift",
+        "source_ref_role_mismatch",
+        "required_before_broadcast_missing"
+      ]
+    }
+  }
+}

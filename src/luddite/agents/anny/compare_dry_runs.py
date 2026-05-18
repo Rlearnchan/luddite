@@ -84,6 +84,7 @@ def compare_dry_runs(
     comparison_report_path: Path = DEFAULT_COMPARISON_REPORT,
     finance_evidence_report_path: Path = DEFAULT_FINANCE_EVIDENCE_REPORT,
     finance_evidence_pack_path: Path = DEFAULT_FINANCE_EVIDENCE_PACK,
+    write_finance_scaffold: bool = False,
 ) -> dict[str, Any]:
     summaries = []
     for case in DRY_RUN_CASES:
@@ -93,20 +94,22 @@ def compare_dry_runs(
     comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
     comparison_report_path.write_text(_comparison_markdown(summaries), encoding="utf-8")
     finance_evidence_report_path.parent.mkdir(parents=True, exist_ok=True)
-    finance_evidence_pack = _finance_evidence_pack()
-    finance_evidence_pack_path.parent.mkdir(parents=True, exist_ok=True)
-    finance_evidence_pack_path.write_text(
-        json.dumps(finance_evidence_pack, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
     finance_evidence_report_path.write_text(
         _finance_plan_markdown(finance_evidence_pack_path),
         encoding="utf-8",
     )
+    if write_finance_scaffold:
+        finance_evidence_pack = _finance_evidence_pack()
+        finance_evidence_pack_path.parent.mkdir(parents=True, exist_ok=True)
+        finance_evidence_pack_path.write_text(
+            json.dumps(finance_evidence_pack, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     return {
         "comparison_report_path": str(comparison_report_path),
         "finance_evidence_report_path": str(finance_evidence_report_path),
         "finance_evidence_pack_path": str(finance_evidence_pack_path),
+        "finance_scaffold_written": write_finance_scaffold,
         "case_count": len(summaries),
     }
 
@@ -403,11 +406,22 @@ def main(
         Path,
         typer.Option("--finance-pack", help="Finance evidence pack JSON output."),
     ] = DEFAULT_FINANCE_EVIDENCE_PACK,
+    write_finance_scaffold: Annotated[
+        bool,
+        typer.Option(
+            "--write-finance-scaffold/--no-write-finance-scaffold",
+            help=(
+                "Write the URL-null finance evidence scaffold. Default is false "
+                "to avoid overwriting filled evidence packs."
+            ),
+        ),
+    ] = False,
 ) -> None:
     result = compare_dry_runs(
         comparison_report_path=comparison_report_path,
         finance_evidence_report_path=finance_evidence_report_path,
         finance_evidence_pack_path=finance_evidence_pack_path,
+        write_finance_scaffold=write_finance_scaffold,
     )
     console.print(
         "[green]Wrote anny dry-run comparison "

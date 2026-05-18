@@ -96,6 +96,12 @@ Do not treat an attached source as completed fact-checking. `source_urls` and
 
 ## Editorial Rules
 
+- Anny is evidence-bound. Do not invent facts, numbers, claims, or URLs that are
+  not present in the input bundle or evidence pack.
+- `source_urls` must come from provided candidate article URLs or evidence-pack
+  URLs. Do not generate or guess new URLs.
+- Slide body claims must match the attached `source_refs.use`. If the match is
+  weak, keep `needs_source` or `needs_fact_check`.
 - Leave `needs_fact_check` / `needs_source` visible when evidence is thin.
 - Sensitive AI, education, policy, finance, medical, and political claims must
   avoid certainty without evidence.
@@ -123,12 +129,51 @@ Do not treat an attached source as completed fact-checking. `source_urls` and
 
 - `ready_for_prompt_design: true`
 - `ready_for_manual_storyline: true`
+- `ready_for_api_experiment_prep: true`
 - `ready_for_api_experiment: false`
 - `ready_for_production_agent: false`
 - `ready_for_broadcast: false`
 
 The two manual dry runs validate the prompt/eval contract, but production anny
 still needs evidence enrichment, output variability checks, and failure handling.
+
+## API Experiment Prep
+
+Milestone 1.8 adds API experiment scaffolding only. It does not call an LLM API.
+
+Run input `mode` values:
+
+- `manual`
+- `dry_run`
+- `api_experiment`
+- `api_future`
+
+Manifest `model_source` values:
+
+- `manual_gpt_pro`
+- `openai_api`
+- `fixture`
+
+Future API experiment outputs should use this directory convention:
+
+```text
+outputs/model_dry_runs/anny_api_experiments/<run_id>/
+```
+
+Expected files:
+
+- `input_bundle.json`
+- `evidence_pack.json`
+- `prompt.md`
+- `raw_model_output.txt`
+- `parsed_storyline.json`
+- `validation_report.md`
+- `manifest.json`
+
+`raw_model_output.txt` must be preserved for failed runs. Invalid JSON or schema
+failure is recorded as failure; the initial policy does not auto-repair model
+output. See `docs/product/anny_failure_modes.md` for the failure taxonomy and
+repair policy.
 
 ## Local Run Contract
 

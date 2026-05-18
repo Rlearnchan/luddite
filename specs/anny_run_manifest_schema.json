@@ -54,9 +54,44 @@
       "type": "string",
       "enum": [
         "manual_gpt_pro",
+        "openai_api",
         "api_future",
         "fixture"
       ]
+    },
+    "raw_model_output_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parsed_storyline_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "api_experiment_dir": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/failureMode"
+      },
+      "default": []
+    },
+    "ready_for_api_experiment_prep": {
+      "type": "boolean"
+    },
+    "ready_for_api_experiment": {
+      "type": "boolean"
+    },
+    "ready_for_production_agent": {
+      "type": "boolean"
     },
     "schema_valid": {
       "type": "boolean"
@@ -131,5 +166,28 @@
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "$defs": {
+    "failureMode": {
+      "type": "string",
+      "enum": [
+        "invalid_json",
+        "schema_error",
+        "missing_required_fields",
+        "source_hallucination",
+        "unsupported_claim",
+        "do_not_claim_violation",
+        "source_image_overlap",
+        "counterpoint_missing",
+        "needs_fact_check_removed_too_aggressively",
+        "production_checklist_misused",
+        "investment_advice_violation",
+        "policy_promotion_violation",
+        "korea_bridge_overreach",
+        "key_beat_drift",
+        "source_ref_role_mismatch",
+        "required_before_broadcast_missing"
+      ]
+    }
+  }
 }

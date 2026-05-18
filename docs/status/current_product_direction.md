@@ -350,6 +350,23 @@ Milestone 1.7.1: Run Registry Polish + Reproducibility
   warning that a passing run does not imply production readiness.
 - Keep `ready_for_api_experiment=false` and `ready_for_production_agent=false`.
 
+Milestone 1.8: Anny API Experiment Prep / Failure Handling Scaffold
+
+- Prepare API experiment handling without calling an LLM API.
+- Run modes include `api_experiment`; `openai_api` is reserved as a future
+  `model_source`.
+- Future API experiment outputs should preserve `raw_model_output.txt` under
+  `outputs/model_dry_runs/anny_api_experiments/<run_id>/`.
+- Failure taxonomy and repair policy are documented in
+  `docs/product/anny_failure_modes.md`.
+- Anny output is evidence-bound: source URLs must come from input bundle or
+  evidence pack URLs, and unsupported claims keep `needs_source` or
+  `needs_fact_check`.
+- First future API experiment candidate is `AI 즉답 시대의 지식기관 역할`.
+- Current readiness:
+  `ready_for_api_experiment_prep=true`, `ready_for_api_experiment=false`,
+  `ready_for_production_agent=false`, `ready_for_broadcast=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

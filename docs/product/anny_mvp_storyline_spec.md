@@ -196,6 +196,11 @@ source_refs:
 
 Rules:
 
+- The output is evidence-bound. It must not create facts, numbers, claims, or
+  URLs that are absent from the input bundle or evidence pack.
+- `source_urls` must come from candidate article URLs or evidence-pack URLs.
+- Body claims must match slide-specific `source_refs.use`; otherwise keep
+  `needs_source` or `needs_fact_check`.
 - `source_urls`와 `image_urls`는 분리한다. 같은 URL이 양쪽에 있으면 실패다.
 - source가 붙은 slide를 fact-check 완료 slide로 취급하지 않는다.
 - needs_fact_check / needs_source는 적극적으로 남긴다. 근거 부족을 숨기면 실패다.
@@ -242,12 +247,33 @@ Run contract scaffold:
 - Every run report must include the warning:
   `This run does not imply production readiness.`
 
+API experiment prep:
+
+- Milestone 1.8 adds API experiment fields and documents failure handling only.
+  It does not call an LLM API.
+- Run input mode may be `manual`, `dry_run`, `api_experiment`, or `api_future`.
+- Manifest `model_source` may be `manual_gpt_pro`, `openai_api`, or `fixture`.
+- Future API experiment files use:
+  `outputs/model_dry_runs/anny_api_experiments/<run_id>/`
+- Each API experiment directory should preserve `raw_model_output.txt`,
+  `parsed_storyline.json` when parsing succeeds, `validation_report.md`, and
+  `manifest.json`.
+- Invalid JSON or schema failure is recorded as failure. The initial repair
+  policy does not rewrite model output, invent sources, or remove
+  `needs_fact_check`.
+- Failure modes are documented in `docs/product/anny_failure_modes.md` and
+  include source hallucination, unsupported claims, counterpoint missing,
+  source/image overlap, investment-advice violations, and required broadcast
+  checks missing.
+
 Readiness states:
 
 - `ready_for_prompt_design`: prompt/eval contract is clear enough to design
   production prompts.
 - `ready_for_manual_storyline`: a human/GPT Pro dry run can be prepared and
   validated with the local runner.
+- `ready_for_api_experiment_prep`: API experiment storage, validation, and
+  failure handling are specified, but no API call is enabled.
 - `ready_for_api_experiment`: API-based generation may be tested in a controlled
   non-production setting.
 - `ready_for_production_agent`: automated anny generation is safe enough to
@@ -259,6 +285,7 @@ Current expected state:
 
 - `ready_for_prompt_design: true`
 - `ready_for_manual_storyline: true`
+- `ready_for_api_experiment_prep: true`
 - `ready_for_api_experiment: false`
 - `ready_for_production_agent: false`
 - `ready_for_broadcast: false`

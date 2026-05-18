@@ -59,6 +59,16 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
 근거가 비어 있는 부분은 상상으로 채우지 말고 `needs_fact_check: true` 또는
 `needs_source: true`로 남긴다.
 
+## Evidence-Bound Rule
+
+- 입력 bundle과 evidence pack에 없는 사실, 수치, URL을 만들지 마라.
+- `source_urls`는 candidate article URL 또는 evidence pack URL에서만 가져온다.
+- 새 URL을 생성하거나 추측하거나 자동완성하지 마라.
+- slide body의 주장은 slide-specific `source_refs.use`와 맞아야 한다.
+- 근거가 얇거나 source_refs와 claim 연결이 약하면 `needs_source` 또는
+  `needs_fact_check`를 남긴다.
+- source가 붙었다는 뜻은 evidence attached일 뿐, fact-check complete가 아니다.
+
 ## Length Mode
 
 입력에 `length_mode`가 있으면 아래 기준을 따른다.

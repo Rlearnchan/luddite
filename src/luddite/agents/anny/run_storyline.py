@@ -28,8 +28,8 @@ RUN_INPUT_DIR = paths.MANIFESTS_DIR / "anny_run_inputs"
 RUN_MANIFEST_DIR = paths.MANIFESTS_DIR / "anny_runs"
 RUN_REPORT_DIR = paths.REPORTS_DIR / "anny_runs"
 RUN_INDEX_PATH = RUN_MANIFEST_DIR / "index.jsonl"
-DEFAULT_OUTPUT_CONTRACT_VERSION = "anny_mvp_storyline_v1.7"
-DEFAULT_VALIDATOR_VERSION = "anny_dry_run_eval_v1.7.1"
+DEFAULT_OUTPUT_CONTRACT_VERSION = "anny_mvp_storyline_v1.8"
+DEFAULT_VALIDATOR_VERSION = "anny_dry_run_eval_v1.8"
 DEFAULT_SCHEMA_VERSION = "anny_run_manifest_schema_v1"
 
 
@@ -229,6 +229,13 @@ def _pending_manifest(
         "hygiene_passed": False,
         "created_at": created_at,
         "notes": ["Manual storyline output is missing; no LLM API was called."],
+        "raw_model_output_path": None,
+        "parsed_storyline_path": None,
+        "api_experiment_dir": None,
+        "failure_modes": [],
+        "ready_for_api_experiment_prep": True,
+        "ready_for_api_experiment": False,
+        "ready_for_production_agent": False,
     }
     manifest.update(_reproducibility_fields(case))
     return manifest
@@ -274,6 +281,13 @@ def _manifest_from_eval(
             for record in eval_result.get("hygiene_records", [])
         ),
         "do_not_claim_violations": eval_result["do_not_claim_violations"],
+        "raw_model_output_path": None,
+        "parsed_storyline_path": None,
+        "api_experiment_dir": None,
+        "failure_modes": [],
+        "ready_for_api_experiment_prep": True,
+        "ready_for_api_experiment": False,
+        "ready_for_production_agent": False,
     }
     manifest.update(_reproducibility_fields(case))
     return manifest
@@ -384,6 +398,7 @@ def _report_markdown(
         "",
         "- ready_for_prompt_design: true",
         "- ready_for_manual_storyline: true",
+        "- ready_for_api_experiment_prep: true",
         "- ready_for_api_experiment: false",
         "- ready_for_production_agent: false",
         "- ready_for_broadcast: false",

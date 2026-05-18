@@ -47,6 +47,7 @@
       "enum": [
         "manual",
         "dry_run",
+        "api_experiment",
         "api_future"
       ]
     },

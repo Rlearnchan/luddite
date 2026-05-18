@@ -112,6 +112,65 @@
         "투자/정책 리스크가 있으므로 do_not_claim과 fact_check guardrail을 강하게 둔다.",
         "이번 단계에서는 production generation이 아니라 prompt/eval fixture로만 유지한다."
       ]
+    },
+    {
+      "case_id": "anny_api_experiment_ai_knowledge_institution_v1",
+      "bundle_id": "anny_bundle_09277535430e",
+      "story_seed_title": "AI 즉답 시대의 지식기관 역할",
+      "expected_length_mode": "standard_representative_outline",
+      "expected_sections_min": 3,
+      "expected_sections_max": 4,
+      "expected_slide_count_min": 20,
+      "expected_slide_count_max": 30,
+      "mode": "api_experiment",
+      "model_source": "openai_api",
+      "api_experiment_dir": "outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_ai_knowledge_institution_v1",
+      "input_bundle_path": "outputs/model_dry_runs/anny_storyline/ai_knowledge_institution_input_bundle.json",
+      "evidence_pack_path": "data/candidates/anny_evidence_pack_ai_knowledge_institution.json",
+      "raw_model_output_path": "outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_ai_knowledge_institution_v1/raw_model_output.txt",
+      "parsed_storyline_path": "outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_ai_knowledge_institution_v1/parsed_storyline.json",
+      "expected_key_beats": [
+        {
+          "label": "AI 즉답이 주는 편리함",
+          "aliases": [
+            "AI가 답을 바로 주는 시대",
+            "AI 즉답 시대",
+            "AI가 바로 답을 주는 편리함"
+          ]
+        },
+        {
+          "label": "생각하는 과정이 생략될 수 있다는 문제 제기",
+          "aliases": [
+            "생각하는 과정",
+            "과정이 생략",
+            "AI 즉답은 그 과정을 압축"
+          ]
+        },
+        {
+          "label": "학교/박물관/천문관 같은 지식기관의 역할 변화",
+          "aliases": [
+            "학교와 지식기관",
+            "박물관",
+            "천문관",
+            "지식기관의 역할"
+          ]
+        },
+        {
+          "label": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
+          "aliases": [
+            "무엇을 가르칠 것인가",
+            "AI를 다루는 법",
+            "사람은 질문을 해야 한다"
+          ]
+        }
+      ],
+      "evaluation_notes": [
+        "첫 API experiment 후보로만 준비한다. 이번 단계에서는 실제 API 호출을 하지 않는다.",
+        "source_urls는 input bundle 또는 evidence pack URL 안에서만 사용한다.",
+        "새 URL 생성, 출처 추측, unsupported claim은 failure mode로 기록한다.",
+        "교육 효과나 인지 저하를 단정하지 말고 needs_fact_check를 남긴다.",
+        "raw_model_output.txt는 JSON parse 실패 시에도 반드시 보관한다."
+      ]
     }
   ]
 }

@@ -14,6 +14,9 @@ def test_specs_are_valid_json_schemas() -> None:
         "deck_schema.json",
         "corpus_manifest_schema.json",
         "article_schema.json",
+        "anny_run_input_schema.json",
+        "anny_run_manifest_schema.json",
+        "anny_failure_mode_schema.json",
     ]
 
     for schema_name in schema_names:

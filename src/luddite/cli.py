@@ -4,6 +4,9 @@ import typer
 
 from luddite.agents.anny.build_input_bundle import app as build_anny_input_bundles_app
 from luddite.agents.anny.compare_dry_runs import app as compare_anny_dry_runs_app
+from luddite.agents.anny.compare_enriched_dry_runs import (
+    app as compare_anny_enriched_dry_runs_app,
+)
 from luddite.agents.anny.plan_evidence_enrichment import app as plan_anny_evidence_app
 from luddite.agents.anny.prepare_dry_run import app as prepare_anny_dry_run_app
 from luddite.agents.anny.review_fact_check import app as review_anny_fact_check_app
@@ -50,6 +53,7 @@ app.add_typer(prepare_anny_dry_run_app, name="prepare-anny-dry-run")
 app.add_typer(plan_anny_evidence_app, name="plan-anny-evidence")
 app.add_typer(review_anny_fact_check_app, name="review-anny-fact-check")
 app.add_typer(compare_anny_dry_runs_app, name="compare-anny-dry-runs")
+app.add_typer(compare_anny_enriched_dry_runs_app, name="compare-anny-enriched-dry-runs")
 app.add_typer(anny_run_storyline_app, name="anny-run-storyline")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")

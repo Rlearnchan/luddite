@@ -61,6 +61,7 @@ def test_compare_dry_runs_writes_reports(tmp_path, monkeypatch) -> None:
         comparison_report_path=comparison,
         finance_evidence_report_path=finance,
         finance_evidence_pack_path=finance_pack,
+        write_finance_scaffold=True,
     )
 
     assert result["case_count"] == 2
@@ -75,3 +76,40 @@ def test_compare_dry_runs_writes_reports(tmp_path, monkeypatch) -> None:
     assert pack["full_article_text_stored"] is False
     assert "primary_official_source" in pack["categories"]
     assert pack["ready_for_evidence_fill"] is True
+
+
+def test_compare_dry_runs_does_not_overwrite_finance_pack_by_default(
+    tmp_path, monkeypatch
+) -> None:
+    ai_eval = tmp_path / "ai_eval.jsonl"
+    finance_eval = tmp_path / "finance_eval.jsonl"
+    ai_hygiene = tmp_path / "ai_hygiene.jsonl"
+    finance_hygiene = tmp_path / "finance_hygiene.jsonl"
+    write_jsonl(ai_eval, [_eval_record("ai", needs_source=0, needs_fact_check=16)])
+    write_jsonl(finance_eval, [_eval_record("finance", needs_source=14, needs_fact_check=17)])
+    write_jsonl(ai_hygiene, _hygiene_rows())
+    write_jsonl(finance_hygiene, _hygiene_rows())
+
+    import luddite.agents.anny.compare_dry_runs as module
+
+    monkeypatch.setattr(
+        module,
+        "DRY_RUN_CASES",
+        [
+            module.DryRunCase("AI", "education", "education risk", ai_eval, ai_hygiene),
+            module.DryRunCase(
+                "Finance", "policy", "finance risk", finance_eval, finance_hygiene
+            ),
+        ],
+    )
+    finance_pack = tmp_path / "finance_pack.json"
+    finance_pack.write_text('{"status":"filled"}\n', encoding="utf-8")
+
+    result = compare_dry_runs(
+        comparison_report_path=tmp_path / "comparison.md",
+        finance_evidence_report_path=tmp_path / "finance.md",
+        finance_evidence_pack_path=finance_pack,
+    )
+
+    assert result["finance_scaffold_written"] is False
+    assert json.loads(finance_pack.read_text(encoding="utf-8"))["status"] == "filled"
