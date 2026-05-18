@@ -1,0 +1,41 @@
+{
+  "storyline_id": "api_fixture_source_hallucination",
+  "title": "AI 즉답 시대의 지식기관 역할",
+  "sections": [
+    {
+      "section_title": "AI가 바로 답을 주는 시대",
+      "slides": [
+        {
+          "slide_type": "hook",
+          "headline": "AI가 답을 바로 주는 시대",
+          "body": ["허용된 evidence pack 밖의 URL을 붙인 slide다."],
+          "source_urls": ["https://example.com/invented-ai-education-source"],
+          "image_urls": [],
+          "notes": "This should trigger source_hallucination.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": [
+            {
+              "url": "https://example.com/invented-ai-education-source",
+              "role": "supporting_article",
+              "use": "invented source",
+              "confidence": "low",
+              "manual_check_required": true
+            }
+          ]
+        },
+        {
+          "slide_type": "counterpoint",
+          "headline": "반대 관점도 있다",
+          "body": ["접근성 관점은 별도 확인이 필요하다."],
+          "source_urls": ["https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners"],
+          "image_urls": [],
+          "notes": "Allowed UNESCO URL.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}

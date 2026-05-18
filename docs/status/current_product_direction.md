@@ -367,6 +367,24 @@ Milestone 1.8: Anny API Experiment Prep / Failure Handling Scaffold
   `ready_for_api_experiment_prep=true`, `ready_for_api_experiment=false`,
   `ready_for_production_agent=false`, `ready_for_broadcast=false`.
 
+Milestone 1.8.1: API Experiment Preflight / Fixture Simulation
+
+- Add fixture-only validation for future API outputs. This still does not call
+  an LLM API.
+- Fixtures cover valid raw JSON, invalid JSON, source hallucination, and missing
+  counterpoint.
+- `luddite validate-anny-api-experiment` preserves `raw_model_output.txt`,
+  writes `parsed_storyline.json` when parsing succeeds, and creates manifest and
+  Markdown validation reports.
+- Evidence-bound URL checks compare storyline `source_urls` and
+  `source_refs.url` against the input bundle and evidence pack URL set.
+- Repair policy remains strict: `repair_attempted=false` and failed raw outputs
+  are reported, not rewritten.
+- Current readiness after fixture preflight:
+  `ready_for_api_experiment_prep=true`,
+  `ready_for_api_experiment=true candidate pending human approval`,
+  `ready_for_production_agent=false`, `ready_for_broadcast=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

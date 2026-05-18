@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -62,6 +62,16 @@ validate-anny-enriched-dry-run:
 		--output-jsonl outputs/eval/anny_storyline_dry_run/latest_enriched.jsonl \
 		--require-enriched \
 		--require-hygiene-contract
+
+validate-anny-api-experiment:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-anny-api-experiment \
+		--raw-output tests/fixtures/anny_api_experiment/valid_ai_knowledge_storyline_raw.txt
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-anny-api-experiment \
+		--raw-output tests/fixtures/anny_api_experiment/invalid_json_raw.txt
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-anny-api-experiment \
+		--raw-output tests/fixtures/anny_api_experiment/source_hallucination_raw.txt
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-anny-api-experiment \
+		--raw-output tests/fixtures/anny_api_experiment/missing_counterpoint_raw.txt
 
 eval-piti-deck-plan:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite eval-piti-deck-plan

@@ -1,0 +1,7 @@
+{
+  "storyline_id": "api_fixture_invalid_json",
+  "title": "AI 즉답 시대의 지식기관 역할",
+  "sections": [
+    {"section_title": "깨진 JSON", "slides": []
+  ]
+}

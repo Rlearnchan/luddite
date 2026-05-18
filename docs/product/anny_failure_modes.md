@@ -89,9 +89,34 @@ The first future API experiment should use the lower-risk AI/education case:
 because policy, finance, and investment-risk guardrails need a more conservative
 first comparison.
 
+## Fixture Preflight
+
+Milestone 1.8.1 validates the storage, parse, schema, URL-bound, and failure
+classification path with fixtures only:
+
+```text
+tests/fixtures/anny_api_experiment/
+```
+
+Expected fixture outcomes:
+
+- `valid_ai_knowledge_storyline_raw.txt`: passes parse/schema/evidence-bound checks.
+- `invalid_json_raw.txt`: fails with `invalid_json`.
+- `source_hallucination_raw.txt`: fails with `source_hallucination`.
+- `missing_counterpoint_raw.txt`: fails with `counterpoint_missing`.
+
+Command:
+
+```text
+make validate-anny-api-experiment
+```
+
+This preflight still does not call an API. Passing it means the API experiment
+plumbing is ready for human approval, not that production generation is ready.
+
 ## Readiness
 
 - `ready_for_api_experiment_prep: true`
-- `ready_for_api_experiment: false`
+- `ready_for_api_experiment: true candidate pending human approval`
 - `ready_for_production_agent: false`
 - `ready_for_broadcast: false`

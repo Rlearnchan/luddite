@@ -1,0 +1,33 @@
+{
+  "storyline_id": "api_fixture_missing_counterpoint",
+  "title": "AI 즉답 시대의 지식기관 역할",
+  "sections": [
+    {
+      "section_title": "AI가 바로 답을 주는 시대",
+      "slides": [
+        {
+          "slide_type": "hook",
+          "headline": "AI가 답을 바로 주는 시대",
+          "body": ["Royal Observatory 사례를 출발점으로 삼는다."],
+          "source_urls": ["https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss"],
+          "image_urls": [],
+          "notes": "Primary article only.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "explainer",
+          "headline": "사람은 질문을 해야 한다",
+          "body": ["AI 시대에 사람의 역할을 질문으로 넘긴다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "Rhetorical bridge.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}

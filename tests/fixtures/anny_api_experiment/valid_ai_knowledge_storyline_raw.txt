@@ -1,0 +1,98 @@
+{
+  "storyline_id": "api_fixture_valid_ai_knowledge",
+  "title": "AI 즉답 시대의 지식기관 역할",
+  "one_liner": "AI가 답을 바로 주는 시대에 학교와 지식기관은 무엇을 가르쳐야 하는가.",
+  "estimated_slide_count": 4,
+  "risk_flags": [],
+  "required_fact_checks": ["교육 효과와 인지 변화는 단정하지 않고 방송 전 확인한다."],
+  "sections": [
+    {
+      "section_title": "AI가 바로 답을 주는 시대",
+      "slides": [
+        {
+          "slide_type": "hook",
+          "headline": "AI가 답을 바로 주는 건 정말 편리하다",
+          "body": ["검색보다 빠른 즉답은 학습과 정보 탐색의 출발점을 바꾸고 있다."],
+          "source_urls": ["https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss"],
+          "image_urls": [],
+          "notes": "BBC / Royal Observatory article.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": [
+            {
+              "url": "https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss",
+              "role": "primary_article",
+              "use": "Royal Observatory warning context",
+              "confidence": "medium",
+              "manual_check_required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section_title": "생각하는 과정은 어디로 가는가",
+      "slides": [
+        {
+          "slide_type": "explainer",
+          "headline": "문제는 정답이 아니라 과정이다",
+          "body": ["AI 즉답은 편리하지만 질문을 만들고 비교하고 검산하는 과정을 압축할 수 있다."],
+          "source_urls": ["https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/"],
+          "image_urls": [],
+          "notes": "Microsoft Research information diversity context.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": [
+            {
+              "url": "https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/",
+              "role": "supporting_article",
+              "use": "AI-mediated inquiry and information diversity",
+              "confidence": "medium",
+              "manual_check_required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section_title": "반대 관점도 있다",
+      "slides": [
+        {
+          "slide_type": "counterpoint",
+          "headline": "AI는 접근성을 높이는 도구일 수도 있다",
+          "body": ["AI를 금지할 대상으로만 보면 놓치는 부분이 있다. 접근성, 개인화, 보조 학습 가능성도 함께 봐야 한다."],
+          "source_urls": ["https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners"],
+          "image_urls": [],
+          "notes": "UNESCO counterpoint on rights/access and safeguards.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": [
+            {
+              "url": "https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners",
+              "role": "counterpoint",
+              "use": "AI education access and safeguards",
+              "confidence": "medium",
+              "manual_check_required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section_title": "무엇을 가르칠 것인가",
+      "slides": [
+        {
+          "slide_type": "closing_question",
+          "headline": "AI 시대의 공부는 질문을 다루는 법일 수 있다",
+          "body": ["AI 비판이나 찬양이 아니라, 사람은 무엇을 질문하고 어떻게 검산할지로 이야기를 닫는다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "Rhetorical closing bridge.",
+          "needs_fact_check": false,
+          "needs_source": true,
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}
