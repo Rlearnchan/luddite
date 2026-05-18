@@ -43,11 +43,15 @@ DEFAULT_OUTPUT_ROOT = paths.OUTPUTS_DIR / "eval" / "anny_api_experiment"
 DEFAULT_EXPERIMENT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_api_experiments"
 DEFAULT_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v1"
 DEFAULT_SECOND_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v2"
+DEFAULT_THIRD_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v3"
 DEFAULT_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
 )
 DEFAULT_API_V1_V2_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_comparison.md"
+)
+DEFAULT_API_V1_V2_V3_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_v3_comparison.md"
 )
 DEFAULT_MANUAL_ENRICHED_STORYLINE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR
@@ -475,7 +479,7 @@ def _api_key_beat_recall(storyline: dict[str, Any], case_id: str) -> float | Non
 def _api_case(case_id: str) -> dict[str, Any] | None:
     cases_payload = _load_json(paths.EVAL_DIR / "golden_cases" / "anny_dry_run_cases.json")
     case = next((item for item in cases_payload["cases"] if item["case_id"] == case_id), None)
-    if not case and case_id.endswith("_v2"):
+    if not case and (case_id.endswith("_v2") or case_id.endswith("_v3")):
         case = next(
             (
                 item
@@ -865,6 +869,8 @@ def _storyline_metrics(
             "counterpoint_included": False,
             "source_image_overlap_count": None,
             "key_beat_recall": None,
+            "key_beat_coverage_present": False,
+            "section_plan_present": False,
         }
     storyline = _load_json(storyline_path)
     recall = None
@@ -886,6 +892,8 @@ def _storyline_metrics(
         "counterpoint_included": _counterpoint_included(storyline),
         "source_image_overlap_count": _source_image_overlap_count(storyline),
         "key_beat_recall": recall,
+        "key_beat_coverage_present": isinstance(storyline.get("key_beat_coverage"), list),
+        "section_plan_present": isinstance(storyline.get("section_plan"), list),
     }
 
 
@@ -898,6 +906,7 @@ def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
             "hygiene_passed": False,
             "source_hallucination_count": None,
             "do_not_claim_violations": [],
+            "key_beat_coverage_errors": [],
         }
     manifest = _load_json(manifest_path)
     return {
@@ -907,6 +916,7 @@ def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
         "hygiene_passed": manifest.get("hygiene_passed"),
         "source_hallucination_count": len(manifest.get("hallucinated_urls", [])),
         "do_not_claim_violations": manifest.get("do_not_claim_violations", []),
+        "key_beat_coverage_errors": manifest.get("key_beat_coverage_errors", []),
     }
 
 
@@ -990,10 +1000,11 @@ def write_api_v1_v2_comparison_report(
         "",
         (
             "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
-            "Needs Source | Needs Fact Check | Key Beat Recall | Failure Modes | "
-            "Source Hallucinations | Do-not-claim Violations | Counterpoint |"
+            "Needs Source | Needs Fact Check | Key Beat Recall | Key Beat Coverage | "
+            "Section Plan | Failure Modes | Source Hallucinations | "
+            "Do-not-claim Violations | Counterpoint |"
         ),
-        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---|",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---:|---:|---|",
         _api_version_row("v1", v1_manifest, v1_metrics),
         _api_version_row("v2", v2_manifest, v2_metrics),
         "",
@@ -1011,6 +1022,85 @@ def write_api_v1_v2_comparison_report(
     }
 
 
+def write_api_v1_v2_v3_comparison_report(
+    *,
+    v1_dir: Path,
+    v2_dir: Path,
+    v3_dir: Path,
+    comparison_report_path: Path = DEFAULT_API_V1_V2_V3_COMPARISON_REPORT,
+) -> dict[str, Any]:
+    runs = {
+        "v1": {
+            "manifest": _manifest_metrics(v1_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                v1_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": v1_dir,
+        },
+        "v2": {
+            "manifest": _manifest_metrics(v2_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                v2_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": v2_dir,
+        },
+        "v3": {
+            "manifest": _manifest_metrics(v3_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                v3_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": v3_dir,
+        },
+    }
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment v1/v2/v3 Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- v1_dir: {v1_dir}",
+        f"- v2_dir: {v2_dir}",
+        f"- v3_dir: {v3_dir}",
+        "",
+        "## Summary Table",
+        "",
+        (
+            "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Key Beat Coverage | "
+            "Section Plan | Failure Modes | Source Hallucinations | Do-not-claim "
+            "Violations | Counterpoint |"
+        ),
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---:|---:|---|",
+        _api_version_row("v1", runs["v1"]["manifest"], runs["v1"]["metrics"]),
+        _api_version_row("v2", runs["v2"]["manifest"], runs["v2"]["metrics"]),
+        _api_version_row("v3", runs["v3"]["manifest"], runs["v3"]["metrics"]),
+        "",
+        "## Key Beat Drift Detail",
+        "",
+    ]
+    for label, payload in runs.items():
+        errors = payload["manifest"].get("key_beat_coverage_errors", [])
+        lines.append(f"- {label}: {errors or []}")
+    lines.extend(
+        [
+            "",
+            "## Qualitative Notes",
+            "",
+            "- v3 is a third controlled API experiment, not a production anny agent.",
+            (
+                "- The main observation is whether section_plan/key_beat_coverage "
+                "prevent key beat drift."
+            ),
+            "- `source_hallucination_count=0` and do-not-claim compliance remain required.",
+            "- `ready_for_production_agent=false` remains in force.",
+        ]
+    )
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return runs
+
+
 def _api_version_row(
     label: str,
     manifest: dict[str, Any],
@@ -1023,7 +1113,8 @@ def _api_version_row(
         f"{manifest['hygiene_passed']} | {metrics['section_count']} | "
         f"{metrics['slide_count']} | {metrics['source_url_count']} | "
         f"{metrics['needs_source_count']} | {metrics['needs_fact_check_count']} | "
-        f"{recall_text} | {manifest['failure_modes']} | "
+        f"{recall_text} | {metrics['key_beat_coverage_present']} | "
+        f"{metrics['section_plan_present']} | {manifest['failure_modes']} | "
         f"{manifest['source_hallucination_count']} | "
         f"{len(manifest['do_not_claim_violations'])} | "
         f"{metrics['counterpoint_included']} |"
@@ -1180,6 +1271,26 @@ def compare_v1_v2(
         v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
     )
     console.print("[green]Wrote anny API experiment v1/v2 comparison.[/green]")
+
+
+@run_app.command("compare-v1-v2-v3")
+def compare_v1_v2_v3(
+    v1_run_id: Annotated[str, typer.Option("--v1-run-id")] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    v2_run_id: Annotated[
+        str,
+        typer.Option("--v2-run-id"),
+    ] = DEFAULT_SECOND_API_EXPERIMENT_RUN_ID,
+    v3_run_id: Annotated[
+        str,
+        typer.Option("--v3-run-id"),
+    ] = DEFAULT_THIRD_API_EXPERIMENT_RUN_ID,
+) -> None:
+    write_api_v1_v2_v3_comparison_report(
+        v1_dir=DEFAULT_EXPERIMENT_ROOT / v1_run_id,
+        v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
+        v3_dir=DEFAULT_EXPERIMENT_ROOT / v3_run_id,
+    )
+    console.print("[green]Wrote anny API experiment v1/v2/v3 comparison.[/green]")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from luddite.agents.anny.api_experiment_runner import (
     run_api_experiment,
     validate_api_experiment_raw_output,
     write_api_v1_v2_comparison_report,
+    write_api_v1_v2_v3_comparison_report,
 )
 
 FIXTURE_DIR = paths.REPO_ROOT / "tests/fixtures/anny_api_experiment"
@@ -342,4 +343,43 @@ def test_write_api_v1_v2_comparison_report(tmp_path) -> None:
     assert result["v1"]["manifest"]["model"] == "gpt-5-mini"
     text = report.read_text(encoding="utf-8")
     assert "v1/v2 Comparison" in text
+    assert "ready_for_production_agent=false" in text
+
+
+def test_write_api_v1_v2_v3_comparison_report(tmp_path) -> None:
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    manifest = {
+        "model": "gpt-5-mini",
+        "failure_modes": [],
+        "schema_valid": True,
+        "hygiene_passed": True,
+        "hallucinated_urls": [],
+        "do_not_claim_violations": [],
+        "key_beat_coverage_errors": [],
+    }
+    run_dirs = []
+    for name in ["v1", "v2", "v3"]:
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        (run_dir / "parsed_storyline.json").write_text(raw, encoding="utf-8")
+        (run_dir / "manifest.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        run_dirs.append(run_dir)
+    report = tmp_path / "comparison.md"
+
+    result = write_api_v1_v2_v3_comparison_report(
+        v1_dir=run_dirs[0],
+        v2_dir=run_dirs[1],
+        v3_dir=run_dirs[2],
+        comparison_report_path=report,
+    )
+
+    assert result["v3"]["manifest"]["model"] == "gpt-5-mini"
+    text = report.read_text(encoding="utf-8")
+    assert "v1/v2/v3 Comparison" in text
+    assert "Key Beat Coverage" in text
     assert "ready_for_production_agent=false" in text
