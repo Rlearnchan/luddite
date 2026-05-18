@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnnyRunInput",
+  "type": "object",
+  "required": [
+    "run_id",
+    "bundle_id",
+    "story_seed_title",
+    "input_bundle_path",
+    "length_mode",
+    "output_contract_version",
+    "prompt_version",
+    "mode",
+    "requested_by",
+    "created_at"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "bundle_id": {
+      "type": "string"
+    },
+    "story_seed_title": {
+      "type": "string"
+    },
+    "input_bundle_path": {
+      "type": "string"
+    },
+    "evidence_pack_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "length_mode": {
+      "type": "string"
+    },
+    "output_contract_version": {
+      "type": "string"
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "dry_run",
+        "api_future"
+      ]
+    },
+    "requested_by": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

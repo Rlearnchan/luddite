@@ -1,0 +1,169 @@
+{
+  "counterpoints": [
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "counterpoint",
+      "source": "UNESCO",
+      "source_type": "policy_brief",
+      "summary": "Counterpoint source for AI's potential to increase access to education and personalized learning when rights and safeguards are respected.",
+      "title": "AI and education: Protecting the rights of learners",
+      "url": "https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners"
+    }
+  ],
+  "created_at": "2026-05-18T07:15:06.778174+00:00",
+  "expert_quotes": [
+    {
+      "needs_manual_check": true,
+      "reliability": "unknown",
+      "role": "expert_quote",
+      "source": "전문가 인터뷰 또는 연구자 발언",
+      "source_type": "manual_research_needed",
+      "summary": "아직 자동 수집하지 않음. 1.5.2 enriched dry run 전 사람이 확인할 evidence task.",
+      "title": "교육/인지/정보탐색 전문가 quote",
+      "url": null
+    }
+  ],
+  "institution_examples": [
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "institution_example",
+      "source": "UNESCO",
+      "source_type": "framework",
+      "summary": "Framework for integrating AI learning objectives into school curricula and preparing students as responsible, creative AI users.",
+      "title": "AI Competency Framework for Students",
+      "url": "https://www.unesco.org/en/articles/ai-competency-framework-students"
+    },
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "institution_example",
+      "source": "National Science Museum, Republic of Korea",
+      "source_type": "institution_page",
+      "summary": "Korean science museum exhibition page describing AI-centered future-life experiences such as smart city, home, mobility, and factory scenarios.",
+      "title": "National Science Museum Future Tech exhibition: Artificial Intelligence",
+      "url": "https://www.science.go.kr/eps/cntnts/772/moveCntnts.do"
+    }
+  ],
+  "korea_bridge": [
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "korea_bridge",
+      "source": "대한민국 정책브리핑",
+      "source_type": "official_policy",
+      "summary": "Korea policy item on introducing AI digital textbooks in schools from 2025.",
+      "title": "2025년부터 학교현장에 AI 디지털교과서 도입",
+      "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148912089"
+    },
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "korea_bridge",
+      "source": "국립광주과학관",
+      "source_type": "institution_page",
+      "summary": "AI 체험·전시 공간을 소개하는 국내 과학관 공식 페이지.",
+      "title": "국립광주과학관 인공지능관",
+      "url": "https://www.sciencecenter.or.kr/kor/menu/sub.do?menuId=17_275"
+    }
+  ],
+  "manual_research_checklist": [
+    "BBC / Royal Observatory 원문 전문 확인",
+    "Royal Observatory 관계자 발언 맥락 확인",
+    "AI 즉답/검색 사용이 학습 습관에 미치는 영향 관련 보조 자료 확인",
+    "학교/박물관/천문관/과학관의 AI 활용 또는 AI 리터러시 사례 확인",
+    "AI가 학습 접근성을 높인다는 반대 관점 확인",
+    "국내 학교 AI 교육 정책 확인",
+    "국내 과학관/박물관 AI 교육/전시 사례 확인"
+  ],
+  "pack_id": "evidence_pack_ai_knowledge_institution",
+  "primary_article": {
+    "needs_manual_check": false,
+    "reliability": "medium",
+    "role": "primary_seed",
+    "source": "BBC News",
+    "source_type": "primary_article",
+    "summary": "Paddy Rodgers said the Observatory's rich history showed the power of human knowledge and the need to avoid \"dependence\" on AI.",
+    "title": "Instant AI answers can trivialise human intelligence, warns Royal Observatory",
+    "url": "https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss"
+  },
+  "research_or_survey": [
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "research_or_survey",
+      "source": "OECD",
+      "source_type": "research_report",
+      "summary": "Synthesizes evidence on GenAI as tutor, partner, and assistant, while noting that benefits depend on clear teaching principles.",
+      "title": "OECD Digital Education Outlook 2026",
+      "url": "https://www.oecd.org/en/publications/oecd-digital-education-outlook-2026_062a7394-en.html"
+    }
+  ],
+  "story_seed_title": "AI 즉답 시대의 지식기관 역할",
+  "supporting_articles": [
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "supporting_article",
+      "source": "Microsoft Research",
+      "source_type": "research_summary",
+      "summary": "Generative-AI-mediated inquiry may reshape the diversity of knowledge encountered in online information seeking.",
+      "title": "From Searchable to Non-Searchable: Generative AI and Information Diversity",
+      "url": "https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/"
+    },
+    {
+      "needs_manual_check": false,
+      "reliability": "high",
+      "role": "counterpoint_article",
+      "source": "UNESCO",
+      "source_type": "policy_brief",
+      "summary": "UNESCO frames AI in education as both a rights/safety issue and a source of opportunities such as access and personalized learning.",
+      "title": "AI and education: Protecting the rights of learners",
+      "url": "https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners"
+    }
+  ],
+  "topic_slug": "ai_knowledge_institution",
+  "visual_candidates": [
+    {
+      "needs_manual_check": true,
+      "reliability": "unknown",
+      "role": "visual_candidate",
+      "source": "직접 제작/캡처",
+      "source_type": "manual_research_needed",
+      "summary": "아직 자동 수집하지 않음. 1.5.2 enriched dry run 전 사람이 확인할 evidence task.",
+      "title": "AI 검색창 vs 기존 검색 결과",
+      "url": null
+    },
+    {
+      "needs_manual_check": true,
+      "reliability": "unknown",
+      "role": "visual_candidate",
+      "source": "기관/공개 이미지",
+      "source_type": "manual_research_needed",
+      "summary": "아직 자동 수집하지 않음. 1.5.2 enriched dry run 전 사람이 확인할 evidence task.",
+      "title": "천문관/박물관/과학관 이미지",
+      "url": null
+    },
+    {
+      "needs_manual_check": true,
+      "reliability": "unknown",
+      "role": "visual_candidate",
+      "source": "공개 이미지/연출 이미지",
+      "source_type": "manual_research_needed",
+      "summary": "아직 자동 수집하지 않음. 1.5.2 enriched dry run 전 사람이 확인할 evidence task.",
+      "title": "학생과 AI 학습 도구",
+      "url": null
+    },
+    {
+      "needs_manual_check": true,
+      "reliability": "unknown",
+      "role": "visual_candidate",
+      "source": "직접 제작",
+      "source_type": "manual_research_needed",
+      "summary": "아직 자동 수집하지 않음. 1.5.2 enriched dry run 전 사람이 확인할 evidence task.",
+      "title": "질문-답변 구조 도식",
+      "url": null
+    }
+  ]
+}

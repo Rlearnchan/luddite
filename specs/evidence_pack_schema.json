@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnnyEvidencePack",
+  "type": "object",
+  "required": [
+    "pack_id",
+    "story_seed_title",
+    "topic_slug",
+    "primary_article",
+    "supporting_articles",
+    "expert_quotes",
+    "institution_examples",
+    "research_or_survey",
+    "counterpoints",
+    "korea_bridge",
+    "visual_candidates",
+    "manual_research_checklist",
+    "created_at"
+  ],
+  "properties": {
+    "pack_id": { "type": "string" },
+    "story_seed_title": { "type": "string" },
+    "topic_slug": { "type": "string" },
+    "primary_article": { "$ref": "#/$defs/evidenceItem" },
+    "supporting_articles": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "expert_quotes": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "institution_examples": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "research_or_survey": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "counterpoints": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "korea_bridge": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "visual_candidates": { "type": "array", "items": { "$ref": "#/$defs/evidenceItem" } },
+    "manual_research_checklist": { "type": "array", "items": { "type": "string" } },
+    "created_at": { "type": "string" }
+  },
+  "$defs": {
+    "evidenceItem": {
+      "type": "object",
+      "required": [
+        "title",
+        "url",
+        "source",
+        "source_type",
+        "summary",
+        "role",
+        "reliability",
+        "needs_manual_check"
+      ],
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": ["string", "null"] },
+        "source": { "type": "string" },
+        "source_type": { "type": "string" },
+        "summary": { "type": "string" },
+        "role": { "type": "string" },
+        "reliability": { "type": "string", "enum": ["high", "medium", "low", "unknown"] },
+        "needs_manual_check": { "type": "boolean" }
+      }
+    }
+  }
+}

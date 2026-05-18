@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Any
@@ -27,6 +28,27 @@ ACTION_LABELS = {
 }
 TOP_ACTIONS = {"send_to_anny", "gather_more_evidence", "editorial_review", "keep_for_later"}
 EXCLUDED_ACTIONS = {"reject", "blocked_policy"}
+TOP_EXCLUDED_QUALITY_FLAGS = {
+    "sports_only",
+    "accident_single_event",
+    "pure_place_listing",
+    "generic_local_incident",
+}
+GENERIC_WHY_PATTERNS = {
+    "수동 후보로 들어온 소재",
+    "공급망, 인프라, 규제, 산업 전환 중 어느 축",
+    "사건 자체보다 배경",
+}
+SPECIFIC_TOP_SEED_TYPES = {
+    "productive_finance_policy",
+    "industrial_policy_rnd",
+    "single_company_financing",
+    "market_rate_stress",
+    "ai_knowledge_institution",
+    "infrastructure_project_failure",
+    "climate_policy_conflict",
+    "cost_asymmetry",
+}
 
 
 def _digest_date(value: str | None = None) -> str:
@@ -37,20 +59,64 @@ def _score_band(candidate: dict[str, Any]) -> str:
     return str(candidate.get("final_grade") or "C")
 
 
-def top_candidates(candidates: list[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
+def top_candidates(
+    candidates: list[dict[str, Any]],
+    limit: int = 10,
+    max_per_source: int = 3,
+    min_score: float = 35,
+) -> list[dict[str, Any]]:
     eligible = [
         candidate
         for candidate in candidates
         if candidate.get("recommended_action", "keep_for_later") in TOP_ACTIONS
+        and _passes_top_quality_gate(candidate)
+        and candidate.get("final_grade") != "D"
+        and float(candidate.get("scores", {}).get("total_score", 0) or 0) >= min_score
     ]
-    return sorted(
+    ranked = sorted(
         eligible,
         key=lambda item: (
             item.get("scores", {}).get("total_score", 0),
             item.get("scores", {}).get("broadcast_potential_proxy", 0),
         ),
         reverse=True,
-    )[:limit]
+    )
+    selected: list[dict[str, Any]] = []
+    source_counts: dict[str, int] = {}
+    for candidate in ranked:
+        source = str(candidate.get("source") or candidate.get("source_id") or "unknown")
+        if max_per_source > 0 and source_counts.get(source, 0) >= max_per_source:
+            continue
+        selected.append(candidate)
+        source_counts[source] = source_counts.get(source, 0) + 1
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def _passes_top_quality_gate(candidate: dict[str, Any]) -> bool:
+    flags = set(candidate.get("quality_flags", []))
+    failure_modes = set(candidate.get("failure_modes", []))
+    if TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags):
+        return False
+    if "single_company_frame" in flags and "broader_industry_bridge" not in flags:
+        return False
+    if "market_rate_stress" in flags and "broader_macro_angle" not in flags:
+        return False
+    seed_type = str(candidate.get("seed_type") or "other")
+    if seed_type not in SPECIFIC_TOP_SEED_TYPES and _has_generic_why(candidate):
+        return False
+    if (
+        "political_sensitivity" in candidate.get("risk_flags", [])
+        and "live_news_volatility" in failure_modes
+    ):
+        return False
+    return True
+
+
+def _has_generic_why(candidate: dict[str, Any]) -> bool:
+    why = str(candidate.get("why_interesting") or "")
+    return any(pattern in why for pattern in GENERIC_WHY_PATTERNS)
 
 
 def excluded_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -91,8 +157,8 @@ def render_markdown(
         f"# Luddite Daily Digest — {digest_date}",
         "",
         (
-            "Local/manual-input MVP digest. No LLM, RSS collector, Google Sheet "
-            "append, or Slack bot was used."
+            "Local/manual + RSS-ingest MVP digest. No LLM, 24/7 RSS collector, "
+            "Google Sheet append, or Slack bot was used."
         ),
         "",
         "## 오늘의 추천",
@@ -242,10 +308,11 @@ def render_daily_digest(
     output_dir: Path = paths.DAILY_DIGEST_DIR,
     digest_date: str | None = None,
     limit: int = 10,
+    max_per_source: int = 3,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
     candidates = read_jsonl(input_path) if input_path.exists() else []
-    top = top_candidates(candidates, limit=limit)
+    top = top_candidates(candidates, limit=limit, max_per_source=max_per_source)
     excluded = excluded_candidates(candidates)
     excluded_to_render = excluded if len(top) < limit else []
     md_path = output_dir / f"{date_value}.md"
@@ -256,7 +323,156 @@ def render_daily_digest(
         encoding="utf-8",
     )
     write_sheet_preview(csv_path, top, date_value)
+    write_quality_report(paths.REPORTS_DIR / f"jibi_quality_{date_value}.md", candidates, top)
     return md_path, csv_path, top
+
+
+def write_quality_report(
+    path: Path,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    source_counts = Counter(str(item.get("source") or "unknown") for item in top)
+    seed_counts = Counter(str(item.get("seed_type") or "unknown") for item in top)
+    action_counts = Counter(str(item.get("recommended_action") or "unknown") for item in candidates)
+    raw_source_counts = Counter(str(item.get("source") or "unknown") for item in candidates)
+    after_gate = [item for item in candidates if _passes_top_quality_gate(item)]
+    after_gate_source_counts = Counter(str(item.get("source") or "unknown") for item in after_gate)
+    quality_gated = [
+        item for item in candidates if item.get("quality_flags") or item.get("failure_modes")
+    ]
+    failure_modes = Counter(
+        mode
+        for item in candidates
+        for mode in item.get("failure_modes", [])
+        if str(mode).strip()
+    )
+    empty_summary_counts = Counter(
+        str(item.get("source") or "unknown")
+        for item in candidates
+        if "empty_summary" in item.get("quality_flags", [])
+        or "empty_summary_domestic_business" in item.get("quality_flags", [])
+    )
+    downranked_examples = [
+        item for item in candidates if item.get("quality_flags")
+    ][:10]
+    raw_top = candidates[:10]
+    top_ids = {str(item.get("candidate_id")) for item in top}
+    removed_from_top = [item for item in raw_top if str(item.get("candidate_id")) not in top_ids]
+    generic_why_examples = [
+        item
+        for item in candidates
+        if any(pattern in str(item.get("why_interesting", "")) for pattern in GENERIC_WHY_PATTERNS)
+    ][:10]
+    single_company_count = sum(
+        1
+        for item in candidates
+        if "single_company_frame" in item.get("quality_flags", [])
+        or "single_company_frame" in item.get("failure_modes", [])
+    )
+    political_count = sum(
+        1 for item in candidates if "political_sensitivity" in item.get("risk_flags", [])
+    )
+    lines = [
+        "# Jibi Candidate Quality Report",
+        "",
+        "## Summary",
+        "",
+        f"- candidates scored: {len(candidates)}",
+        f"- top candidates: {len(top)}",
+        f"- quality-gated candidates: {len(quality_gated)}",
+        f"- single_company_frame count: {single_company_count}",
+        f"- political_sensitivity count: {political_count}",
+        "",
+        "## Top Candidates Detail",
+        "",
+        *[
+            (
+                f"- {item.get('title')}: seed_type={item.get('seed_type')}, "
+                f"risk_flags={item.get('risk_flags', [])}, "
+                f"quality_flags={item.get('quality_flags', [])}"
+            )
+            for item in top
+        ],
+        "",
+        "## Top Candidates Source Distribution",
+        "",
+        *[f"- {source}: {count}" for source, count in source_counts.most_common()],
+        "",
+        "## Top Candidates Seed Type Distribution",
+        "",
+        *[f"- {seed_type}: {count}" for seed_type, count in seed_counts.most_common()],
+        "",
+        "## Action Distribution",
+        "",
+        *[f"- {action}: {count}" for action, count in action_counts.most_common()],
+        "",
+        "## Source Candidate Count",
+        "",
+        *[f"- {source}: {count}" for source, count in raw_source_counts.most_common()],
+        "",
+        "## Source Count After Quality Gate",
+        "",
+        *[f"- {source}: {count}" for source, count in after_gate_source_counts.most_common()],
+        "",
+        "## Top 10 Raw Score Before Gate",
+        "",
+        *[
+            (
+                f"- {item.get('title')}: {item.get('scores', {}).get('total_score', 0)} / "
+                f"{item.get('recommended_action')} / flags={item.get('quality_flags', [])}"
+            )
+            for item in raw_top
+        ],
+        "",
+        "## Top After Gate",
+        "",
+        *[
+            (
+                f"- {item.get('title')}: {item.get('scores', {}).get('total_score', 0)} / "
+                f"{item.get('recommended_action')}"
+            )
+            for item in top
+        ],
+        "",
+        "## Removed From Raw Top By Gate/Balance",
+        "",
+        *[
+            (
+                f"- {item.get('title')}: flags={item.get('quality_flags', [])}, "
+                f"failure_modes={item.get('failure_modes', [])}"
+            )
+            for item in removed_from_top
+        ],
+        "",
+        "## Empty Summary Count By Source",
+        "",
+        *[f"- {source}: {count}" for source, count in empty_summary_counts.most_common()],
+        "",
+        "## Top Failure Modes",
+        "",
+        *[f"- {mode}: {count}" for mode, count in failure_modes.most_common(10)],
+        "",
+        "## Generic Why Examples",
+        "",
+        *[
+            f"- {item.get('title')}: {item.get('why_interesting')}"
+            for item in generic_why_examples
+        ],
+        "",
+        "## Downranked Examples",
+        "",
+    ]
+    if downranked_examples:
+        for item in downranked_examples:
+            lines.append(
+                f"- {item.get('title')}: {', '.join(item.get('quality_flags', []))} "
+                f"-> {item.get('recommended_action')} / {item.get('final_grade')}"
+            )
+    else:
+        lines.append("- none")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 @app.callback(invoke_without_command=True)
@@ -274,12 +490,17 @@ def main(
         typer.Option("--date", help="Digest date in YYYY-MM-DD."),
     ] = None,
     limit: Annotated[int, typer.Option("--limit", help="Number of candidates.")] = 10,
+    max_per_source: Annotated[
+        int,
+        typer.Option("--max-per-source", min=1, help="Max top candidates per source."),
+    ] = 3,
 ) -> None:
     md_path, csv_path, top = render_daily_digest(
         input_path=input_path,
         output_dir=output_dir,
         digest_date=digest_date,
         limit=limit,
+        max_per_source=max_per_source,
     )
     console.print(
         f"[green]Rendered {len(top)} candidates to {md_path} and {csv_path}.[/green]"

@@ -190,3 +190,112 @@ def test_score_candidates_sorts_by_total_score(tmp_path) -> None:
 
     assert scored[0]["candidate_id"] == "high"
     assert output_path.exists()
+
+
+def test_rss_bbc_sport_item_is_quality_gated() -> None:
+    candidate = {
+        "candidate_id": "bbc_sport",
+        "source_id": "bbc_rss_candidate",
+        "source": "BBC News",
+        "seed_url": "https://www.bbc.com/sport/golf/articles/abc",
+        "title": "Golfer wins championship",
+        "summary": "A match report from the tournament.",
+        "risk_flags": [],
+        "quality_flags": ["sports_only"],
+        "evidence_depth_hint": "medium",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "reject"
+    assert "rss_sports_only" in scored["failure_modes"]
+    assert scored["scores"]["total_score"] < 35
+
+
+def test_atlas_pure_place_listing_is_downranked() -> None:
+    candidate = {
+        "candidate_id": "atlas_place",
+        "source_id": "atlas_obscura",
+        "source": "Atlas Obscura",
+        "title": "Old Walking Trail in Somewhere",
+        "summary": "A short place listing.",
+        "risk_flags": [],
+        "quality_flags": ["pure_place_listing"],
+        "evidence_depth_hint": "medium",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "keep_for_later"
+    assert scored["final_grade"] in {"C", "D"}
+    assert "pure_place_listing" in scored["failure_modes"]
+
+
+def test_accident_single_event_is_not_top_candidate_material() -> None:
+    candidate = {
+        "candidate_id": "accident",
+        "title": "Train stabbing injures passengers",
+        "summary": "A single event accident report.",
+        "risk_flags": [],
+        "quality_flags": ["accident_single_event"],
+        "evidence_depth_hint": "medium",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "reject"
+    assert "single_event_accident" in scored["failure_modes"]
+
+
+def test_empty_summary_lowers_evidence_depth() -> None:
+    candidate = {
+        "candidate_id": "empty_summary",
+        "title": "AI infrastructure investment expands",
+        "summary": "",
+        "risk_flags": [],
+        "quality_flags": ["empty_summary"],
+        "evidence_depth_hint": "medium",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["scores"]["evidence_depth"] == 1
+    assert "thin_evidence" in scored["failure_modes"]
+
+
+def test_single_company_financing_is_not_low_risk_b() -> None:
+    candidate = {
+        "candidate_id": "skc_like",
+        "title": "SKC, 1.2조 유상증자 초과 청약",
+        "summary": "글라스기판 투자와 재무개선 실탄 확보.",
+        "seed_type": "single_company_financing",
+        "risk_flags": ["corporate_promo_risk", "investment_advice_risk"],
+        "quality_flags": ["single_company_frame", "single_stock_or_asset_frame"],
+        "evidence_depth_hint": "medium",
+        "why_interesting": "단일 기업 유상증자 뉴스로 끝내면 약함",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] in {"editorial_review", "keep_for_later"}
+    assert scored["risk_level"] == "medium"
+    assert scored["final_grade"] in {"C", "D"}
+    assert "single_company_frame" in scored["failure_modes"]
+
+
+def test_trump_policy_item_has_political_risk() -> None:
+    candidate = {
+        "candidate_id": "wildfire_policy",
+        "title": "Trump's battle with immigration and DEI is impacting forest fires",
+        "summary": "Federal wildfire policy is being reshaped by political conflict.",
+        "seed_type": "climate_policy_conflict",
+        "risk_flags": ["political_sensitivity"],
+        "quality_flags": ["live_politics_or_statement"],
+        "evidence_depth_hint": "medium",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "editorial_review"
+    assert scored["risk_level"] in {"medium", "high"}
+    assert "live_news_volatility" in scored["failure_modes"]

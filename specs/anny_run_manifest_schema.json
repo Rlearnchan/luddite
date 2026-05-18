@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnnyRunManifest",
+  "type": "object",
+  "required": [
+    "run_id",
+    "status",
+    "input_bundle_path",
+    "output_storyline_path",
+    "eval_report_path",
+    "model_source",
+    "schema_valid",
+    "hygiene_passed",
+    "created_at",
+    "notes"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "failed",
+        "pending_manual_output"
+      ]
+    },
+    "input_bundle_path": {
+      "type": "string"
+    },
+    "evidence_pack_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output_storyline_path": {
+      "type": "string"
+    },
+    "eval_report_path": {
+      "type": "string"
+    },
+    "model_source": {
+      "type": "string",
+      "enum": [
+        "manual_gpt_pro",
+        "api_future",
+        "fixture"
+      ]
+    },
+    "schema_valid": {
+      "type": "boolean"
+    },
+    "hygiene_passed": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

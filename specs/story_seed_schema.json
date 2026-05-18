@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StorySeedCluster",
+  "type": "object",
+  "required": [
+    "cluster_id",
+    "cluster_title",
+    "story_seed_title",
+    "primary_seed_candidate_id",
+    "candidate_ids",
+    "source_ids",
+    "seed_type",
+    "editorial_category",
+    "why_story",
+    "known_facts",
+    "missing_evidence",
+    "possible_story_angles",
+    "risk_flags",
+    "risk_level",
+    "readiness",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "cluster_id": { "type": "string" },
+    "cluster_title": { "type": "string" },
+    "story_seed_title": { "type": "string" },
+    "primary_seed_candidate_id": { "type": "string" },
+    "candidate_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "seed_type": { "type": "string" },
+    "editorial_category": { "type": "string" },
+    "why_story": { "type": "string" },
+    "known_facts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "possible_story_angles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "quality_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "readiness": {
+      "type": "string",
+      "enum": [
+        "ready_for_anny",
+        "needs_more_evidence",
+        "editorial_review",
+        "keep_for_later",
+        "reject"
+      ]
+    },
+    "past_video_matches": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "official_evidence_needed": { "type": "boolean" },
+    "suggested_official_sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "syuka_ops_query_terms": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "llm_enrichment_needed": { "type": "boolean" },
+    "generic_story_reason": { "type": "boolean" },
+    "anny_handoff_ready": { "type": "boolean" },
+    "handoff_priority": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "next_action": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}

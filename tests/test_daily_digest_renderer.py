@@ -24,7 +24,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
                 "why_interesting": "엥? hook과 구조 확장",
                 "evidence_needed": ["추가 출처"],
                 "possible_expansions": ["베트남 신용시장"],
-                "scores": {"total_score": 30, "broadcast_potential_proxy": 5},
+                "scores": {"total_score": 55, "broadcast_potential_proxy": 5},
                 "source_type": "manual",
                 "collected_at": "2026-05-17T00:00:00+00:00",
                 "last_seen_at": "2026-05-17T00:00:00+00:00",
@@ -92,3 +92,86 @@ def test_top_candidates_excludes_rejects() -> None:
     ]
 
     assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == ["good"]
+
+
+def test_top_candidates_limits_same_source() -> None:
+    candidates = [
+        {
+            "candidate_id": f"same_{index}",
+            "source": "Same Source",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "scores": {"total_score": 100 - index, "broadcast_potential_proxy": 5},
+        }
+        for index in range(5)
+    ]
+    candidates.append(
+        {
+            "candidate_id": "other",
+            "source": "Other Source",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "scores": {"total_score": 35, "broadcast_potential_proxy": 1},
+        }
+    )
+
+    selected = top_candidates(candidates, limit=10, max_per_source=3)
+
+    assert [candidate["candidate_id"] for candidate in selected] == [
+        "same_0",
+        "same_1",
+        "same_2",
+        "other",
+    ]
+
+
+def test_top_candidates_excludes_single_company_thin_evidence() -> None:
+    candidates = [
+        {
+            "candidate_id": "skc",
+            "source": "연합인포맥스",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": ["single_company_frame"],
+            "failure_modes": ["thin_evidence"],
+            "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "policy",
+            "source": "연합인포맥스",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [],
+            "failure_modes": ["thin_evidence"],
+            "scores": {"total_score": 55, "broadcast_potential_proxy": 3},
+        },
+    ]
+
+    assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == ["policy"]
+
+
+def test_top_candidates_excludes_generic_other_rationale() -> None:
+    candidates = [
+        {
+            "candidate_id": "generic",
+            "source": "연합인포맥스",
+            "seed_type": "other",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [],
+            "why_interesting": "사건 자체보다 배경, 이해관계자 연결고리가 있는지 확인",
+            "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "specific",
+            "source": "BBC News",
+            "seed_type": "ai_knowledge_institution",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [],
+            "why_interesting": "AI 즉답과 지식기관의 역할 변화",
+            "scores": {"total_score": 55, "broadcast_potential_proxy": 3},
+        },
+    ]
+
+    assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == ["specific"]

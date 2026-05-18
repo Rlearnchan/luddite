@@ -1,0 +1,117 @@
+{
+  "version": "v1.6",
+  "input_bundle_path": "data/candidates/anny_input_bundles.jsonl",
+  "cases": [
+    {
+      "case_id": "anny_dry_run_ai_knowledge_institution_v1",
+      "bundle_id": "anny_bundle_09277535430e",
+      "story_seed_title": "AI 즉답 시대의 지식기관 역할",
+      "expected_length_mode": "standard_representative_outline",
+      "expected_sections_min": 3,
+      "expected_sections_max": 4,
+      "expected_key_beats": [
+        {
+          "label": "AI 즉답이 주는 편리함",
+          "aliases": [
+            "AI가 답을 바로 주는 건 정말 편리하다",
+            "AI가 답을 바로 주는 시대",
+            "AI 즉답 시대"
+          ]
+        },
+        {
+          "label": "생각하는 과정이 생략될 수 있다는 문제 제기",
+          "aliases": [
+            "생략되는 건 답이 아니라 과정",
+            "AI 즉답은 그 과정을 압축한다",
+            "생각은 결과가 아니라 중간 과정"
+          ]
+        },
+        {
+          "label": "학교/박물관/천문관 같은 지식기관의 역할 변화",
+          "aliases": [
+            "학교와 지식기관은 무엇을 해야 하나",
+            "박물관은 전시품 옆 설명문 이상의 것",
+            "천문관은",
+            "지식기관"
+          ]
+        },
+        {
+          "label": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
+          "aliases": [
+            "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
+            "AI를 금지할 것인가, 다루는 법을 가르칠 것인가",
+            "AI 정답’이 아니라 ‘AI 검산",
+            "사람은 질문을 해야 한다"
+          ]
+        }
+      ],
+      "evaluation_notes": [
+        "첫 dry run 추천 대상. 투자/정치 리스크가 낮고 이야기 hook이 선명하다.",
+        "교육 효과나 인지 저하를 출처 없이 단정하면 실패로 본다.",
+        "근거가 부족한 부분은 needs_fact_check 또는 needs_source로 남긴다."
+      ]
+    },
+    {
+      "case_id": "anny_dry_run_productive_finance_policy_v1",
+      "bundle_id": "anny_bundle_5c95ee31f95d",
+      "story_seed_title": "생산적 금융과 정책자금 전환",
+      "expected_length_mode": "standard_representative_outline",
+      "expected_sections_min": 3,
+      "expected_sections_max": 4,
+      "expected_key_beats": [
+        {
+          "label": "담보·단기수익 중심 금융의 한계",
+          "aliases": [
+            "담보·단기수익 중심 금융의 한계",
+            "담보 및 단기수익 중심 금융",
+            "은행 입장에서는 담보가 제일 편하다",
+            "담보가 있나"
+          ]
+        },
+        {
+          "label": "AI/반도체 투자와 장기 위험자본 필요",
+          "aliases": [
+            "AI/반도체 투자와 장기 위험자본 필요",
+            "AI·반도체 투자와 장기 위험자본",
+            "AI 산업은 담보보다 시간이 먼저 필요하다",
+            "장기 위험자본"
+          ]
+        },
+        {
+          "label": "국민성장펀드/정책금융 논쟁",
+          "aliases": [
+            "국민성장펀드/정책금융 논쟁",
+            "국민성장펀드라는 이름이 붙으면",
+            "정책금융 논쟁",
+            "정책자금"
+          ]
+        },
+        {
+          "label": "금융권이 어디까지 위험을 나눌 수 있는가",
+          "aliases": [
+            "금융권이 어디까지 위험을 나눌 수 있는가",
+            "누가 긴 위험을 나눌 것인가",
+            "위험을 누가 나누느냐",
+            "좋은 위험을 누가, 어떻게, 얼마나 나눌 것인가"
+          ]
+        },
+        {
+          "label": "반대 관점/리스크",
+          "aliases": [
+            "반대쪽 질문도 있다",
+            "리스크",
+            "투자 이야기로 들리지 않게 조심해야 한다",
+            "정책금융은 성장의 마중물일 수도, 손실의 통로일 수도 있다"
+          ]
+        }
+      ],
+      "evaluation_notes": [
+        "채널 스타일에는 잘 맞지만 공식자료 확인이 필요하다.",
+        "정책 효과를 단정하거나 금융상품 홍보처럼 쓰면 실패로 본다.",
+        "금융위원회/한국은행/기재부 자료가 없으면 needs_source로 남긴다.",
+        "투자/정책 리스크가 있으므로 do_not_claim과 fact_check guardrail을 강하게 둔다.",
+        "이번 단계에서는 production generation이 아니라 prompt/eval fixture로만 유지한다."
+      ]
+    }
+  ]
+}

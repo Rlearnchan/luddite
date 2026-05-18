@@ -96,11 +96,13 @@ make eval-jibi-seeds
 make eval-anny-reconstruction
 make eval-piti-deck-plan
 make import-articles
+make fetch-rss-articles
 make normalize-candidates
 make score-candidates
 make render-daily-digest
 make jibi-digest
 make append-jibi-sheet
+make probe-rss-sources
 ```
 
 `make doctor-corpus`, `make test-corpus`, and `make corpus-smoke` require local
@@ -170,6 +172,71 @@ GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
 Add the service account email as an editor on the shared spreadsheet first.
 Never commit the service account JSON. OAuth is a fallback only if a service
 account cannot be invited to the spreadsheet.
+
+Probe RSS/Atom source candidates without starting a 24/7 collector:
+
+```bash
+make probe-rss-sources
+```
+
+This checks `rss_candidate` entries from `config/sources.yaml`, skips
+`subscription_manual` and manual sources, writes
+`outputs/reports/rss_probe_YYYY-MM-DD.md`, and writes
+`data/manifests/rss_probe_results.jsonl`. It does not modify
+`config/sources.yaml`; promotion to `rss_verified` remains a manual review step.
+Use `--write-suggested-patch` to generate a manual-only
+`outputs/reports/rss_probe_suggested_sources_patch.yaml` with
+`collection_enabled: false` by default.
+
+Fetch a small one-shot RSS article inbox JSONL from allowlisted sources:
+
+```bash
+make fetch-rss-articles
+luddite import-articles --input-dir data/inbox/articles
+make normalize-candidates
+make score-candidates
+make cluster-jibi-candidates
+make build-anny-input-bundles
+make prepare-anny-dry-run
+make validate-anny-dry-run
+make render-daily-digest
+```
+
+This is not a scheduler or 24/7 collector. It only reads sources enabled in
+`config/rss_collection_allowlist.yaml`, stores feed metadata as
+`data/inbox/articles/rss_YYYY-MM-DD.jsonl`, and writes
+`outputs/reports/rss_ingest_YYYY-MM-DD.md`. It does not store full article text.
+`make cluster-jibi-candidates` writes story seed clusters to
+`data/candidates/jibi_candidate_clusters.jsonl`,
+`outputs/reports/jibi_clusters_YYYY-MM-DD.md`, and
+`outputs/daily_digest/YYYY-MM-DD_clusters.md`. It also writes a selective anny
+handoff package to `data/candidates/anny_story_seed_handoff.jsonl` and
+`outputs/daily_digest/YYYY-MM-DD_story_seed_handoff.md`. The full cluster JSONL
+and report remain audit outputs; weak generic `other` clusters are hidden from
+the human-facing handoff. This does not call an LLM or generate full anny
+storylines.
+`make build-anny-input-bundles` converts that handoff into
+`data/candidates/anny_input_bundles.jsonl` and
+`outputs/reports/anny_input_bundles_YYYY-MM-DD.md`, adding candidate articles,
+core questions, rule-based story structure, missing evidence, and do-not-claim
+guardrails.
+`eval/golden_cases/anny_dry_run_cases.json` lists the first manual dry-run
+targets; no full storyline generation or LLM call happens in this step.
+`make prepare-anny-dry-run` extracts the first GPT Pro manual dry-run input to
+`outputs/model_dry_runs/anny_storyline/ai_knowledge_institution_input_bundle.json`.
+`make validate-anny-dry-run` validates the future manual output at
+`outputs/model_dry_runs/anny_storyline/ai_knowledge_institution_gpt_pro_storyline.json`;
+until that file exists it writes a pending report and exits successfully.
+`make plan-anny-evidence` turns the dry-run storyline's `needs_source` and
+`needs_fact_check` slides into an evidence enrichment checklist and pack for the
+next manual dry run. The current AI knowledge-institution pack includes a small
+curated evidence-fill set with real source URLs, coverage status, rhetorical
+bridge handling, and a `ready_for_enriched_dry_run` gate. It still does not
+automatically crawl the web or call an LLM.
+`make review-anny-fact-check` reviews the enriched manual dry-run storyline and
+writes source role labels plus fact-check priority metadata to a sidecar JSONL
+and Markdown report. This is prompt-design hygiene only; it does not mark the
+storyline broadcast-ready.
 
 For real local input, place CSV/JSONL files under `data/inbox/articles/` and run:
 

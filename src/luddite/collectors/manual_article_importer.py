@@ -99,6 +99,8 @@ def normalize_article_record(
         "url": url,
         "source": source.name,
         "source_id": source.id,
+        "source_url_canonical": raw.get("source_url_canonical") or url,
+        "duplicate_key": raw.get("duplicate_key") or stable_article_id(url, title),
         "published_at": raw.get("published_at") or None,
         "collected_at": str(raw.get("collected_at") or collected_at),
         "language": raw.get("language") or None,

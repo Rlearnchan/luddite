@@ -35,6 +35,18 @@
         "null"
       ]
     },
+    "source_url_canonical": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "duplicate_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "published_at": {
       "type": [
         "string",

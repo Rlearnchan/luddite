@@ -125,8 +125,72 @@ Authentication and first-run rules:
 - `rss_candidate` entries are still unverified endpoint candidates.
 - Before implementing the RSS collector, each candidate source needs endpoint
   discovery, fetch test, and parse test.
+- Milestone 1.1 adds `make probe-rss-sources` for one-shot RSS/Atom endpoint
+  probing only. It is not a 24/7 collector.
+- Milestone 1.1.1 improves feed discovery with HTML autodiscovery, expanded
+  known path candidates, and suggested source patch output.
+- `status=rss_verified` means technical fetch+parse verification only.
+  `collection_enabled=false` keeps operational collection off until terms and
+  usage scope are reviewed.
+- Milestone 1.1.2 adds
+  `docs/integrations/rss_terms_enablement_review.md` and
+  `config/rss_collection_allowlist.yaml`; all verified feeds stay disabled
+  until an operator enables them after review.
+- Milestone 1.2 adds a one-shot `make fetch-rss-articles` path that writes
+  `data/inbox/articles/rss_YYYY-MM-DD.jsonl` for enabled RSS sources. It is not
+  a scheduler and does not store full article text.
+- Milestone 1.2.1 keeps that one-shot shape and adds run-level dedupe,
+  source contribution reporting, feed-summary cleanup, and a small domestic
+  smoke allowlist: BBC, NPR, Atlas Obscura, 연합인포맥스, 한국경제. 한국은행 and
+  정책브리핑 remain disabled evidence sources; 연합뉴스 remains retry-later/manual.
+- Milestone 1.2.2 adds an RSS candidate quality gate before Top Candidate
+  selection: sports-only, single-event accident/crime, pure place listings,
+  live politics, empty-summary items, and single-stock/asset frames are
+  downranked or excluded unless a broader structure is visible. Top Candidates
+  are selected only after quality gating and source balancing.
+- Milestone 1.2.3 adds editorial scoring polish: domestic finance/policy and
+  RSS items now get narrower categories such as `productive_finance_policy`,
+  `industrial_policy_rnd`, `single_company_financing`, `market_rate_stress`,
+  `ai_knowledge_institution`, `infrastructure_project_failure`, and
+  `climate_policy_conflict`. Generic rationale no longer keeps weak `other`
+  candidates in Top Candidates.
+- Milestone 1.3 adds a rule-based Evidence Cluster / Story Seed MVP. Scored
+  candidates are grouped into `data/candidates/jibi_candidate_clusters.jsonl`,
+  with readiness, missing evidence, suggested official sources, and future
+  hooks for syuka-ops and LLM enrichment. It does not generate full anny
+  storylines.
+- Milestone 1.3.1 adds story seed handoff polish. Full clusters stay in the
+  audit JSONL/report, while `data/candidates/anny_story_seed_handoff.jsonl` and
+  `outputs/daily_digest/YYYY-MM-DD_story_seed_handoff.md` expose only
+  handoff-worthy story seeds with quality flags and handoff priority. Weak
+  generic `other` clusters are hidden from the human-facing handoff.
+- Milestone 1.4 builds anny input bundles from story seed handoff records and
+  scored candidates. Bundles include candidate articles, core questions,
+  suggested story structure, missing evidence, official-source suggestions, and
+  do-not-claim guardrails. It still does not generate full anny storylines or
+  call an LLM.
+- Milestone 1.4.1 cleans bundle evidence tasks, enriches candidate article
+  context, adds dry-run readiness fields, and defines
+  `eval/golden_cases/anny_dry_run_cases.json` for manual anny storyline dry
+  runs. It still does not generate a storyline.
+- Milestone 1.5 prepares the first manual anny storyline dry run for
+  `AI 즉답 시대의 지식기관 역할`. It extracts a single GPT Pro input bundle under
+  `outputs/model_dry_runs/anny_storyline/` and adds a validator for the future
+  manual storyline JSON. Production anny generation and LLM API calls remain out
+  of scope.
+- The 1.5 GPT Pro dry run is a story-structure sample built from the input
+  bundle, not a completed research packet or broadcast-ready script. Passing the
+  dry-run eval means the structure is usable; evidence enrichment is still
+  required before production anny generation.
+- Milestone 1.5.1 creates an evidence enrichment plan for the same AI
+  knowledge-institution topic. It maps `needs_source` / `needs_fact_check`
+  slides to evidence tasks, writes an evidence pack scaffold, and defines
+  Milestone 1.5.2 as an enriched manual dry run. It still does not fetch the web
+  or call an LLM.
+- Probe output is written to `outputs/reports/rss_probe_YYYY-MM-DD.md` and
+  `data/manifests/rss_probe_results.jsonl`.
 - A source should only move from `rss_candidate` to `rss_verified` after fetch
-  and parse tests pass.
+  and parse tests pass, and the registry update is still manual.
 - `subscription_manual` sources must not be auto-fetched; use links and short
   summaries only.
 
@@ -180,8 +244,102 @@ Milestone 0.9: jibi Daily Digest MVP
 
 Milestone 1.0: Google Sheet `jibi 후보` append implementation
 
-Milestone 1.1: anny DB-based Storyline MVP
+Milestone 1.1: RSS endpoint discovery / fetch test
 
-Milestone 1.2: syuka-ops similarity/performance bridge
+Milestone 1.2: RSS item ingestion MVP
 
-Milestone 1.3: piti renderer MVP
+Milestone 1.2.1: RSS ingest dedupe/report polish + small domestic source enable
+
+Milestone 1.2.2: RSS Candidate Quality Gate + Source-specific Filtering
+
+Milestone 1.2.3: RSS Candidate Editorial Scoring Polish
+
+Milestone 1.3: Evidence Cluster / Story Seed MVP
+
+Milestone 1.3.1: Story Seed Handoff Polish
+
+Milestone 1.4: anny Story Seed Input Builder
+
+Milestone 1.4.1: Bundle Hygiene + Anny Dry Run Prep
+
+Milestone 1.5: Manual Anny Storyline Dry Run
+
+Milestone 1.5.1: Evidence Enrichment Plan for Anny
+
+Milestone 1.5.2a: Evidence Fill for AI Knowledge Institution
+
+- Fill the AI knowledge-institution evidence pack with a small curated source set
+  before another manual dry run.
+- Keep full article text out of repo artifacts; store only title, URL, source,
+  short summary, role, reliability, and manual-check state.
+- Treat question/bridge slides as `rhetorical_bridge` with low source priority
+  instead of forcing every line into a supporting-article task.
+- Mark slide evidence needs as covered/partial/missing and expose
+  `ready_for_enriched_dry_run` before 1.5.2b.
+
+Milestone 1.5.3: Anny Evidence/Fact-Check Review + Source Hygiene
+
+- Do not write a new storyline. Review the current enriched manual dry run.
+- Add slide-level sidecar metadata for `fact_check_priority`,
+  `fact_check_reason`, `required_before_broadcast`, and `source_roles`.
+- Treat `ready_for_prompt_design=true` as acceptable while keeping
+  `ready_for_production_agent=false` and `ready_for_broadcast=false`.
+- Carry prompt rules forward: distinguish sourced slides from fact-checked
+  slides, include counterpoints, keep Korea bridge as supporting context, and
+  avoid over-sourcing rhetorical bridge slides.
+
+Milestone 1.6: Anny Prompt / Eval Contract Design
+
+- Generalize 1.5.x manual/enriched dry-run learnings into a prompt/eval contract.
+- Extend hygiene metadata with `fact_check_kind`, `required_before_storyline`,
+  `required_before_broadcast`, and slide-specific `source_refs`.
+- Validator can require the hygiene contract without implementing a production
+  anny agent or making an LLM API call.
+- Keep the second dry-run fixture, `생산적 금융과 정책자금 전환`, as a
+  prompt/eval case only. It needs stronger policy/investment guardrails before
+  any production generation.
+
+Milestone 1.6.1: Prompt Contract Finalization + Second Dry-run Prep
+
+- Finalize the output contract in `docs/product/anny_mvp_storyline_spec.md`.
+- Prepare the second dry-run input bundle for `생산적 금융과 정책자금 전환`.
+- Add policy/finance guardrails to prompt/eval: no policy-effect certainty, no
+  investment advice, no price/return/stock forecasts, no corporate/product promo.
+- Keep `ready_for_prompt_design=true`, `ready_for_production_agent=false`, and
+  `ready_for_broadcast=false`.
+
+Milestone 1.6.4: Anny Contract Final Polish + Finance Evidence Fill Prep
+
+- Keep production anny out of scope. This is still prompt/eval contract and
+  evidence-prep work only.
+- Finalize `docs/product/anny_output_contract.md` and
+  `docs/product/anny_prompt_contract_lessons.md`.
+- Compare the AI knowledge-institution and productive-finance manual dry runs in
+  `outputs/reports/anny_dry_run_comparison.md`.
+- Prepare `data/candidates/anny_evidence_pack_productive_finance_policy.json`
+  with URL-pending evidence categories for the next manual evidence fill.
+- Finance evidence fill must cover official material, policy mechanism,
+  independent long-term investment context, counterpoint, market/finance view,
+  and visual candidates without storing full article text.
+- Maintain `ready_for_prompt_design=true`, `ready_for_production_agent=false`,
+  and `ready_for_broadcast=false`.
+
+Milestone 1.7: Anny DB-based MVP Design / Run Contract Scaffold
+
+- Add `specs/anny_run_input_schema.json` and
+  `specs/anny_run_manifest_schema.json`.
+- Add `luddite anny-run-storyline` / `make anny-run-storyline` as a local
+  validation runner for manually prepared storyline JSON.
+- The runner writes run input files, manifests, and reports for the two existing
+  manual dry runs. It uses the existing dry-run validator and hygiene contract.
+- This is not a production anny agent and does not call an LLM API.
+- Current readiness:
+  `ready_for_prompt_design=true`, `ready_for_manual_storyline=true`,
+  `ready_for_api_experiment=false`, `ready_for_production_agent=false`,
+  `ready_for_broadcast=false`.
+
+Future milestone: anny DB-based Storyline MVP
+
+Future milestone: syuka-ops similarity/performance bridge
+
+Future milestone: piti renderer MVP

@@ -1,0 +1,94 @@
+{
+  "pack_id": "evidence_pack_productive_finance_policy",
+  "story_seed_title": "생산적 금융과 정책자금 전환",
+  "bundle_id": "anny_bundle_5c95ee31f95d",
+  "case_id": "anny_dry_run_productive_finance_policy_v1",
+  "status": "prep_only_url_pending",
+  "full_article_text_stored": false,
+  "categories": {
+    "primary_official_source": [
+      {
+        "title": "국민성장펀드 성과점검 및 발전방향 세미나 공식자료",
+        "url": null,
+        "source": "금융위원회 / 산업은행",
+        "source_type": "official_release",
+        "short_summary": "금융위원장 발언 원문, 국민성장펀드 구조, 정책 목표 확인.",
+        "role": "primary_official_source",
+        "reliability": "high",
+        "needs_manual_check": true
+      }
+    ],
+    "policy_mechanism": [
+      {
+        "title": "국민성장펀드 손실분담·민간 매칭 구조",
+        "url": null,
+        "source": "금융위원회 / 산업은행 / 기획재정부",
+        "source_type": "official_or_policy_document",
+        "short_summary": "정책자금, 민간자금, 보증·후순위 구조, 손실 발생 시 부담 순서 확인.",
+        "role": "policy_mechanism",
+        "reliability": "high",
+        "needs_manual_check": true
+      }
+    ],
+    "research_or_survey": [
+      {
+        "title": "AI·반도체 장기 투자 규모 관련 독립 자료",
+        "url": null,
+        "source": "한국은행 / 산업연구원 / OECD / 민간 리서치",
+        "source_type": "research_or_survey",
+        "short_summary": "첨단전략산업 투자 규모, 회수 기간, 자본집약도에 대한 독립 근거.",
+        "role": "research_or_survey",
+        "reliability": "medium",
+        "needs_manual_check": true
+      }
+    ],
+    "counterpoint": [
+      {
+        "title": "정책금융 부작용과 관치금융 비판 사례",
+        "url": null,
+        "source": "국회/감사원/학술자료/언론 분석",
+        "source_type": "counterpoint_analysis",
+        "short_summary": "정책자금이 특정 기업 지원, 손실 전가, 비효율 투자로 흐를 수 있다는 반대 관점.",
+        "role": "counterpoint",
+        "reliability": "medium",
+        "needs_manual_check": true
+      }
+    ],
+    "market_finance_view": [
+      {
+        "title": "금융권 건전성·위험분담 관점",
+        "url": null,
+        "source": "은행권/금융연구원/금융감독원 자료",
+        "source_type": "market_finance_view",
+        "short_summary": "은행 건전성, 예금자 보호, 위험가중자산, 정책 요구와 민간 금융 논리의 충돌.",
+        "role": "market_finance_view",
+        "reliability": "medium",
+        "needs_manual_check": true
+      }
+    ],
+    "visual_candidates": [
+      {
+        "title": "정책자금-민간자금-기업투자 흐름도",
+        "url": null,
+        "source": "manual_visual_plan",
+        "source_type": "visual_candidate",
+        "short_summary": "정책자금과 민간 매칭, 손실분담, 장기 위험자본 흐름을 도식화할 후보.",
+        "role": "visual_candidates",
+        "reliability": "low",
+        "needs_manual_check": true
+      }
+    ]
+  },
+  "manual_research_checklist": [
+    "금융위원회/산업은행/국민성장펀드 official material",
+    "국민성장펀드 손실분담·민간 매칭 구조",
+    "AI·반도체 장기 투자 규모 관련 official or independent material",
+    "반대 관점: 관치금융, 정책금융 실패, 손실 전가, 비효율 투자",
+    "금융권 관점: 건전성, 위험가중자산, 예금자 보호, 장기 위험자본 회피 이유"
+  ],
+  "ready_for_evidence_fill": true,
+  "ready_for_prompt_design": true,
+  "ready_for_production_agent": false,
+  "ready_for_broadcast": false,
+  "created_at": "2026-05-18T08:55:40.562204+00:00"
+}

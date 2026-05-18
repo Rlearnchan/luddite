@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction eval-piti-deck-plan import-articles normalize-candidates score-candidates render-daily-digest jibi-digest append-jibi-sheet
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs anny-run-storyline render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -50,17 +50,62 @@ eval-jibi-seeds:
 eval-anny-reconstruction:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite eval-anny-reconstruction
 
+validate-anny-dry-run:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-anny-dry-run
+
+validate-anny-enriched-dry-run:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite validate-anny-dry-run \
+		--storyline outputs/model_dry_runs/anny_storyline/ai_knowledge_institution_gpt_pro_storyline_enriched.json \
+		--baseline-storyline outputs/model_dry_runs/anny_storyline/ai_knowledge_institution_gpt_pro_storyline.json \
+		--hygiene-jsonl outputs/model_dry_runs/anny_storyline/ai_knowledge_institution_source_hygiene.jsonl \
+		--report outputs/eval/anny_storyline_dry_run/latest_enriched.md \
+		--output-jsonl outputs/eval/anny_storyline_dry_run/latest_enriched.jsonl \
+		--require-enriched \
+		--require-hygiene-contract
+
 eval-piti-deck-plan:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite eval-piti-deck-plan
 
 import-articles:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite import-articles
 
+fetch-rss-articles:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite fetch-rss-articles
+
 normalize-candidates:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite normalize-candidates
 
 score-candidates:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite score-candidates
+
+cluster-jibi-candidates:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite cluster-jibi-candidates
+
+build-anny-input-bundles:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite build-anny-input-bundles
+
+prepare-anny-input-bundles: build-anny-input-bundles
+
+prepare-anny-dry-run:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite prepare-anny-dry-run
+
+prepare-anny-finance-dry-run:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite prepare-anny-dry-run \
+		--case-id anny_dry_run_productive_finance_policy_v1 \
+		--output-bundle outputs/model_dry_runs/anny_storyline/productive_finance_policy_input_bundle.json \
+		--expected-storyline outputs/model_dry_runs/anny_storyline/productive_finance_policy_gpt_pro_storyline.json
+
+plan-anny-evidence:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite plan-anny-evidence
+
+review-anny-fact-check:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite review-anny-fact-check
+
+compare-anny-dry-runs:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite compare-anny-dry-runs
+
+anny-run-storyline:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite anny-run-storyline
 
 render-daily-digest:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-daily-digest
@@ -70,3 +115,6 @@ jibi-digest:
 
 append-jibi-sheet:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite append-jibi-sheet --dry-run
+
+probe-rss-sources:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite probe-rss-sources

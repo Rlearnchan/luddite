@@ -1,0 +1,37 @@
+# RSS collection allowlist for future Milestone 1.2 ingestion.
+#
+# Milestone 1.2.1 enables a small one-shot smoke set only. This file does not
+# start a collector by itself, and collection_enabled=false sources stay skipped.
+
+sources:
+  - source_id: bbc_rss_candidate
+    collection_enabled: true
+    reason: public_feed_test_ingestion
+
+  - source_id: infomax_manual
+    collection_enabled: true
+    reason: domestic_numbers_bridge_test
+
+  - source_id: hankyung_manual
+    collection_enabled: true
+    reason: domestic_business_bridge_test
+
+  - source_id: mk_manual
+    collection_enabled: false
+    reason: domestic_business_overlap_hold
+
+  - source_id: guardian_rss_candidate
+    collection_enabled: false
+    reason: terms_pending
+
+  - source_id: npr_rss_candidate
+    collection_enabled: true
+    reason: public_feed_test_ingestion
+
+  - source_id: lemonde_rss_candidate
+    collection_enabled: false
+    reason: personal_noncommercial_noncollective_terms
+
+  - source_id: atlas_obscura
+    collection_enabled: true
+    reason: weird_culture_seed_test

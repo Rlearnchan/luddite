@@ -104,6 +104,155 @@ piti/PPT: 필요 시 원문 + 번역 확대
 
 즉, 특정 기사 하나가 아니라 `뉴스 DB 속 연결된 evidence bundle`이 입력이다.
 
+## 8.1 anny input bundle
+
+Milestone 1.4부터 immediate input은 `anny_input_bundle`이다.
+
+```text
+story_seed_handoff
+-> anny_input_bundle
+-> manual dry run
+-> later storyline generation
+```
+
+Bundle에는 다음이 포함된다.
+
+```text
+core_question
+candidate_articles
+required_evidence
+nice_to_have_evidence
+fact_check_tasks
+official_source_tasks
+suggested_story_structure
+opening_hook
+audience_question
+must_include
+avoid
+do_not_claim
+needs_fact_check
+```
+
+원칙:
+
+- `do_not_claim`은 생성기가 절대 넘으면 안 되는 guardrail이다.
+- `candidate_articles`에는 원문 전문을 넣지 않는다.
+- evidence가 부족하면 내용을 발명하지 않고 `needs_fact_check` /
+  `needs_source`를 남긴다.
+- 1.4.1에서는 dry-run case만 준비하고 full storyline generation은 하지 않는다.
+
+## 8.2 anny output contract
+
+Milestone 1.6부터 anny output은 단순 outline JSON이 아니라 prompt/eval contract를
+따른다. Production agent 구현 전에도 이 contract를 기준으로 manual dry run을
+검증한다.
+
+Required top-level fields:
+
+```text
+storyline_id
+title
+sections
+risk_flags
+required_fact_checks
+```
+
+Required slide fields:
+
+```text
+slide_type
+headline
+body
+source_urls
+image_urls
+notes
+needs_fact_check
+needs_source
+```
+
+Source hygiene sidecar 또는 slide metadata:
+
+```text
+fact_check_priority: high | medium | low
+fact_check_kind:
+  factual_claim
+  institution_quote_context
+  education_research_claim
+  korea_bridge_claim
+  policy_effect_claim
+  investment_risk_claim
+  production_checklist
+  rhetorical_caution
+  source_context
+required_before_storyline: bool
+required_before_broadcast: bool
+source_refs:
+  - url
+    role
+    use
+    confidence
+    manual_check_required
+```
+
+Rules:
+
+- `source_urls`와 `image_urls`는 분리한다. 같은 URL이 양쪽에 있으면 실패다.
+- source가 붙은 slide를 fact-check 완료 slide로 취급하지 않는다.
+- needs_fact_check / needs_source는 적극적으로 남긴다. 근거 부족을 숨기면 실패다.
+- `required_before_storyline`은 dry-run storyline 생성 전 꼭 필요한 최소 근거다.
+- `required_before_broadcast`는 방송 전 사람이 반드시 확인해야 할 근거다.
+- counterpoint는 AI/교육/정책/금융처럼 논쟁적인 주제에서 필수다.
+- risk slide 또는 counterpoint slide는 민감 주제에서 정상적인 구조 요소다.
+- `korea_bridge`는 후반 보조 연결로만 사용하고 메인 논지를 한국 사례로
+  과확장하지 않는다.
+- rhetorical bridge, 질문형 전환, punchline은 출처를 과도하게 요구하지 않되,
+  사실 주장처럼 쓰면 안 된다.
+- key beat 평가는 단일 단어가 아니라 구문 중심 alias로 한다.
+- `production_checklist` slide는 나중에 PPT 본문보다 내부 제작 체크리스트,
+  appendix, notes로 넘기는 것을 기본으로 한다.
+- `do_not_claim`과 `avoid`는 절대 넘지 않는다.
+
+Policy/finance guardrails:
+
+- 정책 효과를 단정하지 않는다.
+- 금융상품, 정책상품, 특정 회사 홍보처럼 쓰지 않는다.
+- 투자 조언, 매수/매도 의견, 가격·수익률·주가 전망을 단정하지 않는다.
+- 공식자료가 없으면 `needs_source` 또는 `required_before_broadcast`로 남긴다.
+- 정책/금융 주제는 risk discussion 또는 counterpoint를 포함한다.
+
+Run contract scaffold:
+
+- `specs/anny_run_input_schema.json` defines the local run input manifest:
+  `run_id`, `bundle_id`, `story_seed_title`, input/evidence paths,
+  `length_mode`, contract/prompt versions, mode, requester, and timestamp.
+- `specs/anny_run_manifest_schema.json` defines the run result manifest:
+  status, input/evidence/storyline/report paths, `model_source`, schema and
+  hygiene pass/fail, timestamp, and notes.
+- `luddite anny-run-storyline` validates manually prepared storyline JSON and
+  writes run manifests/reports. It does not call an LLM and is not a production
+  anny agent.
+
+Readiness states:
+
+- `ready_for_prompt_design`: prompt/eval contract is clear enough to design
+  production prompts.
+- `ready_for_manual_storyline`: a human/GPT Pro dry run can be prepared and
+  validated with the local runner.
+- `ready_for_api_experiment`: API-based generation may be tested in a controlled
+  non-production setting.
+- `ready_for_production_agent`: automated anny generation is safe enough to
+  wire into the product.
+- `ready_for_broadcast`: evidence and fact-check review are complete enough for
+  broadcast use.
+
+Current expected state:
+
+- `ready_for_prompt_design: true`
+- `ready_for_manual_storyline: true`
+- `ready_for_api_experiment: false`
+- `ready_for_production_agent: false`
+- `ready_for_broadcast: false`
+
 ## 9. storyline Markdown format
 
 ```md

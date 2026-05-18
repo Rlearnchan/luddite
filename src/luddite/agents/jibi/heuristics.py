@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 
 POLITICAL_TERMS = {
@@ -65,6 +66,51 @@ STRUCTURAL_TERMS = {
 }
 PUNCHLINE_TERMS = {"밈", "농담", "웃", "meme", "joke", "콜라", "반바지", "레이저"}
 NUMBER_TERMS = {"%", "배", "억", "조", "million", "billion", "trillion", "percent"}
+COST_ASYMMETRY_TERMS = {
+    "cheap",
+    "expensive",
+    "low-cost",
+    "high-cost",
+    "cost per kill",
+    "interceptor",
+    "missile",
+    "drone",
+    "budget exhaustion",
+    "비용",
+    "비용 역전",
+    "드론",
+    "미사일",
+    "요격",
+    "저비용",
+    "고비용",
+}
+INDUSTRY_DISRUPTION_TERMS = {
+    "supply chain",
+    "energy",
+    "power grid",
+    "transformer",
+    "data center",
+    "ai infrastructure",
+    "semiconductor",
+    "battery",
+    "logistics",
+    "production bottleneck",
+    "market structure",
+    "regulation",
+    "공급망",
+    "전력",
+    "전력망",
+    "변압기",
+    "데이터센터",
+    "ai 인프라",
+    "반도체",
+    "배터리",
+    "물류",
+    "생산 병목",
+    "시장 구조",
+    "규제",
+    "산업 전반",
+}
 
 
 def text_blob(*values: object) -> str:
@@ -73,12 +119,19 @@ def text_blob(*values: object) -> str:
 
 def contains_any(text: str, terms: Iterable[str]) -> bool:
     lowered = text.lower()
-    return any(term.lower() in lowered for term in terms)
+    return any(_term_in_text(lowered, term) for term in terms)
 
 
 def count_any(text: str, terms: Iterable[str]) -> int:
     lowered = text.lower()
-    return sum(1 for term in terms if term.lower() in lowered)
+    return sum(1 for term in terms if _term_in_text(lowered, term))
+
+
+def _term_in_text(lowered_text: str, term: str) -> bool:
+    lowered_term = term.lower()
+    if lowered_term.isascii() and lowered_term.isalnum():
+        return re.search(rf"\b{re.escape(lowered_term)}\b", lowered_text) is not None
+    return lowered_term in lowered_text
 
 
 def infer_seed_type(title: str, summary: str | None = None, tags: list[str] | None = None) -> str:
@@ -87,7 +140,14 @@ def infer_seed_type(title: str, summary: str | None = None, tags: list[str] | No
         return "absurd_foreign"
     if contains_any(text, {"반바지", "폭염", "회사", "학교", "생활", "heat", "office"}):
         return "life_change"
-    if contains_any(text, {"드론", "미사일", "비용", "cost", "cheap", "expensive"}):
+    if contains_any(text, COST_ASYMMETRY_TERMS) and (
+        contains_any(text, {"드론", "drone", "공격", "attack"})
+        and contains_any(text, {"미사일", "missile", "요격", "interceptor", "defense"})
+        or (
+            contains_any(text, {"cheap", "low-cost", "저비용", "값싼"})
+            and contains_any(text, {"expensive", "high-cost", "고비용", "비싼"})
+        )
+    ):
         return "cost_asymmetry"
     if contains_any(text, {"정책", "세제", "코스피", "금리", "policy", "tax", "market"}):
         return "policy_market_shock"
@@ -95,7 +155,7 @@ def infer_seed_type(title: str, summary: str | None = None, tags: list[str] | No
         return "political_fracture"
     if contains_any(text, {"미중", "중국", "트럼프", "지정학", "china", "geopolitical"}):
         return "geopolitical_prequel"
-    if contains_any(text, {"ai", "반도체", "전력", "산업", "technology"}):
+    if contains_any(text, INDUSTRY_DISRUPTION_TERMS):
         return "industry_disruption"
     if contains_any(text, {"치료", "레이저", "드론", "우주", "science", "medical"}):
         return "science_technology"

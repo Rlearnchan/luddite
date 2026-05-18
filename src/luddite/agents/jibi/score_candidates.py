@@ -10,6 +10,8 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.agents.jibi.heuristics import (
+    COST_ASYMMETRY_TERMS,
+    INDUSTRY_DISRUPTION_TERMS,
     NUMBER_TERMS,
     POLITICAL_TERMS,
     PUNCHLINE_TERMS,
@@ -103,6 +105,26 @@ GENERIC_EXPANSIONS = {
     "구조적 확장",
     "한국 시청자 연결 지점",
 }
+EDITORIAL_SCORE_FLOOR_CATEGORIES = {
+    "productive_finance_policy",
+    "industrial_policy_rnd",
+    "infrastructure_project_failure",
+    "ai_knowledge_institution",
+    "climate_policy_conflict",
+}
+QUALITY_GATE_FAILURES = {
+    "sports_only": ("rss_sports_only", 30, "reject"),
+    "accident_single_event": ("single_event_accident", 28, "reject"),
+    "pure_place_listing": ("pure_place_listing", 35, "keep_for_later"),
+    "single_person_anecdote": ("single_person_anecdote", 18, "keep_for_later"),
+    "generic_local_incident": ("generic_local_incident", 22, "reject"),
+    "live_politics_or_statement": ("live_news_volatility", 20, "editorial_review"),
+    "single_stock_or_asset_frame": ("single_stock_investment_frame", 18, "editorial_review"),
+    "single_company_frame": ("single_company_frame", 24, "keep_for_later"),
+    "market_rate_stress": ("single_stock_investment_frame", 16, "editorial_review"),
+    "empty_summary": ("thin_evidence", 12, "keep_for_later"),
+    "empty_summary_domestic_business": ("thin_evidence", 16, "keep_for_later"),
+}
 FALLBACK_EXPANSIONS = {
     "cost_asymmetry": [
         "우크라이나/중동 전장에서 드론이 비용 구조를 바꾼 사례",
@@ -123,6 +145,41 @@ FALLBACK_EXPANSIONS = {
         "공급망/전력/인프라 병목",
         "기업 단일 이슈가 아니라 산업 구조 변화로 확장",
         "숫자/그래프/공식자료로 확인할 포인트",
+    ],
+    "productive_finance_policy": [
+        "담보 중심 금융에서 생산적 투자 금융으로의 전환",
+        "국민성장펀드와 AI/반도체 투자 재원",
+        "금융권 위험분담과 정책금융의 역할",
+    ],
+    "industrial_policy_rnd": [
+        "AI 산업정책이 로봇/제조로 확장되는 흐름",
+        "정부 R&D 예산과 민간 양산 사이의 간극",
+        "한국형 휴머노이드가 필요한 산업 현장",
+    ],
+    "single_company_financing": [
+        "글라스기판 투자와 AI 반도체 공급망",
+        "신성장 설비투자 자금조달 부담",
+        "단일 기업 홍보/투자 조언으로 읽히지 않는 안전한 프레임",
+    ],
+    "market_rate_stress": [
+        "장기금리 상승과 성장주/AI 투자 할인율",
+        "채권시장 스트레스와 기업 자금조달 비용",
+        "투자 조언을 피하는 거시 구조 설명",
+    ],
+    "ai_knowledge_institution": [
+        "AI 검색이 사고 과정과 학습 습관을 바꾸는 지점",
+        "학교/박물관/천문관 같은 지식기관의 역할 변화",
+        "편리함과 지적 근육 약화 사이의 균형",
+    ],
+    "infrastructure_project_failure": [
+        "대형 인프라의 비용 폭증과 정치 압력",
+        "고속철/지역균형 논리와 실제 사업성",
+        "한국 SOC 사업과 비교할 수 있는 실패 패턴",
+    ],
+    "climate_policy_conflict": [
+        "산불 예방 정책과 연방 행정의 충돌",
+        "기후/재난 이슈가 문화전쟁으로 번지는 방식",
+        "정치 프레임을 줄이고 제도 설계 중심으로 다루는 방법",
     ],
     "absurd_foreign": [
         "이상한 해외 뉴스가 나온 배경",
@@ -286,6 +343,8 @@ def _failure_modes(
         modes.append("thin_evidence")
     if "corporate_promo_risk" in risk_flags and broadcast_potential_proxy <= 2:
         modes.append("single_company_frame")
+    if "single_company_frame" in candidate.get("quality_flags", []):
+        modes.append("single_company_frame")
     if "investment_advice_risk" in risk_flags and contains_any(
         text_blob(candidate.get("title"), candidate.get("summary")),
         {"손절", "목표가", "매수", "매도", "추천", "종목", "stock pick"},
@@ -295,7 +354,64 @@ def _failure_modes(
         modes.append("live_news_volatility")
     if final_grade == "D" and any(flag in HIGH_RISK_FLAGS for flag in risk_flags):
         modes.append("sensitive_high_low_gain")
+    for flag in candidate.get("quality_flags", []):
+        if flag in QUALITY_GATE_FAILURES:
+            modes.append(QUALITY_GATE_FAILURES[flag][0])
     return list(dict.fromkeys(modes))
+
+
+def _quality_gate(candidate: dict[str, Any], text: str) -> dict[str, Any]:
+    flags = [
+        str(value).strip()
+        for value in candidate.get("quality_flags", [])
+        if str(value).strip()
+    ]
+    source_id = str(candidate.get("source_id") or "")
+    seed_url = str(candidate.get("seed_url") or "")
+    seed_type = str(candidate.get("seed_type") or "")
+    if source_id == "bbc_rss_candidate" and "/sport/" in seed_url and "sports_only" not in flags:
+        flags.append("sports_only")
+    if str(candidate.get("seed_type") or "") == "market_rate_stress":
+        flags.append("market_rate_stress")
+    if seed_type == "cost_asymmetry" and not (
+        contains_any(text, {"드론", "drone"})
+        and contains_any(text, {"미사일", "missile", "요격", "interceptor"})
+        and contains_any(text, COST_ASYMMETRY_TERMS)
+    ):
+        flags.append("misclassified_cost_asymmetry")
+    if seed_type == "industry_disruption" and not contains_any(text, INDUSTRY_DISRUPTION_TERMS):
+        flags.append("misclassified_industry_disruption")
+    penalty = 0
+    forced_action: str | None = None
+    evidence_cap: int | None = None
+    for flag in flags:
+        if flag in QUALITY_GATE_FAILURES:
+            _, score_penalty, action = QUALITY_GATE_FAILURES[flag]
+            penalty += score_penalty
+            forced_action = _stronger_forced_action(forced_action, action)
+            evidence_cap = 1 if flag.startswith("empty_summary") else evidence_cap
+        elif flag.startswith("misclassified_"):
+            penalty += 12
+            forced_action = _stronger_forced_action(forced_action, "keep_for_later")
+    return {
+        "quality_flags": list(dict.fromkeys(flags)),
+        "score_penalty": penalty,
+        "forced_action": forced_action,
+        "evidence_cap": evidence_cap,
+    }
+
+
+def _stronger_forced_action(current: str | None, new: str) -> str:
+    order = {
+        "send_to_anny": 0,
+        "gather_more_evidence": 1,
+        "keep_for_later": 2,
+        "editorial_review": 3,
+        "reject": 4,
+    }
+    if current is None:
+        return new
+    return new if order[new] > order[current] else current
 
 
 def _recommended_action(
@@ -351,6 +467,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     blocked_reason = None
     if "political_sensitivity" in risk_flags and _is_direct_domestic_political_evaluation(text):
         blocked_reason = "direct_president_party_evaluation"
+    quality_gate = _quality_gate(candidate, text)
     possible_expansions = _concrete_expansions(candidate, text)
     weird_hook = _bounded(1 + count_any(text, WEIRD_TERMS), high=5)
     structural_expansion = _bounded(1 + count_any(text, STRUCTURAL_TERMS), high=5)
@@ -362,6 +479,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         candidate.get("evidence_depth_hint"),
         2,
     )
+    if quality_gate["evidence_cap"] is not None:
+        evidence_depth = min(evidence_depth, int(quality_gate["evidence_cap"]))
     timeliness = 3 if candidate.get("published_at") else 2
     broadcast_potential_proxy = _bounded(
         weird_hook + structural_expansion + punchline_potential - 3,
@@ -405,13 +524,23 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         ),
     }
     total_score = round(sum(score_components.values()), 1)
+    if "single_company_frame" in quality_gate["quality_flags"]:
+        total_score -= 10
+    if "market_rate_stress" in quality_gate["quality_flags"]:
+        total_score -= 8
     if contains_any(text, {"단발성", "single source"}) or "single_source_dependency" in risk_flags:
         total_score -= 8
     if "corporate_promo_risk" in risk_flags and broadcast_potential_proxy <= 2:
         total_score -= 10
     if blocked_reason:
         total_score = min(total_score, 20)
+    total_score -= int(quality_gate["score_penalty"])
     if not blocked_reason and _is_overseas_political_fracture(candidate, text):
+        total_score = max(total_score, 35)
+    if (
+        not blocked_reason
+        and str(candidate.get("seed_type") or "") in EDITORIAL_SCORE_FLOOR_CATEGORIES
+    ):
         total_score = max(total_score, 35)
     total_score = round(max(0, total_score), 1)
     final_grade = _score_band(int(total_score), risk_penalty)
@@ -433,6 +562,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         evidence_gap=evidence_gap,
         blocked_reason=blocked_reason,
     )
+    if quality_gate["forced_action"]:
+        recommended_action = str(quality_gate["forced_action"])
     failure_modes = _failure_modes(
         candidate=candidate,
         risk_flags=risk_flags,
@@ -443,6 +574,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     )
     scored = {
         **candidate,
+        "quality_flags": quality_gate["quality_flags"],
         "possible_expansions": possible_expansions,
         "scores": {
             "weights": SCORING_WEIGHTS,

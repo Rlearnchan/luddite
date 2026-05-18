@@ -71,7 +71,11 @@
                     "bridge",
                     "punchline",
                     "closing_question",
-                    "source_heavy"
+                    "source_heavy",
+                    "counterpoint",
+                    "risk",
+                    "production_checklist",
+                    "rhetorical"
                   ]
                 },
                 "headline": {
@@ -144,6 +148,8 @@
         "subscription_source_only",
         "medical_claim_risk",
         "investment_advice_risk",
+        "policy_effect_uncertainty",
+        "official_evidence_missing",
         "crime_or_drug_sensitivity",
         "live_news_volatility",
         "bdc_conflict",
