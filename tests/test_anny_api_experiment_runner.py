@@ -8,9 +8,11 @@ from luddite.agents.anny.api_experiment_runner import (
     validate_api_experiment_raw_output,
     write_api_v1_to_v5_comparison_report,
     write_api_v1_to_v6_comparison_report,
+    write_api_v1_to_v7_comparison_report,
     write_api_v1_v2_comparison_report,
     write_api_v1_v2_v3_comparison_report,
     write_api_v1_v2_v3_v4_comparison_report,
+    write_v6_claim_hygiene_review,
 )
 
 FIXTURE_DIR = paths.REPO_ROOT / "tests/fixtures/anny_api_experiment"
@@ -246,6 +248,26 @@ def test_title_with_source_specific_marker_without_source_fails(tmp_path) -> Non
     assert "unsupported_claim" in result.failure_modes
 
 
+def test_source_specific_title_with_needs_source_true_is_not_unsupported(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    slide = payload["sections"][0]["slides"][0]
+    slide["body"] = ["Royal Observatory warns about AI."]
+    slide["needs_source"] = True
+    raw_path = tmp_path / "source_specific_title_needs_source.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "source_specific_title_needs_source",
+        report_path=tmp_path / "reports" / "source_specific_title_needs_source.md",
+    )
+
+    assert "unsupported_claim" not in result.failure_modes
+
+
 def test_title_with_source_specific_marker_and_source_passes(tmp_path) -> None:
     def sourced_title(payload):
         slide = payload["sections"][0]["slides"][0]
@@ -261,11 +283,112 @@ def test_title_with_source_specific_marker_and_source_passes(tmp_path) -> None:
     assert "unsupported_claim" not in result.failure_modes
 
 
+def test_pure_closing_question_without_factual_claim_passes(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+
+    assert "unsupported_claim" not in result.failure_modes
+
+
+def test_closing_question_with_factual_premise_requires_source(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    closing = next(
+        slide
+        for slide in payload["sections"][0]["slides"]
+        if slide["slide_type"] == "closing_question"
+    )
+    closing["body"] = [
+        "AI 학습이 생각하는 과정을 줄인다면, 지식기관은 무엇을 가르쳐야 할까?"
+    ]
+    raw_path = tmp_path / "closing_with_premise.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "closing_with_premise",
+        report_path=tmp_path / "reports" / "closing_with_premise.md",
+    )
+
+    assert "unsupported_claim" in result.failure_modes
+
+
 def test_rhetorical_slide_with_factual_claim_still_requires_source(tmp_path) -> None:
     result = _run_fixture(tmp_path, "rhetorical_factual_claim_raw.txt")
 
     assert result.schema_valid is True
     assert "unsupported_claim" in result.failure_modes
+    assert "needs_fact_check_removed_too_aggressively" in result.failure_modes
+
+
+def test_institution_role_claim_with_needs_fact_check_passes_fact_check_rule(
+    tmp_path,
+) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    slide = payload["sections"][0]["slides"][0]
+    slide["slide_type"] = "explainer"
+    slide["headline"] = "지식기관의 역할 변화"
+    slide["body"] = ["학교와 박물관은 질문 설계와 출처 평가를 가르치는 역할로 이동할 수 있다."]
+    slide["source_urls"] = [
+        "https://www.unesco.org/en/articles/ai-competency-framework-students"
+    ]
+    slide["source_refs"] = [
+        {
+            "url": "https://www.unesco.org/en/articles/ai-competency-framework-students",
+            "role": "institution_example",
+            "use": "AI competency framework context",
+            "confidence": "medium",
+            "manual_check_required": True,
+        }
+    ]
+    slide["needs_fact_check"] = True
+    raw_path = tmp_path / "institution_role_fact_checked.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "institution_role_fact_checked",
+        report_path=tmp_path / "reports" / "institution_role_fact_checked.md",
+    )
+
+    assert "needs_fact_check_removed_too_aggressively" not in result.failure_modes
+
+
+def test_source_refs_do_not_remove_institution_fact_check_requirement(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    slide = payload["sections"][0]["slides"][0]
+    slide["slide_type"] = "explainer"
+    slide["headline"] = "지식기관의 역할 변화"
+    slide["body"] = ["학교와 박물관은 질문 설계와 출처 평가를 가르치는 역할로 이동할 수 있다."]
+    slide["source_urls"] = [
+        "https://www.unesco.org/en/articles/ai-competency-framework-students"
+    ]
+    slide["source_refs"] = [
+        {
+            "url": "https://www.unesco.org/en/articles/ai-competency-framework-students",
+            "role": "institution_example",
+            "use": "AI competency framework context",
+            "confidence": "medium",
+            "manual_check_required": True,
+        }
+    ]
+    slide["needs_fact_check"] = False
+    raw_path = tmp_path / "institution_role_source_ref_without_fact_check.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "institution_role_source_ref_without_fact_check",
+        report_path=tmp_path / "reports" / "institution_role_source_ref_without_fact_check.md",
+    )
+
     assert "needs_fact_check_removed_too_aggressively" in result.failure_modes
 
 
@@ -477,6 +600,44 @@ def test_write_api_v1_v2_comparison_report(tmp_path) -> None:
     assert "ready_for_production_agent=false" in text
 
 
+def test_write_v6_claim_hygiene_review(tmp_path) -> None:
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    storyline_path = tmp_path / "parsed_storyline.json"
+    manifest_path = tmp_path / "manifest.json"
+    storyline_path.write_text(raw, encoding="utf-8")
+    manifest = {
+        "failure_modes": ["unsupported_claim"],
+        "unsupported_claim_details": [
+            {
+                "slide_no": 1,
+                "headline": "Royal Observatory warns about AI",
+                "slide_type": "title",
+                "fact_check_kind": None,
+                "body_excerpt": "BBC warning frame",
+                "reason": "empty_source_urls_without_needs_source",
+                "source_urls_present": False,
+                "needs_source": False,
+                "needs_fact_check": False,
+            }
+        ],
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    report = tmp_path / "claim_hygiene.md"
+
+    result = write_v6_claim_hygiene_review(
+        storyline_path=storyline_path,
+        manifest_path=manifest_path,
+        report_path=report,
+    )
+
+    assert result["reviewed"][0]["recommended_action"] == "require_source_url"
+    text = report.read_text(encoding="utf-8")
+    assert "source_specific_title_or_bridge" in text
+    assert "ready_for_production_agent: false" in text
+
+
 def test_write_api_v1_v2_v3_comparison_report(tmp_path) -> None:
     raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
         encoding="utf-8"
@@ -641,4 +802,48 @@ def test_write_api_v1_to_v6_comparison_report(tmp_path) -> None:
     assert "v1 to v6 Comparison" in text
     assert "Key Beat Anchors Used" in text
     assert "key_beat_anchors_used" in text
+    assert "ready_for_production_agent=false" in text
+
+
+def test_write_api_v1_to_v7_comparison_report(tmp_path) -> None:
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    manifest = {
+        "model": "gpt-5-mini",
+        "failure_modes": [],
+        "schema_valid": True,
+        "hygiene_passed": True,
+        "hallucinated_urls": [],
+        "do_not_claim_violations": [],
+        "unsupported_claim_details": [],
+        "key_beat_coverage_errors": [],
+    }
+    run_dirs = []
+    for name in ["v1", "v2", "v3", "v4", "v5", "v6", "v7"]:
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        (run_dir / "parsed_storyline.json").write_text(raw, encoding="utf-8")
+        (run_dir / "manifest.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        run_dirs.append(run_dir)
+    report = tmp_path / "comparison.md"
+
+    result = write_api_v1_to_v7_comparison_report(
+        v1_dir=run_dirs[0],
+        v2_dir=run_dirs[1],
+        v3_dir=run_dirs[2],
+        v4_dir=run_dirs[3],
+        v5_dir=run_dirs[4],
+        v6_dir=run_dirs[5],
+        v7_dir=run_dirs[6],
+        comparison_report_path=report,
+    )
+
+    assert result["v7"]["manifest"]["model"] == "gpt-5-mini"
+    text = report.read_text(encoding="utf-8")
+    assert "v1 to v7 Comparison" in text
+    assert "claim hygiene/fact-check conservatism" in text
     assert "ready_for_production_agent=false" in text

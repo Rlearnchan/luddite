@@ -75,8 +75,16 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
   notes에 `rhetorical bridge / no factual claim`처럼 남긴다.
 - 제목/질문/전환 slide라도 수치, 기관 발언, 교육 효과, 인지 변화, 정책 효과,
   연구/조사 결과를 주장하면 source 또는 `needs_source=true`가 필요하다.
+- Royal Observatory, BBC, 왕립천문대, 보도, 경고, 발언, says/warns 같은
+  source-specific phrase를 title/bridge/closing에 쓰면 `source_urls`를 붙이거나
+  `needs_source=true`로 남긴다.
+- closing question은 순수 질문일 때만 source 없이 허용된다. 특정 사실, 기관
+  발언, 교육/인지 효과, 지식기관 역할 변화를 전제하면 source 또는
+  `needs_source=true`가 필요하다.
 - 교육/인지/기관 역할 변화 claim은 evidence가 붙어도 보수적으로
   `needs_fact_check=true`를 유지한다.
+- AI/education/institution role claim은 source_refs가 있어도 fact-check complete가
+  아니다. `needs_fact_check=true`와 `required_before_broadcast=true`를 남겨라.
 - 모호하면 `needs_source=true` 또는 `needs_fact_check=true`로 남긴다.
 - API experiment에서는 key beats를 명시적으로 회수한다:
   AI 즉답의 편리함, 생각 과정 생략 문제, 학교/박물관/천문관 같은 지식기관의

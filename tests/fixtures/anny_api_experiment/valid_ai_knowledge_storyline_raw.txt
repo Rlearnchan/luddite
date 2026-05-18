@@ -169,7 +169,7 @@
           "source_urls": [],
           "image_urls": [],
           "notes": "Rhetorical closing bridge.",
-          "needs_fact_check": false,
+          "needs_fact_check": true,
           "needs_source": true,
           "covers_key_beats": [
             "kb_institution_role",

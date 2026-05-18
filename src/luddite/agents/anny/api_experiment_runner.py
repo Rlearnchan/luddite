@@ -47,6 +47,7 @@ DEFAULT_THIRD_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institut
 DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v4"
 DEFAULT_FIFTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v5"
 DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v6"
+DEFAULT_SEVENTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v7"
 DEFAULT_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
 )
@@ -64,6 +65,12 @@ DEFAULT_API_V1_TO_V5_COMPARISON_REPORT = (
 )
 DEFAULT_API_V1_TO_V6_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_to_v6_comparison.md"
+)
+DEFAULT_API_V1_TO_V7_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_to_v7_comparison.md"
+)
+DEFAULT_API_V6_CLAIM_HYGIENE_REVIEW = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v6_claim_hygiene_review.md"
 )
 DEFAULT_MANUAL_ENRICHED_STORYLINE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR
@@ -105,6 +112,16 @@ FACTUAL_CLAIM_MARKERS = [
     "정책 효과",
     "공식",
     "발언",
+    "줄인다면",
+    "가능성",
+    "위축",
+    "줄어들",
+    "역할을 이동",
+    "이동할 수 있다",
+    "역할 변화",
+    "질문 설계",
+    "출처 평가",
+    "과정적 사고",
 ]
 SOURCE_SPECIFIC_MARKERS = [
     "BBC",
@@ -118,10 +135,6 @@ SOURCE_SPECIFIC_MARKERS = [
     "according to",
     "warns",
     "says",
-    '"',
-    "'",
-    "“",
-    "”",
 ]
 
 
@@ -306,8 +319,10 @@ def _source_optional_without_claim(slide: dict[str, Any]) -> bool:
         return True
     if slide.get("slide_type") not in RHETORICAL_SLIDE_TYPES:
         return False
+    if _has_source_specific_marker(slide):
+        return False
     if _fact_check_kind(slide) in RHETORICAL_FACT_CHECK_KINDS:
-        return True
+        return not _has_factual_claim_marker(slide)
     return not _has_factual_claim_marker(slide)
 
 
@@ -333,6 +348,19 @@ def _has_factual_claim_marker(slide: dict[str, Any]) -> bool:
     return _has_marker(text, FACTUAL_CLAIM_MARKERS) or _has_marker(text, SOURCE_SPECIFIC_MARKERS)
 
 
+def _has_source_specific_marker(slide: dict[str, Any]) -> bool:
+    headline = str(slide.get("headline") or "").strip()
+    if headline.startswith(('"', "'", "“", "‘")):
+        return True
+    text = "\n".join(
+        [
+            headline,
+            *[str(item) for item in slide.get("body", [])],
+        ]
+    )
+    return _has_marker(text, SOURCE_SPECIFIC_MARKERS)
+
+
 def _has_marker(text: str, markers: list[str]) -> bool:
     folded = text.casefold()
     return any(marker.casefold() in folded for marker in markers)
@@ -341,6 +369,9 @@ def _has_marker(text: str, markers: list[str]) -> bool:
 def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
     errors = []
     markers = [
+        "AI 교육",
+        "AI 학습",
+        "AI 활용",
         "교육 효과",
         "인지",
         "지능",
@@ -348,18 +379,36 @@ def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
         "교육",
         "기관 역할",
         "지식기관",
+        "박물관",
+        "천문관",
+        "과학관",
+        "역할 변화",
+        "과정적 사고",
+        "질문 설계",
+        "출처 평가",
         "사고훈련",
     ]
+    fact_check_kinds = {
+        "education_research_claim",
+        "institution_quote_context",
+        "institution_role_change",
+        "ai_learning_claim",
+        "knowledge_institution_claim",
+        "korea_bridge_claim",
+    }
     for index, slide in enumerate(_all_slides(storyline), start=1):
         if _source_optional_without_claim(slide) and _is_plain_rhetorical_question(slide):
             continue
+        kind = _fact_check_kind(slide)
         text = "\n".join(
             [
                 str(slide.get("headline") or ""),
                 *[str(item) for item in slide.get("body", [])],
             ]
         )
-        if any(marker in text for marker in markers) and not slide.get("needs_fact_check"):
+        if (
+            kind in fact_check_kinds or any(marker in text for marker in markers)
+        ) and not slide.get("needs_fact_check"):
             errors.append(f"slide {index} education/AI effect claim missing needs_fact_check")
     return errors
 
@@ -1564,6 +1613,224 @@ def write_api_v1_to_v6_comparison_report(
     return runs
 
 
+def write_api_v1_to_v7_comparison_report(
+    *,
+    v1_dir: Path,
+    v2_dir: Path,
+    v3_dir: Path,
+    v4_dir: Path,
+    v5_dir: Path,
+    v6_dir: Path,
+    v7_dir: Path,
+    comparison_report_path: Path = DEFAULT_API_V1_TO_V7_COMPARISON_REPORT,
+) -> dict[str, Any]:
+    run_dirs = {
+        "v1": v1_dir,
+        "v2": v2_dir,
+        "v3": v3_dir,
+        "v4": v4_dir,
+        "v5": v5_dir,
+        "v6": v6_dir,
+        "v7": v7_dir,
+    }
+    runs = {
+        label: {
+            "manifest": _manifest_metrics(run_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                run_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": run_dir,
+        }
+        for label, run_dir in run_dirs.items()
+    }
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment v1 to v7 Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        *(f"- {label}_dir: {payload['dir']}" for label, payload in runs.items()),
+        "",
+        "## Summary Table",
+        "",
+        (
+            "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Section Plan | "
+            "Covers Key Beats | Key Beat Anchors Used | Key Beat Coverage | Failure "
+            "Modes | Source Hallucinations | Do-not-claim Violations | Counterpoint |"
+        ),
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---:|---:|---|",
+    ]
+    for label, payload in runs.items():
+        lines.append(_api_version_row(label, payload["manifest"], payload["metrics"]))
+    lines.extend(["", "## Key Beat Drift Detail", ""])
+    for label, payload in runs.items():
+        errors = payload["manifest"].get("key_beat_coverage_errors", [])
+        lines.append(f"- {label}: {errors or []}")
+    lines.extend(["", "## Unsupported Claim Detail", ""])
+    for label, payload in runs.items():
+        details = payload["manifest"].get("unsupported_claim_details", [])
+        if not details:
+            lines.append(f"- {label}: []")
+            continue
+        lines.append(f"- {label}: {len(details)} unsupported claim detail(s)")
+        for item in details[:5]:
+            lines.append(
+                "  - "
+                f"slide {item.get('slide_no')}: {item.get('slide_type')} | "
+                f"{item.get('headline')} | reason={item.get('reason')}"
+            )
+    lines.extend(
+        [
+            "",
+            "## Qualitative Notes",
+            "",
+            "- v7 is a seventh controlled API experiment, not a production anny agent.",
+            "- The main observation is whether claim hygiene/fact-check conservatism improves.",
+            "- `source_hallucination_count=0` and do-not-claim compliance remain required.",
+            "- `ready_for_production_agent=false` remains in force.",
+        ]
+    )
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return runs
+
+
+def write_v6_claim_hygiene_review(
+    *,
+    storyline_path: Path = DEFAULT_EXPERIMENT_ROOT
+    / DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID
+    / "parsed_storyline.json",
+    manifest_path: Path = DEFAULT_EXPERIMENT_ROOT
+    / DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID
+    / "manifest.json",
+    report_path: Path = DEFAULT_API_V6_CLAIM_HYGIENE_REVIEW,
+) -> dict[str, Any]:
+    storyline = _load_json(storyline_path)
+    manifest = _load_json(manifest_path)
+    details = manifest.get("unsupported_claim_details") or _unsupported_claim_details(storyline)
+    slides_by_no = {
+        slide.get("slide_no") or index: slide
+        for index, slide in enumerate(_all_slides(storyline), start=1)
+    }
+    reviewed = []
+    for detail in details:
+        slide_no = detail.get("slide_no")
+        slide = slides_by_no.get(slide_no, {})
+        classification, action = _claim_hygiene_recommendation(slide, detail)
+        reviewed.append(
+            {
+                "slide_no": slide_no,
+                "headline": detail.get("headline"),
+                "slide_type": detail.get("slide_type"),
+                "fact_check_kind": detail.get("fact_check_kind"),
+                "body_excerpt": detail.get("body_excerpt"),
+                "source_urls_present": detail.get("source_urls_present"),
+                "needs_source": detail.get("needs_source"),
+                "needs_fact_check": detail.get("needs_fact_check"),
+                "reason": detail.get("reason"),
+                "classification": classification,
+                "recommended_action": action,
+            }
+        )
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API v6 Claim Hygiene Review — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- storyline_path: {storyline_path}",
+        f"- manifest_path: {manifest_path}",
+        f"- failure_modes: {manifest.get('failure_modes', [])}",
+        f"- reviewed_unsupported_claims: {len(reviewed)}",
+        "- ready_for_production_agent: false",
+        "",
+        "## Slide Review",
+        "",
+        (
+            "| Slide | Type | Classification | Recommended Action | Needs Source | "
+            "Needs Fact Check | Reason | Headline |"
+        ),
+        "|---:|---|---|---|---|---|---|---|",
+    ]
+    for item in reviewed:
+        lines.append(
+            f"| {item['slide_no']} | {item['slide_type']} | "
+            f"{item['classification']} | {item['recommended_action']} | "
+            f"{item['needs_source']} | {item['needs_fact_check']} | "
+            f"{item['reason']} | {item['headline']} |"
+        )
+    lines.extend(["", "## Detail", ""])
+    for item in reviewed:
+        lines.extend(
+            [
+                f"### Slide {item['slide_no']}",
+                "",
+                f"- headline: {item['headline']}",
+                f"- slide_type: {item['slide_type']}",
+                f"- fact_check_kind: {item['fact_check_kind']}",
+                f"- body_excerpt: {item['body_excerpt']}",
+                f"- source_urls_present: {item['source_urls_present']}",
+                f"- needs_source: {item['needs_source']}",
+                f"- needs_fact_check: {item['needs_fact_check']}",
+                f"- reason: {item['reason']}",
+                f"- classification: {item['classification']}",
+                f"- recommended_action: {item['recommended_action']}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Rule Interpretation",
+            "",
+            "- Source-specific title/bridge phrasing must keep a source URL or needs_source=true.",
+            (
+                "- Institution role, AI learning, education, and cognition claims keep "
+                "needs_fact_check=true even when sources are attached."
+            ),
+            (
+                "- Pure rhetorical questions can remain source-free only when they do not "
+                "imply a factual premise."
+            ),
+            "- This report does not imply production readiness.",
+        ]
+    )
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return {"reviewed": reviewed, "report_path": str(report_path)}
+
+
+def _claim_hygiene_recommendation(
+    slide: dict[str, Any],
+    detail: dict[str, Any] | None = None,
+) -> tuple[str, str]:
+    slide = _merged_claim_review_slide(slide, detail or {})
+    if _has_source_specific_marker(slide):
+        return "source_specific_title_or_bridge", "require_source_url"
+    if _has_factual_claim_marker(slide):
+        return "actual_unsupported_factual_claim", "require_needs_source_true"
+    if _is_plain_rhetorical_question(slide):
+        return "rhetorical_or_closing_no_factual_claim", "allow_as_rhetorical"
+    return "validator_false_positive", "validator_rule_patch"
+
+
+def _merged_claim_review_slide(
+    slide: dict[str, Any],
+    detail: dict[str, Any],
+) -> dict[str, Any]:
+    body_excerpt = detail.get("body_excerpt")
+    detail_body = [body_excerpt] if isinstance(body_excerpt, str) else []
+    body = list(slide.get("body", [])) if isinstance(slide.get("body"), list) else []
+    body.extend(detail_body)
+    return {
+        "headline": " ".join(
+            str(part)
+            for part in [slide.get("headline"), detail.get("headline")]
+            if part
+        ),
+        "slide_type": slide.get("slide_type") or detail.get("slide_type"),
+        "fact_check_kind": _fact_check_kind(slide) or detail.get("fact_check_kind"),
+        "body": body,
+    }
+
+
 def _api_version_row(
     label: str,
     manifest: dict[str, Any],
@@ -1848,6 +2115,71 @@ def compare_v1_v2_v3_v4_v5_v6(
         v6_dir=DEFAULT_EXPERIMENT_ROOT / v6_run_id,
     )
     console.print("[green]Wrote anny API experiment v1/v2/v3/v4/v5/v6 comparison.[/green]")
+
+
+@run_app.command("compare-v1-v2-v3-v4-v5-v6-v7")
+def compare_v1_v2_v3_v4_v5_v6_v7(
+    v1_run_id: Annotated[str, typer.Option("--v1-run-id")] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    v2_run_id: Annotated[
+        str,
+        typer.Option("--v2-run-id"),
+    ] = DEFAULT_SECOND_API_EXPERIMENT_RUN_ID,
+    v3_run_id: Annotated[
+        str,
+        typer.Option("--v3-run-id"),
+    ] = DEFAULT_THIRD_API_EXPERIMENT_RUN_ID,
+    v4_run_id: Annotated[
+        str,
+        typer.Option("--v4-run-id"),
+    ] = DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID,
+    v5_run_id: Annotated[
+        str,
+        typer.Option("--v5-run-id"),
+    ] = DEFAULT_FIFTH_API_EXPERIMENT_RUN_ID,
+    v6_run_id: Annotated[
+        str,
+        typer.Option("--v6-run-id"),
+    ] = DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID,
+    v7_run_id: Annotated[
+        str,
+        typer.Option("--v7-run-id"),
+    ] = DEFAULT_SEVENTH_API_EXPERIMENT_RUN_ID,
+) -> None:
+    write_api_v1_to_v7_comparison_report(
+        v1_dir=DEFAULT_EXPERIMENT_ROOT / v1_run_id,
+        v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
+        v3_dir=DEFAULT_EXPERIMENT_ROOT / v3_run_id,
+        v4_dir=DEFAULT_EXPERIMENT_ROOT / v4_run_id,
+        v5_dir=DEFAULT_EXPERIMENT_ROOT / v5_run_id,
+        v6_dir=DEFAULT_EXPERIMENT_ROOT / v6_run_id,
+        v7_dir=DEFAULT_EXPERIMENT_ROOT / v7_run_id,
+    )
+    console.print("[green]Wrote anny API experiment v1/v2/v3/v4/v5/v6/v7 comparison.[/green]")
+
+
+@run_app.command("review-v6-claim-hygiene")
+def review_v6_claim_hygiene(
+    storyline_path: Annotated[
+        Path,
+        typer.Option("--storyline-path"),
+    ] = DEFAULT_EXPERIMENT_ROOT
+    / DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID
+    / "parsed_storyline.json",
+    manifest_path: Annotated[
+        Path,
+        typer.Option("--manifest-path"),
+    ] = DEFAULT_EXPERIMENT_ROOT / DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID / "manifest.json",
+    report_path: Annotated[
+        Path,
+        typer.Option("--report"),
+    ] = DEFAULT_API_V6_CLAIM_HYGIENE_REVIEW,
+) -> None:
+    write_v6_claim_hygiene_review(
+        storyline_path=storyline_path,
+        manifest_path=manifest_path,
+        report_path=report_path,
+    )
+    console.print("[green]Wrote anny API v6 claim hygiene review.[/green]")
 
 
 if __name__ == "__main__":
