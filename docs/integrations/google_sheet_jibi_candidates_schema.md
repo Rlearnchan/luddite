@@ -113,7 +113,10 @@ append-only 유지
 ```text
 - service account email을 공유 Google Sheet editor로 추가
 - service account JSON은 git에 넣지 않음
-- GOOGLE_APPLICATION_CREDENTIALS 또는 service_account_json_path로 경로 지정
+- 커밋되는 config는 config/google_sheets.example.yaml placeholder만 사용
+- 실제 spreadsheet id와 credential path는 env 또는 gitignored config/google_sheets.local.yaml에 둠
+- LUDDITE_GOOGLE_SPREADSHEET_ID, LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보" 사용
+- GOOGLE_APPLICATION_CREDENTIALS 또는 LUDDITE_GOOGLE_SERVICE_ACCOUNT_JSON로 key 경로 지정
 - OAuth는 service account 초대가 어려울 때의 fallback
 ```
 

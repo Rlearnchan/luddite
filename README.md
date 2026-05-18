@@ -151,12 +151,21 @@ Actual Google Sheet append targets the `jibi 후보` staging sheet, skips existi
 rows by `duplicate_key` or `source_url_canonical`, and writes an append report
 under `outputs/reports/`. It never appends directly to `주제 찾기`.
 
+The committed config is only a placeholder:
+`config/google_sheets.example.yaml`. Real spreadsheet ids and credential paths
+belong in environment variables or the gitignored
+`config/google_sheets.local.yaml`.
+
 For real append, use a service account by setting:
 
 ```bash
 LUDDITE_GOOGLE_SPREADSHEET_ID=...
+LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보"
 GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
 ```
+
+`LUDDITE_GOOGLE_SERVICE_ACCOUNT_JSON` can be used instead of
+`GOOGLE_APPLICATION_CREDENTIALS`.
 
 Add the service account email as an editor on the shared spreadsheet first.
 Never commit the service account JSON. OAuth is a fallback only if a service

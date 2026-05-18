@@ -16,6 +16,7 @@ build/
 *service_account*.json
 *google*credentials*.json
 adept-*.json
+config/google_sheets.local.yaml
 
 # Raw private corpus stays local by default.
 data/storylines/raw/*

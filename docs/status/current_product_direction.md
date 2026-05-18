@@ -112,7 +112,10 @@ Authentication and first-run rules:
 - Add the service account email as an editor on the shared spreadsheet before
   the first real append.
 - Keep the service account JSON local and out of git. Use
-  `GOOGLE_APPLICATION_CREDENTIALS` or `service_account_json_path`.
+  `GOOGLE_APPLICATION_CREDENTIALS`, `LUDDITE_GOOGLE_SERVICE_ACCOUNT_JSON`, or
+  the gitignored `config/google_sheets.local.yaml`.
+- Keep committed config placeholder-only in `config/google_sheets.example.yaml`.
+  Real spreadsheet ids and local credential paths should not be committed.
 - OAuth is fallback only when a service account cannot be added to the sheet.
 - First real execution should be dry-run, then 1-2 test rows, then full preview,
   then duplicate rerun verification.

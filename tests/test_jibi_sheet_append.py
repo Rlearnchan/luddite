@@ -1,9 +1,11 @@
 import csv
 
+from luddite import paths
 from luddite.agents.jibi.append_to_sheet import (
     SHEET_COLUMNS,
     GoogleSheetAppendConfig,
     append_jibi_sheet,
+    load_append_config,
 )
 from luddite.integrations.google_sheets import AppendResult
 
@@ -190,3 +192,113 @@ def test_dry_run_missing_sheet_reports_create_without_fetching_values(tmp_path) 
     assert report.sheet_created is True
     assert report.header_created is True
     assert report.rows_appended == 1
+
+
+def test_example_config_has_no_real_spreadsheet_id(monkeypatch) -> None:
+    monkeypatch.delenv("LUDDITE_GOOGLE_SPREADSHEET_ID", raising=False)
+    config = load_append_config(
+        config_path=paths.GOOGLE_SHEETS_EXAMPLE_CONFIG_YAML,
+        local_config_path=paths.REPO_ROOT / "missing-google-sheets-local.yaml",
+    )
+
+    assert config.spreadsheet_id is None
+
+
+def test_env_vars_override_config_values(tmp_path, monkeypatch) -> None:
+    example_config = tmp_path / "google_sheets.example.yaml"
+    local_config = tmp_path / "google_sheets.local.yaml"
+    example_config.write_text(
+        "\n".join(
+            [
+                "spreadsheet_id: null",
+                'target_sheet_name: "jibi 후보"',
+                "dry_run_default: true",
+                "auth_mode: service_account",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    local_config.write_text(
+        "\n".join(
+            [
+                'spreadsheet_id: "local-id"',
+                'target_sheet_name: "local sheet"',
+                'service_account_json_path: "/local/secret.json"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("LUDDITE_GOOGLE_SPREADSHEET_ID", "env-id")
+    monkeypatch.setenv("LUDDITE_GOOGLE_TARGET_SHEET", "env sheet")
+    monkeypatch.setenv("LUDDITE_GOOGLE_SERVICE_ACCOUNT_JSON", "/env/secret.json")
+
+    config = load_append_config(
+        config_path=example_config,
+        local_config_path=local_config,
+    )
+
+    assert config.spreadsheet_id == "env-id"
+    assert config.target_sheet_name == "env sheet"
+    assert config.service_account_json_path == "/env/secret.json"
+
+
+def test_missing_spreadsheet_id_dry_run_reports_planned_rows(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    report_path = tmp_path / "report.md"
+    _write_preview(preview, [_row("드론 비용 역전", "drone", "https://example.com/drone")])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id=None,
+            source_preview_csv=preview,
+            dry_run=True,
+        ),
+        client=None,
+        report_path=report_path,
+    )
+
+    assert report.errors == []
+    assert report.rows_appended == 1
+    assert "Rows appended: 1" in report_path.read_text(encoding="utf-8")
+
+
+def test_missing_spreadsheet_id_real_append_reports_error(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    report_path = tmp_path / "report.md"
+    _write_preview(preview, [_row("드론 비용 역전", "drone", "https://example.com/drone")])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id=None,
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=None,
+        report_path=report_path,
+    )
+
+    assert report.rows_appended == 0
+    assert report.errors == ["spreadsheet_id is required when dry_run is false."]
+    assert "spreadsheet_id is required" in report_path.read_text(encoding="utf-8")
+
+
+def test_report_does_not_expose_local_credential_path(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    report_path = tmp_path / "report.md"
+    secret_path = "/very/local/service-account-secret.json"
+    _write_preview(preview, [_row("드론 비용 역전", "drone", "https://example.com/drone")])
+
+    append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id=None,
+            source_preview_csv=preview,
+            dry_run=True,
+            service_account_json_path=secret_path,
+        ),
+        client=None,
+        report_path=report_path,
+    )
+
+    assert secret_path not in report_path.read_text(encoding="utf-8")

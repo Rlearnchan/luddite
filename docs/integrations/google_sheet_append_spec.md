@@ -82,16 +82,36 @@ service_account
 Service account is the default and recommended path for automation. Before the
 first real append, add the service account email as an editor on the shared
 spreadsheet. The service account JSON file must stay local and must never be
-committed to git. Point to it with either:
+committed to git.
+
+Committed config is limited to `config/google_sheets.example.yaml`, which uses
+placeholders only. Real values should be supplied by environment variables or
+the gitignored `config/google_sheets.local.yaml`.
+
+Required environment variables for production append:
 
 ```bash
+LUDDITE_GOOGLE_SPREADSHEET_ID=...
+LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보"
 GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
 ```
 
-or:
+`LUDDITE_GOOGLE_SERVICE_ACCOUNT_JSON` can be used instead of
+`GOOGLE_APPLICATION_CREDENTIALS`.
 
-```yaml
+Credential fallback inside the local ignored config:
+
+```bash
 service_account_json_path: /absolute/path/to/service-account.json
+```
+
+Config precedence:
+
+```text
+1. CLI args
+2. environment variables
+3. config/google_sheets.local.yaml
+4. config/google_sheets.example.yaml defaults
 ```
 
 OAuth is a fallback only if the shared spreadsheet cannot invite a service
@@ -104,8 +124,9 @@ make append-jibi-sheet
 luddite append-jibi-sheet --preview-csv outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv --dry-run
 ```
 
-Actual append requires a spreadsheet id from `config/google_sheets.yaml`,
-`LUDDITE_GOOGLE_SPREADSHEET_ID`, or `--spreadsheet-id`.
+Actual append requires a spreadsheet id from `--spreadsheet-id`,
+`LUDDITE_GOOGLE_SPREADSHEET_ID`, or the ignored local config. Dry-run can still
+produce a local report without a spreadsheet id.
 
 Target sheet defaults to:
 

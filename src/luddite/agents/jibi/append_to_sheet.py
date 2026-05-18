@@ -145,10 +145,24 @@ def _latest_preview_csv() -> Path | None:
     return previews[0] if previews else None
 
 
+def _merge_config_values(*configs: dict[str, str | bool | None]) -> dict[str, str | bool | None]:
+    merged: dict[str, str | bool | None] = {}
+    for config in configs:
+        for key, value in config.items():
+            if value is not None:
+                merged[key] = value
+    return merged
+
+
 def load_append_config(
-    config_path: Path = paths.GOOGLE_SHEETS_CONFIG_YAML,
+    config_path: Path | None = None,
+    local_config_path: Path = paths.GOOGLE_SHEETS_LOCAL_CONFIG_YAML,
 ) -> GoogleSheetAppendConfig:
-    raw = _read_flat_yaml(config_path)
+    example_path = config_path or paths.GOOGLE_SHEETS_EXAMPLE_CONFIG_YAML
+    raw = _merge_config_values(
+        _read_flat_yaml(example_path),
+        _read_flat_yaml(local_config_path),
+    )
     preview_value = os.environ.get("LUDDITE_JIBI_PREVIEW_CSV") or raw.get("source_preview_csv")
     dry_run = _env_bool("LUDDITE_GOOGLE_SHEETS_DRY_RUN")
     styling_enabled = _env_bool("LUDDITE_GOOGLE_SHEETS_STYLING")
@@ -375,7 +389,7 @@ def write_append_report(path: Path, report: SheetAppendReport) -> None:
 
 
 def _build_default_client(config: GoogleSheetAppendConfig) -> GoogleSheetsClient | None:
-    if config.dry_run and not config.spreadsheet_id:
+    if not config.spreadsheet_id:
         return None
     return GoogleSheetsApiClient(
         credentials_path=config.service_account_json_path,
