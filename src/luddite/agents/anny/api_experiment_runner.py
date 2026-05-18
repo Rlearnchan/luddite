@@ -42,8 +42,12 @@ DEFAULT_EVIDENCE_PACK = paths.ANNY_EVIDENCE_PACK_AI_KNOWLEDGE_JSON
 DEFAULT_OUTPUT_ROOT = paths.OUTPUTS_DIR / "eval" / "anny_api_experiment"
 DEFAULT_EXPERIMENT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_api_experiments"
 DEFAULT_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v1"
+DEFAULT_SECOND_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v2"
 DEFAULT_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
+)
+DEFAULT_API_V1_V2_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_comparison.md"
 )
 DEFAULT_MANUAL_ENRICHED_STORYLINE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR
@@ -241,6 +245,8 @@ def _empty_source_errors(storyline: dict[str, Any]) -> list[str]:
 
 
 def _source_optional_without_claim(slide: dict[str, Any]) -> bool:
+    if slide.get("slide_type") == "production_checklist":
+        return True
     if slide.get("slide_type") not in RHETORICAL_SLIDE_TYPES:
         return False
     if _fact_check_kind(slide) in RHETORICAL_FACT_CHECK_KINDS:
@@ -274,6 +280,8 @@ def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
     errors = []
     markers = ["교육 효과", "인지", "지능", "학습 습관", "기관 역할", "사고훈련"]
     for index, slide in enumerate(_all_slides(storyline), start=1):
+        if _source_optional_without_claim(slide):
+            continue
         text = "\n".join(
             [
                 str(slide.get("headline") or ""),
@@ -350,6 +358,7 @@ def validate_api_experiment_raw_output(
     do_not_claim_violations: list[str] = []
     source_image_overlap_count = 0
     counterpoint_included = False
+    key_beat_recall_value: float | None = None
 
     try:
         storyline = json.loads(raw_text)
@@ -383,6 +392,9 @@ def validate_api_experiment_raw_output(
         do_not_claim_violations = _do_not_claim_violations(storyline, input_bundle)
         if do_not_claim_violations:
             failure_modes.append("do_not_claim_violation")
+        key_beat_recall_value = _api_key_beat_recall(storyline, case_id)
+        if key_beat_recall_value is not None and key_beat_recall_value < 0.85:
+            failure_modes.append("key_beat_drift")
 
     failure_modes = list(dict.fromkeys(failure_modes))
     hygiene_passed = not failure_modes
@@ -407,6 +419,7 @@ def validate_api_experiment_raw_output(
         "hallucinated_urls": hallucinated_urls,
         "do_not_claim_violations": do_not_claim_violations,
         "repair_attempted": False,
+        "key_beat_recall": key_beat_recall_value,
         "ready_for_api_experiment_prep": True,
         "ready_for_api_experiment": ready_for_api_experiment,
         "ready_for_production_agent": False,
@@ -423,6 +436,7 @@ def validate_api_experiment_raw_output(
             fact_check_errors=fact_check_errors,
             do_not_claim_violations=do_not_claim_violations,
             counterpoint_included=counterpoint_included,
+            key_beat_recall_value=key_beat_recall_value,
             llm_api_called=llm_api_called,
         ),
         encoding="utf-8",
@@ -442,6 +456,24 @@ def validate_api_experiment_raw_output(
         manifest_path=manifest_path,
         experiment_dir=experiment_dir,
     )
+
+
+def _api_key_beat_recall(storyline: dict[str, Any], case_id: str) -> float | None:
+    cases_payload = _load_json(paths.EVAL_DIR / "golden_cases" / "anny_dry_run_cases.json")
+    case = next((item for item in cases_payload["cases"] if item["case_id"] == case_id), None)
+    if not case and case_id.endswith("_v2"):
+        case = next(
+            (
+                item
+                for item in cases_payload["cases"]
+                if item["case_id"] == DEFAULT_API_EXPERIMENT_RUN_ID
+            ),
+            None,
+        )
+    if not case:
+        return None
+    recall, _, _ = key_beat_recall(storyline, case.get("expected_key_beats", []))
+    return recall
 
 
 def _run_openai_responses_api(
@@ -751,6 +783,27 @@ def _storyline_metrics(
     }
 
 
+def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
+    if not manifest_path.exists():
+        return {
+            "model": None,
+            "failure_modes": ["missing_manifest"],
+            "schema_valid": False,
+            "hygiene_passed": False,
+            "source_hallucination_count": None,
+            "do_not_claim_violations": [],
+        }
+    manifest = _load_json(manifest_path)
+    return {
+        "model": manifest.get("model"),
+        "failure_modes": manifest.get("failure_modes", []),
+        "schema_valid": manifest.get("schema_valid"),
+        "hygiene_passed": manifest.get("hygiene_passed"),
+        "source_hallucination_count": len(manifest.get("hallucinated_urls", [])),
+        "do_not_claim_violations": manifest.get("do_not_claim_violations", []),
+    }
+
+
 def write_api_manual_comparison_report(
     *,
     api_storyline_path: Path,
@@ -803,6 +856,74 @@ def write_api_manual_comparison_report(
     return {"api": api_metrics, "manual": manual_metrics}
 
 
+def write_api_v1_v2_comparison_report(
+    *,
+    v1_dir: Path,
+    v2_dir: Path,
+    comparison_report_path: Path = DEFAULT_API_V1_V2_COMPARISON_REPORT,
+) -> dict[str, Any]:
+    v1_manifest = _manifest_metrics(v1_dir / "manifest.json")
+    v2_manifest = _manifest_metrics(v2_dir / "manifest.json")
+    v1_metrics = _storyline_metrics(
+        v1_dir / "parsed_storyline.json",
+        case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+    )
+    v2_metrics = _storyline_metrics(
+        v2_dir / "parsed_storyline.json",
+        case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+    )
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment v1/v2 Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- v1_dir: {v1_dir}",
+        f"- v2_dir: {v2_dir}",
+        "",
+        "## Summary Table",
+        "",
+        (
+            "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Failure Modes | "
+            "Source Hallucinations | Do-not-claim Violations | Counterpoint |"
+        ),
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---|",
+        _api_version_row("v1", v1_manifest, v1_metrics),
+        _api_version_row("v2", v2_manifest, v2_metrics),
+        "",
+        "## Qualitative Notes",
+        "",
+        "- v2 is a second controlled API experiment, not a production anny agent.",
+        "- The main observation is whether needs_fact_check conservatism improves.",
+        "- `unsupported_claim` should not recur after the 1.9.1 validator patch.",
+        "- `ready_for_production_agent=false` remains in force.",
+    ]
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return {
+        "v1": {"manifest": v1_manifest, "metrics": v1_metrics},
+        "v2": {"manifest": v2_manifest, "metrics": v2_metrics},
+    }
+
+
+def _api_version_row(
+    label: str,
+    manifest: dict[str, Any],
+    metrics: dict[str, Any],
+) -> str:
+    recall = metrics["key_beat_recall"]
+    recall_text = "n/a" if recall is None else f"{recall:.2f}"
+    return (
+        f"| {label} | {manifest['model']} | {manifest['schema_valid']} | "
+        f"{manifest['hygiene_passed']} | {metrics['section_count']} | "
+        f"{metrics['slide_count']} | {metrics['source_url_count']} | "
+        f"{metrics['needs_source_count']} | {metrics['needs_fact_check_count']} | "
+        f"{recall_text} | {manifest['failure_modes']} | "
+        f"{manifest['source_hallucination_count']} | "
+        f"{len(manifest['do_not_claim_violations'])} | "
+        f"{metrics['counterpoint_included']} |"
+    )
+
+
 def _metrics_row(label: str, metrics: dict[str, Any]) -> str:
     recall = metrics["key_beat_recall"]
     recall_text = "n/a" if recall is None else f"{recall:.2f}"
@@ -823,6 +944,7 @@ def _report_markdown(
     fact_check_errors: list[str],
     do_not_claim_violations: list[str],
     counterpoint_included: bool,
+    key_beat_recall_value: float | None,
     llm_api_called: bool,
 ) -> str:
     lines = [
@@ -838,6 +960,7 @@ def _report_markdown(
         f"- hallucinated_urls: {manifest['hallucinated_urls']}",
         f"- repair_attempted: {str(manifest['repair_attempted']).lower()}",
         f"- counterpoint_included: {counterpoint_included}",
+        f"- key_beat_recall: {key_beat_recall_value}",
         f"- ready_for_api_experiment_prep: {manifest['ready_for_api_experiment_prep']}",
         f"- ready_for_api_experiment: {manifest['ready_for_api_experiment']}",
         f"- ready_for_production_agent: {manifest['ready_for_production_agent']}",
@@ -900,6 +1023,7 @@ def main(
 
 @run_app.callback(invoke_without_command=True)
 def run_main(
+    ctx: typer.Context,
     run_id: Annotated[
         str,
         typer.Option("--run-id", help="Controlled API experiment run id."),
@@ -916,6 +1040,8 @@ def run_main(
         typer.Option("--timeout", help="OpenAI API timeout in seconds."),
     ] = 120,
 ) -> None:
+    if ctx.invoked_subcommand:
+        return
     try:
         result = run_api_experiment(
             run_id=run_id,
@@ -931,6 +1057,21 @@ def run_main(
     )
     if result["failure_modes"]:
         console.print(f"[yellow]failure_modes={result['failure_modes']}[/yellow]")
+
+
+@run_app.command("compare-v1-v2")
+def compare_v1_v2(
+    v1_run_id: Annotated[str, typer.Option("--v1-run-id")] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    v2_run_id: Annotated[
+        str,
+        typer.Option("--v2-run-id"),
+    ] = DEFAULT_SECOND_API_EXPERIMENT_RUN_ID,
+) -> None:
+    write_api_v1_v2_comparison_report(
+        v1_dir=DEFAULT_EXPERIMENT_ROOT / v1_run_id,
+        v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
+    )
+    console.print("[green]Wrote anny API experiment v1/v2 comparison.[/green]")
 
 
 if __name__ == "__main__":

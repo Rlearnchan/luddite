@@ -1,0 +1,59 @@
+{
+  "storyline_id": "api_fixture_production_checklist_source_rule",
+  "title": "AI 즉답 시대의 지식기관 역할",
+  "sections": [
+    {
+      "section_title": "체크리스트",
+      "slides": [
+        {
+          "slide_type": "title",
+          "headline": "AI 즉답 시대의 지식기관 역할",
+          "body": ["오늘의 질문: AI가 답을 주면 사람은 무엇을 배워야 할까?"],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "title slide / no factual claim",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "counterpoint",
+          "headline": "AI는 접근성을 높이는 도구일 수도 있다",
+          "body": ["AI가 접근성이나 개인화 학습을 도울 수 있다는 관점도 함께 둔다."],
+          "source_urls": ["https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners"],
+          "image_urls": [],
+          "notes": "UNESCO counterpoint.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "production_checklist",
+          "headline": "방송 전 필수 확인",
+          "body": [
+            "BBC 원문 전문 및 발언자 맥락 확인.",
+            "OECD·Microsoft·UNESCO 인용 문구의 정확한 문단 확인.",
+            "이미지 사용 허가 확인."
+          ],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "internal production checklist, not a broadcast claim.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "closing_question",
+          "headline": "마지막 질문",
+          "body": ["AI 시대에 지식기관은 무엇을 남겨야 할까?"],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "rhetorical close / no factual claim. fact_check_kind: rhetorical_caution",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}

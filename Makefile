@@ -76,6 +76,14 @@ validate-anny-api-experiment:
 run-anny-api-experiment:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment
 
+run-anny-api-experiment-v2:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment \
+		--run-id anny_api_experiment_ai_knowledge_institution_v2 \
+		--timeout 300
+
+compare-anny-api-experiment-v1-v2:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment compare-v1-v2
+
 eval-piti-deck-plan:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite eval-piti-deck-plan
 

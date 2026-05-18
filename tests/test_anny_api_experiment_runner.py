@@ -5,6 +5,7 @@ from luddite.agents.anny.api_experiment_runner import (
     build_api_experiment_prompt,
     run_api_experiment,
     validate_api_experiment_raw_output,
+    write_api_v1_v2_comparison_report,
 )
 
 FIXTURE_DIR = paths.REPO_ROOT / "tests/fixtures/anny_api_experiment"
@@ -81,6 +82,14 @@ def test_rhetorical_slide_with_factual_claim_still_requires_source(tmp_path) -> 
     assert result.schema_valid is True
     assert "unsupported_claim" in result.failure_modes
     assert "needs_fact_check_removed_too_aggressively" in result.failure_modes
+
+
+def test_production_checklist_without_sources_is_allowed(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "production_checklist_source_rule_raw.txt")
+
+    assert result.schema_valid is True
+    assert "unsupported_claim" not in result.failure_modes
+    assert result.failure_modes == ["key_beat_drift"]
 
 
 def test_manifest_and_report_are_generated(tmp_path) -> None:
@@ -237,3 +246,37 @@ def test_build_api_experiment_prompt_contains_allowed_urls_and_schema() -> None:
     assert "https://example.com/a" in prompt
     assert "https://example.com/b" in prompt
     assert "Output Schema JSON" in prompt
+
+
+def test_write_api_v1_v2_comparison_report(tmp_path) -> None:
+    v1 = tmp_path / "v1"
+    v2 = tmp_path / "v2"
+    v1.mkdir()
+    v2.mkdir()
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    (v1 / "parsed_storyline.json").write_text(raw, encoding="utf-8")
+    (v2 / "parsed_storyline.json").write_text(raw, encoding="utf-8")
+    manifest = {
+        "model": "gpt-5-mini",
+        "failure_modes": [],
+        "schema_valid": True,
+        "hygiene_passed": True,
+        "hallucinated_urls": [],
+        "do_not_claim_violations": [],
+    }
+    (v1 / "manifest.json").write_text(__import__("json").dumps(manifest), encoding="utf-8")
+    (v2 / "manifest.json").write_text(__import__("json").dumps(manifest), encoding="utf-8")
+    report = tmp_path / "comparison.md"
+
+    result = write_api_v1_v2_comparison_report(
+        v1_dir=v1,
+        v2_dir=v2,
+        comparison_report_path=report,
+    )
+
+    assert result["v1"]["manifest"]["model"] == "gpt-5-mini"
+    text = report.read_text(encoding="utf-8")
+    assert "v1/v2 Comparison" in text
+    assert "ready_for_production_agent=false" in text
