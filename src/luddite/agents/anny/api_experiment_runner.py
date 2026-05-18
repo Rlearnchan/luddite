@@ -355,6 +355,7 @@ def validate_api_experiment_raw_output(
     schema_errors: list[str] = []
     empty_source_errors: list[str] = []
     fact_check_errors: list[str] = []
+    key_beat_coverage_errors: list[str] = []
     do_not_claim_violations: list[str] = []
     source_image_overlap_count = 0
     counterpoint_included = False
@@ -395,6 +396,9 @@ def validate_api_experiment_raw_output(
         key_beat_recall_value = _api_key_beat_recall(storyline, case_id)
         if key_beat_recall_value is not None and key_beat_recall_value < 0.85:
             failure_modes.append("key_beat_drift")
+        key_beat_coverage_errors = _key_beat_coverage_errors(storyline, case_id)
+        if key_beat_coverage_errors:
+            failure_modes.append("key_beat_drift")
 
     failure_modes = list(dict.fromkeys(failure_modes))
     hygiene_passed = not failure_modes
@@ -420,6 +424,7 @@ def validate_api_experiment_raw_output(
         "do_not_claim_violations": do_not_claim_violations,
         "repair_attempted": False,
         "key_beat_recall": key_beat_recall_value,
+        "key_beat_coverage_errors": key_beat_coverage_errors,
         "ready_for_api_experiment_prep": True,
         "ready_for_api_experiment": ready_for_api_experiment,
         "ready_for_production_agent": False,
@@ -435,6 +440,7 @@ def validate_api_experiment_raw_output(
             empty_source_errors=empty_source_errors,
             fact_check_errors=fact_check_errors,
             do_not_claim_violations=do_not_claim_violations,
+            key_beat_coverage_errors=key_beat_coverage_errors,
             counterpoint_included=counterpoint_included,
             key_beat_recall_value=key_beat_recall_value,
             llm_api_called=llm_api_called,
@@ -459,6 +465,14 @@ def validate_api_experiment_raw_output(
 
 
 def _api_key_beat_recall(storyline: dict[str, Any], case_id: str) -> float | None:
+    case = _api_case(case_id)
+    if not case:
+        return None
+    recall, _, _ = key_beat_recall(storyline, case.get("expected_key_beats", []))
+    return recall
+
+
+def _api_case(case_id: str) -> dict[str, Any] | None:
     cases_payload = _load_json(paths.EVAL_DIR / "golden_cases" / "anny_dry_run_cases.json")
     case = next((item for item in cases_payload["cases"] if item["case_id"] == case_id), None)
     if not case and case_id.endswith("_v2"):
@@ -470,10 +484,102 @@ def _api_key_beat_recall(storyline: dict[str, Any], case_id: str) -> float | Non
             ),
             None,
         )
+    return case
+
+
+def _key_beat_coverage_errors(storyline: dict[str, Any], case_id: str) -> list[str]:
+    case = _api_case(case_id)
     if not case:
-        return None
-    recall, _, _ = key_beat_recall(storyline, case.get("expected_key_beats", []))
-    return recall
+        return []
+    expected_beats = case.get("expected_key_beats", [])
+    if not expected_beats:
+        return []
+
+    coverage = storyline.get("key_beat_coverage")
+    if not isinstance(coverage, list):
+        return [
+            f"missing_key_beat:{_beat_label(beat)}:key_beat_coverage_absent"
+            for beat in expected_beats
+        ]
+
+    slide_map = _slide_ref_map(storyline)
+    records = {
+        str(item.get("key_beat", "")).strip(): item
+        for item in coverage
+        if isinstance(item, dict)
+    }
+    errors: list[str] = []
+    for beat in expected_beats:
+        label = _beat_label(beat)
+        record = records.get(label)
+        if not record:
+            errors.append(f"missing_key_beat:{label}")
+            continue
+        if record.get("covered") is not True:
+            errors.append(f"missing_key_beat:{label}:covered_false")
+            continue
+        slide_refs = record.get("slide_refs")
+        if not isinstance(slide_refs, list) or not slide_refs:
+            errors.append(f"weak_key_beat_mapping:{label}:empty_slide_refs")
+            continue
+        aliases = _beat_aliases(beat)
+        matched = False
+        for ref in slide_refs:
+            try:
+                slide_ref = int(ref)
+            except (TypeError, ValueError):
+                errors.append(f"invalid_key_beat_slide_ref:{label}:{ref}")
+                continue
+            slide = slide_map.get(slide_ref)
+            if not slide:
+                errors.append(f"invalid_key_beat_slide_ref:{label}:{ref}")
+                continue
+            if _slide_matches_beat(slide, aliases):
+                matched = True
+        if not matched:
+            errors.append(f"key_beat_covered_but_not_in_slide_text:{label}")
+    return errors
+
+
+def _beat_label(beat: dict[str, Any] | str) -> str:
+    if isinstance(beat, dict):
+        return str(beat.get("label", "")).strip()
+    return str(beat).strip()
+
+
+def _beat_aliases(beat: dict[str, Any] | str) -> list[str]:
+    label = _beat_label(beat)
+    aliases = [label]
+    if isinstance(beat, dict):
+        aliases.extend(str(alias) for alias in beat.get("aliases", []))
+    return [alias.strip() for alias in aliases if alias and alias.strip()]
+
+
+def _slide_ref_map(storyline: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    refs: dict[int, dict[str, Any]] = {}
+    order = 0
+    for section in storyline.get("sections", []):
+        for slide in section.get("slides", []):
+            if not isinstance(slide, dict):
+                continue
+            order += 1
+            refs.setdefault(order, slide)
+            slide_no = slide.get("slide_no")
+            if isinstance(slide_no, int):
+                refs[slide_no] = slide
+    return refs
+
+
+def _slide_matches_beat(slide: dict[str, Any], aliases: list[str]) -> bool:
+    body = slide.get("body", [])
+    body_text = " ".join(str(item) for item in body) if isinstance(body, list) else str(body)
+    text = " ".join(
+        [
+            str(slide.get("headline", "")),
+            body_text,
+        ]
+    ).lower()
+    return any(alias.lower() in text for alias in aliases)
 
 
 def _run_openai_responses_api(
@@ -943,6 +1049,7 @@ def _report_markdown(
     empty_source_errors: list[str],
     fact_check_errors: list[str],
     do_not_claim_violations: list[str],
+    key_beat_coverage_errors: list[str],
     counterpoint_included: bool,
     key_beat_recall_value: float | None,
     llm_api_called: bool,
@@ -971,6 +1078,7 @@ def _report_markdown(
         f"- schema_errors: {schema_errors or []}",
         f"- empty_source_errors: {empty_source_errors or []}",
         f"- fact_check_errors: {fact_check_errors or []}",
+        f"- key_beat_coverage_errors: {key_beat_coverage_errors or []}",
         f"- do_not_claim_violations: {do_not_claim_violations or []}",
         "",
         "## Policy",

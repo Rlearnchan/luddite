@@ -26,6 +26,64 @@
     "estimated_slide_count": {
       "type": "integer"
     },
+    "section_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "section_title",
+          "purpose",
+          "required_key_beats",
+          "planned_slide_count"
+        ],
+        "properties": {
+          "section_title": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "required_key_beats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "planned_slide_count": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "key_beat_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key_beat",
+          "covered",
+          "slide_refs",
+          "coverage_note"
+        ],
+        "properties": {
+          "key_beat": {
+            "type": "string"
+          },
+          "covered": {
+            "type": "boolean"
+          },
+          "slide_refs": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "coverage_note": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "sections": {
       "type": "array",
       "items": {

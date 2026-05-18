@@ -83,6 +83,42 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
   역할 변화, AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문, 그리고
   AI가 접근성/개인화 학습을 도울 수 있다는 counterpoint.
 
+## Key Beat Planning Rule
+
+slide를 쓰기 전에 먼저 `section_plan`을 작성한다.
+
+`section_plan`의 각 항목은 다음을 포함한다.
+
+- `section_title`
+- `purpose`
+- `required_key_beats`
+- `planned_slide_count`
+
+모든 required key beat는 반드시 어떤 section에 배치한다. 안전성이나
+fact-check를 지키기 위해 key beat를 생략하지 마라. 근거가 얇으면
+해당 slide에 `needs_source=true` 또는 `needs_fact_check=true`를 남긴다.
+
+slide 작성 후에는 top-level `key_beat_coverage`를 작성한다.
+
+각 항목은 다음을 포함한다.
+
+- `key_beat`
+- `covered`
+- `slide_refs`
+- `coverage_note`
+
+`covered=true`로 표시한 key beat는 실제 `slide_refs`의 headline/body에
+드러나야 한다. `slide_refs`는 존재하는 `slide_no` 또는 1-based slide 순서를
+가리켜야 한다. 실제 slide에 없는 beat를 coverage_note로만 주장하지 마라.
+
+AI 지식기관 API experiment의 required key beats:
+
+- AI 즉답이 주는 편리함
+- 생각하는 과정이 생략될 수 있다는 문제 제기
+- 학교/박물관/천문관 같은 지식기관 역할 변화
+- AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문
+- counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점
+
 ## Length Mode
 
 입력에 `length_mode`가 있으면 아래 기준을 따른다.

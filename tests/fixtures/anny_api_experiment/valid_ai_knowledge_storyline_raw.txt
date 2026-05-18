@@ -5,6 +5,67 @@
   "estimated_slide_count": 4,
   "risk_flags": [],
   "required_fact_checks": ["교육 효과와 인지 변화는 단정하지 않고 방송 전 확인한다."],
+  "section_plan": [
+    {
+      "section_title": "AI가 바로 답을 주는 시대",
+      "purpose": "AI 즉답이 주는 편리함을 먼저 보여준다.",
+      "required_key_beats": ["AI 즉답이 주는 편리함"],
+      "planned_slide_count": 1
+    },
+    {
+      "section_title": "생각하는 과정은 어디로 가는가",
+      "purpose": "생각하는 과정이 생략될 수 있다는 문제 제기를 배치한다.",
+      "required_key_beats": ["생각하는 과정이 생략될 수 있다는 문제 제기"],
+      "planned_slide_count": 1
+    },
+    {
+      "section_title": "반대 관점도 있다",
+      "purpose": "AI가 접근성/개인화 학습을 도울 수 있다는 counterpoint를 둔다.",
+      "required_key_beats": ["counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점"],
+      "planned_slide_count": 1
+    },
+    {
+      "section_title": "무엇을 가르칠 것인가",
+      "purpose": "학교/박물관/천문관 같은 지식기관 역할 변화와 마지막 질문을 회수한다.",
+      "required_key_beats": [
+        "학교/박물관/천문관 같은 지식기관의 역할 변화",
+        "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문"
+      ],
+      "planned_slide_count": 1
+    }
+  ],
+  "key_beat_coverage": [
+    {
+      "key_beat": "AI 즉답이 주는 편리함",
+      "covered": true,
+      "slide_refs": [1],
+      "coverage_note": "도입부에서 AI가 답을 바로 주는 편리함을 설명한다."
+    },
+    {
+      "key_beat": "생각하는 과정이 생략될 수 있다는 문제 제기",
+      "covered": true,
+      "slide_refs": [2],
+      "coverage_note": "과정 압축 문제를 별도 explainer slide로 둔다."
+    },
+    {
+      "key_beat": "학교/박물관/천문관 같은 지식기관의 역할 변화",
+      "covered": true,
+      "slide_refs": [4],
+      "coverage_note": "닫는 질문에서 학교/박물관/천문관 같은 지식기관 역할 변화를 회수한다."
+    },
+    {
+      "key_beat": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
+      "covered": true,
+      "slide_refs": [4],
+      "coverage_note": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문으로 닫는다."
+    },
+    {
+      "key_beat": "counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점",
+      "covered": true,
+      "slide_refs": [3],
+      "coverage_note": "UNESCO counterpoint slide에서 접근성/개인화 학습 관점을 다룬다."
+    }
+  ],
   "sections": [
     {
       "section_title": "AI가 바로 답을 주는 시대",
@@ -12,7 +73,7 @@
         {
           "slide_type": "hook",
           "headline": "AI가 답을 바로 주는 건 정말 편리하다",
-          "body": ["검색보다 빠른 즉답은 학습과 정보 탐색의 출발점을 바꾸고 있다."],
+          "body": ["AI 즉답이 주는 편리함은 검색보다 빠른 답변으로 학습과 정보 탐색의 출발점을 바꾸고 있다."],
           "source_urls": ["https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss"],
           "image_urls": [],
           "notes": "BBC / Royal Observatory article.",
@@ -36,7 +97,7 @@
         {
           "slide_type": "explainer",
           "headline": "문제는 정답이 아니라 과정이다",
-          "body": ["AI 즉답은 편리하지만 질문을 만들고 비교하고 검산하는 과정을 압축할 수 있다."],
+          "body": ["AI 즉답은 편리하지만 생각하는 과정이 생략될 수 있다는 문제 제기를 남긴다. 질문을 만들고 비교하고 검산하는 과정을 압축할 수 있기 때문이다."],
           "source_urls": ["https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/"],
           "image_urls": [],
           "notes": "Microsoft Research information diversity context.",
@@ -84,7 +145,10 @@
         {
           "slide_type": "closing_question",
           "headline": "AI 시대의 공부는 질문을 다루는 법일 수 있다",
-          "body": ["AI 비판이나 찬양이 아니라, 사람은 무엇을 질문하고 어떻게 검산할지로 이야기를 닫는다."],
+          "body": [
+            "학교/박물관/천문관 같은 지식기관의 역할 변화로 이어진다.",
+            "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문으로, 사람은 질문을 해야 한다는 이야기로 닫는다."
+          ],
           "source_urls": [],
           "image_urls": [],
           "notes": "Rhetorical closing bridge.",

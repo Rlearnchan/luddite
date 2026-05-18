@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from luddite import paths
@@ -25,6 +26,24 @@ def _run_fixture(tmp_path: Path, name: str):
     )
 
 
+def _run_modified_valid_fixture(tmp_path: Path, modifier):
+    payload = json.loads(
+        (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+            encoding="utf-8"
+        )
+    )
+    modifier(payload)
+    raw_path = tmp_path / "modified_raw.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "modified",
+        report_path=tmp_path / "reports" / "modified.md",
+    )
+
+
 def test_valid_api_experiment_fixture_passes(tmp_path) -> None:
     result = _run_fixture(tmp_path, "valid_ai_knowledge_storyline_raw.txt")
 
@@ -38,6 +57,50 @@ def test_valid_api_experiment_fixture_passes(tmp_path) -> None:
     assert (result.experiment_dir / "raw_model_output.txt").exists()
     assert (result.experiment_dir / "parsed_storyline.json").exists()
     assert result.report_path.exists()
+
+
+def test_missing_key_beat_coverage_fails(tmp_path) -> None:
+    def remove_one(payload):
+        payload["key_beat_coverage"] = payload["key_beat_coverage"][:-1]
+
+    result = _run_modified_valid_fixture(tmp_path, remove_one)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "missing_key_beat" in report
+
+
+def test_covered_key_beat_requires_slide_refs(tmp_path) -> None:
+    def clear_refs(payload):
+        payload["key_beat_coverage"][0]["slide_refs"] = []
+
+    result = _run_modified_valid_fixture(tmp_path, clear_refs)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "weak_key_beat_mapping" in report
+
+
+def test_key_beat_slide_refs_must_exist(tmp_path) -> None:
+    def invalid_ref(payload):
+        payload["key_beat_coverage"][0]["slide_refs"] = [999]
+
+    result = _run_modified_valid_fixture(tmp_path, invalid_ref)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "invalid_key_beat_slide_ref" in report
+
+
+def test_key_beat_slide_refs_must_match_slide_text(tmp_path) -> None:
+    def wrong_ref(payload):
+        payload["key_beat_coverage"][0]["slide_refs"] = [3]
+
+    result = _run_modified_valid_fixture(tmp_path, wrong_ref)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "key_beat_covered_but_not_in_slide_text" in report
 
 
 def test_invalid_json_fixture_records_invalid_json_without_repair(tmp_path) -> None:

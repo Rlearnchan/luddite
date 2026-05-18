@@ -21,6 +21,8 @@ Optional but recommended:
 - `case_id`
 - `bundle_id`
 - `story_seed_title`
+- `section_plan`
+- `key_beat_coverage`
 - `do_not_claim`
 - `avoid`
 - `source_hygiene_path`
@@ -93,6 +95,35 @@ source_refs:
 
 Do not treat an attached source as completed fact-checking. `source_urls` and
 `image_urls` must stay separate; the same URL must not appear in both.
+
+## Key Beat Planning
+
+API experiment outputs should include a planning layer before the slides:
+
+```yaml
+section_plan:
+  - section_title: AI가 바로 답을 주는 시대
+    purpose: AI 즉답이 주는 편리함을 도입부에 배치한다.
+    required_key_beats:
+      - AI 즉답이 주는 편리함
+    planned_slide_count: 5
+```
+
+After the slides, the output should explicitly report coverage:
+
+```yaml
+key_beat_coverage:
+  - key_beat: AI 즉답이 주는 편리함
+    covered: true
+    slide_refs: [3, 4]
+    coverage_note: 도입부에서 AI 즉답의 편리함을 설명했다.
+```
+
+Every required key beat must be allocated in `section_plan` and verified in
+`key_beat_coverage`. If evidence is thin, keep the beat in the story and mark
+the related slide with `needs_source` or `needs_fact_check`; do not silently
+drop the beat. `covered=true` must point to real slide numbers whose headline
+or body contains the beat or one of its accepted phrase-level aliases.
 
 ## Editorial Rules
 
