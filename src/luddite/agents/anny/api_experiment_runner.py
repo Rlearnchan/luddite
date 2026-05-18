@@ -44,6 +44,7 @@ DEFAULT_EXPERIMENT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_api_experiments"
 DEFAULT_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v1"
 DEFAULT_SECOND_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v2"
 DEFAULT_THIRD_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v3"
+DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v4"
 DEFAULT_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
 )
@@ -52,6 +53,9 @@ DEFAULT_API_V1_V2_COMPARISON_REPORT = (
 )
 DEFAULT_API_V1_V2_V3_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_v3_comparison.md"
+)
+DEFAULT_API_V1_V2_V3_V4_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_v3_v4_comparison.md"
 )
 DEFAULT_MANUAL_ENRICHED_STORYLINE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR
@@ -508,7 +512,11 @@ def _api_key_beat_recall(storyline: dict[str, Any], case_id: str) -> float | Non
 def _api_case(case_id: str) -> dict[str, Any] | None:
     cases_payload = _load_json(paths.EVAL_DIR / "golden_cases" / "anny_dry_run_cases.json")
     case = next((item for item in cases_payload["cases"] if item["case_id"] == case_id), None)
-    if not case and (case_id.endswith("_v2") or case_id.endswith("_v3")):
+    if not case and (
+        case_id.endswith("_v2")
+        or case_id.endswith("_v3")
+        or case_id.endswith("_v4")
+    ):
         case = next(
             (
                 item
@@ -971,6 +979,7 @@ def _storyline_metrics(
             "source_image_overlap_count": None,
             "key_beat_recall": None,
             "key_beat_coverage_present": False,
+            "covers_key_beats_present": False,
             "section_plan_present": False,
         }
     storyline = _load_json(storyline_path)
@@ -994,6 +1003,10 @@ def _storyline_metrics(
         "source_image_overlap_count": _source_image_overlap_count(storyline),
         "key_beat_recall": recall,
         "key_beat_coverage_present": isinstance(storyline.get("key_beat_coverage"), list),
+        "covers_key_beats_present": any(
+            isinstance(slide.get("covers_key_beats"), list)
+            for slide in _all_slides(storyline)
+        ),
         "section_plan_present": isinstance(storyline.get("section_plan"), list),
     }
 
@@ -1007,6 +1020,7 @@ def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
             "hygiene_passed": False,
             "source_hallucination_count": None,
             "do_not_claim_violations": [],
+            "unsupported_claim_details": [],
             "key_beat_coverage_errors": [],
         }
     manifest = _load_json(manifest_path)
@@ -1017,6 +1031,7 @@ def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
         "hygiene_passed": manifest.get("hygiene_passed"),
         "source_hallucination_count": len(manifest.get("hallucinated_urls", [])),
         "do_not_claim_violations": manifest.get("do_not_claim_violations", []),
+        "unsupported_claim_details": manifest.get("unsupported_claim_details", []),
         "key_beat_coverage_errors": manifest.get("key_beat_coverage_errors", []),
     }
 
@@ -1169,11 +1184,12 @@ def write_api_v1_v2_v3_comparison_report(
         "",
         (
             "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
-            "Needs Source | Needs Fact Check | Key Beat Recall | Key Beat Coverage | "
-            "Section Plan | Failure Modes | Source Hallucinations | Do-not-claim "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Section Plan | "
+            "Covers Key Beats | Key Beat Coverage | Failure Modes | Source "
+            "Hallucinations | Do-not-claim "
             "Violations | Counterpoint |"
         ),
-        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---:|---:|---|",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---:|---:|---|",
         _api_version_row("v1", runs["v1"]["manifest"], runs["v1"]["metrics"]),
         _api_version_row("v2", runs["v2"]["manifest"], runs["v2"]["metrics"]),
         _api_version_row("v3", runs["v3"]["manifest"], runs["v3"]["metrics"]),
@@ -1202,6 +1218,82 @@ def write_api_v1_v2_v3_comparison_report(
     return runs
 
 
+def write_api_v1_v2_v3_v4_comparison_report(
+    *,
+    v1_dir: Path,
+    v2_dir: Path,
+    v3_dir: Path,
+    v4_dir: Path,
+    comparison_report_path: Path = DEFAULT_API_V1_V2_V3_V4_COMPARISON_REPORT,
+) -> dict[str, Any]:
+    run_dirs = {
+        "v1": v1_dir,
+        "v2": v2_dir,
+        "v3": v3_dir,
+        "v4": v4_dir,
+    }
+    runs = {
+        label: {
+            "manifest": _manifest_metrics(run_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                run_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": run_dir,
+        }
+        for label, run_dir in run_dirs.items()
+    }
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment v1/v2/v3/v4 Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        *(f"- {label}_dir: {payload['dir']}" for label, payload in runs.items()),
+        "",
+        "## Summary Table",
+        "",
+        (
+            "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Section Plan | "
+            "Covers Key Beats | Key Beat Coverage | Failure Modes | Source "
+            "Hallucinations | Do-not-claim Violations | Counterpoint |"
+        ),
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---:|---:|---|",
+    ]
+    for label, payload in runs.items():
+        lines.append(_api_version_row(label, payload["manifest"], payload["metrics"]))
+    lines.extend(["", "## Key Beat Drift Detail", ""])
+    for label, payload in runs.items():
+        errors = payload["manifest"].get("key_beat_coverage_errors", [])
+        lines.append(f"- {label}: {errors or []}")
+    lines.extend(["", "## Unsupported Claim Detail", ""])
+    for label, payload in runs.items():
+        details = payload["manifest"].get("unsupported_claim_details", [])
+        if not details:
+            lines.append(f"- {label}: []")
+            continue
+        lines.append(f"- {label}: {len(details)} unsupported claim detail(s)")
+        for item in details[:5]:
+            lines.append(
+                "  - "
+                f"slide {item.get('slide_no')}: {item.get('slide_type')} | "
+                f"{item.get('headline')} | reason={item.get('reason')}"
+            )
+    lines.extend(
+        [
+            "",
+            "## Qualitative Notes",
+            "",
+            "- v4 is a fourth controlled API experiment, not a production anny agent.",
+            "- The main observation is whether slide-level covers_key_beats anchors work.",
+            "- `source_hallucination_count=0` and do-not-claim compliance remain required.",
+            "- `ready_for_production_agent=false` remains in force.",
+        ]
+    )
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return runs
+
+
 def _api_version_row(
     label: str,
     manifest: dict[str, Any],
@@ -1214,8 +1306,9 @@ def _api_version_row(
         f"{manifest['hygiene_passed']} | {metrics['section_count']} | "
         f"{metrics['slide_count']} | {metrics['source_url_count']} | "
         f"{metrics['needs_source_count']} | {metrics['needs_fact_check_count']} | "
-        f"{recall_text} | {metrics['key_beat_coverage_present']} | "
-        f"{metrics['section_plan_present']} | {manifest['failure_modes']} | "
+        f"{recall_text} | {metrics['section_plan_present']} | "
+        f"{metrics['covers_key_beats_present']} | "
+        f"{metrics['key_beat_coverage_present']} | {manifest['failure_modes']} | "
         f"{manifest['source_hallucination_count']} | "
         f"{len(manifest['do_not_claim_violations'])} | "
         f"{metrics['counterpoint_included']} |"
@@ -1394,6 +1487,31 @@ def compare_v1_v2_v3(
         v3_dir=DEFAULT_EXPERIMENT_ROOT / v3_run_id,
     )
     console.print("[green]Wrote anny API experiment v1/v2/v3 comparison.[/green]")
+
+
+@run_app.command("compare-v1-v2-v3-v4")
+def compare_v1_v2_v3_v4(
+    v1_run_id: Annotated[str, typer.Option("--v1-run-id")] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    v2_run_id: Annotated[
+        str,
+        typer.Option("--v2-run-id"),
+    ] = DEFAULT_SECOND_API_EXPERIMENT_RUN_ID,
+    v3_run_id: Annotated[
+        str,
+        typer.Option("--v3-run-id"),
+    ] = DEFAULT_THIRD_API_EXPERIMENT_RUN_ID,
+    v4_run_id: Annotated[
+        str,
+        typer.Option("--v4-run-id"),
+    ] = DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID,
+) -> None:
+    write_api_v1_v2_v3_v4_comparison_report(
+        v1_dir=DEFAULT_EXPERIMENT_ROOT / v1_run_id,
+        v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
+        v3_dir=DEFAULT_EXPERIMENT_ROOT / v3_run_id,
+        v4_dir=DEFAULT_EXPERIMENT_ROOT / v4_run_id,
+    )
+    console.print("[green]Wrote anny API experiment v1/v2/v3/v4 comparison.[/green]")
 
 
 if __name__ == "__main__":
