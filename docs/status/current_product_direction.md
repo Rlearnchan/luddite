@@ -385,6 +385,23 @@ Milestone 1.8.1: API Experiment Preflight / Fixture Simulation
   `ready_for_api_experiment=true candidate pending human approval`,
   `ready_for_production_agent=false`, `ready_for_broadcast=false`.
 
+Milestone 1.9: First Anny API Experiment
+
+- Add `luddite run-anny-api-experiment` / `make run-anny-api-experiment` for one
+  controlled API call on `AI 즉답 시대의 지식기관 역할`.
+- API configuration is env-only: `OPENAI_API_KEY` and
+  `LUDDITE_ANNY_API_MODEL` are required; `LUDDITE_ANNY_API_TEMPERATURE` defaults
+  to `0.2` and may not exceed `0.2`.
+- The command stores input bundle, evidence pack, prompt, raw model output,
+  parsed storyline when available, response metadata, validation report, and
+  manifest under the run directory.
+- Validation reuses the 1.8.1 evidence-bound checks and failure taxonomy.
+- The API output is compared with the AI knowledge-institution enriched manual
+  dry run in
+  `outputs/reports/anny_api_experiment_ai_knowledge_institution_comparison.md`.
+- This is not a production anny agent and does not batch topics.
+- Keep `ready_for_production_agent=false` and `ready_for_broadcast=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

@@ -172,6 +172,7 @@
       "type": "string",
       "enum": [
         "invalid_json",
+        "api_request_failed",
         "schema_error",
         "missing_required_fields",
         "source_hallucination",

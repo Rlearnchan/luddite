@@ -8,7 +8,10 @@ failure modes before any production agent exists.
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import urllib.error
+import urllib.request
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -23,10 +26,12 @@ from luddite.eval.anny_dry_run_eval import (
     DO_NOT_CLAIM_PATTERNS,
     _source_image_overlap_count,
 )
+from luddite.eval.anny_reconstruction_eval import key_beat_recall
 from luddite.utils.schemas import validate_with_schema
 from luddite.utils.urls import canonicalize_url
 
 app = typer.Typer(no_args_is_help=False)
+run_app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 DEFAULT_CASE_ID = "anny_api_experiment_ai_knowledge_institution_v1"
@@ -36,6 +41,17 @@ DEFAULT_INPUT_BUNDLE = (
 DEFAULT_EVIDENCE_PACK = paths.ANNY_EVIDENCE_PACK_AI_KNOWLEDGE_JSON
 DEFAULT_OUTPUT_ROOT = paths.OUTPUTS_DIR / "eval" / "anny_api_experiment"
 DEFAULT_EXPERIMENT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_api_experiments"
+DEFAULT_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v1"
+DEFAULT_API_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
+)
+DEFAULT_MANUAL_ENRICHED_STORYLINE = (
+    paths.ANNY_STORYLINE_DRY_RUN_DIR
+    / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
+)
+DEFAULT_PROMPT_FILE = paths.PROMPTS_DIR / "anny" / "storyline_writer.md"
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+ENV_FILES = [paths.REPO_ROOT / ".env", paths.REPO_ROOT / ".env.local"]
 
 
 @dataclass(frozen=True)
@@ -65,6 +81,22 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _extract_response_text(response_payload: dict[str, Any]) -> str:
+    output_text = response_payload.get("output_text")
+    if isinstance(output_text, str) and output_text.strip():
+        return output_text
+    parts: list[str] = []
+    for item in response_payload.get("output", []):
+        if item.get("type") != "message":
+            continue
+        for content in item.get("content", []):
+            if content.get("type") == "output_text" and isinstance(content.get("text"), str):
+                parts.append(content["text"])
+    if parts:
+        return "\n".join(parts)
+    return json.dumps(response_payload, ensure_ascii=False)
+
+
 def _walk_values(value: Any) -> Iterable[Any]:
     if isinstance(value, dict):
         for item in value.values():
@@ -85,12 +117,67 @@ def _collect_allowed_urls(*payloads: dict[str, Any]) -> set[str]:
     return urls
 
 
+def _allowed_url_markdown(allowed_urls: set[str]) -> str:
+    return "\n".join(f"- {url}" for url in sorted(allowed_urls))
+
+
+def build_api_experiment_prompt(
+    *,
+    input_bundle: dict[str, Any],
+    evidence_pack: dict[str, Any],
+    prompt_text: str,
+    schema: dict[str, Any],
+    allowed_urls: set[str],
+) -> str:
+    return "\n\n".join(
+        [
+            prompt_text,
+            "## Controlled API Experiment Instructions",
+            "This is a single non-production API experiment. Return JSON only.",
+            "Do not call tools. Do not browse. Do not invent sources.",
+            "Use only the input bundle, evidence pack, and allowed URL list.",
+            "Keep needs_fact_check / needs_source when evidence is thin.",
+            "Include a counterpoint slide.",
+            "Target 20-30 representative slides across 3-4 sections.",
+            "The output must satisfy the anny storyline JSON schema.",
+            "## Allowed Source URLs",
+            _allowed_url_markdown(allowed_urls),
+            "## Input Bundle JSON",
+            json.dumps(input_bundle, ensure_ascii=False, indent=2),
+            "## Evidence Pack JSON",
+            json.dumps(evidence_pack, ensure_ascii=False, indent=2),
+            "## Output Schema JSON",
+            json.dumps(schema, ensure_ascii=False, indent=2),
+        ]
+    )
+
+
 def _all_slides(storyline: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         slide
         for section in storyline.get("sections", [])
         for slide in section.get("slides", [])
     ]
+
+
+def _section_count(storyline: dict[str, Any]) -> int:
+    return len(storyline.get("sections", []))
+
+
+def _slide_count(storyline: dict[str, Any]) -> int:
+    return len(_all_slides(storyline))
+
+
+def _source_url_count(storyline: dict[str, Any]) -> int:
+    return sum(len(slide.get("source_urls", [])) for slide in _all_slides(storyline))
+
+
+def _needs_source_count(storyline: dict[str, Any]) -> int:
+    return sum(1 for slide in _all_slides(storyline) if slide.get("needs_source"))
+
+
+def _needs_fact_check_count(storyline: dict[str, Any]) -> int:
+    return sum(1 for slide in _all_slides(storyline) if slide.get("needs_fact_check"))
 
 
 def _used_source_urls(storyline: dict[str, Any]) -> set[str]:
@@ -149,14 +236,18 @@ def validate_api_experiment_raw_output(
     experiment_dir: Path,
     report_path: Path,
     case_id: str = DEFAULT_CASE_ID,
+    display_name: str | None = None,
+    model_source: str = "fixture",
+    llm_api_called: bool = False,
 ) -> ApiExperimentResult:
-    fixture_name = raw_output_path.stem
+    fixture_name = display_name or raw_output_path.stem
     experiment_dir.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     raw_copy_path = experiment_dir / "raw_model_output.txt"
     parsed_path = experiment_dir / "parsed_storyline.json"
     manifest_path = experiment_dir / "manifest.json"
-    shutil.copyfile(raw_output_path, raw_copy_path)
+    if raw_output_path.resolve() != raw_copy_path.resolve():
+        shutil.copyfile(raw_output_path, raw_copy_path)
 
     input_bundle = _load_json(input_bundle_path)
     evidence_pack = _load_json(evidence_pack_path)
@@ -218,7 +309,7 @@ def validate_api_experiment_raw_output(
         "parsed_storyline_path": str(parsed_path) if parsed_path.exists() else None,
         "api_experiment_dir": str(experiment_dir),
         "validation_report_path": str(report_path),
-        "model_source": "fixture",
+        "model_source": model_source,
         "parse_status": parse_status,
         "schema_valid": schema_valid,
         "hygiene_passed": hygiene_passed,
@@ -226,6 +317,7 @@ def validate_api_experiment_raw_output(
         "allowed_url_count": len(allowed_urls),
         "used_url_count": len(used_urls),
         "hallucinated_urls": hallucinated_urls,
+        "do_not_claim_violations": do_not_claim_violations,
         "repair_attempted": False,
         "ready_for_api_experiment_prep": True,
         "ready_for_api_experiment": ready_for_api_experiment,
@@ -242,6 +334,7 @@ def validate_api_experiment_raw_output(
             empty_source_errors=empty_source_errors,
             do_not_claim_violations=do_not_claim_violations,
             counterpoint_included=counterpoint_included,
+            llm_api_called=llm_api_called,
         ),
         encoding="utf-8",
     )
@@ -262,6 +355,376 @@ def validate_api_experiment_raw_output(
     )
 
 
+def _run_openai_responses_api(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    temperature: float,
+    timeout_seconds: int,
+    url: str = OPENAI_RESPONSES_URL,
+) -> tuple[str, dict[str, Any]]:
+    payload = {
+        "model": model,
+        "input": prompt,
+        "text": {"format": {"type": "json_object"}},
+    }
+    if not model.startswith("gpt-5"):
+        payload["temperature"] = temperature
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"OpenAI API HTTP {exc.code}: {error_body}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"OpenAI API request failed: {exc.reason}") from exc
+    return _extract_response_text(response_payload), response_payload
+
+
+def _env_model() -> str:
+    _load_env_files()
+    model = os.environ.get("LUDDITE_ANNY_API_MODEL")
+    if not model:
+        raise RuntimeError("Missing required env var: LUDDITE_ANNY_API_MODEL")
+    return model
+
+
+def _env_api_key() -> str:
+    _load_env_files()
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("Missing required env var: OPENAI_API_KEY")
+    return api_key
+
+
+def _env_temperature() -> float:
+    _load_env_files()
+    raw = os.environ.get("LUDDITE_ANNY_API_TEMPERATURE", "0.2")
+    try:
+        temperature = float(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"Invalid LUDDITE_ANNY_API_TEMPERATURE: {raw}") from exc
+    if not 0 <= temperature <= 0.2:
+        raise RuntimeError("LUDDITE_ANNY_API_TEMPERATURE must be between 0 and 0.2")
+    return temperature
+
+
+def _load_env_files() -> None:
+    for env_path in ENV_FILES:
+        if not env_path.exists():
+            continue
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+def run_api_experiment(
+    *,
+    run_id: str = DEFAULT_API_EXPERIMENT_RUN_ID,
+    input_bundle_path: Path = DEFAULT_INPUT_BUNDLE,
+    evidence_pack_path: Path = DEFAULT_EVIDENCE_PACK,
+    prompt_file_path: Path = DEFAULT_PROMPT_FILE,
+    manual_storyline_path: Path = DEFAULT_MANUAL_ENRICHED_STORYLINE,
+    comparison_report_path: Path = DEFAULT_API_COMPARISON_REPORT,
+    experiment_root: Path = DEFAULT_EXPERIMENT_ROOT,
+    model: str | None = None,
+    temperature: float | None = None,
+    timeout_seconds: int = 120,
+    api_caller: Any | None = None,
+) -> dict[str, Any]:
+    api_key = _env_api_key()
+    model = model or _env_model()
+    temperature = _env_temperature() if temperature is None else temperature
+    experiment_dir = experiment_root / run_id
+    experiment_dir.mkdir(parents=True, exist_ok=True)
+
+    input_bundle = _load_json(input_bundle_path)
+    evidence_pack = _load_json(evidence_pack_path)
+    schema = _load_json(paths.SPECS_DIR / "anny_storyline_schema.json")
+    prompt_text = prompt_file_path.read_text(encoding="utf-8")
+    allowed_urls = _collect_allowed_urls(input_bundle, evidence_pack)
+    prompt = build_api_experiment_prompt(
+        input_bundle=input_bundle,
+        evidence_pack=evidence_pack,
+        prompt_text=prompt_text,
+        schema=schema,
+        allowed_urls=allowed_urls,
+    )
+
+    shutil.copyfile(input_bundle_path, experiment_dir / "input_bundle.json")
+    shutil.copyfile(evidence_pack_path, experiment_dir / "evidence_pack.json")
+    (experiment_dir / "prompt.md").write_text(prompt, encoding="utf-8")
+
+    caller = api_caller or _run_openai_responses_api
+    try:
+        raw_text, response_payload = caller(
+            api_key=api_key,
+            model=model,
+            prompt=prompt,
+            temperature=temperature,
+            timeout_seconds=timeout_seconds,
+        )
+    except Exception as exc:
+        raw_path = experiment_dir / "raw_model_output.txt"
+        raw_path.write_text("", encoding="utf-8")
+        manifest = _api_request_failure_manifest(
+            run_id=run_id,
+            model=model,
+            temperature=temperature,
+            input_bundle_path=experiment_dir / "input_bundle.json",
+            evidence_pack_path=experiment_dir / "evidence_pack.json",
+            experiment_dir=experiment_dir,
+            error=str(exc),
+        )
+        _write_json(experiment_dir / "manifest.json", manifest)
+        (experiment_dir / "validation_report.md").write_text(
+            _api_request_failure_report(manifest),
+            encoding="utf-8",
+        )
+        comparison = write_api_manual_comparison_report(
+            api_storyline_path=experiment_dir / "parsed_storyline.json",
+            manual_storyline_path=manual_storyline_path,
+            comparison_report_path=comparison_report_path,
+            api_validation_manifest=manifest,
+            case_id=run_id,
+        )
+        return {
+            "run_id": run_id,
+            "model": model,
+            "experiment_dir": str(experiment_dir),
+            "manifest_path": str(experiment_dir / "manifest.json"),
+            "validation_report_path": str(experiment_dir / "validation_report.md"),
+            "comparison_report_path": str(comparison_report_path),
+            "failure_modes": manifest["failure_modes"],
+            "schema_valid": manifest["schema_valid"],
+            "hygiene_passed": manifest["hygiene_passed"],
+            "comparison": comparison,
+        }
+    (experiment_dir / "raw_model_output.txt").write_text(raw_text, encoding="utf-8")
+    _write_json(experiment_dir / "response_metadata.json", response_payload)
+
+    validation = validate_api_experiment_raw_output(
+        raw_output_path=experiment_dir / "raw_model_output.txt",
+        input_bundle_path=experiment_dir / "input_bundle.json",
+        evidence_pack_path=experiment_dir / "evidence_pack.json",
+        experiment_dir=experiment_dir,
+        report_path=experiment_dir / "validation_report.md",
+        case_id=run_id,
+        display_name=run_id,
+        model_source="openai_api",
+        llm_api_called=True,
+    )
+    manifest = _load_json(validation.manifest_path)
+    manifest["run_id"] = run_id
+    manifest["model_source"] = "openai_api"
+    manifest["model"] = model
+    manifest["temperature"] = temperature
+    manifest["ready_for_production_agent"] = False
+    manifest["ready_for_broadcast"] = False
+    _write_json(validation.manifest_path, manifest)
+
+    comparison = write_api_manual_comparison_report(
+        api_storyline_path=experiment_dir / "parsed_storyline.json",
+        manual_storyline_path=manual_storyline_path,
+        comparison_report_path=comparison_report_path,
+        api_validation_manifest=manifest,
+        case_id=run_id,
+    )
+    return {
+        "run_id": run_id,
+        "model": model,
+        "experiment_dir": str(experiment_dir),
+        "manifest_path": str(validation.manifest_path),
+        "validation_report_path": str(experiment_dir / "validation_report.md"),
+        "comparison_report_path": str(comparison_report_path),
+        "failure_modes": manifest["failure_modes"],
+        "schema_valid": manifest["schema_valid"],
+        "hygiene_passed": manifest["hygiene_passed"],
+        "comparison": comparison,
+    }
+
+
+def _api_request_failure_manifest(
+    *,
+    run_id: str,
+    model: str,
+    temperature: float,
+    input_bundle_path: Path,
+    evidence_pack_path: Path,
+    experiment_dir: Path,
+    error: str,
+) -> dict[str, Any]:
+    return {
+        "run_id": run_id,
+        "case_id": run_id,
+        "status": "failed",
+        "input_bundle_path": str(input_bundle_path),
+        "evidence_pack_path": str(evidence_pack_path),
+        "raw_model_output_path": str(experiment_dir / "raw_model_output.txt"),
+        "parsed_storyline_path": None,
+        "api_experiment_dir": str(experiment_dir),
+        "validation_report_path": str(experiment_dir / "validation_report.md"),
+        "model_source": "openai_api",
+        "model": model,
+        "temperature": temperature,
+        "parse_status": "no_model_output",
+        "schema_valid": False,
+        "hygiene_passed": False,
+        "failure_modes": ["api_request_failed"],
+        "allowed_url_count": None,
+        "used_url_count": 0,
+        "hallucinated_urls": [],
+        "do_not_claim_violations": [],
+        "api_error": error,
+        "repair_attempted": False,
+        "ready_for_api_experiment_prep": True,
+        "ready_for_api_experiment": False,
+        "ready_for_production_agent": False,
+        "ready_for_broadcast": False,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+
+
+def _api_request_failure_report(manifest: dict[str, Any]) -> str:
+    lines = [
+        "# Anny API Experiment Validation Report",
+        "",
+        f"- run_id: {manifest['run_id']}",
+        f"- model: {manifest['model']}",
+        "- status: failed",
+        "- parse_status: no_model_output",
+        "- schema_valid: false",
+        "- hygiene_passed: false",
+        "- failure_modes: ['api_request_failed']",
+        f"- api_error: {manifest['api_error']}",
+        "- repair_attempted: false",
+        "- raw_model_output_retained: true",
+        "- ready_for_production_agent: false",
+        "- ready_for_broadcast: false",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _storyline_metrics(
+    storyline_path: Path,
+    *,
+    case_id: str | None = None,
+) -> dict[str, Any]:
+    if not storyline_path.exists():
+        return {
+            "exists": False,
+            "section_count": None,
+            "slide_count": None,
+            "source_url_count": None,
+            "needs_source_count": None,
+            "needs_fact_check_count": None,
+            "counterpoint_included": False,
+            "source_image_overlap_count": None,
+            "key_beat_recall": None,
+        }
+    storyline = _load_json(storyline_path)
+    recall = None
+    if case_id:
+        cases_payload = _load_json(paths.EVAL_DIR / "golden_cases" / "anny_dry_run_cases.json")
+        case = next(
+            (item for item in cases_payload["cases"] if item["case_id"] == case_id),
+            None,
+        )
+        if case:
+            recall, _, _ = key_beat_recall(storyline, case.get("expected_key_beats", []))
+    return {
+        "exists": True,
+        "section_count": _section_count(storyline),
+        "slide_count": _slide_count(storyline),
+        "source_url_count": _source_url_count(storyline),
+        "needs_source_count": _needs_source_count(storyline),
+        "needs_fact_check_count": _needs_fact_check_count(storyline),
+        "counterpoint_included": _counterpoint_included(storyline),
+        "source_image_overlap_count": _source_image_overlap_count(storyline),
+        "key_beat_recall": recall,
+    }
+
+
+def write_api_manual_comparison_report(
+    *,
+    api_storyline_path: Path,
+    manual_storyline_path: Path,
+    comparison_report_path: Path,
+    api_validation_manifest: dict[str, Any],
+    case_id: str,
+) -> dict[str, Any]:
+    api_metrics = _storyline_metrics(api_storyline_path, case_id=case_id)
+    manual_metrics = _storyline_metrics(
+        manual_storyline_path,
+        case_id="anny_dry_run_ai_knowledge_institution_v1",
+    )
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- case_id: {case_id}",
+        f"- api_storyline_path: {api_storyline_path}",
+        f"- manual_storyline_path: {manual_storyline_path}",
+        f"- model: {api_validation_manifest.get('model')}",
+        f"- failure_modes: {api_validation_manifest.get('failure_modes', [])}",
+        f"- schema_valid: {api_validation_manifest.get('schema_valid')}",
+        f"- hygiene_passed: {api_validation_manifest.get('hygiene_passed')}",
+        (
+            "- source_hallucination_count: "
+            f"{len(api_validation_manifest.get('hallucinated_urls', []))}"
+        ),
+        f"- do_not_claim_violations: {api_validation_manifest.get('do_not_claim_violations', [])}",
+        "",
+        "## Metrics",
+        "",
+        (
+            "| Output | Sections | Slides | Source URLs | Needs Source | Needs Fact Check | "
+            "Counterpoint | Source/Image Overlap | Key Beat Recall |"
+        ),
+        "|---|---:|---:|---:|---:|---:|---|---:|---:|",
+        _metrics_row("Manual enriched", manual_metrics),
+        _metrics_row("API experiment", api_metrics),
+        "",
+        "## Qualitative Notes",
+        "",
+        "- This is a controlled API experiment, not a production anny agent.",
+        "- Failure is acceptable if failure modes are recorded and raw output is retained.",
+        "- API output must remain evidence-bound to the input bundle/evidence pack.",
+        "- ready_for_production_agent: false",
+    ]
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return {"api": api_metrics, "manual": manual_metrics}
+
+
+def _metrics_row(label: str, metrics: dict[str, Any]) -> str:
+    recall = metrics["key_beat_recall"]
+    recall_text = "n/a" if recall is None else f"{recall:.2f}"
+    return (
+        f"| {label} | {metrics['section_count']} | {metrics['slide_count']} | "
+        f"{metrics['source_url_count']} | {metrics['needs_source_count']} | "
+        f"{metrics['needs_fact_check_count']} | {metrics['counterpoint_included']} | "
+        f"{metrics['source_image_overlap_count']} | {recall_text} |"
+    )
+
+
 def _report_markdown(
     *,
     fixture_name: str,
@@ -270,6 +733,7 @@ def _report_markdown(
     empty_source_errors: list[str],
     do_not_claim_violations: list[str],
     counterpoint_included: bool,
+    llm_api_called: bool,
 ) -> str:
     lines = [
         f"# Anny API Experiment Fixture Report — {fixture_name}",
@@ -297,7 +761,7 @@ def _report_markdown(
         "",
         "## Policy",
         "",
-        "- llm_api_called: false",
+        f"- llm_api_called: {str(llm_api_called).lower()}",
         "- repair_attempted: false",
         "- raw_model_output_retained: true",
     ]
@@ -341,6 +805,41 @@ def main(
         console.print(f"[green]{fixture_name}: passed[/green]")
     else:
         console.print(f"[yellow]{fixture_name}: failed {result.failure_modes}[/yellow]")
+
+
+@run_app.callback(invoke_without_command=True)
+def run_main(
+    run_id: Annotated[
+        str,
+        typer.Option("--run-id", help="Controlled API experiment run id."),
+    ] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    model: Annotated[
+        str | None,
+        typer.Option(
+            "--model",
+            help="OpenAI model override. Defaults to LUDDITE_ANNY_API_MODEL.",
+        ),
+    ] = None,
+    timeout_seconds: Annotated[
+        int,
+        typer.Option("--timeout", help="OpenAI API timeout in seconds."),
+    ] = 120,
+) -> None:
+    try:
+        result = run_api_experiment(
+            run_id=run_id,
+            model=model,
+            timeout_seconds=timeout_seconds,
+        )
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from exc
+    console.print(
+        "[green]Wrote anny API experiment artifacts "
+        f"for {result['run_id']} using {result['model']}.[/green]"
+    )
+    if result["failure_modes"]:
+        console.print(f"[yellow]failure_modes={result['failure_modes']}[/yellow]")
 
 
 if __name__ == "__main__":

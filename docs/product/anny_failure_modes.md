@@ -30,6 +30,7 @@ or guardrail violations.
 ## Failure Taxonomy
 
 - `invalid_json`: model output could not be parsed as JSON.
+- `api_request_failed`: API request failed before a model output was available.
 - `schema_error`: parsed JSON fails `specs/anny_storyline_schema.json`.
 - `missing_required_fields`: required top-level, section, or slide fields are absent.
 - `source_hallucination`: `source_urls` contains URLs not present in the input bundle or evidence pack.
@@ -113,6 +114,57 @@ make validate-anny-api-experiment
 
 This preflight still does not call an API. Passing it means the API experiment
 plumbing is ready for human approval, not that production generation is ready.
+
+## First Controlled API Experiment
+
+Milestone 1.9 uses the same validation path for one real API call:
+
+```text
+luddite run-anny-api-experiment
+make run-anny-api-experiment
+```
+
+Required environment variables:
+
+- `OPENAI_API_KEY`
+- `LUDDITE_ANNY_API_MODEL`
+
+The runner reads shell env first and also supports gitignored local files:
+
+- `.env`
+- `.env.local`
+
+Recommended first model:
+
+- `gpt-5-mini`
+
+Optional:
+
+- `LUDDITE_ANNY_API_TEMPERATURE`, default `0.2`, must stay between `0` and `0.2`.
+
+For GPT-5 family models the runner records the configured temperature but does
+not send it if the API rejects custom temperature for that model family.
+
+The command writes:
+
+```text
+outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_ai_knowledge_institution_v1/
+```
+
+with `input_bundle.json`, `evidence_pack.json`, `prompt.md`,
+`raw_model_output.txt`, `parsed_storyline.json` when parsing succeeds,
+`validation_report.md`, `manifest.json`, and `response_metadata.json`.
+
+It also writes:
+
+```text
+outputs/reports/anny_api_experiment_ai_knowledge_institution_comparison.md
+```
+
+The comparison report contrasts the API output with the enriched manual dry run
+for section count, slide count, source count, needs-source/fact-check markers,
+counterpoint inclusion, hallucinated source count, do-not-claim violations, and
+key beat recall.
 
 ## Readiness
 

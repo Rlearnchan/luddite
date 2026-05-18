@@ -2,6 +2,8 @@ from pathlib import Path
 
 from luddite import paths
 from luddite.agents.anny.api_experiment_runner import (
+    build_api_experiment_prompt,
+    run_api_experiment,
     validate_api_experiment_raw_output,
 )
 
@@ -73,3 +75,149 @@ def test_manifest_and_report_are_generated(tmp_path) -> None:
     assert "source_hallucination" in manifest_text
     assert "allowed_url_count" in report_text
     assert "raw_model_output_retained: true" in report_text
+
+
+def test_run_api_experiment_with_fake_caller_generates_artifacts(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("LUDDITE_ANNY_API_MODEL", "gpt-5-mini")
+
+    raw_text = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+
+    def fake_caller(**kwargs):
+        assert kwargs["model"] == "gpt-5-mini"
+        assert kwargs["temperature"] == 0.2
+        assert "Allowed Source URLs" in kwargs["prompt"]
+        return raw_text, {"id": "resp_fixture", "output_text": raw_text}
+
+    result = run_api_experiment(
+        run_id="anny_api_experiment_test",
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        prompt_file_path=paths.PROMPTS_DIR / "anny/storyline_writer.md",
+        manual_storyline_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR
+            / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
+        ),
+        comparison_report_path=tmp_path / "comparison.md",
+        experiment_root=tmp_path / "experiments",
+        api_caller=fake_caller,
+    )
+
+    experiment_dir = Path(result["experiment_dir"])
+    assert result["model"] == "gpt-5-mini"
+    assert result["schema_valid"] is True
+    assert result["hygiene_passed"] is True
+    assert (experiment_dir / "input_bundle.json").exists()
+    assert (experiment_dir / "evidence_pack.json").exists()
+    assert (experiment_dir / "prompt.md").exists()
+    assert (experiment_dir / "raw_model_output.txt").exists()
+    assert (experiment_dir / "parsed_storyline.json").exists()
+    assert (experiment_dir / "validation_report.md").exists()
+    assert (experiment_dir / "manifest.json").exists()
+    assert (tmp_path / "comparison.md").exists()
+
+
+def test_run_api_experiment_requires_env_key(tmp_path, monkeypatch) -> None:
+    import luddite.agents.anny.api_experiment_runner as module
+
+    monkeypatch.setattr(module, "ENV_FILES", [])
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("LUDDITE_ANNY_API_MODEL", "gpt-5-mini")
+
+    try:
+        run_api_experiment(
+            run_id="anny_api_experiment_missing_key",
+            experiment_root=tmp_path / "experiments",
+            comparison_report_path=tmp_path / "comparison.md",
+            api_caller=lambda **_: ("{}", {}),
+        )
+    except RuntimeError as exc:
+        assert "OPENAI_API_KEY" in str(exc)
+    else:
+        raise AssertionError("Expected missing OPENAI_API_KEY error")
+
+
+def test_run_api_experiment_records_api_request_failure(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("LUDDITE_ANNY_API_MODEL", "gpt-5-mini")
+
+    def failing_caller(**kwargs):
+        raise RuntimeError("timeout")
+
+    result = run_api_experiment(
+        run_id="anny_api_experiment_timeout",
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        prompt_file_path=paths.PROMPTS_DIR / "anny/storyline_writer.md",
+        manual_storyline_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR
+            / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
+        ),
+        comparison_report_path=tmp_path / "comparison.md",
+        experiment_root=tmp_path / "experiments",
+        api_caller=failing_caller,
+    )
+
+    experiment_dir = Path(result["experiment_dir"])
+    assert result["failure_modes"] == ["api_request_failed"]
+    assert (experiment_dir / "raw_model_output.txt").exists()
+    assert not (experiment_dir / "parsed_storyline.json").exists()
+    assert "api_request_failed" in (experiment_dir / "manifest.json").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_run_api_experiment_loads_gitignored_env_file(tmp_path, monkeypatch) -> None:
+    import luddite.agents.anny.api_experiment_runner as module
+
+    env_file = tmp_path / ".env.local"
+    env_file.write_text(
+        "OPENAI_API_KEY=test-key-from-file\nLUDDITE_ANNY_API_MODEL=gpt-5-mini\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(module, "ENV_FILES", [env_file])
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LUDDITE_ANNY_API_MODEL", raising=False)
+    raw_text = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+
+    def fake_caller(**kwargs):
+        assert kwargs["api_key"] == "test-key-from-file"
+        assert kwargs["model"] == "gpt-5-mini"
+        return raw_text, {"id": "resp_fixture", "output_text": raw_text}
+
+    result = run_api_experiment(
+        run_id="anny_api_experiment_env_file",
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        prompt_file_path=paths.PROMPTS_DIR / "anny/storyline_writer.md",
+        manual_storyline_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR
+            / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
+        ),
+        comparison_report_path=tmp_path / "comparison.md",
+        experiment_root=tmp_path / "experiments",
+        api_caller=fake_caller,
+    )
+
+    assert result["schema_valid"] is True
+
+
+def test_build_api_experiment_prompt_contains_allowed_urls_and_schema() -> None:
+    input_bundle = {"candidate_articles": [{"url": "https://example.com/a"}]}
+    evidence_pack = {"primary_article": {"url": "https://example.com/b"}}
+    prompt = build_api_experiment_prompt(
+        input_bundle=input_bundle,
+        evidence_pack=evidence_pack,
+        prompt_text="base prompt",
+        schema={"title": "Schema"},
+        allowed_urls={"https://example.com/a", "https://example.com/b"},
+    )
+
+    assert "base prompt" in prompt
+    assert "https://example.com/a" in prompt
+    assert "https://example.com/b" in prompt
+    assert "Output Schema JSON" in prompt
