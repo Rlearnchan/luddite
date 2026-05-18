@@ -52,6 +52,41 @@ DEFAULT_MANUAL_ENRICHED_STORYLINE = (
 DEFAULT_PROMPT_FILE = paths.PROMPTS_DIR / "anny" / "storyline_writer.md"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 ENV_FILES = [paths.REPO_ROOT / ".env", paths.REPO_ROOT / ".env.local"]
+RHETORICAL_SLIDE_TYPES = {
+    "title",
+    "section_title",
+    "rhetorical",
+    "bridge",
+    "closing_question",
+    "production_checklist",
+}
+RHETORICAL_FACT_CHECK_KINDS = {
+    "rhetorical_caution",
+    "production_checklist",
+}
+FACTUAL_CLAIM_MARKERS = [
+    "%",
+    "원",
+    "명",
+    "년",
+    "월",
+    "입증",
+    "연구",
+    "조사",
+    "보고서",
+    "OECD",
+    "UNESCO",
+    "BBC",
+    "Microsoft",
+    "Royal Observatory",
+    "교육 효과",
+    "인지",
+    "정책 효과",
+    "공식",
+    "발언",
+    "도입",
+    "확인",
+]
 
 
 @dataclass(frozen=True)
@@ -196,8 +231,57 @@ def _used_source_urls(storyline: dict[str, Any]) -> set[str]:
 def _empty_source_errors(storyline: dict[str, Any]) -> list[str]:
     errors = []
     for index, slide in enumerate(_all_slides(storyline), start=1):
-        if not slide.get("source_urls") and not slide.get("needs_source"):
+        if (
+            not slide.get("source_urls")
+            and not slide.get("needs_source")
+            and not _source_optional_without_claim(slide)
+        ):
             errors.append(f"slide {index} has empty source_urls without needs_source=true")
+    return errors
+
+
+def _source_optional_without_claim(slide: dict[str, Any]) -> bool:
+    if slide.get("slide_type") not in RHETORICAL_SLIDE_TYPES:
+        return False
+    if _fact_check_kind(slide) in RHETORICAL_FACT_CHECK_KINDS:
+        return True
+    return not _has_factual_claim_marker(slide)
+
+
+def _fact_check_kind(slide: dict[str, Any]) -> str | None:
+    kind = slide.get("fact_check_kind")
+    if isinstance(kind, str):
+        return kind
+    notes = str(slide.get("notes") or "")
+    marker = "fact_check_kind:"
+    if marker not in notes:
+        return None
+    after = notes.split(marker, 1)[1].strip()
+    return after.split("|", 1)[0].strip() or None
+
+
+def _has_factual_claim_marker(slide: dict[str, Any]) -> bool:
+    text = "\n".join(
+        [
+            str(slide.get("headline") or ""),
+            *[str(item) for item in slide.get("body", [])],
+        ]
+    )
+    return any(marker in text for marker in FACTUAL_CLAIM_MARKERS)
+
+
+def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
+    errors = []
+    markers = ["교육 효과", "인지", "지능", "학습 습관", "기관 역할", "사고훈련"]
+    for index, slide in enumerate(_all_slides(storyline), start=1):
+        text = "\n".join(
+            [
+                str(slide.get("headline") or ""),
+                *[str(item) for item in slide.get("body", [])],
+            ]
+        )
+        if any(marker in text for marker in markers) and not slide.get("needs_fact_check"):
+            errors.append(f"slide {index} education/AI effect claim missing needs_fact_check")
     return errors
 
 
@@ -262,6 +346,7 @@ def validate_api_experiment_raw_output(
     hallucinated_urls: list[str] = []
     schema_errors: list[str] = []
     empty_source_errors: list[str] = []
+    fact_check_errors: list[str] = []
     do_not_claim_violations: list[str] = []
     source_image_overlap_count = 0
     counterpoint_included = False
@@ -289,6 +374,9 @@ def validate_api_experiment_raw_output(
         empty_source_errors = _empty_source_errors(storyline)
         if empty_source_errors:
             failure_modes.append("unsupported_claim")
+        fact_check_errors = _education_ai_fact_check_errors(storyline)
+        if fact_check_errors:
+            failure_modes.append("needs_fact_check_removed_too_aggressively")
         counterpoint_included = _counterpoint_included(storyline)
         if not counterpoint_included:
             failure_modes.append("counterpoint_missing")
@@ -332,6 +420,7 @@ def validate_api_experiment_raw_output(
             manifest=manifest,
             schema_errors=schema_errors,
             empty_source_errors=empty_source_errors,
+            fact_check_errors=fact_check_errors,
             do_not_claim_violations=do_not_claim_violations,
             counterpoint_included=counterpoint_included,
             llm_api_called=llm_api_called,
@@ -731,6 +820,7 @@ def _report_markdown(
     manifest: dict[str, Any],
     schema_errors: list[str],
     empty_source_errors: list[str],
+    fact_check_errors: list[str],
     do_not_claim_violations: list[str],
     counterpoint_included: bool,
     llm_api_called: bool,
@@ -757,6 +847,7 @@ def _report_markdown(
         "",
         f"- schema_errors: {schema_errors or []}",
         f"- empty_source_errors: {empty_source_errors or []}",
+        f"- fact_check_errors: {fact_check_errors or []}",
         f"- do_not_claim_violations: {do_not_claim_violations or []}",
         "",
         "## Policy",

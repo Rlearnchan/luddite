@@ -1,0 +1,33 @@
+{
+  "storyline_id": "api_fixture_rhetorical_factual_claim",
+  "title": "AI 즉답 시대의 지식기관 역할",
+  "sections": [
+    {
+      "section_title": "사실 주장 있는 rhetorical slide",
+      "slides": [
+        {
+          "slide_type": "rhetorical",
+          "headline": "OECD 보고서가 교육 효과를 입증했다?",
+          "body": ["OECD 보고서가 AI 교육 효과를 입증했다는 식으로 쓰면 출처가 필요하다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "This should be flagged.",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "counterpoint",
+          "headline": "반대 관점",
+          "body": ["AI는 접근성 관점에서도 봐야 한다."],
+          "source_urls": ["https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners"],
+          "image_urls": [],
+          "notes": "Allowed UNESCO URL.",
+          "needs_fact_check": true,
+          "needs_source": false,
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}

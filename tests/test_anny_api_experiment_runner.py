@@ -67,6 +67,22 @@ def test_missing_counterpoint_fixture_is_detected(tmp_path) -> None:
     assert "source_hallucination" not in result.failure_modes
 
 
+def test_rhetorical_title_and_closing_slides_without_claims_are_allowed(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+
+    assert result.schema_valid is True
+    assert "unsupported_claim" not in result.failure_modes
+    assert "counterpoint_missing" not in result.failure_modes
+
+
+def test_rhetorical_slide_with_factual_claim_still_requires_source(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_factual_claim_raw.txt")
+
+    assert result.schema_valid is True
+    assert "unsupported_claim" in result.failure_modes
+    assert "needs_fact_check_removed_too_aggressively" in result.failure_modes
+
+
 def test_manifest_and_report_are_generated(tmp_path) -> None:
     result = _run_fixture(tmp_path, "source_hallucination_raw.txt")
     manifest_text = result.manifest_path.read_text(encoding="utf-8")

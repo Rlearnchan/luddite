@@ -68,6 +68,20 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
 - 근거가 얇거나 source_refs와 claim 연결이 약하면 `needs_source` 또는
   `needs_fact_check`를 남긴다.
 - source가 붙었다는 뜻은 evidence attached일 뿐, fact-check complete가 아니다.
+- `title`, `section_title`, `rhetorical`, `bridge`, `closing_question`,
+  `production_checklist` slide는 사실 주장이 없으면 source 없이 쓸 수 있다.
+- source 없는 제목/질문/전환 slide는 `fact_check_kind=rhetorical_caution`
+  또는 `slide_type=rhetorical/closing_question`으로 명확히 표시하고,
+  notes에 `rhetorical bridge / no factual claim`처럼 남긴다.
+- 제목/질문/전환 slide라도 수치, 기관 발언, 교육 효과, 인지 변화, 정책 효과,
+  연구/조사 결과를 주장하면 source 또는 `needs_source=true`가 필요하다.
+- 교육/인지/기관 역할 변화 claim은 evidence가 붙어도 보수적으로
+  `needs_fact_check=true`를 유지한다.
+- 모호하면 `needs_source=true` 또는 `needs_fact_check=true`로 남긴다.
+- API experiment에서는 key beats를 명시적으로 회수한다:
+  AI 즉답의 편리함, 생각 과정 생략 문제, 학교/박물관/천문관 같은 지식기관의
+  역할 변화, AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문, 그리고
+  AI가 접근성/개인화 학습을 도울 수 있다는 counterpoint.
 
 ## Length Mode
 
