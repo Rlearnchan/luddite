@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction eval-piti-deck-plan import-articles normalize-candidates score-candidates render-daily-digest jibi-digest
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction eval-piti-deck-plan import-articles normalize-candidates score-candidates render-daily-digest jibi-digest append-jibi-sheet
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -67,3 +67,6 @@ render-daily-digest:
 
 jibi-digest:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite jibi-digest --input-dir examples/articles
+
+append-jibi-sheet:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite append-jibi-sheet --dry-run

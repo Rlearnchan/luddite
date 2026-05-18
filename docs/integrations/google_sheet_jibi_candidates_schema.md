@@ -88,14 +88,16 @@ reject
 - jibi는 append-only
 - 사람 row overwrite 금지
 - 기존 `주제 찾기` 탭 직접 수정 금지
-- duplicate_key가 이미 있으면 새 row로 넣을지 last_seen_at 업데이트할지 정책 필요
+- duplicate_key 또는 source_url_canonical이 이미 있으면 1.0에서는 append skip
+- last_seen_at update는 overwrite 위험이 있으므로 1.0에서는 하지 않음
 ```
 
-MVP 권장:
+1.0 정책:
 
 ```text
 append-only 유지
-중복이면 duplicate_key와 중복후보만 표시
+중복이면 skipped_duplicates report에 기록
+기존 row update/delete 금지
 ```
 
 1.0 이후:
@@ -103,6 +105,25 @@ append-only 유지
 ```text
 같은 duplicate_key가 7일 이내 재등장하면 last_seen_at/update_count만 업데이트
 ```
+
+## 6.1 Authentication and First Run
+
+1.0 기본 인증 방식은 service account다.
+
+```text
+- service account email을 공유 Google Sheet editor로 추가
+- service account JSON은 git에 넣지 않음
+- GOOGLE_APPLICATION_CREDENTIALS 또는 service_account_json_path로 경로 지정
+- OAuth는 service account 초대가 어려울 때의 fallback
+```
+
+첫 실제 실행은 아래 순서로 한다.
+
+```text
+dry-run -> 1~2 row test CSV append -> full preview append -> same preview duplicate rerun
+```
+
+테스트 row 확인 전에는 full preview를 append하지 않는다.
 
 ## 7. Styling
 
@@ -157,3 +178,6 @@ jibi 후보 row
 ## 10. CSV Preview
 
 `outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv`는 `jibi 후보` 시트 컬럼과 동일하게 만든다.
+
+Rejected item은 기본 preview에 넣지 않는다. 필요하면 나중에 별도
+`rejected_preview.csv`를 설계한다.

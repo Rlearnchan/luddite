@@ -2,6 +2,7 @@
 
 import typer
 
+from luddite.agents.jibi.append_to_sheet import app as append_jibi_sheet_app
 from luddite.agents.jibi.daily_digest import app as jibi_digest_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
@@ -33,6 +34,7 @@ app.add_typer(normalize_candidates_app, name="normalize-candidates")
 app.add_typer(score_candidates_app, name="score-candidates")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")
+app.add_typer(append_jibi_sheet_app, name="append-jibi-sheet")
 
 
 @app.callback()

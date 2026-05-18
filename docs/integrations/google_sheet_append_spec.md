@@ -48,6 +48,8 @@ Allowed:
 - append new candidate rows to `jibi 후보`
 - add bot metadata in appropriate columns
 - write concise reason/summary
+- skip duplicate candidates based on `duplicate_key` or `source_url_canonical`
+- generate an append report after every run
 
 Not allowed:
 - overwrite human rows
@@ -55,6 +57,8 @@ Not allowed:
 - mark final adoption status
 - write directly to `주제 찾기` in the MVP
 - insert subscription article full text into visible sheet
+- delete existing rows
+- update `last_seen_at` in 1.0; duplicate rows are skipped only
 
 ## Hard MVP rules
 
@@ -66,6 +70,70 @@ Not allowed:
 - Do not implement status updates in the append MVP; design that separately after the team has used bot rows.
 - Do not place full subscription article text in the visible sheet.
 - Prefer links, short summaries, `why_interesting`, `risk_flags`, and `recommended_action`.
+
+## Milestone 1.0 command
+
+Auth mode:
+
+```text
+service_account
+```
+
+Service account is the default and recommended path for automation. Before the
+first real append, add the service account email as an editor on the shared
+spreadsheet. The service account JSON file must stay local and must never be
+committed to git. Point to it with either:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+```
+
+or:
+
+```yaml
+service_account_json_path: /absolute/path/to/service-account.json
+```
+
+OAuth is a fallback only if the shared spreadsheet cannot invite a service
+account.
+
+Dry-run first:
+
+```bash
+make append-jibi-sheet
+luddite append-jibi-sheet --preview-csv outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv --dry-run
+```
+
+Actual append requires a spreadsheet id from `config/google_sheets.yaml`,
+`LUDDITE_GOOGLE_SPREADSHEET_ID`, or `--spreadsheet-id`.
+
+Target sheet defaults to:
+
+```text
+jibi 후보
+```
+
+The command creates the target sheet if missing, creates the header row if
+missing, appends only non-duplicate preview rows, and writes a report under
+`outputs/reports/`.
+
+First real run sequence:
+
+```text
+1. dry-run against the real spreadsheet
+2. append a 1-2 row test CSV
+3. inspect `jibi 후보`
+4. append the full daily preview
+5. rerun the same preview to confirm duplicate skip
+```
+
+Duplicate policy:
+
+```text
+duplicate_key match -> skip
+source_url_canonical match -> skip
+last_seen_at update -> future work, not 1.0
+```
 
 ## Suggested `jibi 후보` columns
 

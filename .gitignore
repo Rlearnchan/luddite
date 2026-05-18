@@ -10,6 +10,12 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+.env
+.env.*
+*.service-account.json
+*service_account*.json
+*google*credentials*.json
+adept-*.json
 
 # Raw private corpus stays local by default.
 data/storylines/raw/*

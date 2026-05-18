@@ -1,12 +1,12 @@
-# Current Product Direction after v0.9.4 Digest Polish
+# Current Product Direction after Milestone 1.0 Sheet Append Start
 
 Status date: 2026-05-18
 
 ## Current checkpoint
 
 Luddite is at the v0.7 eval harness checkpoint plus v0.8/v0.8.1 design
-alignment, v0.9.3 jibi Daily Digest quality calibration, and v0.9.4 final
-digest polish before Google Sheet append.
+alignment, v0.9.3 jibi Daily Digest quality calibration, v0.9.4 final
+digest polish, and Milestone 1.0 Google Sheet `jibi 후보` append implementation.
 
 Completed:
 
@@ -28,6 +28,8 @@ Completed:
   with zero useful Top Candidates
 - visible `why_interesting` reduced generic scoring clauses; generic signals can
   live in `score_reason`
+- Milestone 1.0 dry-run-capable Google Sheet appender added for `jibi 후보`
+- duplicate rows are skipped by `duplicate_key` or `source_url_canonical`
 
 Not started:
 
@@ -35,7 +37,6 @@ Not started:
 - jibi/anny/piti production agent implementation
 - RSS collector
 - Google Sheets API direct fetch
-- Google Sheet append implementation
 - Slack bot implementation
 - full PPT generator
 - image auto collection
@@ -75,6 +76,8 @@ Short-term implementation priority:
 - Keep existing `주제 찾기` as the human-operated sheet.
 - Never overwrite human rows.
 - `jibi` append is append-only for MVP.
+- Duplicate rows are skipped, not updated, when `duplicate_key` or
+  `source_url_canonical` already exists.
 - Humans mark `review_result` as blank, keep, promote, needs_more_evidence,
   editorial_review, or reject.
 - Later, only `review_result=promote` rows may be promoted/copied to
@@ -92,6 +95,27 @@ last_seen_at
 duplicate_key
 source_url_canonical
 ```
+
+Implemented command:
+
+```text
+luddite append-jibi-sheet --dry-run
+make append-jibi-sheet
+```
+
+The command writes an append report under `outputs/reports/`. It does not
+promote rows into `주제 찾기`.
+
+Authentication and first-run rules:
+
+- Service account is the default Google Sheets auth mode for automation.
+- Add the service account email as an editor on the shared spreadsheet before
+  the first real append.
+- Keep the service account JSON local and out of git. Use
+  `GOOGLE_APPLICATION_CREDENTIALS` or `service_account_json_path`.
+- OAuth is fallback only when a service account cannot be added to the sheet.
+- First real execution should be dry-run, then 1-2 test rows, then full preview,
+  then duplicate rerun verification.
 
 ## Source registry status
 

@@ -75,8 +75,9 @@ data/
       *.xlsx 또는 *.csv
 ```
 
-For the MVP, Google Sheets are handled as local XLSX/CSV exports under
-`data/sheets/raw/`. Google Sheets API auth and direct fetching are a v0.2 task.
+For corpus parsing, Google Sheets can still be handled as local XLSX/CSV exports
+under `data/sheets/raw/`. For the jibi Daily Digest workflow, Milestone 1.0 adds
+append-only Google Sheet output to the `jibi 후보` staging tab.
 
 ## Commands
 
@@ -99,6 +100,7 @@ make normalize-candidates
 make score-candidates
 make render-daily-digest
 make jibi-digest
+make append-jibi-sheet
 ```
 
 `make doctor-corpus`, `make test-corpus`, and `make corpus-smoke` require local
@@ -138,6 +140,27 @@ Run the sample pipeline:
 ```bash
 make jibi-digest
 ```
+
+Dry-run the Google Sheet `jibi 후보` append from the latest preview CSV:
+
+```bash
+make append-jibi-sheet
+```
+
+Actual Google Sheet append targets the `jibi 후보` staging sheet, skips existing
+rows by `duplicate_key` or `source_url_canonical`, and writes an append report
+under `outputs/reports/`. It never appends directly to `주제 찾기`.
+
+For real append, use a service account by setting:
+
+```bash
+LUDDITE_GOOGLE_SPREADSHEET_ID=...
+GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+```
+
+Add the service account email as an editor on the shared spreadsheet first.
+Never commit the service account JSON. OAuth is a fallback only if a service
+account cannot be invited to the spreadsheet.
 
 For real local input, place CSV/JSONL files under `data/inbox/articles/` and run:
 

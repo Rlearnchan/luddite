@@ -1,0 +1,192 @@
+import csv
+
+from luddite.agents.jibi.append_to_sheet import (
+    SHEET_COLUMNS,
+    GoogleSheetAppendConfig,
+    append_jibi_sheet,
+)
+from luddite.integrations.google_sheets import AppendResult
+
+
+class FakeGoogleSheetsClient:
+    def __init__(self, *, sheet_id=None, values=None):
+        self.sheet_id = sheet_id
+        self.values = values or []
+        self.created = False
+        self.header_updates = []
+        self.appended = []
+        self.formatted = []
+
+    def get_sheet_id(self, spreadsheet_id: str, sheet_name: str) -> int | None:
+        return self.sheet_id
+
+    def create_sheet(self, spreadsheet_id: str, sheet_name: str) -> int:
+        self.created = True
+        self.sheet_id = 123
+        return self.sheet_id
+
+    def get_values(self, spreadsheet_id: str, sheet_name: str) -> list[list[str]]:
+        return [list(row) for row in self.values]
+
+    def update_values(
+        self,
+        spreadsheet_id: str,
+        sheet_name: str,
+        start_cell: str,
+        values: list[list[str]],
+    ) -> None:
+        self.header_updates.append((start_cell, values))
+        self.values = [values[0], *self.values]
+
+    def append_rows(
+        self,
+        spreadsheet_id: str,
+        sheet_name: str,
+        rows: list[list[str]],
+    ) -> AppendResult:
+        start = len(self.values) + 1
+        self.appended.extend(rows)
+        self.values.extend(rows)
+        return AppendResult(start_row=start, end_row=start + len(rows) - 1)
+
+    def format_rows(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        start_row: int,
+        end_row: int,
+    ) -> None:
+        self.formatted.append((sheet_id, start_row, end_row))
+
+
+def _write_preview(path, rows):
+    with path.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=SHEET_COLUMNS)
+        writer.writeheader()
+        for row in rows:
+            payload = {column: "" for column in SHEET_COLUMNS}
+            payload.update(row)
+            writer.writerow(payload)
+
+
+def _row(title, duplicate_key, source_url):
+    return {
+        "digest_date": "2026-05-18",
+        "collected_at": "2026-05-18T00:00:00+00:00",
+        "last_seen_at": "2026-05-18T00:00:00+00:00",
+        "jibi_id": f"jibi_{duplicate_key}",
+        "duplicate_key": duplicate_key,
+        "source_url_canonical": source_url,
+        "rank": "1",
+        "status": "new",
+        "주제명": title,
+        "링크": source_url,
+        "출처": "Manual Input",
+        "source_type": "manual",
+        "jibi_grade": "B",
+        "total_score": "71.4",
+        "recommended_action": "gather_more_evidence",
+        "risk_level": "low",
+        "why_interesting": title,
+        "possible_expansions": "확장 A | 확장 B | 확장 C",
+        "evidence_needed": "추가 독립 출처",
+    }
+
+
+def test_append_creates_sheet_header_and_appends_rows(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    report_path = tmp_path / "report.md"
+    _write_preview(preview, [_row("드론 비용 역전", "drone", "https://example.com/drone")])
+    client = FakeGoogleSheetsClient(sheet_id=None)
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+            styling_enabled=True,
+        ),
+        client=client,
+        report_path=report_path,
+    )
+
+    assert client.created is True
+    assert client.header_updates == [("A1", [SHEET_COLUMNS])]
+    assert len(client.appended) == 1
+    assert client.formatted == [(123, 2, 2)]
+    assert report.rows_appended == 1
+    assert "Rows appended: 1" in report_path.read_text(encoding="utf-8")
+
+
+def test_append_skips_duplicate_key_and_source_url(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(
+        preview,
+        [
+            _row("드론 비용 역전", "dupe-key", "https://example.com/new"),
+            _row("폭염 반바지", "new-key", "https://example.com/dupe-url"),
+            _row("F88", "fresh-key", "https://example.com/fresh"),
+        ],
+    )
+    existing = [
+        SHEET_COLUMNS,
+        _row("기존", "dupe-key", "https://example.com/old").values(),
+        _row("기존 URL", "old-key", "https://example.com/dupe-url").values(),
+    ]
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[list(row) for row in existing])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    assert len(client.appended) == 1
+    assert report.rows_appended == 1
+    assert report.duplicates_skipped == 2
+
+
+def test_dry_run_reports_without_append(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    report_path = tmp_path / "report.md"
+    _write_preview(preview, [_row("드론 비용 역전", "drone", "https://example.com/drone")])
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[SHEET_COLUMNS])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=True,
+        ),
+        client=client,
+        report_path=report_path,
+    )
+
+    assert client.appended == []
+    assert report.rows_appended == 1
+    assert report.dry_run is True
+    assert "Dry run: True" in report_path.read_text(encoding="utf-8")
+
+
+def test_dry_run_missing_sheet_reports_create_without_fetching_values(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(preview, [_row("드론 비용 역전", "drone", "https://example.com/drone")])
+    client = FakeGoogleSheetsClient(sheet_id=None)
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=True,
+        ),
+        client=client,
+    )
+
+    assert client.created is False
+    assert client.appended == []
+    assert report.sheet_created is True
+    assert report.header_created is True
+    assert report.rows_appended == 1
