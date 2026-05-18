@@ -45,6 +45,7 @@ DEFAULT_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v1
 DEFAULT_SECOND_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v2"
 DEFAULT_THIRD_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v3"
 DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v4"
+DEFAULT_FIFTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v5"
 DEFAULT_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
 )
@@ -56,6 +57,9 @@ DEFAULT_API_V1_V2_V3_COMPARISON_REPORT = (
 )
 DEFAULT_API_V1_V2_V3_V4_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_v3_v4_comparison.md"
+)
+DEFAULT_API_V1_TO_V5_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_v2_v3_v4_v5_comparison.md"
 )
 DEFAULT_MANUAL_ENRICHED_STORYLINE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR
@@ -536,6 +540,7 @@ def _api_case(case_id: str) -> dict[str, Any] | None:
         case_id.endswith("_v2")
         or case_id.endswith("_v3")
         or case_id.endswith("_v4")
+        or case_id.endswith("_v5")
     ):
         case = next(
             (
@@ -1332,6 +1337,84 @@ def write_api_v1_v2_v3_v4_comparison_report(
     return runs
 
 
+def write_api_v1_to_v5_comparison_report(
+    *,
+    v1_dir: Path,
+    v2_dir: Path,
+    v3_dir: Path,
+    v4_dir: Path,
+    v5_dir: Path,
+    comparison_report_path: Path = DEFAULT_API_V1_TO_V5_COMPARISON_REPORT,
+) -> dict[str, Any]:
+    run_dirs = {
+        "v1": v1_dir,
+        "v2": v2_dir,
+        "v3": v3_dir,
+        "v4": v4_dir,
+        "v5": v5_dir,
+    }
+    runs = {
+        label: {
+            "manifest": _manifest_metrics(run_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                run_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": run_dir,
+        }
+        for label, run_dir in run_dirs.items()
+    }
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment v1/v2/v3/v4/v5 Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        *(f"- {label}_dir: {payload['dir']}" for label, payload in runs.items()),
+        "",
+        "## Summary Table",
+        "",
+        (
+            "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Section Plan | "
+            "Covers Key Beats | Key Beat Coverage | Failure Modes | Source "
+            "Hallucinations | Do-not-claim Violations | Counterpoint |"
+        ),
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---:|---:|---|",
+    ]
+    for label, payload in runs.items():
+        lines.append(_api_version_row(label, payload["manifest"], payload["metrics"]))
+    lines.extend(["", "## Key Beat Drift Detail", ""])
+    for label, payload in runs.items():
+        errors = payload["manifest"].get("key_beat_coverage_errors", [])
+        lines.append(f"- {label}: {errors or []}")
+    lines.extend(["", "## Unsupported Claim Detail", ""])
+    for label, payload in runs.items():
+        details = payload["manifest"].get("unsupported_claim_details", [])
+        if not details:
+            lines.append(f"- {label}: []")
+            continue
+        lines.append(f"- {label}: {len(details)} unsupported claim detail(s)")
+        for item in details[:5]:
+            lines.append(
+                "  - "
+                f"slide {item.get('slide_no')}: {item.get('slide_type')} | "
+                f"{item.get('headline')} | reason={item.get('reason')}"
+            )
+    lines.extend(
+        [
+            "",
+            "## Qualitative Notes",
+            "",
+            "- v5 is a fifth controlled API experiment, not a production anny agent.",
+            "- The main observation is whether stable covers_key_beats ids are followed.",
+            "- `source_hallucination_count=0` and do-not-claim compliance remain required.",
+            "- `ready_for_production_agent=false` remains in force.",
+        ]
+    )
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return runs
+
+
 def _api_version_row(
     label: str,
     manifest: dict[str, Any],
@@ -1550,6 +1633,36 @@ def compare_v1_v2_v3_v4(
         v4_dir=DEFAULT_EXPERIMENT_ROOT / v4_run_id,
     )
     console.print("[green]Wrote anny API experiment v1/v2/v3/v4 comparison.[/green]")
+
+
+@run_app.command("compare-v1-v2-v3-v4-v5")
+def compare_v1_v2_v3_v4_v5(
+    v1_run_id: Annotated[str, typer.Option("--v1-run-id")] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    v2_run_id: Annotated[
+        str,
+        typer.Option("--v2-run-id"),
+    ] = DEFAULT_SECOND_API_EXPERIMENT_RUN_ID,
+    v3_run_id: Annotated[
+        str,
+        typer.Option("--v3-run-id"),
+    ] = DEFAULT_THIRD_API_EXPERIMENT_RUN_ID,
+    v4_run_id: Annotated[
+        str,
+        typer.Option("--v4-run-id"),
+    ] = DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID,
+    v5_run_id: Annotated[
+        str,
+        typer.Option("--v5-run-id"),
+    ] = DEFAULT_FIFTH_API_EXPERIMENT_RUN_ID,
+) -> None:
+    write_api_v1_to_v5_comparison_report(
+        v1_dir=DEFAULT_EXPERIMENT_ROOT / v1_run_id,
+        v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
+        v3_dir=DEFAULT_EXPERIMENT_ROOT / v3_run_id,
+        v4_dir=DEFAULT_EXPERIMENT_ROOT / v4_run_id,
+        v5_dir=DEFAULT_EXPERIMENT_ROOT / v5_run_id,
+    )
+    console.print("[green]Wrote anny API experiment v1/v2/v3/v4/v5 comparison.[/green]")
 
 
 if __name__ == "__main__":
