@@ -128,7 +128,31 @@ def test_covers_key_beats_requires_anchor_phrase(tmp_path) -> None:
     report = result.report_path.read_text(encoding="utf-8")
 
     assert "key_beat_drift" in result.failure_modes
-    assert "covers_key_beat_without_anchor_phrase" in report
+    assert "key_beat_anchor_phrase_not_in_text" in report
+
+
+def test_covers_key_beats_requires_anchor_used_metadata(tmp_path) -> None:
+    def remove_anchor_used(payload):
+        payload["sections"][0]["slides"][0].pop("key_beat_anchors_used", None)
+
+    result = _run_modified_valid_fixture(tmp_path, remove_anchor_used)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "missing_key_beat_anchor_used" in report
+
+
+def test_key_beat_anchor_used_must_be_allowed_phrase(tmp_path) -> None:
+    def invalid_anchor(payload):
+        payload["sections"][0]["slides"][0]["key_beat_anchors_used"] = [
+            {"key_beat_id": "kb_ai_convenience", "anchor_phrase": "없는 앵커"}
+        ]
+
+    result = _run_modified_valid_fixture(tmp_path, invalid_anchor)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "invalid_key_beat_anchor_phrase" in report
 
 
 def test_invalid_covers_key_beats_value_fails(tmp_path) -> None:
@@ -199,6 +223,41 @@ def test_rhetorical_title_and_closing_slides_without_claims_are_allowed(tmp_path
     assert result.schema_valid is True
     assert "unsupported_claim" not in result.failure_modes
     assert "counterpoint_missing" not in result.failure_modes
+
+
+def test_title_with_source_specific_marker_without_source_fails(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    import json
+
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    payload["sections"][0]["slides"][0]["body"] = ["Royal Observatory warns about AI."]
+    raw_path = tmp_path / "source_specific_title.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "source_specific_title",
+        report_path=tmp_path / "reports" / "source_specific_title.md",
+    )
+
+    assert "unsupported_claim" in result.failure_modes
+
+
+def test_title_with_source_specific_marker_and_source_passes(tmp_path) -> None:
+    def sourced_title(payload):
+        slide = payload["sections"][0]["slides"][0]
+        slide["slide_type"] = "title"
+        slide["body"] = ["Royal Observatory warns about AI."]
+        slide["source_urls"] = [
+            "https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss"
+        ]
+        slide["needs_fact_check"] = True
+
+    result = _run_modified_valid_fixture(tmp_path, sourced_title)
+
+    assert "unsupported_claim" not in result.failure_modes
 
 
 def test_rhetorical_slide_with_factual_claim_still_requires_source(tmp_path) -> None:

@@ -230,6 +230,10 @@ Key beat planning:
 - `Korean_bridge`, `source_context`, `risk`, `institution_example` 같은 역할 값은
   `covers_key_beats`가 아니라 `source_refs.role`, notes, risk metadata로 보낸다.
 - `covers_key_beats`가 있는 slide는 headline/body에 anchor phrase를 포함한다.
+- `covers_key_beats`가 있는 slide는 `key_beat_anchors_used`에
+  `key_beat_id`와 `anchor_phrase`를 명시한다.
+- `key_beat_anchors_used.anchor_phrase`는 제공된 anchor phrase 중 하나여야 하며
+  slide headline 또는 body 첫 줄에 그대로 들어가야 한다.
 - `covered=true`인 key beat는 실제 slide headline/body에 반영되어야 한다.
 - `slide_refs`는 존재하는 `slide_no` 또는 1-based slide 순서를 가리킨다.
 - 근거가 부족한 key beat도 생략하지 말고 `needs_source` 또는

@@ -102,6 +102,23 @@ FACTUAL_CLAIM_MARKERS = [
     "공식",
     "발언",
 ]
+SOURCE_SPECIFIC_MARKERS = [
+    "BBC",
+    "Royal Observatory",
+    "왕립천문대",
+    "연구진",
+    "전문가",
+    "보도",
+    "경고",
+    "발언",
+    "according to",
+    "warns",
+    "says",
+    '"',
+    "'",
+    "“",
+    "”",
+]
 
 
 @dataclass(frozen=True)
@@ -309,7 +326,12 @@ def _has_factual_claim_marker(slide: dict[str, Any]) -> bool:
             *[str(item) for item in slide.get("body", [])],
         ]
     )
-    return any(marker in text for marker in FACTUAL_CLAIM_MARKERS)
+    return _has_marker(text, FACTUAL_CLAIM_MARKERS) or _has_marker(text, SOURCE_SPECIFIC_MARKERS)
+
+
+def _has_marker(text: str, markers: list[str]) -> bool:
+    folded = text.casefold()
+    return any(marker.casefold() in folded for marker in markers)
 
 
 def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
@@ -639,9 +661,10 @@ def _covers_key_beat_errors(
                 continue
             covered_by_slide[beat_id].append(slide)
             beat = id_to_beat[beat_id]
-            if not _slide_matches_beat(slide, _beat_anchor_phrases(beat)):
+            anchor_error = _anchor_used_error(slide, beat_id, beat)
+            if anchor_error:
                 label = id_to_label[beat_id]
-                errors.append(f"covers_key_beat_without_anchor_phrase:{label}:slide_{index}")
+                errors.append(f"{anchor_error}:{label}:slide_{index}")
     for beat_id, matching_slides in covered_by_slide.items():
         if not matching_slides:
             label = id_to_label[beat_id]
@@ -709,6 +732,42 @@ def _beat_anchor_phrases(beat: dict[str, Any] | str) -> list[str]:
     if isinstance(beat, dict) and beat.get("anchor_phrases"):
         return [str(anchor).strip() for anchor in beat["anchor_phrases"] if str(anchor).strip()]
     return _beat_aliases(beat)
+
+
+def _anchor_used_error(
+    slide: dict[str, Any],
+    beat_id: str,
+    beat: dict[str, Any] | str,
+) -> str | None:
+    anchors_used = slide.get("key_beat_anchors_used")
+    if not isinstance(anchors_used, list):
+        return "missing_key_beat_anchor_used"
+    matching = [
+        item
+        for item in anchors_used
+        if isinstance(item, dict) and str(item.get("key_beat_id", "")).strip() == beat_id
+    ]
+    if not matching:
+        return "missing_key_beat_anchor_used"
+    allowed = _beat_anchor_phrases(beat)
+    first_text = _slide_headline_and_first_body(slide)
+    for item in matching:
+        anchor = str(item.get("anchor_phrase", "")).strip()
+        if anchor not in allowed:
+            return "invalid_key_beat_anchor_phrase"
+        if anchor not in first_text:
+            return "key_beat_anchor_phrase_not_in_text"
+    return None
+
+
+def _slide_headline_and_first_body(slide: dict[str, Any]) -> str:
+    body = slide.get("body", [])
+    first_body = ""
+    if isinstance(body, list) and body:
+        first_body = str(body[0])
+    elif isinstance(body, str):
+        first_body = body
+    return "\n".join([str(slide.get("headline", "")), first_body])
 
 
 def _slide_ref_map(storyline: dict[str, Any]) -> dict[int, dict[str, Any]]:

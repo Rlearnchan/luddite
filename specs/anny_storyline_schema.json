@@ -182,6 +182,24 @@
                   "items": {
                     "type": "string"
                   }
+                },
+                "key_beat_anchors_used": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "key_beat_id",
+                      "anchor_phrase"
+                    ],
+                    "properties": {
+                      "key_beat_id": {
+                        "type": "string"
+                      },
+                      "anchor_phrase": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               }
             }

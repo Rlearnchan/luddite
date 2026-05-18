@@ -123,6 +123,10 @@ slide 작성 후에는 top-level `key_beat_coverage`를 작성한다.
 - required key beat는 최소 1개 slide의 `covers_key_beats`에 들어가야 한다.
 - `covers_key_beats`가 있는 slide는 headline/body에 해당 key beat의 anchor
   phrase를 최소 하나 포함해야 한다.
+- `covers_key_beats`가 있는 slide는 `key_beat_anchors_used`도 작성한다.
+- `key_beat_anchors_used`는 `{key_beat_id, anchor_phrase}` object list다.
+- `anchor_phrase`는 제공된 anchor phrase 중 하나를 그대로 선택한다.
+- 선택한 `anchor_phrase`는 slide headline 또는 body 첫 줄에 그대로 포함한다.
 - 마지막 section에는 반드시 “AI 비판/찬양이 아니라 무엇을 가르칠지에 대한
   질문” beat를 `closing_question` 또는 `rhetorical` slide로 회수한다.
 

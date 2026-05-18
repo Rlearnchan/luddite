@@ -85,6 +85,9 @@
           "needs_fact_check": true,
           "needs_source": false,
           "covers_key_beats": ["kb_ai_convenience"],
+          "key_beat_anchors_used": [
+            {"key_beat_id": "kb_ai_convenience", "anchor_phrase": "AI 즉답의 편리함"}
+          ],
           "source_refs": [
             {
               "url": "https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss",
@@ -110,6 +113,9 @@
           "needs_fact_check": true,
           "needs_source": false,
           "covers_key_beats": ["kb_thinking_process"],
+          "key_beat_anchors_used": [
+            {"key_beat_id": "kb_thinking_process", "anchor_phrase": "생각하는 과정"}
+          ],
           "source_refs": [
             {
               "url": "https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/",
@@ -135,6 +141,9 @@
           "needs_fact_check": true,
           "needs_source": false,
           "covers_key_beats": ["kb_counterpoint_access"],
+          "key_beat_anchors_used": [
+            {"key_beat_id": "kb_counterpoint_access", "anchor_phrase": "접근성"}
+          ],
           "source_refs": [
             {
               "url": "https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners",
@@ -154,7 +163,7 @@
           "slide_type": "closing_question",
           "headline": "AI 시대의 공부는 질문을 다루는 법일 수 있다",
           "body": [
-            "학교/박물관/천문관 같은 지식기관의 역할 변화로 이어진다.",
+            "학교/박물관/천문관 같은 지식기관의 역할 변화는 무엇을 가르칠 것인가라는 질문으로 이어진다.",
             "AI 비판/찬양이 아니라 무엇을 가르칠 것인가, 질문하는 법을 가르칠 것인가라는 이야기로 닫는다."
           ],
           "source_urls": [],
@@ -165,6 +174,10 @@
           "covers_key_beats": [
             "kb_institution_role",
             "kb_teach_question"
+          ],
+          "key_beat_anchors_used": [
+            {"key_beat_id": "kb_institution_role", "anchor_phrase": "학교"},
+            {"key_beat_id": "kb_teach_question", "anchor_phrase": "무엇을 가르칠 것인가"}
           ],
           "source_refs": []
         }

@@ -138,6 +138,11 @@ labels. Source roles such as `Korean_bridge`, `source_context`, `risk`, or
 `institution_example` are invalid in `covers_key_beats`; put them in
 `source_refs.role`, notes, or risk metadata instead.
 
+Slides that use `covers_key_beats` should also include `key_beat_anchors_used`,
+an object list with `key_beat_id` and `anchor_phrase`. The anchor phrase must
+come from the provided anchor list and must appear verbatim in the slide
+headline or first body line.
+
 ## Editorial Rules
 
 - Anny is evidence-bound. Do not invent facts, numbers, claims, or URLs that are
