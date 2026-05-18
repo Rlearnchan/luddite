@@ -237,6 +237,10 @@ def _used_source_urls(storyline: dict[str, Any]) -> set[str]:
 
 
 def _empty_source_errors(storyline: dict[str, Any]) -> list[str]:
+    return [item["message"] for item in _unsupported_claim_details(storyline)]
+
+
+def _unsupported_claim_details(storyline: dict[str, Any]) -> list[dict[str, Any]]:
     errors = []
     for index, slide in enumerate(_all_slides(storyline), start=1):
         if (
@@ -244,8 +248,29 @@ def _empty_source_errors(storyline: dict[str, Any]) -> list[str]:
             and not slide.get("needs_source")
             and not _source_optional_without_claim(slide)
         ):
-            errors.append(f"slide {index} has empty source_urls without needs_source=true")
+            errors.append(
+                {
+                    "slide_no": slide.get("slide_no") or index,
+                    "headline": slide.get("headline"),
+                    "slide_type": slide.get("slide_type"),
+                    "fact_check_kind": _fact_check_kind(slide),
+                    "body_excerpt": _body_excerpt(slide),
+                    "reason": "empty_source_urls_without_needs_source",
+                    "source_urls_present": bool(slide.get("source_urls")),
+                    "needs_source": bool(slide.get("needs_source")),
+                    "needs_fact_check": bool(slide.get("needs_fact_check")),
+                    "message": (
+                        f"slide {index} has empty source_urls without needs_source=true"
+                    ),
+                }
+            )
     return errors
+
+
+def _body_excerpt(slide: dict[str, Any], limit: int = 160) -> str:
+    body = slide.get("body", [])
+    text = " ".join(str(item) for item in body) if isinstance(body, list) else str(body)
+    return text[:limit]
 
 
 def _source_optional_without_claim(slide: dict[str, Any]) -> bool:
@@ -358,6 +383,7 @@ def validate_api_experiment_raw_output(
     hallucinated_urls: list[str] = []
     schema_errors: list[str] = []
     empty_source_errors: list[str] = []
+    unsupported_claim_details: list[dict[str, Any]] = []
     fact_check_errors: list[str] = []
     key_beat_coverage_errors: list[str] = []
     do_not_claim_violations: list[str] = []
@@ -385,7 +411,8 @@ def validate_api_experiment_raw_output(
         source_image_overlap_count = _source_image_overlap_count(storyline)
         if source_image_overlap_count:
             failure_modes.append("source_image_overlap")
-        empty_source_errors = _empty_source_errors(storyline)
+        unsupported_claim_details = _unsupported_claim_details(storyline)
+        empty_source_errors = [item["message"] for item in unsupported_claim_details]
         if empty_source_errors:
             failure_modes.append("unsupported_claim")
         fact_check_errors = _education_ai_fact_check_errors(storyline)
@@ -426,6 +453,7 @@ def validate_api_experiment_raw_output(
         "used_url_count": len(used_urls),
         "hallucinated_urls": hallucinated_urls,
         "do_not_claim_violations": do_not_claim_violations,
+        "unsupported_claim_details": unsupported_claim_details,
         "repair_attempted": False,
         "key_beat_recall": key_beat_recall_value,
         "key_beat_coverage_errors": key_beat_coverage_errors,
@@ -442,6 +470,7 @@ def validate_api_experiment_raw_output(
             manifest=manifest,
             schema_errors=schema_errors,
             empty_source_errors=empty_source_errors,
+            unsupported_claim_details=unsupported_claim_details,
             fact_check_errors=fact_check_errors,
             do_not_claim_violations=do_not_claim_violations,
             key_beat_coverage_errors=key_beat_coverage_errors,
@@ -501,10 +530,16 @@ def _key_beat_coverage_errors(storyline: dict[str, Any], case_id: str) -> list[s
 
     coverage = storyline.get("key_beat_coverage")
     if not isinstance(coverage, list):
-        return [
+        missing_coverage_errors = [
             f"missing_key_beat:{_beat_label(beat)}:key_beat_coverage_absent"
             for beat in expected_beats
         ]
+        return list(
+            dict.fromkeys(
+                _covers_key_beat_errors(storyline, expected_beats)
+                + missing_coverage_errors
+            )
+        )
 
     slide_map = _slide_ref_map(storyline)
     records = {
@@ -512,7 +547,7 @@ def _key_beat_coverage_errors(storyline: dict[str, Any], case_id: str) -> list[s
         for item in coverage
         if isinstance(item, dict)
     }
-    errors: list[str] = []
+    errors: list[str] = _covers_key_beat_errors(storyline, expected_beats)
     for beat in expected_beats:
         label = _beat_label(beat)
         record = records.get(label)
@@ -542,6 +577,66 @@ def _key_beat_coverage_errors(storyline: dict[str, Any], case_id: str) -> list[s
                 matched = True
         if not matched:
             errors.append(f"key_beat_covered_but_not_in_slide_text:{label}")
+    errors.extend(_coverage_vs_covers_errors(storyline, coverage, expected_beats))
+    return list(dict.fromkeys(errors))
+
+
+def _covers_key_beat_errors(
+    storyline: dict[str, Any],
+    expected_beats: list[dict[str, Any] | str],
+) -> list[str]:
+    expected_labels = [_beat_label(beat) for beat in expected_beats]
+    slides = _all_slides(storyline)
+    covered_by_slide: dict[str, list[dict[str, Any]]] = {label: [] for label in expected_labels}
+    errors: list[str] = []
+    for index, slide in enumerate(slides, start=1):
+        covers = slide.get("covers_key_beats", [])
+        if not covers:
+            continue
+        if not isinstance(covers, list):
+            errors.append(f"invalid_covers_key_beats:slide_{index}:not_list")
+            continue
+        for key_beat in covers:
+            label = str(key_beat).strip()
+            if label not in expected_labels:
+                errors.append(f"invalid_covers_key_beats:slide_{index}:{label}")
+                continue
+            covered_by_slide[label].append(slide)
+            beat = next(item for item in expected_beats if _beat_label(item) == label)
+            if not _slide_matches_beat(slide, _beat_anchor_phrases(beat)):
+                errors.append(f"covers_key_beat_without_anchor_phrase:{label}:slide_{index}")
+    for label, matching_slides in covered_by_slide.items():
+        if not matching_slides:
+            errors.append(f"missing_covers_key_beats:{label}")
+    return errors
+
+
+def _coverage_vs_covers_errors(
+    storyline: dict[str, Any],
+    coverage: list[Any],
+    expected_beats: list[dict[str, Any] | str],
+) -> list[str]:
+    expected_labels = [_beat_label(beat) for beat in expected_beats]
+    slide_map = _slide_ref_map(storyline)
+    errors: list[str] = []
+    for item in coverage:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get("key_beat", "")).strip()
+        if label not in expected_labels:
+            continue
+        refs = item.get("slide_refs", [])
+        if not isinstance(refs, list):
+            continue
+        for ref in refs:
+            try:
+                slide = slide_map.get(int(ref))
+            except (TypeError, ValueError):
+                continue
+            if not slide:
+                continue
+            if label not in [str(value).strip() for value in slide.get("covers_key_beats", [])]:
+                errors.append(f"weak_key_beat_mapping:{label}:coverage_ref_missing_in_covers")
     return errors
 
 
@@ -557,6 +652,12 @@ def _beat_aliases(beat: dict[str, Any] | str) -> list[str]:
     if isinstance(beat, dict):
         aliases.extend(str(alias) for alias in beat.get("aliases", []))
     return [alias.strip() for alias in aliases if alias and alias.strip()]
+
+
+def _beat_anchor_phrases(beat: dict[str, Any] | str) -> list[str]:
+    if isinstance(beat, dict) and beat.get("anchor_phrases"):
+        return [str(anchor).strip() for anchor in beat["anchor_phrases"] if str(anchor).strip()]
+    return _beat_aliases(beat)
 
 
 def _slide_ref_map(storyline: dict[str, Any]) -> dict[int, dict[str, Any]]:
@@ -1138,6 +1239,7 @@ def _report_markdown(
     manifest: dict[str, Any],
     schema_errors: list[str],
     empty_source_errors: list[str],
+    unsupported_claim_details: list[dict[str, Any]],
     fact_check_errors: list[str],
     do_not_claim_violations: list[str],
     key_beat_coverage_errors: list[str],
@@ -1168,6 +1270,7 @@ def _report_markdown(
         "",
         f"- schema_errors: {schema_errors or []}",
         f"- empty_source_errors: {empty_source_errors or []}",
+        f"- unsupported_claim_details: {unsupported_claim_details or []}",
         f"- fact_check_errors: {fact_check_errors or []}",
         f"- key_beat_coverage_errors: {key_beat_coverage_errors or []}",
         f"- do_not_claim_violations: {do_not_claim_violations or []}",

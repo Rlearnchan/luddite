@@ -52,6 +52,7 @@ Recommended slide fields for piti/eval handoff:
 
 - `slide_no`
 - `local_order`
+- `covers_key_beats`
 - `fact_check_priority`
 - `fact_check_kind`
 - `required_before_storyline`
@@ -124,6 +125,13 @@ Every required key beat must be allocated in `section_plan` and verified in
 the related slide with `needs_source` or `needs_fact_check`; do not silently
 drop the beat. `covered=true` must point to real slide numbers whose headline
 or body contains the beat or one of its accepted phrase-level aliases.
+
+Each required key beat must also be assigned to at least one slide-level
+`covers_key_beats` entry. This field is the slide's commitment; the later
+`key_beat_coverage` block is only the self-check. A slide with
+`covers_key_beats` must include at least one anchor phrase for that beat in its
+headline or body. Validator failures may include `missing_covers_key_beats` or
+`covers_key_beat_without_anchor_phrase`.
 
 ## Editorial Rules
 

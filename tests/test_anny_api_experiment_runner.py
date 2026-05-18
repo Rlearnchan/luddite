@@ -104,6 +104,55 @@ def test_key_beat_slide_refs_must_match_slide_text(tmp_path) -> None:
     assert "key_beat_covered_but_not_in_slide_text" in report
 
 
+def test_required_key_beat_must_have_covers_key_beats_slide(tmp_path) -> None:
+    def remove_covers(payload):
+        for section in payload["sections"]:
+            for slide in section["slides"]:
+                slide.pop("covers_key_beats", None)
+
+    result = _run_modified_valid_fixture(tmp_path, remove_covers)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "missing_covers_key_beats" in report
+
+
+def test_covers_key_beats_requires_anchor_phrase(tmp_path) -> None:
+    def remove_anchor(payload):
+        payload["sections"][0]["slides"][0]["headline"] = "도입"
+        payload["sections"][0]["slides"][0]["body"] = ["이야기를 시작한다."]
+
+    result = _run_modified_valid_fixture(tmp_path, remove_anchor)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "covers_key_beat_without_anchor_phrase" in report
+
+
+def test_invalid_covers_key_beats_value_fails(tmp_path) -> None:
+    def invalid_cover(payload):
+        payload["sections"][0]["slides"][0]["covers_key_beats"] = ["없는 비트"]
+
+    result = _run_modified_valid_fixture(tmp_path, invalid_cover)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "invalid_covers_key_beats" in report
+
+
+def test_key_beat_coverage_refs_must_align_with_covers_key_beats(tmp_path) -> None:
+    def mismatch_cover(payload):
+        payload["sections"][0]["slides"][0]["covers_key_beats"] = [
+            "생각하는 과정이 생략될 수 있다는 문제 제기"
+        ]
+
+    result = _run_modified_valid_fixture(tmp_path, mismatch_cover)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "coverage_ref_missing_in_covers" in report
+
+
 def test_invalid_json_fixture_records_invalid_json_without_repair(tmp_path) -> None:
     result = _run_fixture(tmp_path, "invalid_json_raw.txt")
 
@@ -164,6 +213,16 @@ def test_manifest_and_report_are_generated(tmp_path) -> None:
     assert "source_hallucination" in manifest_text
     assert "allowed_url_count" in report_text
     assert "raw_model_output_retained: true" in report_text
+
+
+def test_unsupported_claim_detail_is_reported(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_factual_claim_raw.txt")
+    report_text = result.report_path.read_text(encoding="utf-8")
+
+    assert "unsupported_claim" in result.failure_modes
+    assert "unsupported_claim_details" in report_text
+    assert "body_excerpt" in report_text
+    assert "empty_source_urls_without_needs_source" in report_text
 
 
 def test_run_api_experiment_with_fake_caller_generates_artifacts(tmp_path, monkeypatch) -> None:

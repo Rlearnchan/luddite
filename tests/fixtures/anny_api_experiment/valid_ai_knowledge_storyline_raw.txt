@@ -73,12 +73,13 @@
         {
           "slide_type": "hook",
           "headline": "AI가 답을 바로 주는 건 정말 편리하다",
-          "body": ["AI 즉답이 주는 편리함은 검색보다 빠른 답변으로 학습과 정보 탐색의 출발점을 바꾸고 있다."],
+          "body": ["AI 즉답이 주는 편리함, 즉 AI 즉답의 편리함은 검색보다 빠른 답변으로 학습과 정보 탐색의 출발점을 바꾸고 있다."],
           "source_urls": ["https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss"],
           "image_urls": [],
           "notes": "BBC / Royal Observatory article.",
           "needs_fact_check": true,
           "needs_source": false,
+          "covers_key_beats": ["AI 즉답이 주는 편리함"],
           "source_refs": [
             {
               "url": "https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss",
@@ -103,6 +104,7 @@
           "notes": "Microsoft Research information diversity context.",
           "needs_fact_check": true,
           "needs_source": false,
+          "covers_key_beats": ["생각하는 과정이 생략될 수 있다는 문제 제기"],
           "source_refs": [
             {
               "url": "https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/",
@@ -127,6 +129,7 @@
           "notes": "UNESCO counterpoint on rights/access and safeguards.",
           "needs_fact_check": true,
           "needs_source": false,
+          "covers_key_beats": ["counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점"],
           "source_refs": [
             {
               "url": "https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners",
@@ -147,13 +150,17 @@
           "headline": "AI 시대의 공부는 질문을 다루는 법일 수 있다",
           "body": [
             "학교/박물관/천문관 같은 지식기관의 역할 변화로 이어진다.",
-            "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문으로, 사람은 질문을 해야 한다는 이야기로 닫는다."
+            "AI 비판/찬양이 아니라 무엇을 가르칠 것인가, 질문하는 법을 가르칠 것인가라는 이야기로 닫는다."
           ],
           "source_urls": [],
           "image_urls": [],
           "notes": "Rhetorical closing bridge.",
           "needs_fact_check": false,
           "needs_source": true,
+          "covers_key_beats": [
+            "학교/박물관/천문관 같은 지식기관의 역할 변화",
+            "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문"
+          ],
           "source_refs": []
         }
       ]

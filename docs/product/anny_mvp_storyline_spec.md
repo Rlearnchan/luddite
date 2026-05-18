@@ -225,12 +225,15 @@ Key beat planning:
 - API experiment output은 top-level `key_beat_coverage`를 포함한다.
 - `key_beat_coverage`는 required key beat별 `covered`, `slide_refs`,
   `coverage_note`를 가진다.
+- 각 required key beat는 최소 1개 slide의 `covers_key_beats`에 들어간다.
+- `covers_key_beats`가 있는 slide는 headline/body에 anchor phrase를 포함한다.
 - `covered=true`인 key beat는 실제 slide headline/body에 반영되어야 한다.
 - `slide_refs`는 존재하는 `slide_no` 또는 1-based slide 순서를 가리킨다.
 - 근거가 부족한 key beat도 생략하지 말고 `needs_source` 또는
   `needs_fact_check`와 함께 남긴다.
 - validator는 `missing_key_beat`, `weak_key_beat_mapping`,
-  `invalid_key_beat_slide_ref`, `key_beat_covered_but_not_in_slide_text`를
+  `invalid_key_beat_slide_ref`, `key_beat_covered_but_not_in_slide_text`,
+  `missing_covers_key_beats`, `covers_key_beat_without_anchor_phrase`를
   `key_beat_drift`의 세부 reason으로 기록할 수 있다.
 
 Policy/finance guardrails:

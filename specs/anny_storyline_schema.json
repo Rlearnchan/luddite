@@ -173,6 +173,12 @@
                   "items": {
                     "$ref": "#/$defs/riskFlag"
                   }
+                },
+                "covers_key_beats": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
