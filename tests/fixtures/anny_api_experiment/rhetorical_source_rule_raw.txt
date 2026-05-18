@@ -39,6 +39,39 @@
           "source_refs": []
         },
         {
+          "slide_type": "section_title",
+          "headline": "생각하는 과정은 어디로 가는가",
+          "body": ["섹션 안내: 질문과 검산의 흐름으로 넘어간다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "section transition / no factual claim. fact_check_kind: rhetorical_caution",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "bridge",
+          "headline": "이제 질문으로 넘어가자",
+          "body": ["여기서 중요한 건 정답보다 질문이다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "bridge / no factual claim. fact_check_kind: rhetorical_caution",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
+          "slide_type": "punchline",
+          "headline": "질문을 남겨라",
+          "body": ["정답보다 질문이라는 말맛으로 회수한다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "punchline / no factual claim. fact_check_kind: rhetorical_caution",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
           "slide_type": "counterpoint",
           "headline": "AI는 접근성을 높이는 도구일 수도 있다",
           "body": ["AI가 접근성이나 개인화 학습을 도울 수 있다는 관점도 함께 둔다."],

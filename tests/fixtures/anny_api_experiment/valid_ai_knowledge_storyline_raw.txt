@@ -36,30 +36,35 @@
   ],
   "key_beat_coverage": [
     {
+      "key_beat_id": "kb_ai_convenience",
       "key_beat": "AI 즉답이 주는 편리함",
       "covered": true,
       "slide_refs": [1],
       "coverage_note": "도입부에서 AI가 답을 바로 주는 편리함을 설명한다."
     },
     {
+      "key_beat_id": "kb_thinking_process",
       "key_beat": "생각하는 과정이 생략될 수 있다는 문제 제기",
       "covered": true,
       "slide_refs": [2],
       "coverage_note": "과정 압축 문제를 별도 explainer slide로 둔다."
     },
     {
+      "key_beat_id": "kb_institution_role",
       "key_beat": "학교/박물관/천문관 같은 지식기관의 역할 변화",
       "covered": true,
       "slide_refs": [4],
       "coverage_note": "닫는 질문에서 학교/박물관/천문관 같은 지식기관 역할 변화를 회수한다."
     },
     {
+      "key_beat_id": "kb_teach_question",
       "key_beat": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
       "covered": true,
       "slide_refs": [4],
       "coverage_note": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문으로 닫는다."
     },
     {
+      "key_beat_id": "kb_counterpoint_access",
       "key_beat": "counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점",
       "covered": true,
       "slide_refs": [3],
@@ -79,7 +84,7 @@
           "notes": "BBC / Royal Observatory article.",
           "needs_fact_check": true,
           "needs_source": false,
-          "covers_key_beats": ["AI 즉답이 주는 편리함"],
+          "covers_key_beats": ["kb_ai_convenience"],
           "source_refs": [
             {
               "url": "https://www.bbc.com/news/articles/c2023l60370o?at_medium=RSS&at_campaign=rss",
@@ -104,7 +109,7 @@
           "notes": "Microsoft Research information diversity context.",
           "needs_fact_check": true,
           "needs_source": false,
-          "covers_key_beats": ["생각하는 과정이 생략될 수 있다는 문제 제기"],
+          "covers_key_beats": ["kb_thinking_process"],
           "source_refs": [
             {
               "url": "https://www.microsoft.com/en-us/research/publication/from-searchable-to-non-searchable-generative-ai-and-information-diversity-in-online-information-seeking/",
@@ -129,7 +134,7 @@
           "notes": "UNESCO counterpoint on rights/access and safeguards.",
           "needs_fact_check": true,
           "needs_source": false,
-          "covers_key_beats": ["counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점"],
+          "covers_key_beats": ["kb_counterpoint_access"],
           "source_refs": [
             {
               "url": "https://www.unesco.org/en/articles/ai-and-education-protecting-rights-learners",
@@ -158,8 +163,8 @@
           "needs_fact_check": false,
           "needs_source": true,
           "covers_key_beats": [
-            "학교/박물관/천문관 같은 지식기관의 역할 변화",
-            "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문"
+            "kb_institution_role",
+            "kb_teach_question"
           ],
           "source_refs": []
         }

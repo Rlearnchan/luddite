@@ -17,6 +17,17 @@
           "source_refs": []
         },
         {
+          "slide_type": "punchline",
+          "headline": "AI는 학생의 인지를 바꾼다",
+          "body": ["AI는 교육 효과와 인지 변화를 이미 입증했다."],
+          "source_urls": [],
+          "image_urls": [],
+          "notes": "punchline with factual claim.",
+          "needs_fact_check": false,
+          "needs_source": false,
+          "source_refs": []
+        },
+        {
           "slide_type": "counterpoint",
           "headline": "반대 관점",
           "body": ["AI는 접근성 관점에서도 봐야 한다."],

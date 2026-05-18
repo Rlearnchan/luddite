@@ -11,8 +11,12 @@
       "expected_sections_max": 4,
       "expected_key_beats": [
         {
+          "id": "kb_ai_convenience",
           "label": "AI 즉답이 주는 편리함",
           "anchor_phrases": [
+            "바로 답",
+            "즉답",
+            "빠르게 요약",
             "바로 답을 준다",
             "검색보다 빠르게 요약한다",
             "AI 즉답의 편리함"
@@ -24,6 +28,7 @@
           ]
         },
         {
+          "id": "kb_thinking_process",
           "label": "생각하는 과정이 생략될 수 있다는 문제 제기",
           "anchor_phrases": [
             "생각하는 과정",
@@ -37,6 +42,7 @@
           ]
         },
         {
+          "id": "kb_institution_role",
           "label": "학교/박물관/천문관 같은 지식기관의 역할 변화",
           "anchor_phrases": [
             "학교",
@@ -52,6 +58,7 @@
           ]
         },
         {
+          "id": "kb_teach_question",
           "label": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
           "anchor_phrases": [
             "AI를 금지할 것인가",
@@ -67,6 +74,7 @@
           ]
         },
         {
+          "id": "kb_counterpoint_access",
           "label": "counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점",
           "anchor_phrases": [
             "접근성",
@@ -168,8 +176,12 @@
       "parsed_storyline_path": "outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_ai_knowledge_institution_v1/parsed_storyline.json",
       "expected_key_beats": [
         {
+          "id": "kb_ai_convenience",
           "label": "AI 즉답이 주는 편리함",
           "anchor_phrases": [
+            "바로 답",
+            "즉답",
+            "빠르게 요약",
             "바로 답을 준다",
             "검색보다 빠르게 요약한다",
             "AI 즉답의 편리함"
@@ -181,6 +193,7 @@
           ]
         },
         {
+          "id": "kb_thinking_process",
           "label": "생각하는 과정이 생략될 수 있다는 문제 제기",
           "anchor_phrases": [
             "생각하는 과정",
@@ -194,6 +207,7 @@
           ]
         },
         {
+          "id": "kb_institution_role",
           "label": "학교/박물관/천문관 같은 지식기관의 역할 변화",
           "anchor_phrases": [
             "학교",
@@ -209,6 +223,7 @@
           ]
         },
         {
+          "id": "kb_teach_question",
           "label": "AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문",
           "anchor_phrases": [
             "AI를 금지할 것인가",
@@ -223,6 +238,7 @@
           ]
         },
         {
+          "id": "kb_counterpoint_access",
           "label": "counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점",
           "anchor_phrases": [
             "접근성",

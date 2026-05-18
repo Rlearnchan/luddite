@@ -138,14 +138,24 @@ def test_invalid_covers_key_beats_value_fails(tmp_path) -> None:
     report = result.report_path.read_text(encoding="utf-8")
 
     assert "key_beat_drift" in result.failure_modes
-    assert "invalid_covers_key_beats" in report
+    assert "invalid_covers_key_beat_value" in report
+
+
+def test_korea_bridge_in_covers_key_beats_fails(tmp_path) -> None:
+    def invalid_cover(payload):
+        payload["sections"][0]["slides"][0]["covers_key_beats"] = ["Korean_bridge"]
+
+    result = _run_modified_valid_fixture(tmp_path, invalid_cover)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "invalid_covers_key_beat_value" in report
+    assert "Korean_bridge" in report
 
 
 def test_key_beat_coverage_refs_must_align_with_covers_key_beats(tmp_path) -> None:
     def mismatch_cover(payload):
-        payload["sections"][0]["slides"][0]["covers_key_beats"] = [
-            "생각하는 과정이 생략될 수 있다는 문제 제기"
-        ]
+        payload["sections"][0]["slides"][0]["covers_key_beats"] = ["kb_thinking_process"]
 
     result = _run_modified_valid_fixture(tmp_path, mismatch_cover)
     report = result.report_path.read_text(encoding="utf-8")

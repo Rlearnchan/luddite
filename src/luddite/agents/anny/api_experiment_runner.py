@@ -70,6 +70,7 @@ RHETORICAL_SLIDE_TYPES = {
     "rhetorical",
     "bridge",
     "closing_question",
+    "punchline",
     "production_checklist",
 }
 RHETORICAL_FACT_CHECK_KINDS = {
@@ -96,8 +97,6 @@ FACTUAL_CLAIM_MARKERS = [
     "정책 효과",
     "공식",
     "발언",
-    "도입",
-    "확인",
 ]
 
 
@@ -311,9 +310,18 @@ def _has_factual_claim_marker(slide: dict[str, Any]) -> bool:
 
 def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
     errors = []
-    markers = ["교육 효과", "인지", "지능", "학습 습관", "기관 역할", "사고훈련"]
+    markers = [
+        "교육 효과",
+        "인지",
+        "지능",
+        "학습",
+        "교육",
+        "기관 역할",
+        "지식기관",
+        "사고훈련",
+    ]
     for index, slide in enumerate(_all_slides(storyline), start=1):
-        if _source_optional_without_claim(slide):
+        if _source_optional_without_claim(slide) and _is_plain_rhetorical_question(slide):
             continue
         text = "\n".join(
             [
@@ -324,6 +332,18 @@ def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
         if any(marker in text for marker in markers) and not slide.get("needs_fact_check"):
             errors.append(f"slide {index} education/AI effect claim missing needs_fact_check")
     return errors
+
+
+def _is_plain_rhetorical_question(slide: dict[str, Any]) -> bool:
+    if slide.get("slide_type") not in RHETORICAL_SLIDE_TYPES:
+        return False
+    text = "\n".join(
+        [
+            str(slide.get("headline") or ""),
+            *[str(item) for item in slide.get("body", [])],
+        ]
+    )
+    return "?" in text or "인가" in text or "무엇" in text
 
 
 def _text_blob(storyline: dict[str, Any]) -> str:
@@ -551,14 +571,15 @@ def _key_beat_coverage_errors(storyline: dict[str, Any], case_id: str) -> list[s
 
     slide_map = _slide_ref_map(storyline)
     records = {
-        str(item.get("key_beat", "")).strip(): item
+        _coverage_key(item): item
         for item in coverage
         if isinstance(item, dict)
     }
     errors: list[str] = _covers_key_beat_errors(storyline, expected_beats)
     for beat in expected_beats:
+        beat_id = _beat_id(beat)
         label = _beat_label(beat)
-        record = records.get(label)
+        record = records.get(beat_id) or records.get(label)
         if not record:
             errors.append(f"missing_key_beat:{label}")
             continue
@@ -593,9 +614,11 @@ def _covers_key_beat_errors(
     storyline: dict[str, Any],
     expected_beats: list[dict[str, Any] | str],
 ) -> list[str]:
-    expected_labels = [_beat_label(beat) for beat in expected_beats]
+    expected_ids = [_beat_id(beat) for beat in expected_beats]
+    id_to_beat = {_beat_id(beat): beat for beat in expected_beats}
+    id_to_label = {_beat_id(beat): _beat_label(beat) for beat in expected_beats}
     slides = _all_slides(storyline)
-    covered_by_slide: dict[str, list[dict[str, Any]]] = {label: [] for label in expected_labels}
+    covered_by_slide: dict[str, list[dict[str, Any]]] = {beat_id: [] for beat_id in expected_ids}
     errors: list[str] = []
     for index, slide in enumerate(slides, start=1):
         covers = slide.get("covers_key_beats", [])
@@ -605,16 +628,18 @@ def _covers_key_beat_errors(
             errors.append(f"invalid_covers_key_beats:slide_{index}:not_list")
             continue
         for key_beat in covers:
-            label = str(key_beat).strip()
-            if label not in expected_labels:
-                errors.append(f"invalid_covers_key_beats:slide_{index}:{label}")
+            beat_id = str(key_beat).strip()
+            if beat_id not in expected_ids:
+                errors.append(f"invalid_covers_key_beat_value:slide_{index}:{beat_id}")
                 continue
-            covered_by_slide[label].append(slide)
-            beat = next(item for item in expected_beats if _beat_label(item) == label)
+            covered_by_slide[beat_id].append(slide)
+            beat = id_to_beat[beat_id]
             if not _slide_matches_beat(slide, _beat_anchor_phrases(beat)):
+                label = id_to_label[beat_id]
                 errors.append(f"covers_key_beat_without_anchor_phrase:{label}:slide_{index}")
-    for label, matching_slides in covered_by_slide.items():
+    for beat_id, matching_slides in covered_by_slide.items():
         if not matching_slides:
+            label = id_to_label[beat_id]
             errors.append(f"missing_covers_key_beats:{label}")
     return errors
 
@@ -624,15 +649,18 @@ def _coverage_vs_covers_errors(
     coverage: list[Any],
     expected_beats: list[dict[str, Any] | str],
 ) -> list[str]:
-    expected_labels = [_beat_label(beat) for beat in expected_beats]
+    expected_ids = [_beat_id(beat) for beat in expected_beats]
+    labels_to_ids = {_beat_label(beat): _beat_id(beat) for beat in expected_beats}
     slide_map = _slide_ref_map(storyline)
     errors: list[str] = []
     for item in coverage:
         if not isinstance(item, dict):
             continue
-        label = str(item.get("key_beat", "")).strip()
-        if label not in expected_labels:
+        raw_key = _coverage_key(item)
+        beat_id = raw_key if raw_key in expected_ids else labels_to_ids.get(raw_key)
+        if not beat_id:
             continue
+        label = next(_beat_label(beat) for beat in expected_beats if _beat_id(beat) == beat_id)
         refs = item.get("slide_refs", [])
         if not isinstance(refs, list):
             continue
@@ -643,9 +671,19 @@ def _coverage_vs_covers_errors(
                 continue
             if not slide:
                 continue
-            if label not in [str(value).strip() for value in slide.get("covers_key_beats", [])]:
+            if beat_id not in [str(value).strip() for value in slide.get("covers_key_beats", [])]:
                 errors.append(f"weak_key_beat_mapping:{label}:coverage_ref_missing_in_covers")
     return errors
+
+
+def _coverage_key(item: dict[str, Any]) -> str:
+    return str(item.get("key_beat_id") or item.get("key_beat") or "").strip()
+
+
+def _beat_id(beat: dict[str, Any] | str) -> str:
+    if isinstance(beat, dict):
+        return str(beat.get("id") or beat.get("label", "")).strip()
+    return str(beat).strip()
 
 
 def _beat_label(beat: dict[str, Any] | str) -> str:

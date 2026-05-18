@@ -114,6 +114,11 @@ slide 작성 후에는 top-level `key_beat_coverage`를 작성한다.
 각 required key beat를 담당하는 slide에는 `covers_key_beats`를 명시한다.
 
 - `covers_key_beats`는 slide-level commitment다.
+- `covers_key_beats`에는 아래 provided required key beat의 `id`만 넣는다.
+- 새로운 `covers_key_beats` 값을 만들지 마라.
+- `Korean_bridge`, `source_context`, `counterpoint`, `risk`,
+  `institution_example` 같은 source/role label을 `covers_key_beats`에 넣지 마라.
+- 그런 값은 `source_refs.role`, `notes`, `risk_flags`, korea bridge 설명에 넣는다.
 - `key_beat_coverage`는 slide 작성 후 self-check다.
 - required key beat는 최소 1개 slide의 `covers_key_beats`에 들어가야 한다.
 - `covers_key_beats`가 있는 slide는 headline/body에 해당 key beat의 anchor
@@ -123,19 +128,19 @@ slide 작성 후에는 top-level `key_beat_coverage`를 작성한다.
 
 AI 지식기관 API experiment의 required key beats:
 
-- AI 즉답이 주는 편리함
-- 생각하는 과정이 생략될 수 있다는 문제 제기
-- 학교/박물관/천문관 같은 지식기관 역할 변화
-- AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문
-- counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점
+- `kb_ai_convenience`: AI 즉답이 주는 편리함
+- `kb_thinking_process`: 생각하는 과정이 생략될 수 있다는 문제 제기
+- `kb_institution_role`: 학교/박물관/천문관 같은 지식기관 역할 변화
+- `kb_teach_question`: AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문
+- `kb_counterpoint_access`: AI가 접근성/개인화 학습을 도울 수 있다는 관점
 
 AI 지식기관 key beat anchor phrases:
 
-- AI 즉답이 주는 편리함: 바로 답을 준다 / 검색보다 빠르게 요약한다 / AI 즉답의 편리함
-- 생각하는 과정이 생략될 수 있다는 문제 제기: 생각하는 과정 / 중간 과정 / 질문하고 비교하고 검증하는 절차
-- 학교/박물관/천문관 같은 지식기관 역할 변화: 학교 / 박물관 / 천문관 / 지식기관의 역할
-- AI 비판/찬양이 아니라 무엇을 가르칠지에 대한 질문: AI를 금지할 것인가 / 다루는 법을 가르칠 것인가 / 무엇을 가르칠 것인가 / 질문하는 법을 가르칠 것인가
-- counterpoint: AI가 접근성/개인화 학습을 도울 수 있다는 관점: 접근성 / 개인화 학습 / 도움을 줄 수 있다 / 반대 관점
+- `kb_ai_convenience`: 바로 답 / 즉답 / 빠르게 요약 / 바로 답을 준다 / 검색보다 빠르게 요약한다 / AI 즉답의 편리함
+- `kb_thinking_process`: 생각하는 과정 / 중간 과정 / 질문하고 비교하고 검증하는 절차
+- `kb_institution_role`: 학교 / 박물관 / 천문관 / 지식기관의 역할
+- `kb_teach_question`: 무엇을 가르칠 것인가 / 질문하는 법 / 다루는 법을 가르칠 것인가 / AI를 금지할 것인가
+- `kb_counterpoint_access`: 접근성 / 개인화 학습 / 도움을 줄 수 있다 / 반대 관점
 
 ## Length Mode
 

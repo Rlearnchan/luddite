@@ -133,6 +133,11 @@ Each required key beat must also be assigned to at least one slide-level
 headline or body. Validator failures may include `missing_covers_key_beats` or
 `covers_key_beat_without_anchor_phrase`.
 
+For API experiments, `covers_key_beats` should use stable beat ids, not human
+labels. Source roles such as `Korean_bridge`, `source_context`, `risk`, or
+`institution_example` are invalid in `covers_key_beats`; put them in
+`source_refs.role`, notes, or risk metadata instead.
+
 ## Editorial Rules
 
 - Anny is evidence-bound. Do not invent facts, numbers, claims, or URLs that are
