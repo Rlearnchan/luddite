@@ -37,6 +37,9 @@ from luddite.agents.piti.build_slide_spec_from_storyline import (
 )
 from luddite.agents.piti.render_deck_storyboard import app as render_piti_storyboard_app
 from luddite.agents.piti.render_pptx import app as render_piti_pptx_app
+from luddite.agents.piti.render_pptx import (
+    slide_spec_app as render_piti_slide_spec_pptx_app,
+)
 from luddite.analysis.extract_pptx_style import app as extract_pptx_style_app
 from luddite.collectors.manual_article_importer import app as import_articles_app
 from luddite.collectors.rss_item_fetcher import app as fetch_rss_articles_app
@@ -84,6 +87,7 @@ app.add_typer(build_piti_slide_spec_app, name="build-piti-slide-spec")
 app.add_typer(validate_piti_slide_spec_app, name="validate-piti-slide-spec")
 app.add_typer(render_piti_storyboard_app, name="render-piti-storyboard")
 app.add_typer(render_piti_pptx_app, name="render-piti-pptx")
+app.add_typer(render_piti_slide_spec_pptx_app, name="render-piti-slide-spec-pptx")
 app.add_typer(extract_pptx_style_app, name="extract-pptx-style")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")

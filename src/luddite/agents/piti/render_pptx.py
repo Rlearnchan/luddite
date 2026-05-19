@@ -21,10 +21,12 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.agents.piti.build_deck_plan_from_storyline import validate_deck_plan
+from luddite.agents.piti.build_slide_spec_from_storyline import validate_piti_slide_spec
 from luddite.parsers.parse_pptx import parse_presentation
 from luddite.utils.urls import canonicalize_url
 
 app = typer.Typer(no_args_is_help=False)
+slide_spec_app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 SLIDE_W = 13.333
@@ -33,6 +35,13 @@ SLIDE_H = 7.5
 DEFAULT_REPORT_PATH = (
     paths.REPORTS_DIR / f"piti_pptx_render_report_{date.today().isoformat()}.md"
 )
+DEFAULT_SLIDE_SPEC_REPORT_PATH = (
+    paths.REPORTS_DIR / f"piti_slide_spec_pptx_render_report_{date.today().isoformat()}.md"
+)
+DEFAULT_SLIDE_SPEC_COMPARISON_REPORT_PATH = (
+    paths.REPORTS_DIR
+    / f"piti_slide_spec_vs_deck_plan_render_comparison_{date.today().isoformat()}.md"
+)
 DEFAULT_STYLE_PROFILE_PATH = paths.STYLE_PROFILES_DIR / "syukaworld_ppt_style_profile.json"
 
 
@@ -40,6 +49,15 @@ DEFAULT_STYLE_PROFILE_PATH = paths.STYLE_PROFILES_DIR / "syukaworld_ppt_style_pr
 class PptxRenderCase:
     deck_plan_path: Path
     output_path: Path
+    style_profile_path: Path | None = None
+
+
+@dataclass(frozen=True)
+class PptxSlideSpecRenderCase:
+    slide_spec_path: Path
+    output_path: Path
+    baseline_deck_plan_path: Path | None = None
+    baseline_pptx_path: Path | None = None
     style_profile_path: Path | None = None
 
 
@@ -82,6 +100,16 @@ class ProofObject:
     image_url: str | None
     copyright_risk: bool
     manual_insert_required: bool
+    source_name: str | None = None
+    display_title: str | None = None
+    quote_text: str | None = None
+    quote_translation: str | None = None
+    chart_title: str | None = None
+    chart_source_label: str | None = None
+    data_hint: str | None = None
+    diagram_nodes: tuple[str, ...] = ()
+    diagram_edges: tuple[dict[str, Any], ...] = ()
+    placeholder_reason: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -93,6 +121,16 @@ class ProofObject:
             "image_url": self.image_url,
             "copyright_risk": self.copyright_risk,
             "manual_insert_required": self.manual_insert_required,
+            "source_name": self.source_name,
+            "display_title": self.display_title,
+            "quote_text": self.quote_text,
+            "quote_translation": self.quote_translation,
+            "chart_title": self.chart_title,
+            "chart_source_label": self.chart_source_label,
+            "data_hint": self.data_hint,
+            "diagram_nodes": list(self.diagram_nodes),
+            "diagram_edges": list(self.diagram_edges),
+            "placeholder_reason": self.placeholder_reason,
         }
 
 
@@ -129,6 +167,27 @@ STYLED_CASES = [
     PptxRenderCase(
         deck_plan_path=paths.PITI_DECK_PLANS_DIR / "productive_finance_policy_deck_plan.json",
         output_path=paths.PPTX_OUTPUT_DIR / "productive_finance_policy_styled_draft.pptx",
+        style_profile_path=DEFAULT_STYLE_PROFILE_PATH,
+    ),
+]
+
+SLIDE_SPEC_STYLED_CASES = [
+    PptxSlideSpecRenderCase(
+        slide_spec_path=paths.PITI_SLIDE_SPECS_DIR / "ai_knowledge_institution_slide_spec.json",
+        output_path=paths.PPTX_OUTPUT_DIR
+        / "ai_knowledge_institution_slide_spec_styled_draft.pptx",
+        baseline_deck_plan_path=paths.PITI_DECK_PLANS_DIR
+        / "ai_knowledge_institution_deck_plan.json",
+        baseline_pptx_path=paths.PPTX_OUTPUT_DIR / "ai_knowledge_institution_styled_draft.pptx",
+        style_profile_path=DEFAULT_STYLE_PROFILE_PATH,
+    ),
+    PptxSlideSpecRenderCase(
+        slide_spec_path=paths.PITI_SLIDE_SPECS_DIR / "productive_finance_policy_slide_spec.json",
+        output_path=paths.PPTX_OUTPUT_DIR
+        / "productive_finance_policy_slide_spec_styled_draft.pptx",
+        baseline_deck_plan_path=paths.PITI_DECK_PLANS_DIR
+        / "productive_finance_policy_deck_plan.json",
+        baseline_pptx_path=paths.PPTX_OUTPUT_DIR / "productive_finance_policy_styled_draft.pptx",
         style_profile_path=DEFAULT_STYLE_PROFILE_PATH,
     ),
 ]
@@ -426,7 +485,66 @@ def _source_title_from_notes(slide_plan: dict[str, Any], source_name: str) -> st
     return "Reference material"
 
 
+def _explicit_proof_object(slide_plan: dict[str, Any]) -> ProofObject | None:
+    payload = slide_plan.get("proof_object")
+    if not isinstance(payload, dict):
+        return None
+    proof_type = str(payload.get("type") or "none")
+    if not proof_type:
+        return None
+    screen_position = str(payload.get("screen_position") or "none")
+    if proof_type in {"chart", "table"} and screen_position == "none":
+        screen_position = "full_width_chart"
+    elif proof_type in LEFT_PROOF_TYPES and screen_position == "none":
+        screen_position = "left_half"
+    elif proof_type != "none" and screen_position == "none":
+        screen_position = "center_large"
+    source_url = payload.get("source_url")
+    image_url = payload.get("image_url")
+    diagram_edges = tuple(
+        edge for edge in _as_list(payload.get("diagram_edges")) if isinstance(edge, dict)
+    )
+    return ProofObject(
+        type=proof_type,
+        required=proof_type != "none",
+        screen_position=screen_position,
+        display_label=PROOF_LABELS.get(proof_type, "[증거물]"),
+        source_url=str(source_url) if source_url else None,
+        image_url=str(image_url) if image_url else None,
+        copyright_risk=bool(payload.get("copyright_risk")),
+        manual_insert_required=bool(payload.get("manual_insert_required")),
+        source_name=str(payload.get("source_name")) if payload.get("source_name") else None,
+        display_title=(
+            str(payload.get("display_title")) if payload.get("display_title") else None
+        ),
+        quote_text=str(payload.get("quote_text")) if payload.get("quote_text") else None,
+        quote_translation=(
+            str(payload.get("quote_translation"))
+            if payload.get("quote_translation")
+            else None
+        ),
+        chart_title=str(payload.get("chart_title")) if payload.get("chart_title") else None,
+        chart_source_label=(
+            str(payload.get("chart_source_label"))
+            if payload.get("chart_source_label")
+            else None
+        ),
+        data_hint=str(payload.get("data_hint")) if payload.get("data_hint") else None,
+        diagram_nodes=tuple(str(node) for node in _as_list(payload.get("diagram_nodes"))),
+        diagram_edges=diagram_edges,
+        placeholder_reason=(
+            str(payload.get("placeholder_reason"))
+            if payload.get("placeholder_reason")
+            else None
+        ),
+    )
+
+
 def _proof_object(slide_plan: dict[str, Any]) -> ProofObject:
+    explicit = _explicit_proof_object(slide_plan)
+    if explicit is not None:
+        return explicit
+
     visual_plan = slide_plan.get("visual_plan") or {}
     kind = _visual_kind(slide_plan)
     layout_type = str(slide_plan.get("layout_type") or "headline_body")
@@ -686,6 +804,8 @@ def _body_box(
 
 
 def _screen_body_lines(slide: dict[str, Any]) -> list[str]:
+    if isinstance(slide.get("screen_body"), list):
+        return [str(line) for line in slide.get("screen_body", []) if str(line).strip()]
     body = _body_lines(slide)
     layout_type = slide.get("layout_type")
     proof_type = _proof_object(slide).type
@@ -707,6 +827,8 @@ def _screen_body_lines(slide: dict[str, Any]) -> list[str]:
 
 
 def _overflow_body_lines(slide: dict[str, Any]) -> list[str]:
+    if isinstance(slide.get("overflow_notes"), list):
+        return [str(line) for line in slide.get("overflow_notes", []) if str(line).strip()]
     body = _body_lines(slide)
     return body[len(_screen_body_lines(slide)) :]
 
@@ -735,7 +857,14 @@ def _render_diagram_skeleton(
     _fill(outer, RGBColor(248, 248, 248))
     _line(outer, RGBColor(190, 190, 190), 1.0)
     headline_body = " ".join([str(slide_plan.get("headline") or ""), *(_body_lines(slide_plan))])
-    if any(token in headline_body for token in ["금융", "펀드", "위험", "정책"]):
+    proof = _proof_object(slide_plan)
+    nodes = list(proof.diagram_nodes)
+    edge_label = str(proof.diagram_edges[0].get("label") or "") if proof.diagram_edges else ""
+    if len(nodes) >= 2:
+        left_title, right_title = nodes[0], nodes[1]
+        left_body = edge_label or "before"
+        right_body = "after"
+    elif any(token in headline_body for token in ["금융", "펀드", "위험", "정책"]):
         left_title, left_body = "안전한 금융", "담보 / 단기"
         right_title, right_body = "성장 금융", "장기 / 위험분담"
     else:
@@ -863,7 +992,7 @@ def _placeholder(
     frame.word_wrap = True
     paragraph = frame.paragraphs[0]
     if proof.type in {"article_quote", "source_card"}:
-        label = _source_name_from_url(proof.source_url)
+        label = proof.source_name or _source_name_from_url(proof.source_url)
     paragraph.text = label
     paragraph.alignment = PP_ALIGN.CENTER
     for run in paragraph.runs:
@@ -877,8 +1006,8 @@ def _placeholder(
             run.font.color.rgb = EDITOR_BLUE if style and style.loaded else THEME["muted"]
             run.font.bold = False
     if proof.type in {"article_quote", "source_card"}:
-        source = _source_name_from_url(proof.source_url)
-        title = _source_title_from_notes(slide_plan, source)
+        source = proof.source_name or _source_name_from_url(proof.source_url)
+        title = proof.display_title or _source_title_from_notes(slide_plan, source)
         for text in [title]:
             extra = frame.add_paragraph()
             extra.text = text
@@ -1265,6 +1394,9 @@ def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle)
 
 
 def _source_label(slide_plan: dict[str, Any]) -> str:
+    proof = _proof_object(slide_plan)
+    if proof.chart_source_label:
+        return proof.chart_source_label
     urls = [str(url) for url in _as_list(slide_plan.get("source_urls")) if str(url).strip()]
     if not urls:
         return "(출처: 확인 필요)"
@@ -1272,6 +1404,9 @@ def _source_label(slide_plan: dict[str, Any]) -> str:
 
 
 def _chart_title(slide_plan: dict[str, Any]) -> str:
+    proof = _proof_object(slide_plan)
+    if proof.chart_title:
+        return proof.chart_title
     body = _body_lines(slide_plan)
     if body:
         return body[0]
@@ -1279,6 +1414,17 @@ def _chart_title(slide_plan: dict[str, Any]) -> str:
 
 
 def _chart_label_candidates(slide_plan: dict[str, Any]) -> list[str]:
+    proof = _proof_object(slide_plan)
+    if proof.data_hint:
+        hint_labels = [
+            _short_text(part.strip(), 34)
+            for part in re.split(r"[;\n]", proof.data_hint)
+            if part.strip()
+        ]
+        numeric_labels = [label for label in hint_labels if re.search(r"\d", label)]
+        if numeric_labels:
+            return numeric_labels[:6]
+        return ["데이터 후보", "비교값", "확인 필요"]
     body = _body_lines(slide_plan)
     candidates = body[1:] if len(body) > 1 else body
     labels = [
@@ -1558,6 +1704,8 @@ def _set_notes(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None
         "source_urls:",
     ]
     lines.extend(f"- {url}" for url in _as_list(slide_plan.get("source_urls")))
+    if slide_plan.get("source_refs"):
+        lines.extend(["", "source_refs:", _note_json(_as_list(slide_plan.get("source_refs")))])
     lines.append("image_urls:")
     lines.extend(f"- {url}" for url in _as_list(slide_plan.get("image_urls")))
     lines.extend(
@@ -1586,6 +1734,12 @@ def _set_notes(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None
     speaker_notes = str(slide_plan.get("speaker_notes") or "").strip()
     if speaker_notes:
         lines.extend(["", "speaker_notes:", speaker_notes])
+    if slide_plan.get("editor_instruction"):
+        lines.extend(["", "editor_instruction:", str(slide_plan.get("editor_instruction"))])
+    if slide_plan.get("do_not_claim"):
+        lines.extend(["", "do_not_claim:", _note_json(_as_list(slide_plan.get("do_not_claim")))])
+    if slide_plan.get("risk_flags"):
+        lines.extend(["", "risk_flags:", _note_json(_as_list(slide_plan.get("risk_flags")))])
     notes_frame = slide.notes_slide.notes_text_frame
     notes_frame.text = "\n".join(lines)
 
@@ -1600,6 +1754,166 @@ def _ordered_slides(deck_plan: dict[str, Any]) -> list[dict[str, Any]]:
     ]
     main = [slide for slide in slides if slide not in appendix]
     return [*main, *appendix]
+
+
+LAYOUT_BY_SLIDE_SPEC_INTENT = {
+    "title": "title",
+    "section_title": "section_title",
+    "text_only_calculation": "question",
+    "headline_body": "headline_body",
+    "source_card_or_article_quote": "quote",
+    "image_left_quote_right": "image_placeholder",
+    "chart_table_reference": "chart_placeholder",
+    "diagram": "comparison",
+    "closing_question": "closing_question",
+    "appendix_checklist": "appendix_checklist",
+}
+
+SLIDE_TYPE_BY_SLIDE_SPEC_INTENT = {
+    "title": "title",
+    "section_title": "section_title",
+    "text_only_calculation": "rhetorical",
+    "headline_body": "explainer",
+    "source_card_or_article_quote": "quote",
+    "image_left_quote_right": "image_centered",
+    "chart_table_reference": "data",
+    "diagram": "comparison",
+    "closing_question": "closing_question",
+    "appendix_checklist": "production_checklist",
+}
+
+
+def _visual_kind_for_proof(proof_type: str) -> str:
+    if proof_type in {"chart", "table"}:
+        return "chart_candidate"
+    if proof_type == "diagram":
+        return "diagram"
+    if proof_type == "screenshot":
+        return "screenshot_candidate"
+    if proof_type in {"image", "logo", "person_photo"}:
+        return "photo_candidate"
+    if proof_type in {"source_card", "article_quote"}:
+        return "manual"
+    return "none"
+
+
+def _source_urls_from_refs(source_refs: list[Any]) -> list[str]:
+    urls: list[str] = []
+    for ref in source_refs:
+        if isinstance(ref, dict) and str(ref.get("url") or "").strip():
+            urls.append(str(ref["url"]))
+    return urls
+
+
+def _slide_spec_notes(slide: dict[str, Any]) -> str:
+    lines: list[str] = []
+    expanded = str(slide.get("speaker_notes_expanded") or "").strip()
+    if expanded:
+        lines.append(expanded)
+    overflow = [str(line) for line in _as_list(slide.get("overflow_notes")) if str(line).strip()]
+    if overflow:
+        lines.extend(["[overflow_notes]", *overflow])
+    source_refs = _as_list(slide.get("source_refs"))
+    if source_refs:
+        lines.extend(["[source_refs]", _note_json(source_refs)])
+    proof = slide.get("proof_object")
+    if proof:
+        lines.extend(["[proof_object]", _note_json(proof)])
+    if slide.get("editor_instruction"):
+        lines.extend(["[editor_instruction]", str(slide.get("editor_instruction"))])
+    if slide.get("do_not_claim"):
+        lines.extend(["[do_not_claim]", _note_json(_as_list(slide.get("do_not_claim")))])
+    if slide.get("risk_flags"):
+        lines.extend(["[risk_flags]", _note_json(_as_list(slide.get("risk_flags")))])
+    return "\n".join(lines)
+
+
+def slide_spec_to_render_plan(slide_spec: dict[str, Any]) -> dict[str, Any]:
+    sections: list[dict[str, Any]] = []
+    flat_slides: list[dict[str, Any]] = []
+    for section in _as_list(slide_spec.get("sections")):
+        if not isinstance(section, dict):
+            continue
+        section_slides: list[dict[str, Any]] = []
+        for slide in _as_list(section.get("slides")):
+            if not isinstance(slide, dict):
+                continue
+            intent = str(slide.get("layout_intent") or "headline_body")
+            proof = slide.get("proof_object") if isinstance(slide.get("proof_object"), dict) else {}
+            proof_type = str(proof.get("type") or "none")
+            source_urls = _source_urls_from_refs(_as_list(slide.get("source_refs")))
+            image_url = str(proof.get("image_url") or "").strip()
+            image_urls = [image_url] if image_url else []
+            notes = _slide_spec_notes(slide)
+            render_slide = {
+                "slide_no": slide.get("slide_no"),
+                "section_no": section.get("section_no"),
+                "local_order": len(section_slides) + 1,
+                "source_slide_refs": _as_list(slide.get("source_slide_refs")),
+                "slide_type": SLIDE_TYPE_BY_SLIDE_SPEC_INTENT.get(intent, "explainer"),
+                "layout_type": LAYOUT_BY_SLIDE_SPEC_INTENT.get(intent, "headline_body"),
+                "layout": LAYOUT_BY_SLIDE_SPEC_INTENT.get(intent, "headline_body"),
+                "headline": str(slide.get("screen_headline") or ""),
+                "body": [str(line) for line in _as_list(slide.get("screen_body"))],
+                "screen_headline": str(slide.get("screen_headline") or ""),
+                "screen_body": [str(line) for line in _as_list(slide.get("screen_body"))],
+                "overflow_notes": _as_list(slide.get("overflow_notes")),
+                "proof_object": proof,
+                "visual_plan": {
+                    "kind": _visual_kind_for_proof(proof_type),
+                    "description": str(
+                        proof.get("display_title") or proof.get("placeholder_reason") or ""
+                    ),
+                    "source_note": proof.get("source_url"),
+                    "copyright_risk": bool(proof.get("copyright_risk")),
+                    "manual_check_required": bool(proof.get("manual_insert_required")),
+                    "prompt_if_ai_image": None,
+                },
+                "source_urls": source_urls,
+                "image_urls": image_urls,
+                "speaker_notes": notes,
+                "notes": notes,
+                "source_refs": _as_list(slide.get("source_refs")),
+                "needs_source": bool(slide.get("needs_source")),
+                "needs_fact_check": bool(slide.get("needs_fact_check")),
+                "required_before_broadcast": bool(slide.get("required_before_broadcast")),
+                "risk_flags": _as_list(slide.get("risk_flags")),
+                "do_not_claim": _as_list(slide.get("do_not_claim")),
+                "edit_notes": [str(slide.get("editor_instruction"))]
+                if slide.get("editor_instruction")
+                else [],
+                "from_piti_slide_spec": True,
+            }
+            flat_slides.append(render_slide)
+            section_slides.append(render_slide)
+        sections.append(
+            {
+                "section_no": section.get("section_no"),
+                "section_title": str(section.get("section_title") or ""),
+                "purpose": section.get("purpose"),
+                "target_slide_count": len(section_slides),
+                "slides": section_slides,
+            }
+        )
+    return {
+        "deck_id": str(slide_spec.get("deck_id") or "piti_slide_spec"),
+        "source_storyline_id": slide_spec.get("source_storyline_id"),
+        "source_storyline_path": slide_spec.get("source_storyline_path"),
+        "title": str(slide_spec.get("story_seed_title") or slide_spec.get("deck_id") or ""),
+        "theme": "syuka_default_v0",
+        "length_mode": "piti_slide_spec",
+        "target_slide_count": len(flat_slides),
+        "sections": sections,
+        "slides": flat_slides,
+        "risk_flags": _as_list(slide_spec.get("risk_flags")),
+        "required_fact_checks": _as_list(slide_spec.get("required_fact_checks")),
+        "notes": str(slide_spec.get("notes") or ""),
+        "generation_options": {
+            "input_kind": "piti_slide_spec",
+            "render_pptx": True,
+        },
+        "created_at": datetime.now(UTC).isoformat(),
+    }
 
 
 def _long_body_slides(deck_plan: dict[str, Any]) -> list[int]:
@@ -2030,7 +2344,12 @@ def _article_quote_without_quote_text_count(deck_plan: dict[str, Any]) -> int:
     return sum(
         1
         for slide in deck_plan.get("slides", [])
-        if _proof_object(slide).type == "article_quote" and not _has_actual_quote_text(slide)
+        if _proof_object(slide).type == "article_quote"
+        and not (
+            _proof_object(slide).quote_text
+            or _proof_object(slide).quote_translation
+            or _has_actual_quote_text(slide)
+        )
     )
 
 
@@ -2040,7 +2359,10 @@ def _source_card_repeated_headline_count(deck_plan: dict[str, Any]) -> int:
         proof = _proof_object(slide)
         if proof.type != "source_card":
             continue
-        title = _source_title_from_notes(slide, _source_name_from_url(proof.source_url))
+        title = proof.display_title or _source_title_from_notes(
+            slide,
+            proof.source_name or _source_name_from_url(proof.source_url),
+        )
         headline = str(slide.get("headline") or "")
         if _normalize_for_compare(title) == _normalize_for_compare(headline):
             count += 1
@@ -2055,7 +2377,7 @@ def _chart_table_style_applied_count(deck_plan: dict[str, Any], style: PptxStyle
 
 def _chart_body_text_leak_count(deck_plan: dict[str, Any]) -> int:
     count = 0
-    generic_labels = {"데이터 라벨", "비교값", "확인 필요"}
+    generic_labels = {"데이터 라벨", "데이터 후보", "비교값", "확인 필요"}
     for slide in deck_plan.get("slides", []):
         if not _is_chart_table_slide(slide):
             continue
@@ -2072,6 +2394,8 @@ def _chart_body_text_leak_count(deck_plan: dict[str, Any]) -> int:
 def _screen_body_rewritten_count(deck_plan: dict[str, Any]) -> int:
     count = 0
     for slide in deck_plan.get("slides", []):
+        if slide.get("from_piti_slide_spec"):
+            continue
         if not _body_lines(slide):
             continue
         proof_type = _proof_object(slide).type
@@ -2277,6 +2601,70 @@ def render_deck_plan_to_pptx(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(output_path)
     result = render_result(deck_plan, output_path, validation, style)
+    return result
+
+
+def _invalid_slide_spec_result(
+    slide_spec: dict[str, Any],
+    output_path: Path,
+    validation: dict[str, Any],
+    style: PptxStyle,
+) -> dict[str, Any]:
+    warnings = [
+        *[f"slide_spec issue: {issue}" for issue in validation.get("issues", [])],
+        *[f"slide_spec warning: {warning}" for warning in validation.get("warnings", [])],
+    ]
+    return {
+        "deck_id": slide_spec.get("deck_id"),
+        "input_kind": "piti_slide_spec",
+        "input_slide_spec_path": slide_spec.get("_input_path"),
+        "output_pptx_path": _display_path(output_path),
+        "style_profile_path": _display_path(style.profile_path) if style.profile_path else None,
+        "style_profile_loaded": style.loaded,
+        "schema_valid": validation.get("schema_valid"),
+        "slide_spec_validation_passed": False,
+        "slide_spec_issues": validation.get("issues", []),
+        "slide_spec_warnings": validation.get("warnings", []),
+        "proof_object_reinferred": False,
+        "screen_body_rewrite_disabled": True,
+        "slide_count": validation.get("slide_count", 0),
+        "section_count": validation.get("section_count", 0),
+        "source_image_overlap_count": 0,
+        "proof_text_overlap_count": 0,
+        "visible_url_count": 0,
+        "warnings": warnings,
+        "passed": False,
+    }
+
+
+def render_slide_spec_to_pptx(
+    slide_spec: dict[str, Any],
+    output_path: Path,
+    *,
+    style_profile: PptxStyle | None = None,
+) -> dict[str, Any]:
+    """Render a validated Piti slide spec without re-inferring screen semantics."""
+    validation = validate_piti_slide_spec(slide_spec)
+    style = style_profile or load_style_profile(None)
+    if not validation.get("passed"):
+        return _invalid_slide_spec_result(slide_spec, output_path, validation, style)
+
+    render_plan = slide_spec_to_render_plan(slide_spec)
+    if slide_spec.get("_input_path"):
+        render_plan["_input_path"] = slide_spec.get("_input_path")
+    result = render_deck_plan_to_pptx(render_plan, output_path, style_profile=style)
+    result.update(
+        {
+            "input_kind": "piti_slide_spec",
+            "input_slide_spec_path": slide_spec.get("_input_path"),
+            "slide_spec_validation_passed": validation.get("passed"),
+            "slide_spec_schema_valid": validation.get("schema_valid"),
+            "slide_spec_issues": validation.get("issues", []),
+            "slide_spec_warnings": validation.get("warnings", []),
+            "proof_object_reinferred": False,
+            "screen_body_rewrite_disabled": True,
+        }
+    )
     return result
 
 
@@ -2603,6 +2991,14 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
             [
                 f"### {result.get('deck_id')} -> {result.get('output_pptx_path')}",
                 "",
+                f"- input_kind: {result.get('input_kind') or 'deck_plan'}",
+                f"- input_slide_spec_path: {result.get('input_slide_spec_path')}",
+                "- slide_spec_validation_passed: "
+                f"{result.get('slide_spec_validation_passed')}",
+                f"- slide_spec_schema_valid: {result.get('slide_spec_schema_valid')}",
+                f"- proof_object_reinferred: {result.get('proof_object_reinferred')}",
+                "- screen_body_rewrite_disabled: "
+                f"{result.get('screen_body_rewrite_disabled')}",
                 f"- style_profile_path: {result.get('style_profile_path')}",
                 f"- style_profile_loaded: {result.get('style_profile_loaded')}",
                 f"- adaptive_font_applied: {result.get('adaptive_font_applied')}",
@@ -2777,6 +3173,167 @@ def render_default_decks(
     return output_paths
 
 
+def _screen_body_line_total(deck_plan: dict[str, Any]) -> int:
+    return sum(len(_screen_body_lines(slide)) for slide in deck_plan.get("slides", []))
+
+
+def _comparison_metrics(
+    deck_plan: dict[str, Any],
+    result: dict[str, Any] | None,
+    style: PptxStyle,
+) -> dict[str, Any]:
+    metric = {
+        "slide_count": len(deck_plan.get("slides", [])),
+        "proof_object_type_counts": _proof_object_type_counts(deck_plan),
+        "proof_object_slide_count": _proof_object_slide_count(deck_plan),
+        "text_only_slide_count": _text_only_slide_count(deck_plan),
+        "screen_body_line_total": _screen_body_line_total(deck_plan),
+        "needs_fact_check_count": sum(
+            1 for slide in deck_plan.get("slides", []) if slide.get("needs_fact_check")
+        ),
+        "visible_url_count": 0,
+        "source_url_count_in_notes": 0,
+        "source_card_repeated_headline_count": _source_card_repeated_headline_count(deck_plan),
+        "chart_body_text_leak_count": _chart_body_text_leak_count(deck_plan),
+        "proof_text_overlap_count": len(_text_placeholder_overlap_warnings(deck_plan, style)),
+        "dense_slide_count": len(_visually_dense_slides(deck_plan, style)),
+    }
+    if result:
+        metric.update(
+            {
+                "visible_url_count": result.get("visible_url_count", 0),
+                "source_url_count_in_notes": result.get("parse_back_source_url_count", 0),
+                "proof_text_overlap_count": result.get("proof_text_overlap_count", 0),
+                "dense_slide_count": result.get("visually_dense_slide_count", 0),
+            }
+        )
+    return metric
+
+
+def _comparison_row(
+    case: PptxSlideSpecRenderCase,
+    slide_spec: dict[str, Any],
+    slide_spec_result: dict[str, Any],
+    style: PptxStyle,
+) -> dict[str, Any]:
+    slide_spec_plan = slide_spec_to_render_plan(slide_spec)
+    baseline_plan = (
+        _load_json(case.baseline_deck_plan_path)
+        if case.baseline_deck_plan_path and case.baseline_deck_plan_path.exists()
+        else {}
+    )
+    baseline_result = None
+    if baseline_plan and case.baseline_pptx_path and case.baseline_pptx_path.exists():
+        baseline_result = render_result(
+            baseline_plan,
+            case.baseline_pptx_path,
+            validate_deck_plan(baseline_plan),
+            style,
+        )
+    return {
+        "deck_id": slide_spec.get("deck_id"),
+        "baseline_deck_plan_path": (
+            _display_path(case.baseline_deck_plan_path)
+            if case.baseline_deck_plan_path
+            else None
+        ),
+        "slide_spec_path": _display_path(case.slide_spec_path),
+        "baseline": _comparison_metrics(baseline_plan, baseline_result, style)
+        if baseline_plan
+        else {},
+        "slide_spec": _comparison_metrics(slide_spec_plan, slide_spec_result, style),
+    }
+
+
+def write_slide_spec_comparison_report(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Piti Slide Spec vs Deck Plan Render Comparison",
+        "",
+        f"- Generated at: {datetime.now(UTC).isoformat()}",
+        "- Purpose: compare legacy deck_plan rendering against Piti slide_spec rendering.",
+        "- Production Piti agent: not implemented",
+        "- Image insertion/chart generation: none",
+        "",
+        "## Summary",
+        "",
+        (
+            "| Deck | Baseline Text Only | Slide Spec Text Only | Baseline Proof Objects | "
+            "Slide Spec Proof Objects | Baseline Screen Lines | Slide Spec Screen Lines | "
+            "Baseline URLs In Notes | Slide Spec URLs In Notes | Baseline Overlap | "
+            "Slide Spec Overlap |"
+        ),
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in rows:
+        base = row.get("baseline", {})
+        spec = row.get("slide_spec", {})
+        lines.append(
+            "| {deck} | {bt} | {st} | {bp} | {sp} | {bl} | {sl} | {bu} | {su} | "
+            "{bo} | {so} |".format(
+                deck=row.get("deck_id"),
+                bt=base.get("text_only_slide_count"),
+                st=spec.get("text_only_slide_count"),
+                bp=base.get("proof_object_slide_count"),
+                sp=spec.get("proof_object_slide_count"),
+                bl=base.get("screen_body_line_total"),
+                sl=spec.get("screen_body_line_total"),
+                bu=base.get("source_url_count_in_notes"),
+                su=spec.get("source_url_count_in_notes"),
+                bo=base.get("proof_text_overlap_count"),
+                so=spec.get("proof_text_overlap_count"),
+            )
+        )
+    lines.extend(["", "## Details", ""])
+    for row in rows:
+        lines.extend(
+            [
+                f"### {row.get('deck_id')}",
+                "",
+                f"- baseline_deck_plan_path: {row.get('baseline_deck_plan_path')}",
+                f"- slide_spec_path: {row.get('slide_spec_path')}",
+                f"- baseline_metrics: {row.get('baseline')}",
+                f"- slide_spec_metrics: {row.get('slide_spec')}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Readiness",
+            "",
+            "- ready_for_piti_renderer_contract: true",
+            "- ready_for_production_piti_agent: false",
+            "- ready_for_broadcast: false",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def render_default_slide_spec_decks(
+    report_path: Path = DEFAULT_SLIDE_SPEC_REPORT_PATH,
+    comparison_report_path: Path = DEFAULT_SLIDE_SPEC_COMPARISON_REPORT_PATH,
+    *,
+    style_profile_path: Path | None = DEFAULT_STYLE_PROFILE_PATH,
+) -> list[Path]:
+    output_paths: list[Path] = []
+    results: list[dict[str, Any]] = []
+    comparison_rows: list[dict[str, Any]] = []
+    for case in SLIDE_SPEC_STYLED_CASES:
+        slide_spec = _load_json(case.slide_spec_path)
+        slide_spec["_input_path"] = str(case.slide_spec_path.relative_to(paths.REPO_ROOT))
+        style = load_style_profile(style_profile_path or case.style_profile_path)
+        result = render_slide_spec_to_pptx(slide_spec, case.output_path, style_profile=style)
+        result["input_slide_spec_path"] = str(case.slide_spec_path.relative_to(paths.REPO_ROOT))
+        results.append(result)
+        comparison_rows.append(_comparison_row(case, slide_spec, result, style))
+        if result.get("passed"):
+            output_paths.append(case.output_path)
+    write_render_report(report_path, results)
+    write_slide_spec_comparison_report(comparison_report_path, comparison_rows)
+    output_paths.extend([report_path, comparison_report_path])
+    return output_paths
+
+
 @app.callback(invoke_without_command=True)
 def main(
     input_path: Annotated[
@@ -2814,6 +3371,52 @@ def main(
         raise typer.Exit(0 if result["passed"] else 1)
     rendered = render_default_decks(report_path=report_path, style_profile_path=style_profile_path)
     console.print(f"[green]Rendered {len(rendered)} Piti PPTX artifacts.[/green]")
+
+
+@slide_spec_app.callback(invoke_without_command=True)
+def slide_spec_main(
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--input", help="Single Piti slide spec JSON to render."),
+    ] = None,
+    output_path: Annotated[
+        Path | None,
+        typer.Option("--output", help="PPTX output path for single slide spec render."),
+    ] = None,
+    report_path: Annotated[
+        Path,
+        typer.Option("--report", help="Markdown render report path."),
+    ] = DEFAULT_SLIDE_SPEC_REPORT_PATH,
+    comparison_report_path: Annotated[
+        Path,
+        typer.Option("--comparison-report", help="Deck-plan comparison report path."),
+    ] = DEFAULT_SLIDE_SPEC_COMPARISON_REPORT_PATH,
+    style_profile_path: Annotated[
+        Path | None,
+        typer.Option("--style-profile", help="Optional Syukaworld style profile JSON."),
+    ] = DEFAULT_STYLE_PROFILE_PATH,
+) -> None:
+    """Render Piti slide spec JSON directly into styled draft PPTX."""
+    if input_path:
+        if output_path is None:
+            raise typer.BadParameter("--output is required with --input")
+        slide_spec = _load_json(input_path)
+        slide_spec["_input_path"] = str(input_path)
+        style = load_style_profile(style_profile_path)
+        result = render_slide_spec_to_pptx(slide_spec, output_path, style_profile=style)
+        write_render_report(report_path, [result])
+        console.print(
+            f"[green]Rendered {output_path} "
+            f"(slides={result.get('slide_count')}, passed={result['passed']}).[/green]"
+        )
+        raise typer.Exit(0 if result["passed"] else 1)
+
+    rendered = render_default_slide_spec_decks(
+        report_path=report_path,
+        comparison_report_path=comparison_report_path,
+        style_profile_path=style_profile_path,
+    )
+    console.print(f"[green]Rendered {len(rendered)} Piti slide-spec PPTX artifacts.[/green]")
 
 
 if __name__ == "__main__":

@@ -159,6 +159,78 @@ def _minimal_deck(slide: dict) -> dict:
     }
 
 
+def _slide_spec(*, repeated_source_title: bool = False) -> dict:
+    display_title = "화면 문구" if repeated_source_title else "Generative AI evidence"
+    slide = {
+        "slide_id": "spec_slide_1",
+        "slide_no": 1,
+        "section_id": "section_1",
+        "source_slide_refs": [1],
+        "layout_intent": "source_card_or_article_quote",
+        "screen_headline": "화면 문구",
+        "screen_body": ["방송 화면에 남길 한 줄"],
+        "speaker_notes_expanded": "긴 설명은 스피커 노트에 남긴다.",
+        "overflow_notes": ["추가 설명은 화면에 올리지 않는다."],
+        "proof_object": {
+            "type": "source_card",
+            "screen_position": "left_half",
+            "source_name": "Microsoft Research",
+            "display_title": display_title,
+            "quote_text": None,
+            "quote_translation": None,
+            "source_url": "https://www.microsoft.com/research/example",
+            "image_url": None,
+            "chart_title": None,
+            "chart_source_label": None,
+            "data_hint": None,
+            "diagram_nodes": [],
+            "diagram_edges": [],
+            "placeholder_reason": None,
+            "manual_insert_required": True,
+            "copyright_risk": False,
+        },
+        "editor_instruction": "편집자는 출처 카드만 확인",
+        "source_refs": [
+            {
+                "url": "https://www.microsoft.com/research/example",
+                "role": "source_context",
+                "use": "source card identity",
+                "confidence": "high",
+                "manual_check_required": False,
+            }
+        ],
+        "risk_flags": ["ai_education_claim"],
+        "needs_source": False,
+        "needs_fact_check": True,
+        "required_before_broadcast": True,
+        "do_not_claim": ["fact-check complete"],
+    }
+    return {
+        "deck_id": "piti_slide_spec_test",
+        "story_seed_title": "Piti slide spec test",
+        "source_storyline_id": "storyline_test",
+        "sections": [
+            {
+                "section_id": "section_1",
+                "section_no": 1,
+                "section_title": "도입",
+                "purpose": "contract test",
+                "slides": [slide],
+            }
+        ],
+        "slides": [slide],
+        "risk_flags": ["ai_education_claim"],
+        "required_fact_checks": ["manual verification"],
+        "readiness": {
+            "ready_for_piti_renderer": True,
+            "ready_for_production_piti_agent": False,
+            "ready_for_broadcast": False,
+        },
+        "notes": "temporary test spec",
+        "created_at": "2026-05-19T00:00:00+00:00",
+    }
+
+
 def test_render_deck_plan_to_pptx_creates_editable_file(tmp_path: Path) -> None:
     output_path = tmp_path / "draft.pptx"
 
@@ -688,3 +760,77 @@ def test_reference_layout_report_exposes_template_metrics(tmp_path: Path) -> Non
     assert result["text_only_calculation_count"] == 1
     assert "layout_template_counts" in report_text
     assert "source_backed_text_only_should_have_card_count" in report_text
+
+
+def test_slide_spec_render_uses_screen_contract_without_rewriting(tmp_path: Path) -> None:
+    output_path = tmp_path / "slide_spec.pptx"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    spec = _slide_spec()
+
+    result = render_pptx.render_slide_spec_to_pptx(
+        spec,
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+    parsed = parse_presentation(output_path)
+    visible_text = "\n".join(slide["visible_text"] for slide in parsed["slides"])
+    notes_text = "\n".join(slide["notes"] for slide in parsed["slides"])
+
+    assert output_path.exists()
+    assert result["passed"] is True
+    assert result["input_kind"] == "piti_slide_spec"
+    assert result["slide_spec_validation_passed"] is True
+    assert result["proof_object_reinferred"] is False
+    assert result["screen_body_rewrite_disabled"] is True
+    assert result["screen_body_rewritten_count"] == 0
+    assert "방송 화면에 남길 한 줄" in visible_text
+    assert "긴 설명은 스피커 노트" not in visible_text
+    assert "긴 설명은 스피커 노트" in notes_text
+    assert "https://www.microsoft.com/research/example" in notes_text
+    assert "source_refs" in notes_text
+    assert "proof_object" in notes_text
+    assert "needs_fact_check: true" in notes_text.lower()
+
+
+def test_slide_spec_render_rejects_invalid_spec_without_pptx(tmp_path: Path) -> None:
+    output_path = tmp_path / "invalid_slide_spec.pptx"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    spec = _slide_spec(repeated_source_title=True)
+
+    result = render_pptx.render_slide_spec_to_pptx(
+        spec,
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+
+    assert result["passed"] is False
+    assert result["input_kind"] == "piti_slide_spec"
+    assert result["slide_spec_validation_passed"] is False
+    assert output_path.exists() is False
+    assert any("source_card repeats" in issue for issue in result["slide_spec_issues"])
+
+
+def test_slide_spec_comparison_report_is_written(tmp_path: Path) -> None:
+    output_path = tmp_path / "slide_spec.pptx"
+    report_path = tmp_path / "comparison.md"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    spec = _slide_spec()
+    style = render_pptx.load_style_profile(style_path)
+    result = render_pptx.render_slide_spec_to_pptx(spec, output_path, style_profile=style)
+    render_plan = render_pptx.slide_spec_to_render_plan(spec)
+    row = {
+        "deck_id": spec["deck_id"],
+        "baseline_deck_plan_path": None,
+        "slide_spec_path": "memory",
+        "baseline": {},
+        "slide_spec": render_pptx._comparison_metrics(render_plan, result, style),
+    }
+
+    render_pptx.write_slide_spec_comparison_report(report_path, [row])
+
+    text = report_path.read_text(encoding="utf-8")
+    assert "Piti Slide Spec vs Deck Plan Render Comparison" in text
+    assert "ready_for_piti_renderer_contract: true" in text
