@@ -482,18 +482,17 @@ def test_article_quote_proof_object_reserves_left_area(tmp_path: Path) -> None:
 
     assert result["article_quote_skeleton_count"] == 1
     assert result["article_quote_count"] == 1
+    assert result["article_quote_without_quote_text_count"] == 0
     assert result["proof_object_type_counts"] == {"article_quote": 1}
     assert result["proof_object_area_reserved_count"] == 1
     assert result["proof_text_overlap_count"] == 0
-    assert "[인용]" in visible_text
     assert "Example" in visible_text
     assert "example.com" not in visible_text
     assert "proof_object_type: article_quote" in notes_text
-    editor_run = _first_run_for_text(prs := Presentation(str(output_path)), "[인용]")
-    source_run = _first_run_for_text(prs, "Example")
-    assert editor_run.font.color.rgb == RGBColor(0, 112, 192)
+    source_run = _first_run_for_text(Presentation(str(output_path)), "Example")
     assert source_run.font.color.rgb == RGBColor(0, 0, 0)
     assert result["visible_url_count"] == 0
+    assert result["visible_editor_label_count"] == 0
 
 
 def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None:
@@ -541,6 +540,7 @@ def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None
     assert result["proof_object_required_but_missing_count"] == 0
     assert result["image_left_layout_count"] == 1
     assert result["diagram_skeleton_count"] == 1
+    assert result["diagram_box_arrow_count"] == 1
     assert "proof_object_slide_count" in report_text
     assert "proof_object_type_counts" in report_text
     visible_text = "\n".join(
@@ -580,15 +580,52 @@ def test_source_backed_manual_slide_uses_source_card_template(tmp_path: Path) ->
     assert result["source_card_or_article_quote_count"] == 1
     assert result["source_card_count"] == 1
     assert result["article_quote_count"] == 0
+    assert result["article_quote_without_quote_text_count"] == 0
     assert result["source_card_repeated_headline_count"] == 0
+    assert result["visible_editor_label_count"] == 0
     assert result["text_only_slide_count"] == 0
     assert result["text_only_slide_count_before_after"] == {"before": 1, "after": 0}
     assert result["proof_object_slide_count_before_after"] == {"before": 0, "after": 1}
     assert result["source_backed_text_only_should_have_card_count"] == 0
-    assert "[출처]" in visible_text
     assert "BBC" in visible_text
     assert visible_text.count("BBC가 던진 질문") == 1
     assert "proof_object_type: source_card" in notes_text
+
+
+def test_screen_body_is_rewritten_for_broadcast_surface_copy(tmp_path: Path) -> None:
+    output_path = tmp_path / "surface_copy.pptx"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    slide = {
+        "slide_no": 1,
+        "layout_type": "headline_body",
+        "slide_type": "explainer",
+        "headline": "AI가 답을 바로 주는 건 편리하다",
+        "body": [
+            "모르는 것을 물으면 바로 답이 나오고, 검색 결과를 여러 개 열어보던 시간이 줄어든다.",
+            "AI는 접근성과 개인화 가능성도 넓힐 수 있다.",
+            "다만 편리함이 곧 배움이라는 뜻은 아니다.",
+        ],
+        "source_urls": ["https://www.microsoft.com/research/example"],
+        "image_urls": [],
+        "speaker_notes": "surface copy rewrite",
+        "visual_plan": {"kind": "manual", "description": "source-backed context"},
+    }
+
+    result = render_pptx.render_deck_plan_to_pptx(
+        _minimal_deck(slide),
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+    visible_text = "\n".join(
+        item["visible_text"] for item in parse_presentation(output_path)["slides"]
+    )
+
+    assert "검색창을 열기도 전에" in visible_text
+    assert "답안지가 먼저 나온다" in visible_text
+    assert "다만 편리함" not in visible_text
+    assert result["screen_body_rewritten_count"] == 1
+    assert result["screen_body_explanatory_sentence_count"] == 0
 
 
 def test_reference_layout_report_exposes_template_metrics(tmp_path: Path) -> None:

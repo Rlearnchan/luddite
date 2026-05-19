@@ -117,10 +117,16 @@ on screen, they must be blue and visually subordinate to the actual slide copy.
   Do not turn every source URL into an article quote.
 - Source cards show source identity, a short source title, and optional source
   type. They must not repeat the slide headline or show long URLs on screen.
+- Source cards should read like evidence identity, not another headline. Good
+  examples are `Microsoft Research / Generative AI and information diversity`
+  or `금융위원회 / 국민성장펀드 보도자료`.
 - Full URLs remain in speaker notes. On-screen source labels should be source
   names such as `BBC`, `Microsoft Research`, `금융위원회`, or `BIS`.
 - Screen body copy should be compressed for broadcast rhythm. Explanatory,
   cautionary, source, or fact-check language belongs in speaker notes.
+- Screen body lines are not a simple first-two-lines extract from the storyline.
+  The renderer may rewrite or omit explanatory body copy so the screen keeps a
+  short broadcast sentence and pushes the fuller explanation into notes.
 - Proof-object slides should usually show at most two body lines. Text-only
   slides may use up to three lines, with overflow moved to notes.
 - Diagram placeholders must show a minimal two-box/arrow skeleton rather than
@@ -129,7 +135,24 @@ on screen, they must be blue and visually subordinate to the actual slide copy.
   The screen keeps chart title, chart skeleton/data labels, and source label;
   explanation moves to notes.
 - Editor-facing labels such as `[인용]`, `[출처]`, `[도식]`, and `[차트]` should be
-  small, blue, and subordinate to the proof object itself.
+  hidden by default or small, blue, and subordinate to the proof object itself.
+  Source cards and diagrams should rely on source identity or the skeleton
+  itself, not a large bracket label.
+
+## Source Card, Quote, Diagram, And Chart Semantics v0.1
+
+- A source-backed slide without actual quoted text uses `source_card`, even if
+  the source is a news article. Article identity is the proof object.
+- A source-backed slide with actual quoted text, English/Korean quote rhythm, or
+  a specific quoted statement uses `article_quote`.
+- A diagram proof object must create an editable two-box/arrow structure. A
+  bare `[도식]` label is not enough.
+- A chart/table proof object must not display explanatory body copy inside the
+  chart area. It should show chart title, skeleton/data labels, and source
+  label; explanation stays in notes.
+- Report warnings should track repeated source-card headlines, article quotes
+  without actual quote text, visible URLs, chart body leakage, large editor
+  labels, and over-budget screen body copy.
 
 ## Non-goals
 

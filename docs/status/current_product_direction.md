@@ -836,6 +836,36 @@ Milestone 1.19.11: Piti Surface Copy & Proof Object Cleanup
   integration, production Piti agent, LLM/API calls, and final Syukaworld visual
   fidelity claims.
 
+Milestone 1.19.12: Piti Surface Copy Rewrite + Proof Object Semantics
+
+- Treat the current styled PPTX limitation as a surface-copy and proof-object
+  semantics problem, not only a layout problem. Piti still remains a renderer
+  scaffold; the medium-term fix is an Anny-to-Piti screen contract where Anny
+  emits `screen_headline`, `screen_body`, expanded notes, and proof-object
+  intent directly.
+- Strengthen `source_card` versus `article_quote`: source URLs alone do not
+  make a quote slide. Actual quoted text or English/Korean quote rhythm stays
+  `article_quote`; source-backed non-quote claims become `source_card`.
+- Source cards show source identity and short source-title copy, avoid
+  repeating the slide headline, and keep full URLs in speaker notes.
+- Rewrite or suppress explanatory `screen_body` lines so proof-object slides
+  keep short broadcast-facing copy while cautions, source context, and fuller
+  explanation move to notes.
+- Keep chart/table slides proof-led: explanatory body copy should not leak into
+  the chart area. Chart title, skeleton/data labels, and source label stay on
+  screen.
+- Keep diagram slides as editable two-box/arrow structures instead of large
+  editor labels.
+- Add render-report metrics for article quotes without quote text, visible
+  editor labels, diagram box/arrow skeletons, chart slide body leakage, and
+  rewritten screen body lines.
+- Styled drafts remain scaffold outputs only:
+  `ready_for_ppt_generation=true` for review,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: actual image insertion, chart generation, Google Slides
+  integration, production Piti agent, LLM/API calls, and final Syukaworld visual
+  fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
