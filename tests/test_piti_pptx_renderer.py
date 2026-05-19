@@ -139,3 +139,52 @@ def test_render_report_created(tmp_path: Path) -> None:
     text = report_path.read_text(encoding="utf-8")
     assert "Piti PPTX Render Report" in text
     assert "ready_for_ppt_generation: true (scaffold only)" in text
+
+
+def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
+    output_path = tmp_path / "styled.pptx"
+    style_path = tmp_path / "style.json"
+    style_path.write_text(
+        json.dumps(
+            {
+                "slide_size": {"width_in": 13.333, "height_in": 7.5},
+                "common_colors": [{"value": "#FF0000", "count": 10}],
+                "font_resolution": {"fallback_font": "맑은 고딕"},
+                "layout_patterns": {
+                    "title": {
+                        "x_cm_median": 2.38,
+                        "y_cm_median": 3.118,
+                        "w_cm_median": 29.106,
+                        "h_cm_median": 6.632,
+                        "font_size_pt_median": 54.0,
+                    },
+                    "headline_body": {
+                        "x_cm_median": 1.591,
+                        "y_cm_median": 3.357,
+                        "w_cm_median": 31.092,
+                        "h_cm_median": 3.616,
+                        "font_size_pt_median": 28.0,
+                        "font_color_top": "#FF0000",
+                    },
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    style = render_pptx.load_style_profile(style_path)
+    result = render_pptx.render_deck_plan_to_pptx(
+        _deck_plan(),
+        output_path,
+        style_profile=style,
+    )
+    parsed = parse_presentation(output_path)
+
+    assert result["style_profile_loaded"] is True
+    assert result["applied_font_family"] == "맑은 고딕"
+    assert result["applied_layout_count"] >= 1
+    assert result["parse_back_slide_count"] == 4
+    assert parsed["slide_count"] == 4
+    notes_text = "\n".join(slide["notes"] for slide in parsed["slides"])
+    assert "style_profile_loaded: True" in notes_text

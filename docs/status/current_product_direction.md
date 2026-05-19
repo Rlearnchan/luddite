@@ -607,6 +607,28 @@ Milestone 1.19.2: Theme/Master Font Extraction
   image auto insertion, chart generation, Google Slides integration, and
   production Piti agent implementation.
 
+Milestone 1.19.3: Apply Syukaworld Style Profile to Piti Renderer
+
+- Extend `luddite render-piti-pptx` / `make render-piti-pptx` with optional
+  `--style-profile`, defaulting to
+  `data/style_profiles/syukaworld_ppt_style_profile.json`.
+- Preserve existing scaffold PPTX outputs and add styled draft outputs:
+  `outputs/pptx/ai_knowledge_institution_styled_draft.pptx` and
+  `outputs/pptx/productive_finance_policy_styled_draft.pptx`.
+- Apply extracted slide size, theme font candidate `맑은 고딕`, `Malgun Gothic`
+  fallback metadata, common red text color, and median layout boxes for
+  supported layout types.
+- Keep visual placeholders as placeholders only, with quieter gray styling and
+  visual plans preserved in speaker notes.
+- Preserve speaker notes/source/fact-check flags and add parse-back counts to
+  `outputs/reports/piti_pptx_render_report_2026-05-19.md`.
+- Current readiness:
+  `ready_for_ppt_generation=true` for scaffold/styled draft review only,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: production Piti agent, image auto collection/insertion,
+  chart generation, Google Slides integration, LLM/API calls, and final
+  Syukaworld visual fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
