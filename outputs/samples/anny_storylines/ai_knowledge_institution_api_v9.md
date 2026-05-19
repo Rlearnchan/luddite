@@ -5,7 +5,9 @@
 
 ## Summary
 
+- story_seed_title: AI 즉답 시대의 지식기관 역할
 - label: AI knowledge API v9
+- output_type: api_experiment
 - description: Controlled API experiment output, not production.
 - sections: 5
 - slides: 25
@@ -16,6 +18,7 @@
 - failure_modes: ['needs_fact_check_removed_too_aggressively']
 - schema_valid: True
 - hygiene_passed: False
+- readiness: not production-ready
 
 ## Required Fact Checks
 

@@ -5,7 +5,9 @@
 
 ## Summary
 
+- story_seed_title: 생산적 금융으로의 전환: 담보·단기수익에서 장기 위험분담으로?
 - label: Productive finance API v1
+- output_type: api_experiment
 - description: Controlled API experiment output, not production.
 - sections: 4
 - slides: 22
@@ -16,6 +18,7 @@
 - failure_modes: ['unsupported_claim', 'policy_finance_guardrail_violation', 'key_beat_drift']
 - schema_valid: True
 - hygiene_passed: False
+- readiness: not production-ready
 
 ## Required Fact Checks
 

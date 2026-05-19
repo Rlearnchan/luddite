@@ -64,11 +64,15 @@ def test_render_storyline_markdown_includes_hygiene_metadata() -> None:
     markdown = render_storyline_markdown(
         _sample_storyline(),
         label="sample",
+        output_type="manual_enriched",
         description="Rendered test sample.",
         manifest={"failure_modes": ["unsupported_claim"], "schema_valid": True},
     )
 
     assert "production Anny output이 아니라" in markdown
+    assert "story_seed_title: 샘플 스토리라인" in markdown
+    assert "output_type: manual_enriched" in markdown
+    assert "readiness: not production-ready" in markdown
     assert "source attached는 fact-check complete" in markdown
     assert "AI 즉답의 편리함" in markdown
     assert "covers_key_beats" in markdown

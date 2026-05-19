@@ -9,6 +9,7 @@ Important interpretation rules:
 - `needs_fact_check=true` means attached sources are not enough for broadcast.
 - source attached does not mean fact-check complete.
 - API samples are controlled experiments, not a production agent.
+- Productive finance API v1 still has stricter-validator failures.
 
 Recommended reading order:
 

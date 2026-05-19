@@ -5,7 +5,9 @@
 
 ## Summary
 
+- story_seed_title: 생산적 금융과 정책자금 전환
 - label: Productive finance manual enriched
+- output_type: manual_enriched
 - description: GPT Pro enriched manual dry-run sample.
 - sections: 4
 - slides: 24
@@ -16,6 +18,7 @@
 - failure_modes: []
 - schema_valid: n/a
 - hygiene_passed: n/a
+- readiness: not production-ready
 
 ## Required Fact Checks
 

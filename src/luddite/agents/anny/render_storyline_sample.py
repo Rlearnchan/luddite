@@ -21,6 +21,7 @@ DEFAULT_SAMPLE_DIR = paths.OUTPUTS_DIR / "samples" / "anny_storylines"
 @dataclass(frozen=True)
 class StorylineSample:
     label: str
+    output_type: str
     input_path: Path
     output_path: Path
     description: str
@@ -30,6 +31,7 @@ class StorylineSample:
 DEFAULT_SAMPLES = [
     StorylineSample(
         label="AI knowledge manual enriched",
+        output_type="manual_enriched",
         input_path=(
             paths.ANNY_STORYLINE_DRY_RUN_DIR
             / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
@@ -39,6 +41,7 @@ DEFAULT_SAMPLES = [
     ),
     StorylineSample(
         label="Productive finance manual enriched",
+        output_type="manual_enriched",
         input_path=(
             paths.ANNY_STORYLINE_DRY_RUN_DIR
             / "productive_finance_policy_gpt_pro_storyline_enriched.json"
@@ -48,6 +51,7 @@ DEFAULT_SAMPLES = [
     ),
     StorylineSample(
         label="AI knowledge API v9",
+        output_type="api_experiment",
         input_path=(
             paths.MODEL_DRY_RUNS_DIR
             / "anny_api_experiments"
@@ -65,6 +69,7 @@ DEFAULT_SAMPLES = [
     ),
     StorylineSample(
         label="Productive finance API v1",
+        output_type="api_experiment",
         input_path=(
             paths.MODEL_DRY_RUNS_DIR
             / "anny_api_experiments"
@@ -130,20 +135,24 @@ def render_storyline_markdown(
     storyline: dict[str, Any],
     *,
     label: str,
+    output_type: str,
     description: str,
     manifest: dict[str, Any] | None = None,
 ) -> str:
     manifest = manifest or {}
     slides = _all_slides(storyline)
+    story_seed_title = storyline.get("title") or label
     lines = [
-        f"# {storyline.get('title') or label}",
+        f"# {story_seed_title}",
         "",
         "> 이 문서는 production Anny output이 아니라 manual/API dry-run sample입니다.",
         "> source attached는 fact-check complete를 의미하지 않습니다.",
         "",
         "## Summary",
         "",
+        f"- story_seed_title: {story_seed_title}",
         f"- label: {label}",
+        f"- output_type: {output_type}",
         f"- description: {description}",
         f"- sections: {len(storyline.get('sections', []))}",
         f"- slides: {len(slides)}",
@@ -154,6 +163,7 @@ def render_storyline_markdown(
         f"- failure_modes: {manifest.get('failure_modes', [])}",
         f"- schema_valid: {manifest.get('schema_valid', 'n/a')}",
         f"- hygiene_passed: {manifest.get('hygiene_passed', 'n/a')}",
+        "- readiness: not production-ready",
         "",
     ]
     required_fact_checks = _as_list(storyline.get("required_fact_checks"))
@@ -217,6 +227,7 @@ def render_storyline_sample(
     output_path: Path,
     label: str,
     description: str,
+    output_type: str = "single_render",
     manifest_path: Path | None = None,
 ) -> Path:
     storyline = _load_json(input_path)
@@ -226,6 +237,7 @@ def render_storyline_sample(
         render_storyline_markdown(
             storyline,
             label=label,
+            output_type=output_type,
             description=description,
             manifest=manifest,
         ),
@@ -243,6 +255,7 @@ def render_default_samples(output_dir: Path = DEFAULT_SAMPLE_DIR) -> list[Path]:
                 input_path=sample.input_path,
                 output_path=output_path,
                 label=sample.label,
+                output_type=sample.output_type,
                 description=sample.description,
                 manifest_path=sample.failure_manifest_path,
             )
@@ -267,6 +280,7 @@ def _samples_readme(paths_rendered: list[Path]) -> str:
         "- `needs_fact_check=true` means attached sources are not enough for broadcast.",
         "- source attached does not mean fact-check complete.",
         "- API samples are controlled experiments, not a production agent.",
+        "- Productive finance API v1 still has stricter-validator failures.",
         "",
         "Recommended reading order:",
         "",
@@ -308,6 +322,7 @@ def main(
             input_path=input_path,
             output_path=output_path,
             label=input_path.stem,
+            output_type="single_render",
             description="Single rendered storyline sample.",
             manifest_path=manifest_path,
         )

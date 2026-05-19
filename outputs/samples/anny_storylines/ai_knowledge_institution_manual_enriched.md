@@ -5,7 +5,9 @@
 
 ## Summary
 
+- story_seed_title: AI 즉답 시대의 지식기관 역할
 - label: AI knowledge manual enriched
+- output_type: manual_enriched
 - description: GPT Pro enriched manual dry-run sample.
 - sections: 4
 - slides: 26
@@ -16,6 +18,7 @@
 - failure_modes: []
 - schema_valid: n/a
 - hygiene_passed: n/a
+- readiness: not production-ready
 
 ## Required Fact Checks
 
