@@ -110,6 +110,11 @@ slide를 쓰기 전에 먼저 `section_plan`을 작성한다.
 - `required_key_beats`
 - `planned_slide_count`
 
+대표 outline은 기본적으로 3~4 sections로 작성한다. API experiment에서 5 sections가
+정말 필요하면 `section_plan`에 별도 section이 필요한 이유를 써라. Production
+anny 기본값은 3~4 sections이며, 5 sections는 명시적 justification이 있을 때만
+허용된다.
+
 모든 required key beat는 반드시 어떤 section에 배치한다. 안전성이나
 fact-check를 지키기 위해 key beat를 생략하지 마라. 근거가 얇으면
 해당 slide에 `needs_source=true` 또는 `needs_fact_check=true`를 남긴다.

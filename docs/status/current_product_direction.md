@@ -402,6 +402,25 @@ Milestone 1.9: First Anny API Experiment
 - This is not a production anny agent and does not batch topics.
 - Keep `ready_for_production_agent=false` and `ready_for_broadcast=false`.
 
+Milestone 1.16.1: API Experiment Summary / Production Gate Decision
+
+- Summarize AI knowledge-institution API experiments v1-v9 in
+  `outputs/reports/anny_api_experiment_ai_knowledge_institution_summary.md`.
+- v9 is the most stable AI case run so far: schema-valid, key beat recall 1.00,
+  source hallucination 0, do-not-claim violations 0, unsupported claim 0, and
+  counterpoint included.
+- Remaining failure is `needs_fact_check_removed_too_aggressively`, concentrated
+  in education/AI/institution-role slides that still need conservative
+  `needs_fact_check=true`.
+- Section count policy is clarified: 3-4 sections are the production default;
+  5 sections are an API-experiment warning unless explicitly justified.
+- Current readiness:
+  `ready_for_api_experiment=true`, `ready_for_production_agent=false`,
+  `ready_for_broadcast=false`.
+- Next recommended milestone is Productive Finance First API Experiment, not a
+  production anny agent. The goal is to check the same contract against a
+  higher-risk policy/finance topic.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

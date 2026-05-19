@@ -143,6 +143,16 @@ an object list with `key_beat_id` and `anchor_phrase`. The anchor phrase must
 come from the provided anchor list and must appear verbatim in the slide
 headline or first body line.
 
+## Section Count Policy
+
+Representative API experiments should target 3-4 sections. A 5-section output
+is acceptable as an API-experiment warning when the structure is otherwise
+valid, but it should not be treated as the production default.
+
+Production anny should use 3-4 sections by default. A 5-section structure needs
+explicit justification in the `section_plan`, such as a distinct counterpoint or
+risk section that cannot be folded into the normal four-part arc.
+
 ## Editorial Rules
 
 - Anny is evidence-bound. Do not invent facts, numbers, claims, or URLs that are
@@ -179,12 +189,14 @@ headline or first body line.
 - `ready_for_prompt_design: true`
 - `ready_for_manual_storyline: true`
 - `ready_for_api_experiment_prep: true`
-- `ready_for_api_experiment: false`
+- `ready_for_api_experiment: true`
 - `ready_for_production_agent: false`
 - `ready_for_broadcast: false`
 
-The two manual dry runs validate the prompt/eval contract, but production anny
-still needs evidence enrichment, output variability checks, and failure handling.
+The manual dry runs and the AI knowledge-institution API experiments validate
+the prompt/eval contract enough for controlled API experiments. Production anny
+still needs cross-topic variability checks, stronger fact-check conservatism,
+and failure handling before it can be wired into the product.
 
 ## API Experiment Prep
 

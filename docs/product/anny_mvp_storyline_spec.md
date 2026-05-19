@@ -243,6 +243,14 @@ Key beat planning:
   `missing_covers_key_beats`, `covers_key_beat_without_anchor_phrase`를
   `key_beat_drift`의 세부 reason으로 기록할 수 있다.
 
+Section count policy:
+
+- API experiment 단계에서는 3~4 sections를 목표로 한다.
+- 5 sections는 output이 그 외 contract를 만족하면 warning으로 허용할 수 있다.
+- production anny 기본값은 3~4 sections다.
+- 5 sections를 쓰려면 `section_plan`에 별도 counterpoint/risk section이
+  필요한 이유를 명시해야 한다.
+
 Policy/finance guardrails:
 
 - 정책 효과를 단정하지 않는다.
@@ -312,7 +320,7 @@ Current expected state:
 - `ready_for_prompt_design: true`
 - `ready_for_manual_storyline: true`
 - `ready_for_api_experiment_prep: true`
-- `ready_for_api_experiment: false`
+- `ready_for_api_experiment: true`
 - `ready_for_production_agent: false`
 - `ready_for_broadcast: false`
 
