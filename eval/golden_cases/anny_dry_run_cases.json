@@ -280,13 +280,13 @@
       "parsed_storyline_path": "outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_productive_finance_policy_v1/parsed_storyline.json",
       "expected_key_beats": [
         {
-          "id": "kb_collateral_short_term_limit",
+          "id": "kb_finance_short_term_limit",
           "label": "담보·단기수익 중심 금융의 한계",
           "anchor_phrases": [
             "담보",
             "단기수익",
-            "담보·단기수익",
-            "담보가 있나"
+            "안전한 대출",
+            "금융의 한계"
           ],
           "aliases": [
             "담보·단기수익 중심 금융의 한계",
@@ -302,7 +302,7 @@
             "AI",
             "반도체",
             "장기 위험자본",
-            "긴 위험"
+            "긴 투자"
           ],
           "aliases": [
             "AI/반도체 투자와 장기 위험자본 필요",
@@ -313,12 +313,12 @@
         },
         {
           "id": "kb_growth_fund_policy_finance",
-          "label": "국민성장펀드/정책금융 논쟁",
+          "label": "국민성장펀드와 정책금융 논쟁",
           "anchor_phrases": [
             "국민성장펀드",
             "정책금융",
-            "정책자금",
-            "정책금융 논쟁"
+            "성장펀드",
+            "위험분담"
           ],
           "aliases": [
             "국민성장펀드/정책금융 논쟁",
@@ -328,13 +328,13 @@
           ]
         },
         {
-          "id": "kb_risk_sharing_boundary",
+          "id": "kb_finance_risk_sharing",
           "label": "금융권이 어디까지 위험을 나눌 수 있는가",
           "anchor_phrases": [
             "위험을 나눌",
-            "위험을 누가",
-            "금융권",
-            "위험분담"
+            "위험분담",
+            "누가 손실을",
+            "금융권"
           ],
           "aliases": [
             "금융권이 어디까지 위험을 나눌 수 있는가",
@@ -345,12 +345,13 @@
         },
         {
           "id": "kb_counterpoint_policy_risk",
-          "label": "반대 관점/리스크",
+          "label": "관치금융/손실전가/정책금융 실패 가능성",
           "anchor_phrases": [
-            "반대 관점",
-            "리스크",
-            "손실",
-            "관치금융"
+            "관치금융",
+            "손실 전가",
+            "정책금융 실패",
+            "부작용",
+            "반대 관점"
           ],
           "aliases": [
             "반대쪽 질문도 있다",

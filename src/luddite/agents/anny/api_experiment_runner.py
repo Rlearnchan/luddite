@@ -99,6 +99,9 @@ PRODUCTIVE_FINANCE_MANUAL_ENRICHED_STORYLINE = (
 PRODUCTIVE_FINANCE_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_productive_finance_policy_v1_comparison.md"
 )
+PRODUCTIVE_FINANCE_API_CLAIM_HYGIENE_REVIEW = (
+    paths.REPORTS_DIR / "anny_api_experiment_productive_finance_policy_v1_claim_hygiene_review.md"
+)
 DEFAULT_PROMPT_FILE = paths.PROMPTS_DIR / "anny" / "storyline_writer.md"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 ENV_FILES = [paths.REPO_ROOT / ".env", paths.REPO_ROOT / ".env.local"]
@@ -118,7 +121,6 @@ RHETORICAL_FACT_CHECK_KINDS = {
 FACTUAL_CLAIM_MARKERS = [
     "%",
     "원",
-    "명",
     "년",
     "월",
     "입증",
@@ -179,6 +181,31 @@ SOURCE_SPECIFIC_MARKERS = [
     "warns",
     "says",
 ]
+POLICY_FINANCE_CLAIM_MARKERS = [
+    "정책 효과",
+    "국민성장펀드 구조",
+    "손실분담",
+    "손실 분담",
+    "금융권 부담",
+    "위험가중자산",
+    "건전성",
+    "BIS",
+    "AI/반도체 투자 규모",
+    "정책금융 실패",
+    "관치금융",
+    "손실 전가",
+    "시장 반응",
+    "금융권 반응",
+    "정책자금",
+    "정책금융",
+    "국민성장펀드",
+    "상품구조",
+    "운용지침",
+    "공모문서",
+    "재정투입",
+    "민간 매칭",
+    "은행 규제",
+]
 INVESTMENT_ADVICE_MARKERS = [
     "매수",
     "매도",
@@ -206,6 +233,8 @@ POLICY_PROMOTION_MARKERS = [
 POLICY_FINANCE_FACT_CHECK_KINDS = {
     "policy_effect_claim",
     "investment_risk_claim",
+    "market_finance_view",
+    "policy_mechanism_claim",
 }
 
 
@@ -464,6 +493,9 @@ def _triggered_claim_marker(slide: dict[str, Any]) -> tuple[str | None, str | No
     marker = _first_marker(text, INSTITUTION_ROLE_CLAIM_MARKERS)
     if marker:
         return marker, "institution_role"
+    marker = _first_marker(text, POLICY_FINANCE_CLAIM_MARKERS)
+    if marker:
+        return marker, "policy_finance"
     marker = _first_marker(text, FACTUAL_CLAIM_MARKERS)
     if marker:
         return marker, "factual_claim"
@@ -484,7 +516,7 @@ def _first_marker(text: str, markers: list[str]) -> str | None:
 def _unsupported_claim_recommended_fix(marker_type: str | None) -> str:
     if marker_type == "source_specific":
         return "add_source_url"
-    if marker_type in {"institution_role", "factual_claim"}:
+    if marker_type in {"institution_role", "factual_claim", "policy_finance"}:
         return "set_needs_source_true_and_needs_fact_check_true"
     return "rewrite_as_rhetorical_question"
 
@@ -564,6 +596,16 @@ def _policy_finance_guardrail_errors(
                 )
             if slide.get("needs_fact_check") is not True:
                 errors.append(f"slide {index} {kind} missing needs_fact_check=true")
+        finance_marker = _first_marker(text, POLICY_FINANCE_CLAIM_MARKERS)
+        if (
+            finance_marker
+            and slide_type != "production_checklist"
+            and slide.get("needs_fact_check") is not True
+        ):
+            errors.append(
+                f"slide {index} policy_finance_claim:{finance_marker} "
+                "missing needs_fact_check=true"
+            )
         if slide_type == "production_checklist" and kind not in {
             "production_checklist",
             "rhetorical_caution",
@@ -663,7 +705,19 @@ def _do_not_claim_violations(storyline: dict[str, Any], input_bundle: dict[str, 
     text = _text_blob(storyline)
     patterns = list(DO_NOT_CLAIM_PATTERNS)
     patterns.extend(str(item) for item in input_bundle.get("do_not_claim", []))
-    return [pattern for pattern in patterns if pattern and pattern in text]
+    violations = [pattern for pattern in patterns if pattern and pattern in text]
+    if _is_policy_finance_input(input_bundle):
+        violations.extend(
+            f"investment_advice_risk:{marker}"
+            for marker in INVESTMENT_ADVICE_MARKERS
+            if marker in text
+        )
+        violations.extend(
+            f"policy_promotion_risk:{marker}"
+            for marker in POLICY_PROMOTION_MARKERS
+            if marker in text
+        )
+    return list(dict.fromkeys(violations))
 
 
 def validate_api_experiment_raw_output(
@@ -2235,13 +2289,200 @@ def write_v6_claim_hygiene_review(
     return {"reviewed": reviewed, "report_path": str(report_path)}
 
 
+def write_productive_finance_claim_hygiene_review(
+    *,
+    storyline_path: Path = DEFAULT_EXPERIMENT_ROOT
+    / PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID
+    / "parsed_storyline.json",
+    manifest_path: Path = DEFAULT_EXPERIMENT_ROOT
+    / PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID
+    / "manifest.json",
+    report_path: Path = PRODUCTIVE_FINANCE_API_CLAIM_HYGIENE_REVIEW,
+) -> dict[str, Any]:
+    storyline = _load_json(storyline_path)
+    manifest = _load_json(manifest_path)
+    details = manifest.get("unsupported_claim_details") or _unsupported_claim_details(storyline)
+    slides_by_no = {
+        slide.get("slide_no") or index: slide
+        for index, slide in enumerate(_all_slides(storyline), start=1)
+    }
+    reviewed = []
+    for detail in details:
+        slide_no = detail.get("slide_no")
+        slide = slides_by_no.get(slide_no, {})
+        classification, action = _claim_hygiene_recommendation(slide, detail)
+        reviewed.append(
+            {
+                "slide_no": slide_no,
+                "headline": detail.get("headline"),
+                "slide_type": detail.get("slide_type"),
+                "fact_check_kind": detail.get("fact_check_kind"),
+                "body_excerpt": detail.get("body_excerpt"),
+                "source_urls_present": detail.get("source_urls_present"),
+                "needs_source": detail.get("needs_source"),
+                "needs_fact_check": detail.get("needs_fact_check"),
+                "reason": detail.get("reason"),
+                "triggered_marker": detail.get("triggered_marker"),
+                "triggered_marker_type": detail.get("triggered_marker_type"),
+                "recommended_fix": detail.get("recommended_fix"),
+                "classification": classification,
+                "recommended_action": action,
+            }
+        )
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Productive Finance v1 Claim Hygiene Review",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- storyline_path: {storyline_path}",
+        f"- manifest_path: {manifest_path}",
+        f"- failure_modes: {manifest.get('failure_modes', [])}",
+        f"- reviewed_unsupported_claims: {len(reviewed)}",
+        "- api_recalled: false",
+        "- ready_for_production_agent: false",
+        "",
+        "## Slide Review",
+        "",
+        (
+            "| Slide | Type | Classification | Recommended Action | Triggered Marker | "
+            "Needs Source | Needs Fact Check | Headline |"
+        ),
+        "|---:|---|---|---|---|---|---|---|",
+    ]
+    for item in reviewed:
+        lines.append(
+            f"| {item['slide_no']} | {item['slide_type']} | "
+            f"{item['classification']} | {item['recommended_action']} | "
+            f"{item['triggered_marker_type']}:{item['triggered_marker']} | "
+            f"{item['needs_source']} | {item['needs_fact_check']} | "
+            f"{item['headline']} |"
+        )
+    lines.extend(["", "## Detail", ""])
+    for item in reviewed:
+        lines.extend(
+            [
+                f"### Slide {item['slide_no']}",
+                "",
+                f"- headline: {item['headline']}",
+                f"- slide_type: {item['slide_type']}",
+                f"- fact_check_kind: {item['fact_check_kind']}",
+                f"- body_excerpt: {item['body_excerpt']}",
+                f"- source_urls_present: {item['source_urls_present']}",
+                f"- needs_source: {item['needs_source']}",
+                f"- needs_fact_check: {item['needs_fact_check']}",
+                f"- reason: {item['reason']}",
+                f"- triggered_marker: {item['triggered_marker']}",
+                f"- triggered_marker_type: {item['triggered_marker_type']}",
+                f"- recommended_fix: {item['recommended_fix']}",
+                f"- classification: {item['classification']}",
+                f"- recommended_action: {item['recommended_action']}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Key Beat Drift Detail",
+            "",
+        ]
+    )
+    for error in manifest.get("key_beat_coverage_errors", []):
+        lines.append(f"- {error}")
+    lines.extend(
+        [
+            "",
+            "## Rule Interpretation",
+            "",
+            "- Finance/policy source-specific title or bridge text needs a source URL.",
+            (
+                "- Policy mechanism, policy effect, investment risk, market finance, "
+                "and fund-structure claims need source or needs_source=true."
+            ),
+            (
+                "- Policy/finance claims keep needs_fact_check=true even when a "
+                "source URL is attached."
+            ),
+            (
+                "- Production checklist slides are internal preparation material, "
+                "not normal broadcast claims."
+            ),
+            "- This report does not imply production readiness.",
+        ]
+    )
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return {"reviewed": reviewed, "report_path": str(report_path)}
+
+
+def revalidate_productive_finance_api_v1(
+    *,
+    run_id: str = PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID,
+    experiment_root: Path = DEFAULT_EXPERIMENT_ROOT,
+    comparison_report_path: Path = PRODUCTIVE_FINANCE_API_COMPARISON_REPORT,
+    claim_review_path: Path = PRODUCTIVE_FINANCE_API_CLAIM_HYGIENE_REVIEW,
+) -> dict[str, Any]:
+    experiment_dir = experiment_root / run_id
+    manifest_path = experiment_dir / "manifest.json"
+    old_manifest = _load_json(manifest_path) if manifest_path.exists() else {}
+    result = validate_api_experiment_raw_output(
+        raw_output_path=experiment_dir / "raw_model_output.txt",
+        input_bundle_path=experiment_dir / "input_bundle.json",
+        evidence_pack_path=experiment_dir / "evidence_pack.json",
+        experiment_dir=experiment_dir,
+        report_path=experiment_dir / "validation_report.md",
+        case_id=PRODUCTIVE_FINANCE_API_CASE_ID,
+        display_name=run_id,
+        model_source="openai_api",
+        llm_api_called=True,
+    )
+    manifest = _load_json(result.manifest_path)
+    for key in ["model", "temperature"]:
+        if key in old_manifest:
+            manifest[key] = old_manifest[key]
+    manifest["model_source"] = "openai_api"
+    manifest["api_recalled"] = False
+    manifest["ready_for_production_agent"] = False
+    manifest["ready_for_broadcast"] = False
+    _write_json(result.manifest_path, manifest)
+    comparison = write_api_manual_comparison_report(
+        api_storyline_path=experiment_dir / "parsed_storyline.json",
+        manual_storyline_path=PRODUCTIVE_FINANCE_MANUAL_ENRICHED_STORYLINE,
+        comparison_report_path=comparison_report_path,
+        api_validation_manifest=manifest,
+        case_id=PRODUCTIVE_FINANCE_API_CASE_ID,
+        manual_case_id="anny_dry_run_productive_finance_policy_v1",
+        report_title="Anny API Experiment Comparison — Productive Finance Policy",
+    )
+    review = write_productive_finance_claim_hygiene_review(
+        storyline_path=experiment_dir / "parsed_storyline.json",
+        manifest_path=result.manifest_path,
+        report_path=claim_review_path,
+    )
+    return {
+        "validation": result,
+        "manifest": manifest,
+        "comparison": comparison,
+        "review": review,
+    }
+
+
 def _claim_hygiene_recommendation(
     slide: dict[str, Any],
     detail: dict[str, Any] | None = None,
 ) -> tuple[str, str]:
-    slide = _merged_claim_review_slide(slide, detail or {})
+    detail = detail or {}
+    slide = _merged_claim_review_slide(slide, detail)
+    marker_type = detail.get("triggered_marker_type") or _triggered_claim_marker(slide)[1]
+    fact_check_kind = _fact_check_kind(slide)
+    slide_type = str(slide.get("slide_type") or "")
     if _has_source_specific_marker(slide):
         return "source_specific_title_or_bridge", "require_source_url"
+    if slide_type == "production_checklist" or "확인 리스트" in str(
+        slide.get("headline") or ""
+    ):
+        return "production_checklist_claim", "set_needs_source_true"
+    if marker_type == "policy_finance" or fact_check_kind == "policy_effect_claim":
+        return "policy_effect_claim_without_source", "set_needs_source_true"
+    if fact_check_kind == "investment_risk_claim":
+        return "investment_risk_claim_without_source", "set_needs_source_true"
     if _has_factual_claim_marker(slide):
         return "actual_unsupported_factual_claim", "require_needs_source_true"
     if _is_plain_rhetorical_question(slide):
@@ -2750,6 +2991,49 @@ def review_v6_claim_hygiene(
         report_path=report_path,
     )
     console.print("[green]Wrote anny API v6 claim hygiene review.[/green]")
+
+
+@run_app.command("review-finance-v1-claim-hygiene")
+def review_finance_v1_claim_hygiene(
+    storyline_path: Annotated[
+        Path,
+        typer.Option("--storyline-path"),
+    ] = DEFAULT_EXPERIMENT_ROOT
+    / PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID
+    / "parsed_storyline.json",
+    manifest_path: Annotated[
+        Path,
+        typer.Option("--manifest-path"),
+    ] = DEFAULT_EXPERIMENT_ROOT
+    / PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID
+    / "manifest.json",
+    report_path: Annotated[
+        Path,
+        typer.Option("--report"),
+    ] = PRODUCTIVE_FINANCE_API_CLAIM_HYGIENE_REVIEW,
+) -> None:
+    write_productive_finance_claim_hygiene_review(
+        storyline_path=storyline_path,
+        manifest_path=manifest_path,
+        report_path=report_path,
+    )
+    console.print("[green]Wrote productive finance API v1 claim hygiene review.[/green]")
+
+
+@run_app.command("revalidate-finance-v1")
+def revalidate_finance_v1(
+    run_id: Annotated[
+        str,
+        typer.Option("--run-id"),
+    ] = PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID,
+) -> None:
+    result = revalidate_productive_finance_api_v1(run_id=run_id)
+    manifest = result["manifest"]
+    console.print(
+        "[green]Revalidated productive finance API v1 without a new API call.[/green]"
+    )
+    if manifest.get("failure_modes"):
+        console.print(f"[yellow]failure_modes={manifest['failure_modes']}[/yellow]")
 
 
 if __name__ == "__main__":

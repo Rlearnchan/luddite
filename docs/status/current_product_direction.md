@@ -439,6 +439,35 @@ Milestone 1.17: Productive Finance First API Experiment
 - Keep `ready_for_api_experiment=true`, `ready_for_production_agent=false`, and
   `ready_for_broadcast=false`.
 
+Milestone 1.17.1: Productive Finance Claim Hygiene / Key Beat Patch
+
+- Add finance-specific source/claim markers for policy effect, fund structure,
+  loss-sharing, bank soundness, BIS/risk-weighted asset, market-finance view,
+  and policy-finance failure/counterpoint claims.
+- Productive finance key beats now use stable ids and anchor phrases:
+  `kb_finance_short_term_limit`, `kb_long_term_risk_capital`,
+  `kb_growth_fund_policy_finance`, `kb_finance_risk_sharing`, and
+  `kb_counterpoint_policy_risk`.
+- Revalidate the existing productive finance API v1 output without a new API
+  call and write
+  `outputs/reports/anny_api_experiment_productive_finance_policy_v1_claim_hygiene_review.md`.
+- The stricter validator now records unsupported claims and
+  policy-finance fact-check conservatism gaps more explicitly. This is expected
+  and does not imply a regression in production readiness.
+- Keep `ready_for_production_agent=false` and `ready_for_broadcast=false`.
+
+Milestone 1.17.2: Human-readable Anny Storyline Samples
+
+- Add `luddite render-anny-storyline-sample` and
+  `make render-anny-storyline-samples`.
+- Render four existing manual/API storyline JSON artifacts into Markdown under
+  `outputs/samples/anny_storylines/`.
+- The sample README explains that these are manual/API dry-run samples, not
+  production Anny output or broadcast-ready scripts.
+- Markdown samples expose sections, slides, sources, source refs,
+  `needs_source`, `needs_fact_check`, fact-check metadata, key-beat metadata,
+  and production-checklist markers for human review.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

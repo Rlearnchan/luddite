@@ -15,6 +15,9 @@ from luddite.agents.anny.compare_enriched_dry_runs import (
 )
 from luddite.agents.anny.plan_evidence_enrichment import app as plan_anny_evidence_app
 from luddite.agents.anny.prepare_dry_run import app as prepare_anny_dry_run_app
+from luddite.agents.anny.render_storyline_sample import (
+    app as render_anny_storyline_sample_app,
+)
 from luddite.agents.anny.review_fact_check import app as review_anny_fact_check_app
 from luddite.agents.anny.run_storyline import app as anny_run_storyline_app
 from luddite.agents.jibi.append_to_sheet import app as append_jibi_sheet_app
@@ -63,6 +66,7 @@ app.add_typer(compare_anny_enriched_dry_runs_app, name="compare-anny-enriched-dr
 app.add_typer(anny_api_experiment_app, name="validate-anny-api-experiment")
 app.add_typer(run_anny_api_experiment_app, name="run-anny-api-experiment")
 app.add_typer(anny_run_storyline_app, name="anny-run-storyline")
+app.add_typer(render_anny_storyline_sample_app, name="render-anny-storyline-sample")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")
 app.add_typer(append_jibi_sheet_app, name="append-jibi-sheet")

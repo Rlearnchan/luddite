@@ -14,6 +14,7 @@ from luddite.agents.anny.api_experiment_runner import (
     write_api_v1_v2_comparison_report,
     write_api_v1_v2_v3_comparison_report,
     write_api_v1_v2_v3_v4_comparison_report,
+    write_productive_finance_claim_hygiene_review,
     write_v6_claim_hygiene_review,
 )
 
@@ -22,6 +23,12 @@ INPUT_BUNDLE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR / "ai_knowledge_institution_input_bundle.json"
 )
 EVIDENCE_PACK = paths.ANNY_EVIDENCE_PACK_AI_KNOWLEDGE_JSON
+
+FINANCE_INPUT_BUNDLE_PAYLOAD = {
+    "story_seed_title": "생산적 금융과 정책자금 전환",
+    "risk_flags": ["investment_advice_risk", "policy_effect_uncertainty"],
+    "do_not_claim": ["투자 조언처럼 쓰지 말 것"],
+}
 
 
 def _run_fixture(tmp_path: Path, name: str):
@@ -49,6 +56,35 @@ def _run_modified_valid_fixture(tmp_path: Path, modifier):
         evidence_pack_path=EVIDENCE_PACK,
         experiment_dir=tmp_path / "experiments" / "modified",
         report_path=tmp_path / "reports" / "modified.md",
+    )
+
+
+def _run_modified_finance_fixture(tmp_path: Path, modifier):
+    payload = json.loads(
+        (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+            encoding="utf-8"
+        )
+    )
+    modifier(payload)
+    raw_path = tmp_path / "finance_modified_raw.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    input_bundle_path = tmp_path / "finance_input_bundle.json"
+    input_bundle_path.write_text(
+        json.dumps(FINANCE_INPUT_BUNDLE_PAYLOAD, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    evidence_pack_path = tmp_path / "finance_evidence_pack.json"
+    evidence_pack_path.write_text(
+        json.dumps({"source": {"url": "https://example.com/source"}}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=input_bundle_path,
+        evidence_pack_path=evidence_pack_path,
+        experiment_dir=tmp_path / "experiments" / "finance_modified",
+        report_path=tmp_path / "reports" / "finance_modified.md",
+        case_id="anny_api_experiment_productive_finance_policy_v1",
     )
 
 
@@ -114,6 +150,7 @@ def test_key_beat_slide_refs_must_match_slide_text(tmp_path) -> None:
 def test_required_key_beat_must_have_covers_key_beats_slide(tmp_path) -> None:
     def remove_covers(payload):
         for section in payload["sections"]:
+            section["section_title"] = "정책금융 설명"
             for slide in section["slides"]:
                 slide.pop("covers_key_beats", None)
 
@@ -764,7 +801,184 @@ def test_finance_policy_guardrail_violation_is_reported(tmp_path) -> None:
         "investment_advice_violation" in item
         for item in manifest["policy_finance_guardrail_errors"]
     )
+    assert "investment_advice_risk:매수" in manifest["do_not_claim_violations"]
     assert "policy_finance_guardrail_errors" in report
+
+
+def test_finance_covers_key_beats_unknown_value_fails(tmp_path) -> None:
+    def modifier(payload):
+        slide = payload["sections"][0]["slides"][0]
+        slide["covers_key_beats"] = ["policy_source"]
+        slide["key_beat_anchors_used"] = [
+            {"key_beat_id": "policy_source", "anchor_phrase": "정책금융"}
+        ]
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "invalid_covers_key_beat_value" in report
+
+
+def test_finance_key_beat_id_with_anchor_phrase_can_pass_anchor_rule(tmp_path) -> None:
+    def modifier(payload):
+        payload["sections"] = payload["sections"][:1]
+        payload["sections"][0]["slides"] = payload["sections"][0]["slides"][:1]
+        slide = payload["sections"][0]["slides"][0]
+        slide["headline"] = "담보 중심 금융의 한계"
+        slide["body"] = ["담보와 단기수익 중심 금융의 한계를 묻는다."]
+        slide["covers_key_beats"] = ["kb_finance_short_term_limit"]
+        slide["key_beat_anchors_used"] = [
+            {"key_beat_id": "kb_finance_short_term_limit", "anchor_phrase": "담보"}
+        ]
+        payload["key_beat_coverage"] = [
+            {
+                "key_beat_id": "kb_finance_short_term_limit",
+                "covered": True,
+                "slide_refs": [1],
+                "coverage_note": "담보 anchor present.",
+            }
+        ]
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "invalid_covers_key_beat_value" not in report
+    assert "key_beat_anchor_phrase_not_in_text" not in report
+
+
+def test_finance_key_beat_id_without_anchor_phrase_fails(tmp_path) -> None:
+    def modifier(payload):
+        slide = payload["sections"][0]["slides"][0]
+        slide["headline"] = "금융의 질문"
+        slide["body"] = ["성장 자금 배분을 묻는다."]
+        slide["covers_key_beats"] = ["kb_finance_short_term_limit"]
+        slide["key_beat_anchors_used"] = [
+            {"key_beat_id": "kb_finance_short_term_limit", "anchor_phrase": "담보"}
+        ]
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+    report = result.report_path.read_text(encoding="utf-8")
+
+    assert "key_beat_drift" in result.failure_modes
+    assert "key_beat_anchor_phrase_not_in_text" in report
+
+
+def test_policy_effect_claim_without_source_fails(tmp_path) -> None:
+    def modifier(payload):
+        slide = payload["sections"][0]["slides"][0]
+        slide["slide_type"] = "explainer"
+        slide["headline"] = "정책금융은 성장 효과를 낼 수 있는가"
+        slide["body"] = ["국민성장펀드 구조와 정책 효과를 설명한다."]
+        slide["source_urls"] = []
+        slide["needs_source"] = False
+        slide["needs_fact_check"] = True
+        slide["fact_check_kind"] = "policy_effect_claim"
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+    assert "unsupported_claim" in result.failure_modes
+    assert any(
+        item["triggered_marker_type"] == "policy_finance"
+        for item in manifest["unsupported_claim_details"]
+    )
+
+
+def test_investment_risk_claim_without_fact_check_fails(tmp_path) -> None:
+    def modifier(payload):
+        slide = payload["sections"][0]["slides"][0]
+        slide["headline"] = "금융권 부담과 손실분담"
+        slide["body"] = ["금융권 부담과 손실분담 구조를 다룬다."]
+        slide["source_urls"] = ["https://example.com/source"]
+        slide["needs_source"] = False
+        slide["needs_fact_check"] = False
+        slide["required_before_broadcast"] = True
+        slide["fact_check_kind"] = "investment_risk_claim"
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+
+    assert "policy_finance_guardrail_violation" in result.failure_modes
+
+
+def test_finance_production_checklist_is_internal_not_normal_claim(tmp_path) -> None:
+    def modifier(payload):
+        slide = payload["sections"][0]["slides"][0]
+        slide["slide_type"] = "production_checklist"
+        slide["headline"] = "정책·실무 확인 리스트"
+        slide["body"] = ["국민성장펀드 운용지침과 공모문서 확인."]
+        slide["source_urls"] = []
+        slide["needs_source"] = False
+        slide["needs_fact_check"] = True
+        slide["fact_check_kind"] = "production_checklist"
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+
+    assert "unsupported_claim" not in result.failure_modes
+
+
+def test_finance_counterpoint_or_risk_discussion_missing_is_reported(tmp_path) -> None:
+    def modifier(payload):
+        for section in payload["sections"]:
+            section["section_title"] = "정책금융 설명"
+            for slide in section["slides"]:
+                slide["slide_type"] = "explainer"
+                slide["headline"] = "정책금융 설명"
+                slide["body"] = ["국민성장펀드 구조를 설명한다."]
+                slide["source_urls"] = ["https://example.com/source"]
+                slide["needs_fact_check"] = True
+                slide["notes"] = ""
+
+    result = _run_modified_finance_fixture(tmp_path, modifier)
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+    assert "policy_finance_guardrail_violation" in result.failure_modes
+    assert "finance risk/counterpoint discussion missing" in manifest[
+        "policy_finance_guardrail_errors"
+    ]
+
+
+def test_write_productive_finance_claim_hygiene_review(tmp_path) -> None:
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    storyline_path = tmp_path / "parsed_storyline.json"
+    manifest_path = tmp_path / "manifest.json"
+    storyline_path.write_text(raw, encoding="utf-8")
+    manifest = {
+        "failure_modes": ["unsupported_claim", "key_beat_drift"],
+        "unsupported_claim_details": [
+            {
+                "slide_no": 1,
+                "headline": "국민성장펀드 구조",
+                "slide_type": "explainer",
+                "fact_check_kind": "policy_effect_claim",
+                "body_excerpt": "정책금융과 손실분담 구조",
+                "reason": "empty_source_urls_without_needs_source",
+                "source_urls_present": False,
+                "needs_source": False,
+                "needs_fact_check": False,
+                "triggered_marker": "정책금융",
+                "triggered_marker_type": "policy_finance",
+                "recommended_fix": "set_needs_source_true_and_needs_fact_check_true",
+            }
+        ],
+        "key_beat_coverage_errors": ["missing_covers_key_beats:정책금융"],
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    report = tmp_path / "claim_hygiene.md"
+
+    result = write_productive_finance_claim_hygiene_review(
+        storyline_path=storyline_path,
+        manifest_path=manifest_path,
+        report_path=report,
+    )
+
+    assert result["reviewed"][0]["classification"] == "policy_effect_claim_without_source"
+    text = report.read_text(encoding="utf-8")
+    assert "Productive Finance v1 Claim Hygiene Review" in text
+    assert "missing_covers_key_beats" in text
+    assert "ready_for_production_agent: false" in text
 
 
 def test_write_api_v1_v2_comparison_report(tmp_path) -> None:

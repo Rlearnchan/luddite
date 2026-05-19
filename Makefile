@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-api-experiment-finance-v1 eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -155,6 +155,12 @@ compare-anny-api-experiment-v1-v2-v3-v4-v5-v6-v7-v8-v9:
 review-anny-api-v6-claim-hygiene:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment review-v6-claim-hygiene
 
+review-anny-api-finance-v1-claim-hygiene:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment review-finance-v1-claim-hygiene
+
+revalidate-anny-api-finance-v1:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment revalidate-finance-v1
+
 eval-piti-deck-plan:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite eval-piti-deck-plan
 
@@ -201,6 +207,9 @@ compare-anny-enriched-dry-runs:
 
 anny-run-storyline:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite anny-run-storyline
+
+render-anny-storyline-samples:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-anny-storyline-sample
 
 render-daily-digest:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-daily-digest
