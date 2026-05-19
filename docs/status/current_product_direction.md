@@ -704,6 +704,32 @@ Milestone 1.19.6: Piti Reference Layout Grammar Patch
   chart generation, Google Slides integration, LLM/API calls, and final
   Syukaworld visual fidelity claims.
 
+Milestone 1.19.7: Piti Proof Object Layout Scaffold
+
+- Shift styled PPTX drafts from text-summary cards toward reference-style
+  proof-object slides.
+- Add an internal `proof_object` model derived from each slide's `visual_plan`,
+  layout type, and slide type. Supported proof object types include image,
+  chart, table, article quote, screenshot, diagram, logo, map, person photo,
+  and generated-image candidate.
+- Reserve screen areas for proof objects without collecting or inserting real
+  images. Image/screenshot/diagram/article-quote proof objects use a left-half
+  proof area with right-side interpretation text, while chart/table proof
+  objects use a large center chart/table skeleton.
+- Keep on-screen proof labels compact (`[이미지]`, `[차트]`, `[표]`,
+  `[기사 캡처]`, `[도식]`) and preserve the full visual plan, proof-object
+  metadata, sources, and fact-check flags in speaker notes.
+- Add render-report metrics for proof object counts, type distribution,
+  reserved proof areas, text-only slides, dense text-only slides,
+  chart/table skeletons, article-quote skeletons, image-left layouts, and
+  proof/text overlap.
+- Styled drafts remain scaffold outputs only:
+  `ready_for_ppt_generation=true` for review,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: image auto collection/insertion, actual chart generation,
+  Google Slides integration, production Piti agent, LLM/API calls, and final
+  Syukaworld visual fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

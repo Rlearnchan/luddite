@@ -38,6 +38,29 @@ belongs in speaker notes.
 - Speaker notes: preserve long explanation, source URLs, image URLs,
   fact-check flags, visual plan, copyright risk, and overflow body lines.
 
+## Proof Object Rules v0.1
+
+- A styled slide should usually have a proof object when the storyline points
+  to an image, chart, table, article quote, screenshot, diagram, logo, map,
+  person photo, or generated-image candidate.
+- `visual_plan` is first mapped into a `proof_object`; the renderer then
+  reserves a screen area for that proof object and keeps the detailed
+  description in speaker notes.
+- Proof object labels on screen stay short: `[이미지]`, `[차트]`, `[표]`,
+  `[기사 캡처]`, `[도식]`, or similar. Long placeholder descriptions belong in
+  notes.
+- Image, logo, person-photo, screenshot, generated-image, article-quote, and
+  diagram proof objects prefer a left-half proof area with interpretation text
+  on the right.
+- Chart and table proof objects use a large center chart/table area. The body
+  text should not compete with the chart; detailed explanation moves to notes.
+- Article quote slides may show a short source name or host on screen, but the
+  source URL remains in speaker notes.
+- Text-only slides remain allowed, but they should be deliberate. If a slide
+  has no proof object, screen text should be especially short.
+- Proof object and text regions must not overlap. Styled drafts should fail the
+  render hygiene check if an overlap is detected.
+
 ## Non-goals
 
 - This is not a production Piti agent.

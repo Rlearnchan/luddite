@@ -225,6 +225,7 @@ def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
     assert result["adaptive_font_applied"] is True
     assert result["visual_placeholder_shortened"] is True
     assert result["slides_with_text_placeholder_overlap"] == []
+    assert result["proof_text_overlap_count"] == 0
     assert result["headline_red_count"] > 0
     assert result["body_black_count"] > 0
     assert result["parse_back_slide_count"] == 4
@@ -232,6 +233,7 @@ def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
     notes_text = "\n".join(slide["notes"] for slide in parsed["slides"])
     assert "style_profile_loaded: True" in notes_text
     assert "visual_plan" in notes_text
+    assert "proof_object" in notes_text
     visible_text = "\n".join(slide["visible_text"] for slide in parsed["slides"])
     assert "diagram candidate" not in visible_text
     assert "draft skeleton" not in visible_text
@@ -311,6 +313,8 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     data_run = _first_run_for_text(prs, "테슬라 264")
     source_run = _first_run_for_text(prs, "(출처:")
     assert result["chart_table_style_applied_count"] == 1
+    assert result["chart_table_skeleton_count"] == 1
+    assert result["proof_object_type_counts"] == {"chart": 1}
     assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
     assert title_run.font.size.pt == 28
     assert title_run.font.bold is True
@@ -363,5 +367,89 @@ def test_manual_placeholder_hidden_and_image_left_counted(tmp_path: Path) -> Non
 
     assert result["manual_placeholder_hidden_count"] == 1
     assert result["image_left_layout_count"] == 1
+    assert result["proof_object_type_counts"] == {"screenshot": 1}
     assert "[수동" not in visible_text
     assert "manual_placeholder_hidden: True" in notes_text
+    assert "proof_object_type: screenshot" in notes_text
+
+
+def test_article_quote_proof_object_reserves_left_area(tmp_path: Path) -> None:
+    output_path = tmp_path / "article_quote.pptx"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    slide = {
+        "slide_no": 1,
+        "layout_type": "quote",
+        "slide_type": "quote",
+        "headline": "기사 인용으로 보여준다",
+        "body": ["They collectively held a record $160bn", "한국어 해석은 빨간색"],
+        "source_urls": ["https://example.com/article"],
+        "image_urls": [],
+        "speaker_notes": "article quote notes",
+        "visual_plan": {"kind": "manual", "description": "article quote proof"},
+    }
+
+    result = render_pptx.render_deck_plan_to_pptx(
+        _minimal_deck(slide),
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+    parsed = parse_presentation(output_path)
+    visible_text = "\n".join(item["visible_text"] for item in parsed["slides"])
+    notes_text = "\n".join(item["notes"] for item in parsed["slides"])
+
+    assert result["article_quote_skeleton_count"] == 1
+    assert result["proof_object_type_counts"] == {"article_quote": 1}
+    assert result["proof_object_area_reserved_count"] == 1
+    assert result["proof_text_overlap_count"] == 0
+    assert "[기사 인용]" in visible_text
+    assert "example.com" in visible_text
+    assert "proof_object_type: article_quote" in notes_text
+
+
+def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None:
+    output_path = tmp_path / "mixed.pptx"
+    report_path = tmp_path / "report.md"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    slides = [
+        {
+            "slide_no": 1,
+            "layout_type": "headline_body",
+            "slide_type": "explainer",
+            "headline": "텍스트만 있는 장표",
+            "body": ["짧은 해석만 남긴다"],
+            "source_urls": [],
+            "image_urls": [],
+            "speaker_notes": "text only",
+            "visual_plan": {"kind": "none"},
+        },
+        {
+            "slide_no": 2,
+            "layout_type": "question",
+            "slide_type": "bridge",
+            "headline": "도식이 필요한 장표",
+            "body": ["오른쪽에 해석을 둔다"],
+            "source_urls": [],
+            "image_urls": [],
+            "speaker_notes": "diagram proof",
+            "visual_plan": {"kind": "diagram"},
+        },
+    ]
+    deck = {"deck_id": "proof_metrics", "sections": [{"slides": slides}], "slides": slides}
+
+    result = render_pptx.render_deck_plan_to_pptx(
+        deck,
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+    render_pptx.write_render_report(report_path, [result])
+    report_text = report_path.read_text(encoding="utf-8")
+
+    assert result["proof_object_slide_count"] == 1
+    assert result["proof_object_type_counts"] == {"diagram": 1}
+    assert result["text_only_slide_count"] == 1
+    assert result["proof_object_required_but_missing_count"] == 0
+    assert result["image_left_layout_count"] == 1
+    assert "proof_object_slide_count" in report_text
+    assert "proof_object_type_counts" in report_text

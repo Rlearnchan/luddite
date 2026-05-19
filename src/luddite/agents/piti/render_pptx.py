@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -70,6 +71,30 @@ class Rect:
         return self.top + self.height
 
 
+@dataclass(frozen=True)
+class ProofObject:
+    type: str
+    required: bool
+    screen_position: str
+    display_label: str
+    source_url: str | None
+    image_url: str | None
+    copyright_risk: bool
+    manual_insert_required: bool
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "type": self.type,
+            "required": self.required,
+            "screen_position": self.screen_position,
+            "display_label": self.display_label,
+            "source_url": self.source_url,
+            "image_url": self.image_url,
+            "copyright_risk": self.copyright_risk,
+            "manual_insert_required": self.manual_insert_required,
+        }
+
+
 DEFAULT_CASES = [
     PptxRenderCase(
         deck_plan_path=paths.PITI_DECK_PLANS_DIR / "ai_knowledge_institution_deck_plan.json",
@@ -116,6 +141,28 @@ SYUKA_RED = RGBColor(255, 0, 0)
 SCREEN_BLACK = RGBColor(0, 0, 0)
 CHART_DARK = RGBColor(55, 55, 55)
 CONTENT_HEADLINE_BOX = (0.626, 0.39, 12.24, 0.57)
+PROOF_LABELS = {
+    "none": "",
+    "image": "[이미지]",
+    "chart": "[차트]",
+    "table": "[표]",
+    "article_quote": "[기사 인용]",
+    "logo": "[로고]",
+    "screenshot": "[기사 캡처]",
+    "diagram": "[도식]",
+    "map": "[지도]",
+    "person_photo": "[인물 사진]",
+    "generated_image_candidate": "[AI 이미지]",
+}
+LEFT_PROOF_TYPES = {
+    "image",
+    "logo",
+    "person_photo",
+    "screenshot",
+    "diagram",
+    "generated_image_candidate",
+    "article_quote",
+}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -210,31 +257,78 @@ def _layout_color(style: PptxStyle, layout_type: str, fallback: RGBColor) -> RGB
     return _rgb_from_hex(pattern.get("font_color_top"), fallback)
 
 
-def _has_visual(slide_plan: dict[str, Any]) -> bool:
-    visual_plan = slide_plan.get("visual_plan") or {}
-    return (visual_plan.get("kind") or "none") != "none"
-
-
 def _visual_kind(slide_plan: dict[str, Any]) -> str:
     visual_plan = slide_plan.get("visual_plan") or {}
     return str(visual_plan.get("kind") or "none")
 
 
-def _screen_placeholder_visible(slide_plan: dict[str, Any], style: PptxStyle | None) -> bool:
+def _first_url(slide_plan: dict[str, Any], key: str) -> str | None:
+    for url in _as_list(slide_plan.get(key)):
+        text = str(url).strip()
+        if text:
+            return text
+    return None
+
+
+def _proof_object(slide_plan: dict[str, Any]) -> ProofObject:
+    visual_plan = slide_plan.get("visual_plan") or {}
     kind = _visual_kind(slide_plan)
-    if kind == "none":
+    layout_type = str(slide_plan.get("layout_type") or "headline_body")
+    slide_type = str(slide_plan.get("slide_type") or "")
+    proof_type = "none"
+
+    if _is_chart_table_slide(slide_plan) or kind == "chart_candidate":
+        proof_type = "table" if layout_type in {"table", "data_table"} else "chart"
+    elif kind == "diagram":
+        proof_type = "diagram"
+    elif kind == "screenshot_candidate":
+        proof_type = "screenshot"
+    elif kind in {"photo_candidate", "image_placeholder"}:
+        proof_type = "image"
+    elif kind == "ai_image_prompt":
+        proof_type = "generated_image_candidate"
+    elif kind == "manual":
+        if layout_type == "quote" or slide_type == "quote":
+            proof_type = "article_quote"
+        elif layout_type in {"image_placeholder", "image_heavy"}:
+            proof_type = "image"
+        elif layout_type in {"chart_placeholder", "table", "data_table"}:
+            proof_type = "chart"
+    elif layout_type == "quote" or slide_type == "quote":
+        proof_type = "article_quote"
+
+    screen_position = "none"
+    if proof_type in {"chart", "table"}:
+        screen_position = "full_width_chart"
+    elif proof_type in LEFT_PROOF_TYPES:
+        screen_position = "left_half"
+    elif proof_type != "none":
+        screen_position = "center_large"
+
+    source_url = _first_url(slide_plan, "source_urls")
+    image_url = _first_url(slide_plan, "image_urls")
+    required = proof_type != "none"
+    return ProofObject(
+        type=proof_type,
+        required=required,
+        screen_position=screen_position,
+        display_label=PROOF_LABELS.get(proof_type, "[증거물]"),
+        source_url=source_url,
+        image_url=image_url,
+        copyright_risk=bool(visual_plan.get("copyright_risk")),
+        manual_insert_required=bool(required and (kind == "manual" or not image_url)),
+    )
+
+
+def _has_visual(slide_plan: dict[str, Any]) -> bool:
+    return _proof_object(slide_plan).type != "none"
+
+
+def _screen_placeholder_visible(slide_plan: dict[str, Any], style: PptxStyle | None) -> bool:
+    proof = _proof_object(slide_plan)
+    if proof.type in {"none", "chart", "table"}:
         return False
-    if style and style.loaded and kind == "manual":
-        return False
-    return kind in {
-        "photo_candidate",
-        "chart_candidate",
-        "diagram",
-        "screenshot_candidate",
-        "ai_image_prompt",
-        "image_placeholder",
-        "manual",
-    }
+    return True
 
 
 def _has_screen_visual(slide_plan: dict[str, Any], style: PptxStyle | None) -> bool:
@@ -257,12 +351,7 @@ def _is_chart_table_slide(slide_plan: dict[str, Any]) -> bool:
 def _prefers_left_image(slide_plan: dict[str, Any], style: PptxStyle | None) -> bool:
     if not _screen_placeholder_visible(slide_plan, style):
         return False
-    kind = _visual_kind(slide_plan)
-    return slide_plan.get("layout_type") in {"image_placeholder", "image_heavy"} or kind in {
-        "photo_candidate",
-        "screenshot_candidate",
-        "image_placeholder",
-    }
+    return _proof_object(slide_plan).screen_position == "left_half"
 
 
 def _is_english_line(line: str) -> bool:
@@ -463,21 +552,10 @@ def _placeholder(
     *,
     style: PptxStyle | None = None,
 ) -> None:
-    visual_plan = slide_plan.get("visual_plan") or {}
-    kind = visual_plan.get("kind") or "manual"
-    if kind == "none":
+    proof = _proof_object(slide_plan)
+    if proof.type == "none":
         return
-    if style and style.loaded and kind == "manual":
-        return
-    label_by_kind = {
-        "photo_candidate": "[이미지 후보]",
-        "chart_candidate": "[차트 후보]",
-        "diagram": "[도식 후보]",
-        "screenshot_candidate": "[화면 후보]",
-        "ai_image_prompt": "[AI 이미지]",
-        "manual": "[수동 삽입]",
-    }
-    label = label_by_kind.get(kind, "[수동 삽입 필요]")
+    label = proof.display_label
     shape = slide.shapes.add_shape(
         1,
         Inches(left),
@@ -645,19 +723,30 @@ def _render_big_headline(slide: Any, slide_plan: dict[str, Any], style: PptxStyl
     )
     body = _screen_body_lines(slide_plan)
     has_visual = _has_screen_visual(slide_plan, style)
-    body_width = 7.4 if style.loaded and has_visual else 10.8
+    left_image = _prefers_left_image(slide_plan, style)
+    body_left = 6.55 if style.loaded and left_image else 0.78
+    body_top = 2.05 if style.loaded else max(top + height + 0.35, 2.8)
+    if style.loaded and left_image:
+        body_width = 5.8
+    elif style.loaded and has_visual:
+        body_width = 7.4
+    else:
+        body_width = 10.8
     _body_box(
         slide,
         body,
-        0.78,
-        2.05 if style.loaded else max(top + height + 0.35, 2.8),
+        body_left,
+        body_top,
         body_width,
         2.9,
         font_size=_body_font_size(style, body, 24, has_visual=has_visual),
         color=SCREEN_BLACK if style.loaded else THEME["ink"],
         style=style,
     )
-    _placeholder(slide, slide_plan, 9.25, 4.8, 2.8, 1.2, style=style)
+    if style.loaded and left_image:
+        _placeholder(slide, slide_plan, 0.78, 1.55, 5.35, 4.5, style=style)
+    else:
+        _placeholder(slide, slide_plan, 9.25, 4.8, 2.8, 1.2, style=style)
 
 
 def _render_headline_body(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
@@ -740,6 +829,22 @@ def _render_quote(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
         color=SYUKA_RED if style.loaded else THEME["ink"],
         style=style,
     )
+    proof = _proof_object(slide_plan)
+    if style.loaded and proof.type == "article_quote" and proof.source_url:
+        host = urlparse(proof.source_url).netloc or proof.source_url
+        _textbox(
+            slide,
+            9.1,
+            0.68,
+            3.25,
+            0.32,
+            host,
+            font_size=16,
+            bold=True,
+            color=SCREEN_BLACK,
+            align=PP_ALIGN.RIGHT,
+            style=style,
+        )
     body = _screen_body_lines(slide_plan)
     line_colors = _quote_line_colors(body) if _is_bilingual_quote_slide(slide_plan) else None
     _body_box(
@@ -772,14 +877,17 @@ def _render_question(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -
         style=style,
     )
     body = _screen_body_lines(slide_plan)
+    left_image = _prefers_left_image(slide_plan, style)
+    if style.loaded and left_image:
+        _placeholder(slide, slide_plan, 0.78, 1.55, 5.35, 4.5, style=style)
     _body_box(
         slide,
         body,
-        1.55 if not style.loaded else 0.78,
+        6.55 if style.loaded and left_image else (1.55 if not style.loaded else 0.78),
         3.2 if not style.loaded else 2.3,
-        10.2 if not style.loaded else 11.65,
+        5.8 if style.loaded and left_image else (10.2 if not style.loaded else 11.65),
         2.2 if not style.loaded else 3.2,
-        font_size=_body_font_size(style, body, 23, has_visual=False),
+        font_size=_body_font_size(style, body, 23, has_visual=left_image),
         color=SCREEN_BLACK if style.loaded else THEME["ink"],
         style=style,
     )
@@ -801,6 +909,20 @@ def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle)
         style=style,
     )
     body = _screen_body_lines(slide_plan)
+    if style.loaded and _has_screen_visual(slide_plan, style):
+        _placeholder(slide, slide_plan, 0.78, 1.55, 5.35, 4.5, style=style)
+        _body_box(
+            slide,
+            body,
+            6.55,
+            1.65,
+            5.8,
+            3.65,
+            font_size=_body_font_size(style, body, 19, has_visual=True),
+            color=SCREEN_BLACK,
+            style=style,
+        )
+        return
     midpoint = max(1, (len(body) + 1) // 2)
     left_body = body[:midpoint]
     right_body = body[midpoint:]
@@ -993,7 +1115,9 @@ def _render_checklist(
 def _render_slide(prs: Presentation, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     layout_type = slide_plan.get("layout_type") or "headline_body"
-    if layout_type == "title":
+    if style.loaded and _is_chart_table_slide(slide_plan):
+        _render_chart_table_layout(slide, slide_plan, style)
+    elif layout_type == "title":
         _render_title(slide, slide_plan, style)
     elif layout_type == "section_title":
         _render_section_title(slide, slide_plan, style)
@@ -1026,6 +1150,7 @@ def _note_json(value: Any) -> str:
 
 def _set_notes(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     visual_plan = slide_plan.get("visual_plan") or {}
+    proof = _proof_object(slide_plan)
     copyright_risk = bool(visual_plan.get("copyright_risk"))
     lines = [
         f"slide_no: {slide_plan.get('slide_no')}",
@@ -1035,6 +1160,9 @@ def _set_notes(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None
         f"applied_font_family: {style.font_family}",
         f"applied_fallback_font: {style.fallback_font}",
         f"source_slide_refs: {_note_json(_as_list(slide_plan.get('source_slide_refs')))}",
+        f"proof_object_type: {proof.type}",
+        f"proof_object_required: {proof.required}",
+        f"proof_object_screen_position: {proof.screen_position}",
         f"manual_placeholder_hidden: {style.loaded and _visual_kind(slide_plan) == 'manual'}",
         "",
         "screen_body_lines:",
@@ -1058,6 +1186,9 @@ def _set_notes(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None
             "",
             "visual_plan:",
             _note_json(visual_plan),
+            "",
+            "proof_object:",
+            _note_json(proof.as_dict()),
             "",
             "edit_notes:",
         ]
@@ -1202,17 +1333,47 @@ def _planned_text_placeholder_rects(
     layout_type = slide.get("layout_type") or "headline_body"
     if _is_chart_table_slide(slide):
         return None
+    if layout_type == "quote":
+        left, top, width, _height = _layout_box(style, "quote", (0.8, 1.0, 11.7, 4.9))
+        if style.loaded and _prefers_left_image(slide, style):
+            return (
+                Rect(6.35, top + 0.8, 6.1, 2.7),
+                Rect(0.75, 1.65, 5.25, 4.15),
+            )
+        return Rect(left, 2.05 if style.loaded else top, min(10.6, width), 2.7), Rect(
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+    if layout_type in {"question", "closing_question", "comparison"} and _prefers_left_image(
+        slide,
+        style,
+    ):
+        return Rect(6.55, 2.3 if layout_type != "comparison" else 1.65, 5.8, 3.2), Rect(
+            0.78,
+            1.55,
+            5.35,
+            4.5,
+        )
     if layout_type == "big_headline":
         left, top, width, height = _layout_box(style, "big_headline", (0.7, 1.0, 11.8, 1.4))
+        if style.loaded and _prefers_left_image(slide, style):
+            return (
+                Rect(6.55, 2.05, 5.8, 2.9),
+                Rect(0.78, 1.55, 5.35, 4.5),
+            )
         body_width = 7.4 if style.loaded else 10.8
         return (
             Rect(0.78, 2.05 if style.loaded else max(top + height + 0.35, 2.8), body_width, 2.9),
             Rect(9.25, 4.8, 2.8, 1.2),
         )
     if layout_type in {"image_placeholder", "timeline"}:
-        profile_layout = "chart" if layout_type == "chart_placeholder" else "image_heavy"
+        profile_layout = "image_heavy"
         left, top, width, height = _layout_box(style, profile_layout, (1.15, 1.65, 11.0, 3.0))
-        height = min(max(1.8, height), 3.0) if style.loaded else max(2.0, height)
+        if style.loaded:
+            return Rect(6.55, 1.65, 5.8, 3.65), Rect(0.78, 1.55, 5.35, 4.5)
+        height = max(2.0, height)
         return (
             Rect(left, min(top + height + 0.35, 5.4), min(11.0, width), 1.35),
             Rect(left, top, width, max(1.8, height)),
@@ -1304,6 +1465,64 @@ def _manual_placeholder_hidden_count(deck_plan: dict[str, Any], style: PptxStyle
     return sum(1 for slide in deck_plan.get("slides", []) if _visual_kind(slide) == "manual")
 
 
+def _proof_objects(deck_plan: dict[str, Any]) -> list[ProofObject]:
+    return [_proof_object(slide) for slide in deck_plan.get("slides", [])]
+
+
+def _proof_object_type_counts(deck_plan: dict[str, Any]) -> dict[str, int]:
+    return dict(
+        Counter(proof.type for proof in _proof_objects(deck_plan) if proof.type != "none")
+    )
+
+
+def _proof_object_slide_count(deck_plan: dict[str, Any]) -> int:
+    return sum(1 for proof in _proof_objects(deck_plan) if proof.type != "none")
+
+
+def _proof_object_area_reserved(slide: dict[str, Any], style: PptxStyle) -> bool:
+    proof = _proof_object(slide)
+    if proof.type == "none":
+        return False
+    if proof.type in {"chart", "table"}:
+        return True
+    return _screen_placeholder_visible(slide, style)
+
+
+def _proof_object_area_reserved_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return sum(
+        1 for slide in deck_plan.get("slides", []) if _proof_object_area_reserved(slide, style)
+    )
+
+
+def _proof_object_required_but_missing_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if _proof_object(slide).required and not _proof_object_area_reserved(slide, style)
+    )
+
+
+def _text_only_slide_count(deck_plan: dict[str, Any]) -> int:
+    return sum(1 for proof in _proof_objects(deck_plan) if proof.type == "none")
+
+
+def _text_only_dense_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if _proof_object(slide).type == "none"
+        and _is_visually_dense(slide, _planned_body_font_size(slide, style))
+    )
+
+
+def _chart_table_skeleton_count(deck_plan: dict[str, Any]) -> int:
+    return sum(1 for proof in _proof_objects(deck_plan) if proof.type in {"chart", "table"})
+
+
+def _article_quote_skeleton_count(deck_plan: dict[str, Any]) -> int:
+    return sum(1 for proof in _proof_objects(deck_plan) if proof.type == "article_quote")
+
+
 def _chart_table_style_applied_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
     if not style.loaded:
         return 0
@@ -1313,7 +1532,12 @@ def _chart_table_style_applied_count(deck_plan: dict[str, Any], style: PptxStyle
 def _image_left_layout_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
     if not style.loaded:
         return 0
-    return sum(1 for slide in deck_plan.get("slides", []) if _prefers_left_image(slide, style))
+    return sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if _proof_object(slide).screen_position == "left_half"
+        and _proof_object_area_reserved(slide, style)
+    )
 
 
 def _screen_footer_hidden_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
@@ -1419,6 +1643,7 @@ def render_result(
     screen_overflow = _screen_body_overflow_slides(deck_plan)
     split_recommended = _split_recommended_slides(deck_plan)
     slides_using_20pt = _slides_using_20pt(deck_plan, style)
+    proof_type_counts = _proof_object_type_counts(deck_plan)
     warnings = list(validation.get("warnings", []))
     for warning in overlap_warnings:
         warnings.append(
@@ -1456,6 +1681,18 @@ def render_result(
         ),
         "image_left_layout_count": _image_left_layout_count(deck_plan, style),
         "manual_placeholder_hidden_count": _manual_placeholder_hidden_count(deck_plan, style),
+        "proof_object_slide_count": _proof_object_slide_count(deck_plan),
+        "proof_object_type_counts": proof_type_counts,
+        "proof_object_required_but_missing_count": _proof_object_required_but_missing_count(
+            deck_plan,
+            style,
+        ),
+        "proof_object_area_reserved_count": _proof_object_area_reserved_count(deck_plan, style),
+        "text_only_slide_count": _text_only_slide_count(deck_plan),
+        "text_only_dense_count": _text_only_dense_count(deck_plan, style),
+        "chart_table_skeleton_count": _chart_table_skeleton_count(deck_plan),
+        "article_quote_skeleton_count": _article_quote_skeleton_count(deck_plan),
+        "proof_text_overlap_count": len(overlap_warnings),
         "screen_footer_hidden_count": _screen_footer_hidden_count(deck_plan, style),
         "screen_body_overflow_count": len(screen_overflow),
         "screen_body_overflow_slides": screen_overflow,
@@ -1517,6 +1754,8 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "bold; source 20pt underline",
         "- Manual visual placeholders: hidden from styled screens and preserved "
         "in speaker notes",
+        "- Proof object scaffold: reserves screen areas for chart/table, article "
+        "quote, image, screenshot, and diagram evidence objects without inserting assets",
         "- Styled screen footers: hidden from slides and preserved in speaker notes/report",
         "- Adaptive body font: enabled only as overflow protection for styled drafts",
         "- Visual placeholder text: shortened for styled drafts",
@@ -1530,17 +1769,21 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "",
         (
             "| Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | "
-            "Visuals | Dense | Overflow | Split | 20pt | Manual Hidden | Footer Hidden | "
-            "Text/Visual Overlap | Missing Notes | Overlap | PPTX | Passed |"
+            "Visuals | Proof Objects | Text Only | Dense | Overflow | Split | 20pt | "
+            "Manual Hidden | Footer Hidden | Proof/Text Overlap | Missing Notes | Overlap | "
+            "PPTX | Passed |"
         ),
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|",
+        (
+            "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"
+            "---:|---:|---:|---:|---:|---:|---|---|"
+        ),
     ]
     for result in results:
         lines.append(
             "| {deck} | {styled} | {slides} | {sections} | {appendix} | {needs_source} | "
-            "{needs_fact_check} | {visuals} | {dense} | {overflow} | {split} | "
-            "{twenty_pt} | {manual_hidden} | {footer_hidden} | {text_visual_overlap} | "
-            "{missing_notes} | {overlap} | {pptx} | {passed} |".format(
+            "{needs_fact_check} | {visuals} | {proof_objects} | {text_only} | {dense} | "
+            "{overflow} | {split} | {twenty_pt} | {manual_hidden} | {footer_hidden} | "
+            "{proof_text_overlap} | {missing_notes} | {overlap} | {pptx} | {passed} |".format(
                 deck=result.get("deck_id"),
                 styled="yes" if result.get("style_profile_loaded") else "no",
                 slides=result.get("slide_count"),
@@ -1549,13 +1792,15 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 needs_source=result.get("needs_source_count"),
                 needs_fact_check=result.get("needs_fact_check_count"),
                 visuals=result.get("visual_placeholder_count"),
+                proof_objects=result.get("proof_object_slide_count"),
+                text_only=result.get("text_only_slide_count"),
                 dense=result.get("visually_dense_slide_count"),
                 overflow=result.get("screen_body_overflow_count"),
                 split=result.get("split_recommended_slide_count"),
                 twenty_pt=len(result.get("slides_using_20pt", [])),
                 manual_hidden=result.get("manual_placeholder_hidden_count"),
                 footer_hidden=result.get("screen_footer_hidden_count"),
-                text_visual_overlap=len(result.get("slides_with_text_placeholder_overlap", [])),
+                proof_text_overlap=result.get("proof_text_overlap_count"),
                 missing_notes=len(result.get("slides_with_missing_notes", [])),
                 overlap=result.get("source_image_overlap_count"),
                 pptx=result.get("output_pptx_path"),
@@ -1587,6 +1832,18 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"- image_left_layout_count: {result.get('image_left_layout_count')}",
                 "- manual_placeholder_hidden_count: "
                 f"{result.get('manual_placeholder_hidden_count')}",
+                f"- proof_object_slide_count: {result.get('proof_object_slide_count')}",
+                f"- proof_object_type_counts: {result.get('proof_object_type_counts')}",
+                "- proof_object_required_but_missing_count: "
+                f"{result.get('proof_object_required_but_missing_count')}",
+                "- proof_object_area_reserved_count: "
+                f"{result.get('proof_object_area_reserved_count')}",
+                f"- text_only_slide_count: {result.get('text_only_slide_count')}",
+                f"- text_only_dense_count: {result.get('text_only_dense_count')}",
+                f"- chart_table_skeleton_count: {result.get('chart_table_skeleton_count')}",
+                "- article_quote_skeleton_count: "
+                f"{result.get('article_quote_skeleton_count')}",
+                f"- proof_text_overlap_count: {result.get('proof_text_overlap_count')}",
                 f"- screen_footer_hidden_count: {result.get('screen_footer_hidden_count')}",
                 f"- screen_body_overflow_count: {result.get('screen_body_overflow_count')}",
                 f"- screen_body_overflow_slides: {result.get('screen_body_overflow_slides')}",
