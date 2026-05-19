@@ -421,6 +421,24 @@ Milestone 1.16.1: API Experiment Summary / Production Gate Decision
   production anny agent. The goal is to check the same contract against a
   higher-risk policy/finance topic.
 
+Milestone 1.17: Productive Finance First API Experiment
+
+- Run one controlled API experiment for `생산적 금융과 정책자금 전환`.
+- This remains a single API experiment, not a production anny agent and not a
+  batch runner.
+- Output artifacts are stored under
+  `outputs/model_dry_runs/anny_api_experiments/anny_api_experiment_productive_finance_policy_v1/`.
+- Comparison report:
+  `outputs/reports/anny_api_experiment_productive_finance_policy_v1_comparison.md`.
+- First result: schema-valid, source hallucination 0, do-not-claim violations 0,
+  counterpoint included, and policy/finance guardrail errors 0.
+- Remaining failures are `unsupported_claim` and `key_beat_drift`.
+- Interpretation: policy/investment safety guardrails held, but finance-specific
+  source hygiene and stable key-beat anchor alignment need another prompt or
+  validator patch before any production step.
+- Keep `ready_for_api_experiment=true`, `ready_for_production_agent=false`, and
+  `ready_for_broadcast=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

@@ -689,18 +689,82 @@ def test_run_api_experiment_loads_gitignored_env_file(tmp_path, monkeypatch) -> 
 def test_build_api_experiment_prompt_contains_allowed_urls_and_schema() -> None:
     input_bundle = {"candidate_articles": [{"url": "https://example.com/a"}]}
     evidence_pack = {"primary_article": {"url": "https://example.com/b"}}
+    case = {
+        "expected_key_beats": [
+            {
+                "id": "kb_finance",
+                "label": "생산적 금융",
+                "anchor_phrases": ["정책금융"],
+            }
+        ],
+        "evaluation_notes": ["투자 조언처럼 쓰지 말 것"],
+    }
     prompt = build_api_experiment_prompt(
         input_bundle=input_bundle,
         evidence_pack=evidence_pack,
         prompt_text="base prompt",
         schema={"title": "Schema"},
         allowed_urls={"https://example.com/a", "https://example.com/b"},
+        case=case,
     )
 
     assert "base prompt" in prompt
     assert "https://example.com/a" in prompt
     assert "https://example.com/b" in prompt
     assert "Output Schema JSON" in prompt
+    assert "kb_finance" in prompt
+    assert "투자 조언처럼 쓰지 말 것" in prompt
+
+
+def test_finance_policy_guardrail_violation_is_reported(tmp_path) -> None:
+    payload = json.loads(
+        (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["sections"][0]["slides"][0]["headline"] = "추천 종목처럼 매수 의견을 제시"
+    raw_path = tmp_path / "finance_raw.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    input_bundle_path = tmp_path / "finance_input_bundle.json"
+    input_bundle_path.write_text(
+        json.dumps(
+            {
+                "story_seed_title": "생산적 금융과 정책자금 전환",
+                "risk_flags": ["investment_advice_risk", "policy_effect_uncertainty"],
+                "do_not_claim": ["투자 조언처럼 쓰지 말 것"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    evidence_pack_path = tmp_path / "finance_evidence_pack.json"
+    evidence_pack_path.write_text(
+        json.dumps(
+            {
+                "source": {"url": "https://www.bbc.com/news/articles/c2023l60370o"}
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=input_bundle_path,
+        evidence_pack_path=evidence_pack_path,
+        experiment_dir=tmp_path / "experiments" / "finance",
+        report_path=tmp_path / "reports" / "finance.md",
+        case_id="anny_api_experiment_productive_finance_policy_v1",
+    )
+
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    report = result.report_path.read_text(encoding="utf-8")
+    assert "policy_finance_guardrail_violation" in result.failure_modes
+    assert any(
+        "investment_advice_violation" in item
+        for item in manifest["policy_finance_guardrail_errors"]
+    )
+    assert "policy_finance_guardrail_errors" in report
 
 
 def test_write_api_v1_v2_comparison_report(tmp_path) -> None:

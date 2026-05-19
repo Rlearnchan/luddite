@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-api-experiment-finance-v1 eval-piti-deck-plan import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -114,6 +114,18 @@ run-anny-api-experiment-v8:
 run-anny-api-experiment-v9:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment \
 		--run-id anny_api_experiment_ai_knowledge_institution_v9 \
+		--timeout 300
+
+run-anny-api-experiment-finance-v1:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment \
+		--run-id anny_api_experiment_productive_finance_policy_v1 \
+		--case-id anny_api_experiment_productive_finance_policy_v1 \
+		--input-bundle outputs/model_dry_runs/anny_storyline/productive_finance_policy_input_bundle.json \
+		--evidence-pack data/candidates/anny_evidence_pack_productive_finance_policy.json \
+		--manual-storyline outputs/model_dry_runs/anny_storyline/productive_finance_policy_gpt_pro_storyline_enriched.json \
+		--manual-case-id anny_dry_run_productive_finance_policy_v1 \
+		--comparison-report outputs/reports/anny_api_experiment_productive_finance_policy_v1_comparison.md \
+		--report-title "Anny API Experiment Comparison — Productive Finance Policy" \
 		--timeout 300
 
 compare-anny-api-experiment-v1-v2:

@@ -1,0 +1,155 @@
+{
+  "pack_id": "evidence_pack_productive_finance_policy",
+  "story_seed_title": "생산적 금융과 정책자금 전환",
+  "bundle_id": "anny_bundle_5c95ee31f95d",
+  "case_id": "anny_dry_run_productive_finance_policy_v1",
+  "status": "evidence_fill_ready_for_enriched_dry_run",
+  "full_article_text_stored": false,
+  "categories": {
+    "primary_official_source": [
+      {
+        "title": "국민참여형 국민성장펀드 출시 준비 보도자료",
+        "url": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "source": "금융위원회",
+        "source_type": "official_release",
+        "summary": "국민성장펀드의 5년 150조 원 공급 계획, 2026년 30조 원 운용 방안, 직접투자·간접투자·인프라투융자·초저리대출 구조를 확인할 수 있는 공식 보도자료.",
+        "role": "primary_official_source",
+        "reliability": "high",
+        "needs_manual_check": false
+      },
+      {
+        "title": "국민성장펀드 공식 소개",
+        "url": "https://ngf.kdb.co.kr/GFMNMN00N00.act",
+        "source": "한국산업은행 국민성장펀드",
+        "source_type": "official_site",
+        "summary": "국민성장펀드가 민관합동 150조 원 규모로 첨단전략산업 생태계 전반을 지원한다는 공식 소개 페이지.",
+        "role": "primary_official_source",
+        "reliability": "high",
+        "needs_manual_check": false
+      }
+    ],
+    "policy_mechanism": [
+      {
+        "title": "'국민참여형' 국민성장펀드 22일 판매",
+        "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "source": "대한민국 정책브리핑 / 금융위원회",
+        "source_type": "official_policy_news",
+        "summary": "국민 모집액 6000억 원과 재정 1200억 원, 자펀드별 20% 범위 손실 우선 부담, 30% 이상 신규자금 공급 등 국민참여형 펀드의 작동 구조를 설명한다.",
+        "role": "policy_mechanism",
+        "reliability": "high",
+        "needs_manual_check": false
+      },
+      {
+        "title": "국민성장펀드 운용사 공모 보도자료",
+        "url": "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847",
+        "source": "대한민국 정책브리핑 / 금융위원회",
+        "source_type": "official_release",
+        "summary": "재정모펀드 운용사 선정, 국민참여형 펀드의 후순위 재정 보강, 공모펀드·자펀드 운용사 선정 일정 등 초기 정책 설계 맥락을 제공한다.",
+        "role": "policy_mechanism",
+        "reliability": "high",
+        "needs_manual_check": false
+      }
+    ],
+    "research_or_survey": [
+      {
+        "title": "국민성장펀드 5년간 150조 'K-엔비디아' 육성 본격화",
+        "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+        "source": "대한민국 정책브리핑 / 금융위원회",
+        "source_type": "official_policy_news",
+        "summary": "국민성장펀드의 AI·반도체 집중 투자 방향과 장기 인내자본 필요성을 연결하는 공식 정책 기사.",
+        "role": "research_or_survey",
+        "reliability": "high",
+        "needs_manual_check": false
+      },
+      {
+        "title": "국민성장펀드, 1차 프로젝트 7건 본격 지원",
+        "url": "https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+        "source": "대한민국 정책브리핑 / 금융위원회",
+        "source_type": "official_policy_news",
+        "summary": "AI, 반도체, 이차전지 등 1차 메가프로젝트와 5년 150조 원 공급 계획을 생산적 금융 전환 맥락에서 정리한다.",
+        "role": "research_or_survey",
+        "reliability": "high",
+        "needs_manual_check": false
+      }
+    ],
+    "counterpoint": [
+      {
+        "title": "개인판매ㆍ손실보전 '논란' 국민성장펀드, 비인기 관제상품 전철 우려",
+        "url": "https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "source": "인베스트조선",
+        "source_type": "counterpoint_analysis",
+        "summary": "국민참여형 펀드의 개인 판매, 손실 보전, 관제상품화, 수익성 한계와 손실 사회화 논란을 제기하는 반대 관점 자료.",
+        "role": "counterpoint",
+        "reliability": "medium",
+        "needs_manual_check": true
+      }
+    ],
+    "market_finance_view": [
+      {
+        "title": "Basel III: international regulatory framework for banks",
+        "url": "https://www.bis.org/bcbs/basel3.htm",
+        "source": "Bank for International Settlements",
+        "source_type": "international_regulatory_framework",
+        "summary": "은행 자본규제와 위험가중자산 논리를 설명하는 국제 규제 프레임워크로, 은행이 장기·고위험 투자를 왜 부담스러워하는지 설명하는 배경 근거로 활용 가능하다.",
+        "role": "market_finance_view",
+        "reliability": "high",
+        "needs_manual_check": false
+      },
+      {
+        "title": "장기 투자 '인내 자본' 위해 은행 건전성 규제 완화",
+        "url": "https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+        "source": "동아일보",
+        "source_type": "market_finance_view",
+        "summary": "장기 위험자본, 은행 건전성 규제, 위험가중자산이 생산적 금융 전환에 미치는 제약을 국내 논의 맥락에서 보여준다.",
+        "role": "market_finance_view",
+        "reliability": "medium",
+        "needs_manual_check": true
+      }
+    ],
+    "visual_candidates": [
+      {
+        "title": "국민참여형 국민성장펀드 상품구조도",
+        "url": "https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3",
+        "source": "대한민국 정책브리핑 / 금융위원회",
+        "source_type": "official_visual_context",
+        "summary": "국민참여형 국민성장펀드 판매 구조와 손실 우선 부담을 설명하는 카드뉴스형 시각자료 후보.",
+        "role": "visual_candidates",
+        "reliability": "high",
+        "needs_manual_check": false
+      },
+      {
+        "title": "정책자금-민간자금-기업투자 흐름도",
+        "url": null,
+        "source": "manual_visual_plan",
+        "source_type": "visual_candidate",
+        "summary": "정책자금, 민간 매칭, 손실분담, 장기 위험자본 흐름을 방송용 도식으로 새로 그릴 후보.",
+        "role": "visual_candidates",
+        "reliability": "low",
+        "needs_manual_check": true
+      }
+    ]
+  },
+  "manual_research_checklist": [
+    "금융위원회/산업은행/국민성장펀드 official material",
+    "국민성장펀드 손실분담·민간 매칭 구조",
+    "AI·반도체 장기 투자 규모 관련 official or independent material",
+    "반대 관점: 관치금융, 정책금융 실패, 손실 전가, 비효율 투자",
+    "금융권 관점: 건전성, 위험가중자산, 예금자 보호, 장기 위험자본 회피 이유"
+  ],
+  "coverage": {
+    "filled_evidence_count": 10,
+    "official_source_count": 7,
+    "policy_mechanism_source_count": 2,
+    "counterpoint_count": 1,
+    "market_finance_view_count": 2,
+    "ai_semiconductor_evidence_count": 2,
+    "full_article_text_stored": false,
+    "ready_for_enriched_finance_dry_run": true
+  },
+  "ready_for_evidence_fill": false,
+  "ready_for_enriched_finance_dry_run": true,
+  "ready_for_prompt_design": true,
+  "ready_for_production_agent": false,
+  "ready_for_broadcast": false,
+  "updated_at": "2026-05-18T00:00:00+09:00"
+}

@@ -35,13 +35,21 @@ run_app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 DEFAULT_CASE_ID = "anny_api_experiment_ai_knowledge_institution_v1"
+PRODUCTIVE_FINANCE_API_CASE_ID = "anny_api_experiment_productive_finance_policy_v1"
 DEFAULT_INPUT_BUNDLE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR / "ai_knowledge_institution_input_bundle.json"
 )
 DEFAULT_EVIDENCE_PACK = paths.ANNY_EVIDENCE_PACK_AI_KNOWLEDGE_JSON
+PRODUCTIVE_FINANCE_INPUT_BUNDLE = (
+    paths.ANNY_STORYLINE_DRY_RUN_DIR / "productive_finance_policy_input_bundle.json"
+)
+PRODUCTIVE_FINANCE_EVIDENCE_PACK = (
+    paths.CANDIDATES_DIR / "anny_evidence_pack_productive_finance_policy.json"
+)
 DEFAULT_OUTPUT_ROOT = paths.OUTPUTS_DIR / "eval" / "anny_api_experiment"
 DEFAULT_EXPERIMENT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_api_experiments"
 DEFAULT_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v1"
+PRODUCTIVE_FINANCE_API_EXPERIMENT_RUN_ID = "anny_api_experiment_productive_finance_policy_v1"
 DEFAULT_SECOND_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v2"
 DEFAULT_THIRD_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v3"
 DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v4"
@@ -83,6 +91,13 @@ DEFAULT_API_V6_CLAIM_HYGIENE_REVIEW = (
 DEFAULT_MANUAL_ENRICHED_STORYLINE = (
     paths.ANNY_STORYLINE_DRY_RUN_DIR
     / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
+)
+PRODUCTIVE_FINANCE_MANUAL_ENRICHED_STORYLINE = (
+    paths.ANNY_STORYLINE_DRY_RUN_DIR
+    / "productive_finance_policy_gpt_pro_storyline_enriched.json"
+)
+PRODUCTIVE_FINANCE_API_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_productive_finance_policy_v1_comparison.md"
 )
 DEFAULT_PROMPT_FILE = paths.PROMPTS_DIR / "anny" / "storyline_writer.md"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
@@ -164,6 +179,34 @@ SOURCE_SPECIFIC_MARKERS = [
     "warns",
     "says",
 ]
+INVESTMENT_ADVICE_MARKERS = [
+    "매수",
+    "매도",
+    "사야",
+    "팔아야",
+    "사라",
+    "팔아라",
+    "추천 종목",
+    "목표주가",
+    "주가 전망",
+    "가격 전망",
+    "수익률 전망",
+    "확정 수익",
+]
+POLICY_PROMOTION_MARKERS = [
+    "성공할 것이다",
+    "성공이 확실",
+    "성공한다",
+    "검증됐다",
+    "입증됐다",
+    "반드시 해결",
+    "정답이다",
+    "구원할",
+]
+POLICY_FINANCE_FACT_CHECK_KINDS = {
+    "policy_effect_claim",
+    "investment_risk_claim",
+}
 
 
 @dataclass(frozen=True)
@@ -240,7 +283,10 @@ def build_api_experiment_prompt(
     prompt_text: str,
     schema: dict[str, Any],
     allowed_urls: set[str],
+    case: dict[str, Any] | None = None,
 ) -> str:
+    required_key_beats = case.get("expected_key_beats", []) if case else []
+    evaluation_notes = case.get("evaluation_notes", []) if case else []
     return "\n\n".join(
         [
             prompt_text,
@@ -252,6 +298,16 @@ def build_api_experiment_prompt(
             "Include a counterpoint slide.",
             "Target 20-30 representative slides across 3-4 sections.",
             "The output must satisfy the anny storyline JSON schema.",
+            "## Required Key Beats For This Case",
+            json.dumps(required_key_beats, ensure_ascii=False, indent=2),
+            "Use only the provided key beat ids in covers_key_beats.",
+            "For every covers_key_beats id, include key_beat_anchors_used.",
+            (
+                "Use an anchor phrase from the matching key beat and copy it into "
+                "the headline or first body line."
+            ),
+            "## Case Evaluation Notes",
+            json.dumps(evaluation_notes, ensure_ascii=False, indent=2),
             "## Allowed Source URLs",
             _allowed_url_markdown(allowed_urls),
             "## Input Bundle JSON",
@@ -486,6 +542,91 @@ def _education_ai_fact_check_errors(storyline: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _policy_finance_guardrail_errors(
+    storyline: dict[str, Any],
+    input_bundle: dict[str, Any],
+) -> list[str]:
+    if not _is_policy_finance_input(input_bundle):
+        return []
+    errors: list[str] = []
+    for index, slide in enumerate(_all_slides(storyline), start=1):
+        text = _guardrail_claim_text(slide)
+        slide_type = str(slide.get("slide_type") or "")
+        kind = _fact_check_kind(slide)
+        if _has_marker(text, INVESTMENT_ADVICE_MARKERS):
+            errors.append(f"slide {index} investment_advice_violation")
+        if _has_marker(text, POLICY_PROMOTION_MARKERS):
+            errors.append(f"slide {index} policy_promotion_violation")
+        if kind in POLICY_FINANCE_FACT_CHECK_KINDS:
+            if slide.get("required_before_broadcast") is not True:
+                errors.append(
+                    f"slide {index} {kind} missing required_before_broadcast=true"
+                )
+            if slide.get("needs_fact_check") is not True:
+                errors.append(f"slide {index} {kind} missing needs_fact_check=true")
+        if slide_type == "production_checklist" and kind not in {
+            "production_checklist",
+            "rhetorical_caution",
+        }:
+            errors.append(
+                f"slide {index} production_checklist missing production_checklist kind"
+            )
+    if not _has_finance_risk_discussion(storyline):
+        errors.append("finance risk/counterpoint discussion missing")
+    return list(dict.fromkeys(errors))
+
+
+def _is_policy_finance_input(input_bundle: dict[str, Any]) -> bool:
+    text = " ".join(
+        [
+            str(input_bundle.get("story_seed_title") or ""),
+            str(input_bundle.get("editorial_category") or ""),
+            str(input_bundle.get("seed_type") or ""),
+            " ".join(str(item) for item in input_bundle.get("risk_flags", [])),
+            " ".join(str(item) for item in input_bundle.get("do_not_claim", [])),
+        ]
+    )
+    return any(
+        marker in text
+        for marker in [
+            "생산적 금융",
+            "정책자금",
+            "정책금융",
+            "국민성장펀드",
+            "investment_advice_risk",
+            "policy_effect_uncertainty",
+        ]
+    )
+
+
+def _guardrail_claim_text(slide: dict[str, Any]) -> str:
+    body = slide.get("body", [])
+    body_text = " ".join(str(item) for item in body) if isinstance(body, list) else str(body)
+    return " ".join(
+        [
+            str(slide.get("headline") or ""),
+            body_text,
+        ]
+    )
+
+
+def _has_finance_risk_discussion(storyline: dict[str, Any]) -> bool:
+    text = _text_blob(storyline)
+    return any(
+        marker in text
+        for marker in [
+            "반대 관점",
+            "리스크",
+            "손실",
+            "관치금융",
+            "건전성",
+            "위험가중자산",
+            "예금자 보호",
+            "counterpoint",
+        ]
+    )
+
+
 def _is_plain_rhetorical_question(slide: dict[str, Any]) -> bool:
     if slide.get("slide_type") not in RHETORICAL_SLIDE_TYPES:
         return False
@@ -561,6 +702,7 @@ def validate_api_experiment_raw_output(
     empty_source_errors: list[str] = []
     unsupported_claim_details: list[dict[str, Any]] = []
     fact_check_errors: list[str] = []
+    policy_finance_guardrail_errors: list[str] = []
     key_beat_coverage_errors: list[str] = []
     do_not_claim_violations: list[str] = []
     source_image_overlap_count = 0
@@ -594,6 +736,12 @@ def validate_api_experiment_raw_output(
         fact_check_errors = _education_ai_fact_check_errors(storyline)
         if fact_check_errors:
             failure_modes.append("needs_fact_check_removed_too_aggressively")
+        policy_finance_guardrail_errors = _policy_finance_guardrail_errors(
+            storyline,
+            input_bundle,
+        )
+        if policy_finance_guardrail_errors:
+            failure_modes.append("policy_finance_guardrail_violation")
         counterpoint_included = _counterpoint_included(storyline)
         if not counterpoint_included:
             failure_modes.append("counterpoint_missing")
@@ -630,6 +778,7 @@ def validate_api_experiment_raw_output(
         "hallucinated_urls": hallucinated_urls,
         "do_not_claim_violations": do_not_claim_violations,
         "unsupported_claim_details": unsupported_claim_details,
+        "policy_finance_guardrail_errors": policy_finance_guardrail_errors,
         "repair_attempted": False,
         "key_beat_recall": key_beat_recall_value,
         "key_beat_coverage_errors": key_beat_coverage_errors,
@@ -648,6 +797,7 @@ def validate_api_experiment_raw_output(
             empty_source_errors=empty_source_errors,
             unsupported_claim_details=unsupported_claim_details,
             fact_check_errors=fact_check_errors,
+            policy_finance_guardrail_errors=policy_finance_guardrail_errors,
             do_not_claim_violations=do_not_claim_violations,
             key_beat_coverage_errors=key_beat_coverage_errors,
             counterpoint_included=counterpoint_included,
@@ -684,12 +834,7 @@ def _api_key_beat_recall(storyline: dict[str, Any], case_id: str) -> float | Non
 def _api_case(case_id: str) -> dict[str, Any] | None:
     cases_payload = _load_json(paths.EVAL_DIR / "golden_cases" / "anny_dry_run_cases.json")
     case = next((item for item in cases_payload["cases"] if item["case_id"] == case_id), None)
-    if not case and (
-        case_id.endswith("_v2")
-        or case_id.endswith("_v3")
-        or case_id.endswith("_v4")
-        or case_id.endswith("_v5")
-    ):
+    if not case and case_id.startswith("anny_api_experiment_ai_knowledge_institution_v"):
         case = next(
             (
                 item
@@ -1006,10 +1151,13 @@ def _load_env_files() -> None:
 def run_api_experiment(
     *,
     run_id: str = DEFAULT_API_EXPERIMENT_RUN_ID,
+    case_id: str | None = None,
     input_bundle_path: Path = DEFAULT_INPUT_BUNDLE,
     evidence_pack_path: Path = DEFAULT_EVIDENCE_PACK,
     prompt_file_path: Path = DEFAULT_PROMPT_FILE,
     manual_storyline_path: Path = DEFAULT_MANUAL_ENRICHED_STORYLINE,
+    manual_case_id: str = "anny_dry_run_ai_knowledge_institution_v1",
+    report_title: str = "Anny API Experiment Comparison — AI Knowledge Institution",
     comparison_report_path: Path = DEFAULT_API_COMPARISON_REPORT,
     experiment_root: Path = DEFAULT_EXPERIMENT_ROOT,
     model: str | None = None,
@@ -1020,6 +1168,7 @@ def run_api_experiment(
     api_key = _env_api_key()
     model = model or _env_model()
     temperature = _env_temperature() if temperature is None else temperature
+    case_id = case_id or run_id
     experiment_dir = experiment_root / run_id
     experiment_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1028,12 +1177,14 @@ def run_api_experiment(
     schema = _load_json(paths.SPECS_DIR / "anny_storyline_schema.json")
     prompt_text = prompt_file_path.read_text(encoding="utf-8")
     allowed_urls = _collect_allowed_urls(input_bundle, evidence_pack)
+    case = _api_case(case_id)
     prompt = build_api_experiment_prompt(
         input_bundle=input_bundle,
         evidence_pack=evidence_pack,
         prompt_text=prompt_text,
         schema=schema,
         allowed_urls=allowed_urls,
+        case=case,
     )
 
     shutil.copyfile(input_bundle_path, experiment_dir / "input_bundle.json")
@@ -1071,7 +1222,9 @@ def run_api_experiment(
             manual_storyline_path=manual_storyline_path,
             comparison_report_path=comparison_report_path,
             api_validation_manifest=manifest,
-            case_id=run_id,
+            case_id=case_id,
+            manual_case_id=manual_case_id,
+            report_title=report_title,
         )
         return {
             "run_id": run_id,
@@ -1094,7 +1247,7 @@ def run_api_experiment(
         evidence_pack_path=experiment_dir / "evidence_pack.json",
         experiment_dir=experiment_dir,
         report_path=experiment_dir / "validation_report.md",
-        case_id=run_id,
+        case_id=case_id,
         display_name=run_id,
         model_source="openai_api",
         llm_api_called=True,
@@ -1113,7 +1266,9 @@ def run_api_experiment(
         manual_storyline_path=manual_storyline_path,
         comparison_report_path=comparison_report_path,
         api_validation_manifest=manifest,
-        case_id=run_id,
+        case_id=case_id,
+        manual_case_id=manual_case_id,
+        report_title=report_title,
     )
     return {
         "run_id": run_id,
@@ -1160,6 +1315,7 @@ def _api_request_failure_manifest(
         "used_url_count": 0,
         "hallucinated_urls": [],
         "do_not_claim_violations": [],
+        "policy_finance_guardrail_errors": [],
         "api_error": error,
         "repair_attempted": False,
         "ready_for_api_experiment_prep": True,
@@ -1254,6 +1410,7 @@ def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
             "source_hallucination_count": None,
             "do_not_claim_violations": [],
             "unsupported_claim_details": [],
+            "policy_finance_guardrail_errors": [],
             "key_beat_coverage_errors": [],
         }
     manifest = _load_json(manifest_path)
@@ -1265,6 +1422,10 @@ def _manifest_metrics(manifest_path: Path) -> dict[str, Any]:
         "source_hallucination_count": len(manifest.get("hallucinated_urls", [])),
         "do_not_claim_violations": manifest.get("do_not_claim_violations", []),
         "unsupported_claim_details": manifest.get("unsupported_claim_details", []),
+        "policy_finance_guardrail_errors": manifest.get(
+            "policy_finance_guardrail_errors",
+            [],
+        ),
         "key_beat_coverage_errors": manifest.get("key_beat_coverage_errors", []),
     }
 
@@ -1276,18 +1437,23 @@ def write_api_manual_comparison_report(
     comparison_report_path: Path,
     api_validation_manifest: dict[str, Any],
     case_id: str,
+    manual_case_id: str = "anny_dry_run_ai_knowledge_institution_v1",
+    report_title: str = "Anny API Experiment Comparison — AI Knowledge Institution",
 ) -> dict[str, Any]:
     api_metrics = _storyline_metrics(api_storyline_path, case_id=case_id)
     manual_metrics = _storyline_metrics(
         manual_storyline_path,
-        case_id="anny_dry_run_ai_knowledge_institution_v1",
+        case_id=manual_case_id,
     )
     comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    policy_errors = api_validation_manifest.get("policy_finance_guardrail_errors", [])
+    policy_guardrail_passed = not policy_errors
     lines = [
-        "# Anny API Experiment Comparison — AI Knowledge Institution",
+        f"# {report_title}",
         "",
         f"- generated_at: {datetime.now(UTC).isoformat()}",
         f"- case_id: {case_id}",
+        f"- manual_case_id: {manual_case_id}",
         f"- api_storyline_path: {api_storyline_path}",
         f"- manual_storyline_path: {manual_storyline_path}",
         f"- model: {api_validation_manifest.get('model')}",
@@ -1299,6 +1465,19 @@ def write_api_manual_comparison_report(
             f"{len(api_validation_manifest.get('hallucinated_urls', []))}"
         ),
         f"- do_not_claim_violations: {api_validation_manifest.get('do_not_claim_violations', [])}",
+        (
+            "- policy_finance_guardrail_errors: "
+            f"{policy_errors}"
+        ),
+        f"- policy_finance_guardrail_passed: {policy_guardrail_passed}",
+        (
+            "- unsupported_claim_details: "
+            f"{api_validation_manifest.get('unsupported_claim_details', [])}"
+        ),
+        (
+            "- key_beat_coverage_errors: "
+            f"{api_validation_manifest.get('key_beat_coverage_errors', [])}"
+        ),
         "",
         "## Metrics",
         "",
@@ -1315,6 +1494,10 @@ def write_api_manual_comparison_report(
         "- This is a controlled API experiment, not a production anny agent.",
         "- Failure is acceptable if failure modes are recorded and raw output is retained.",
         "- API output must remain evidence-bound to the input bundle/evidence pack.",
+        (
+            "- Policy/finance guardrails pass only if no investment advice, "
+            "policy promotion, or missing broadcast-check metadata is detected."
+        ),
         "- ready_for_production_agent: false",
     ]
     comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -2127,6 +2310,7 @@ def _report_markdown(
     empty_source_errors: list[str],
     unsupported_claim_details: list[dict[str, Any]],
     fact_check_errors: list[str],
+    policy_finance_guardrail_errors: list[str],
     do_not_claim_violations: list[str],
     key_beat_coverage_errors: list[str],
     counterpoint_included: bool,
@@ -2158,6 +2342,7 @@ def _report_markdown(
         f"- empty_source_errors: {empty_source_errors or []}",
         f"- unsupported_claim_details: {unsupported_claim_details or []}",
         f"- fact_check_errors: {fact_check_errors or []}",
+        f"- policy_finance_guardrail_errors: {policy_finance_guardrail_errors or []}",
         f"- key_beat_coverage_errors: {key_beat_coverage_errors or []}",
         f"- do_not_claim_violations: {do_not_claim_violations or []}",
         "",
@@ -2216,6 +2401,34 @@ def run_main(
         str,
         typer.Option("--run-id", help="Controlled API experiment run id."),
     ] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    case_id: Annotated[
+        str | None,
+        typer.Option("--case-id", help="Golden case id for API validation."),
+    ] = None,
+    input_bundle_path: Annotated[
+        Path,
+        typer.Option("--input-bundle", help="Anny input bundle JSON."),
+    ] = DEFAULT_INPUT_BUNDLE,
+    evidence_pack_path: Annotated[
+        Path,
+        typer.Option("--evidence-pack", help="Evidence pack JSON."),
+    ] = DEFAULT_EVIDENCE_PACK,
+    manual_storyline_path: Annotated[
+        Path,
+        typer.Option("--manual-storyline", help="Manual enriched reference storyline."),
+    ] = DEFAULT_MANUAL_ENRICHED_STORYLINE,
+    manual_case_id: Annotated[
+        str,
+        typer.Option("--manual-case-id", help="Manual dry-run case id for comparison."),
+    ] = "anny_dry_run_ai_knowledge_institution_v1",
+    comparison_report_path: Annotated[
+        Path,
+        typer.Option("--comparison-report", help="Comparison report output path."),
+    ] = DEFAULT_API_COMPARISON_REPORT,
+    report_title: Annotated[
+        str,
+        typer.Option("--report-title", help="Comparison report title."),
+    ] = "Anny API Experiment Comparison — AI Knowledge Institution",
     model: Annotated[
         str | None,
         typer.Option(
@@ -2233,6 +2446,13 @@ def run_main(
     try:
         result = run_api_experiment(
             run_id=run_id,
+            case_id=case_id,
+            input_bundle_path=input_bundle_path,
+            evidence_pack_path=evidence_pack_path,
+            manual_storyline_path=manual_storyline_path,
+            manual_case_id=manual_case_id,
+            comparison_report_path=comparison_report_path,
+            report_title=report_title,
             model=model,
             timeout_seconds=timeout_seconds,
         )

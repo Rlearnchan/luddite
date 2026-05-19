@@ -1,0 +1,131 @@
+{
+  "audience_question": "금융은 안전하게 돈을 빌려주는 산업인가, 성장 위험을 나눠지는 산업인가?",
+  "avoid": [
+    "정책 효과를 단정하지 말 것",
+    "특정 금융회사/정책상품 홍보처럼 쓰지 말 것",
+    "투자 조언처럼 쓰지 말 것",
+    "가격/수익률/주가 전망을 단정하지 말 것",
+    "특정 자산/주식 매수·매도 의견처럼 쓰지 말 것",
+    "가격 전망을 단정하지 말 것"
+  ],
+  "bundle_id": "anny_bundle_5c95ee31f95d",
+  "candidate_articles": [
+    {
+      "candidate_id": "jibi_rss_b94faaef2325",
+      "duplicate_key": "rss_b94faaef2325",
+      "editorial_category": "productive_finance_policy",
+      "evidence_needed": [
+        "원문 전문 확인",
+        "추가 독립 출처 1개 이상",
+        "숫자/통계 또는 공식 자료"
+      ],
+      "final_grade": "B",
+      "possible_expansions": [
+        "담보 중심 금융에서 생산적 투자 금융으로의 전환",
+        "국민성장펀드와 AI/반도체 투자 재원",
+        "금융권 위험분담과 정책금융의 역할"
+      ],
+      "published_at": "2026-05-18 14:03:00",
+      "quality_flags": [],
+      "recommended_action": "gather_more_evidence",
+      "risk_flags": [],
+      "source": "연합인포맥스",
+      "source_id": "infomax_manual",
+      "source_url_canonical": "https://news.einfomax.co.kr/news/articleView.html?idxno=4415444",
+      "summary": "이억원 금융위원장이 첨단전략산업 경쟁 시대를 맞아 금융의 역할 역시 담보·안정성 중심에서 생산적 투자 중심으로 바뀌어야 한다고 강조했다.이 위원장은 18일 서울 여의도 한국산업은행 IR센터에서 열린 '국민성장펀드 성과점검 및 발전방향 세미나'에서 \"지금 세계는 AI, 반도체, 배터리, 바이오 등 첨단전략산업 중심으로 치열한 기술패권 경쟁을 벌이고 있다\"며 이같이 밝혔다.이 위원장은 \"이들 산업은 막대한 자금과 긴 투자시간을 요구하고 높은 불확실성이 있다\"며 \"과거와 같은 담보 중심, 단기수익 중심의 금융만으로 이 경쟁에서 앞서가기",
+      "title": "이억원 \"담보 및 단기수익 중심 금융 경쟁 앞서가기 어려워\"",
+      "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4415444",
+      "why_interesting": "정책금융이 담보·단기수익 중심에서 생산적 투자로 이동해야 한다는 문제라, 국민성장펀드·AI/반도체 투자·금융권 위험분담 논쟁으로 확장할 수 있음"
+    }
+  ],
+  "core_question": "금융은 안전하게 돈을 빌려주는 산업인가, 성장 위험을 나눠지는 산업인가?",
+  "created_at": "2026-05-18T08:30:48.215835+00:00",
+  "do_not_claim": [
+    "정책 효과를 단정하지 말 것",
+    "특정 금융회사/정책상품 홍보처럼 쓰지 말 것",
+    "투자 조언처럼 쓰지 말 것",
+    "가격/수익률/주가 전망을 단정하지 말 것",
+    "특정 자산/주식 매수·매도 의견처럼 쓰지 말 것",
+    "가격 전망을 단정하지 말 것",
+    "현재 단일 기사 기반임을 잊지 말 것",
+    "공식자료 확인 전 수치/정책효과를 단정하지 말 것"
+  ],
+  "editorial_category": "productive_finance_policy",
+  "fact_check_tasks": [
+    "원문 전문 확인",
+    "숫자/통계 원자료 확인",
+    "공식 보도자료/세미나 자료 확인",
+    "반대 사례 또는 리스크 자료 확인"
+  ],
+  "handoff_priority": "high",
+  "known_facts": [
+    "이억원 \"담보 및 단기수익 중심 금융 경쟁 앞서가기 어려워\" (연합인포맥스)"
+  ],
+  "llm_enrichment_needed": true,
+  "missing_evidence": [
+    "보조 기사 1개 이상",
+    "숫자/통계 원자료 확인",
+    "공식 보도자료/세미나 자료 확인",
+    "배경 설명용 보조 기사 1개 이상",
+    "한국 비교 사례 또는 과거 유사 사례"
+  ],
+  "must_include": [
+    "이억원 \"담보 및 단기수익 중심 금융 경쟁 앞서가기 어려워\" (연합인포맥스)",
+    "금융위원회",
+    "한국은행",
+    "기획재정부",
+    "후보 기사 URL과 source를 명시"
+  ],
+  "needs_fact_check": true,
+  "nice_to_have_evidence": [
+    "배경 설명용 보조 기사 1개 이상",
+    "한국 비교 사례 또는 과거 유사 사례"
+  ],
+  "official_source_tasks": [
+    "숫자/통계 원자료 확인",
+    "공식 보도자료/세미나 자료 확인"
+  ],
+  "opening_hook": "이억원 \"담보 및 단기수익 중심 금융 경쟁 앞서가기 어려워\"",
+  "possible_story_angles": [
+    "담보 중심 금융에서 생산적 투자 금융으로의 전환",
+    "국민성장펀드와 AI/반도체 투자 재원",
+    "금융권 위험분담과 정책금융의 역할",
+    "금융은 안전하게 돈을 빌려주는 산업인가, 위험을 나눠 성장에 베팅하는 산업인가?"
+  ],
+  "quality_flags": [
+    "official_evidence_missing"
+  ],
+  "readiness": "needs_more_evidence",
+  "required_evidence": [
+    "보조 기사 1개 이상",
+    "숫자/통계 원자료 확인",
+    "공식 보도자료/세미나 자료 확인"
+  ],
+  "risk_flags": [
+    "investment_advice_risk",
+    "official_evidence_missing",
+    "policy_effect_uncertainty",
+    "single_source_dependency"
+  ],
+  "risk_level": "low",
+  "seed_type": "productive_finance_policy",
+  "slide_count_target": "standard: 45-65 eventual slides; dry-run은 representative outline",
+  "story_seed_id": "cluster_d4552af2424d",
+  "story_seed_title": "생산적 금융과 정책자금 전환",
+  "suggested_official_sources": [
+    "금융위원회",
+    "한국은행",
+    "기획재정부"
+  ],
+  "suggested_story_structure": [
+    "담보·단기수익 중심 금융의 한계",
+    "AI/반도체 투자와 장기 위험자본 필요",
+    "국민성장펀드/정책금융 논쟁",
+    "금융권은 어디까지 위험을 나눠질 수 있는가?"
+  ],
+  "tone_notes": [
+    "방송용 구조 설명 중심",
+    "단일 기사 요약이 아니라 질문-근거-구조로 전환"
+  ],
+  "why_story": "정책금융이 담보·단기수익 중심에서 생산적 투자로 이동해야 한다는 문제라, 국민성장펀드·AI/반도체 투자·금융권 위험분담 논쟁으로 확장할 수 있음"
+}
