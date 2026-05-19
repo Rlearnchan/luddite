@@ -10,6 +10,7 @@ from luddite.agents.anny.api_experiment_runner import (
     write_api_v1_to_v6_comparison_report,
     write_api_v1_to_v7_comparison_report,
     write_api_v1_to_v8_comparison_report,
+    write_api_v1_to_v9_comparison_report,
     write_api_v1_v2_comparison_report,
     write_api_v1_v2_v3_comparison_report,
     write_api_v1_v2_v3_v4_comparison_report,
@@ -313,6 +314,64 @@ def test_closing_question_with_factual_premise_requires_source(tmp_path) -> None
     )
 
     assert "unsupported_claim" in result.failure_modes
+
+
+def test_claim_bearing_closing_question_with_needs_source_passes_unsupported_check(
+    tmp_path,
+) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    closing = next(
+        slide
+        for slide in payload["sections"][0]["slides"]
+        if slide["slide_type"] == "closing_question"
+    )
+    closing["body"] = [
+        "AI 학습이 생각하는 과정을 줄인다면, 지식기관은 무엇을 가르쳐야 할까?"
+    ]
+    closing["needs_source"] = True
+    closing["needs_fact_check"] = True
+    raw_path = tmp_path / "closing_with_premise_needs_source.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "closing_with_premise_needs_source",
+        report_path=tmp_path / "reports" / "closing_with_premise_needs_source.md",
+    )
+
+    assert "unsupported_claim" not in result.failure_modes
+    assert "needs_fact_check_removed_too_aggressively" not in result.failure_modes
+
+
+def test_claim_bearing_closing_question_without_fact_check_fails(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    closing = next(
+        slide
+        for slide in payload["sections"][0]["slides"]
+        if slide["slide_type"] == "closing_question"
+    )
+    closing["body"] = [
+        "AI 학습이 생각하는 과정을 줄인다면, 지식기관은 무엇을 가르쳐야 할까?"
+    ]
+    closing["needs_source"] = True
+    closing["needs_fact_check"] = False
+    raw_path = tmp_path / "closing_with_premise_without_fact_check.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "closing_with_premise_without_fact_check",
+        report_path=tmp_path / "reports" / "closing_with_premise_without_fact_check.md",
+    )
+
+    assert "unsupported_claim" not in result.failure_modes
+    assert "needs_fact_check_removed_too_aggressively" in result.failure_modes
 
 
 def test_pure_section_title_question_without_source_passes(tmp_path) -> None:
@@ -978,4 +1037,59 @@ def test_write_api_v1_to_v8_comparison_report(tmp_path) -> None:
     assert "v1 to v8 Comparison" in text
     assert "section_title claim hygiene" in text
     assert "marker=역할 변화" in text
+    assert "ready_for_production_agent=false" in text
+
+
+def test_write_api_v1_to_v9_comparison_report(tmp_path) -> None:
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    manifest = {
+        "model": "gpt-5-mini",
+        "failure_modes": [],
+        "schema_valid": True,
+        "hygiene_passed": True,
+        "hallucinated_urls": [],
+        "do_not_claim_violations": [],
+        "unsupported_claim_details": [
+            {
+                "slide_no": 1,
+                "slide_type": "closing_question",
+                "headline": "교육의 핵심 질문",
+                "triggered_marker": "인지",
+                "recommended_fix": "set_needs_source_true_and_needs_fact_check_true",
+            }
+        ],
+        "key_beat_coverage_errors": [],
+    }
+    run_dirs = []
+    for name in ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9"]:
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        (run_dir / "parsed_storyline.json").write_text(raw, encoding="utf-8")
+        (run_dir / "manifest.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        run_dirs.append(run_dir)
+    report = tmp_path / "comparison.md"
+
+    result = write_api_v1_to_v9_comparison_report(
+        v1_dir=run_dirs[0],
+        v2_dir=run_dirs[1],
+        v3_dir=run_dirs[2],
+        v4_dir=run_dirs[3],
+        v5_dir=run_dirs[4],
+        v6_dir=run_dirs[5],
+        v7_dir=run_dirs[6],
+        v8_dir=run_dirs[7],
+        v9_dir=run_dirs[8],
+        comparison_report_path=report,
+    )
+
+    assert result["v9"]["manifest"]["model"] == "gpt-5-mini"
+    text = report.read_text(encoding="utf-8")
+    assert "v1 to v9 Comparison" in text
+    assert "final claim hygiene" in text
+    assert "set_needs_source_true_and_needs_fact_check_true" in text
     assert "ready_for_production_agent=false" in text

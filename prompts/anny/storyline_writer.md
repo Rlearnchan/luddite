@@ -80,11 +80,15 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
 - "역할 변화", "역량", "필요해진다", "바뀐다", "중요해진다",
   "핵심이 된다", "가르쳐야 한다" 같은 표현은 claim으로 취급된다.
 - Royal Observatory, BBC, 왕립천문대, 보도, 경고, 발언, says/warns 같은
-  source-specific phrase를 title/bridge/closing에 쓰면 `source_urls`를 붙이거나
-  `needs_source=true`로 남긴다.
+  source-specific phrase를 `title`, `section_title`, `bridge`, `closing_question`에
+  쓰면 반드시 `source_urls`를 붙이거나 `needs_source=true`로 남긴다.
+- source-specific marker를 쓰지 않으려면 추상 제목으로 바꾼다. 예: `AI 즉답
+  시대의 지식기관 역할`은 가능하지만, `BBC가 전한 왕립천문대의 경고`는 source가
+  필요하다.
+- title slide라도 source-specific phrase가 있으면 source 없이 쓰지 않는다.
 - closing question은 순수 질문일 때만 source 없이 허용된다. 특정 사실, 기관
   발언, 교육/인지 효과, 지식기관 역할 변화를 전제하면 source 또는
-  `needs_source=true`가 필요하다.
+  `needs_source=true`가 필요하고 `needs_fact_check=true`도 유지한다.
 - 교육/인지/기관 역할 변화 claim은 evidence가 붙어도 보수적으로
   `needs_fact_check=true`를 유지한다.
 - AI/education/institution role claim은 source_refs가 있어도 fact-check complete가

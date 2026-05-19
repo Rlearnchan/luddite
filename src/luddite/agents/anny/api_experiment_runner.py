@@ -49,6 +49,7 @@ DEFAULT_FIFTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institut
 DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v6"
 DEFAULT_SEVENTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v7"
 DEFAULT_EIGHTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v8"
+DEFAULT_NINTH_API_EXPERIMENT_RUN_ID = "anny_api_experiment_ai_knowledge_institution_v9"
 DEFAULT_API_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_comparison.md"
 )
@@ -72,6 +73,9 @@ DEFAULT_API_V1_TO_V7_COMPARISON_REPORT = (
 )
 DEFAULT_API_V1_TO_V8_COMPARISON_REPORT = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_to_v8_comparison.md"
+)
+DEFAULT_API_V1_TO_V9_COMPARISON_REPORT = (
+    paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v1_to_v9_comparison.md"
 )
 DEFAULT_API_V6_CLAIM_HYGIENE_REVIEW = (
     paths.REPORTS_DIR / "anny_api_experiment_ai_knowledge_institution_v6_claim_hygiene_review.md"
@@ -425,7 +429,7 @@ def _unsupported_claim_recommended_fix(marker_type: str | None) -> str:
     if marker_type == "source_specific":
         return "add_source_url"
     if marker_type in {"institution_role", "factual_claim"}:
-        return "set_needs_source_true"
+        return "set_needs_source_true_and_needs_fact_check_true"
     return "rewrite_as_rhetorical_question"
 
 
@@ -1849,6 +1853,93 @@ def write_api_v1_to_v8_comparison_report(
     return runs
 
 
+def write_api_v1_to_v9_comparison_report(
+    *,
+    v1_dir: Path,
+    v2_dir: Path,
+    v3_dir: Path,
+    v4_dir: Path,
+    v5_dir: Path,
+    v6_dir: Path,
+    v7_dir: Path,
+    v8_dir: Path,
+    v9_dir: Path,
+    comparison_report_path: Path = DEFAULT_API_V1_TO_V9_COMPARISON_REPORT,
+) -> dict[str, Any]:
+    run_dirs = {
+        "v1": v1_dir,
+        "v2": v2_dir,
+        "v3": v3_dir,
+        "v4": v4_dir,
+        "v5": v5_dir,
+        "v6": v6_dir,
+        "v7": v7_dir,
+        "v8": v8_dir,
+        "v9": v9_dir,
+    }
+    runs = {
+        label: {
+            "manifest": _manifest_metrics(run_dir / "manifest.json"),
+            "metrics": _storyline_metrics(
+                run_dir / "parsed_storyline.json",
+                case_id=DEFAULT_API_EXPERIMENT_RUN_ID,
+            ),
+            "dir": run_dir,
+        }
+        for label, run_dir in run_dirs.items()
+    }
+    comparison_report_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Anny API Experiment v1 to v9 Comparison — AI Knowledge Institution",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        *(f"- {label}_dir: {payload['dir']}" for label, payload in runs.items()),
+        "",
+        "## Summary Table",
+        "",
+        (
+            "| Run | Model | Schema | Hygiene | Sections | Slides | Source URLs | "
+            "Needs Source | Needs Fact Check | Key Beat Recall | Section Plan | "
+            "Covers Key Beats | Key Beat Anchors Used | Key Beat Coverage | Failure "
+            "Modes | Source Hallucinations | Do-not-claim Violations | Counterpoint |"
+        ),
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---:|---:|---|",
+    ]
+    for label, payload in runs.items():
+        lines.append(_api_version_row(label, payload["manifest"], payload["metrics"]))
+    lines.extend(["", "## Key Beat Drift Detail", ""])
+    for label, payload in runs.items():
+        errors = payload["manifest"].get("key_beat_coverage_errors", [])
+        lines.append(f"- {label}: {errors or []}")
+    lines.extend(["", "## Unsupported Claim Detail", ""])
+    for label, payload in runs.items():
+        details = payload["manifest"].get("unsupported_claim_details", [])
+        if not details:
+            lines.append(f"- {label}: []")
+            continue
+        lines.append(f"- {label}: {len(details)} unsupported claim detail(s)")
+        for item in details[:5]:
+            lines.append(
+                "  - "
+                f"slide {item.get('slide_no')}: {item.get('slide_type')} | "
+                f"{item.get('headline')} | marker={item.get('triggered_marker')} | "
+                f"fix={item.get('recommended_fix')}"
+            )
+    lines.extend(
+        [
+            "",
+            "## Qualitative Notes",
+            "",
+            "- v9 is a ninth controlled API experiment, not a production anny agent.",
+            "- The main observation is whether final claim hygiene improves.",
+            "- `source_hallucination_count=0` and do-not-claim compliance remain required.",
+            "- `ready_for_production_agent=false` remains in force.",
+        ]
+    )
+    comparison_report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return runs
+
+
 def write_v6_claim_hygiene_review(
     *,
     storyline_path: Path = DEFAULT_EXPERIMENT_ROOT
@@ -2364,6 +2455,56 @@ def compare_v1_v2_v3_v4_v5_v6_v7_v8(
         v8_dir=DEFAULT_EXPERIMENT_ROOT / v8_run_id,
     )
     console.print("[green]Wrote anny API experiment v1/v2/v3/v4/v5/v6/v7/v8 comparison.[/green]")
+
+
+@run_app.command("compare-v1-v2-v3-v4-v5-v6-v7-v8-v9")
+def compare_v1_v2_v3_v4_v5_v6_v7_v8_v9(
+    v1_run_id: Annotated[str, typer.Option("--v1-run-id")] = DEFAULT_API_EXPERIMENT_RUN_ID,
+    v2_run_id: Annotated[
+        str,
+        typer.Option("--v2-run-id"),
+    ] = DEFAULT_SECOND_API_EXPERIMENT_RUN_ID,
+    v3_run_id: Annotated[
+        str,
+        typer.Option("--v3-run-id"),
+    ] = DEFAULT_THIRD_API_EXPERIMENT_RUN_ID,
+    v4_run_id: Annotated[
+        str,
+        typer.Option("--v4-run-id"),
+    ] = DEFAULT_FOURTH_API_EXPERIMENT_RUN_ID,
+    v5_run_id: Annotated[
+        str,
+        typer.Option("--v5-run-id"),
+    ] = DEFAULT_FIFTH_API_EXPERIMENT_RUN_ID,
+    v6_run_id: Annotated[
+        str,
+        typer.Option("--v6-run-id"),
+    ] = DEFAULT_SIXTH_API_EXPERIMENT_RUN_ID,
+    v7_run_id: Annotated[
+        str,
+        typer.Option("--v7-run-id"),
+    ] = DEFAULT_SEVENTH_API_EXPERIMENT_RUN_ID,
+    v8_run_id: Annotated[
+        str,
+        typer.Option("--v8-run-id"),
+    ] = DEFAULT_EIGHTH_API_EXPERIMENT_RUN_ID,
+    v9_run_id: Annotated[
+        str,
+        typer.Option("--v9-run-id"),
+    ] = DEFAULT_NINTH_API_EXPERIMENT_RUN_ID,
+) -> None:
+    write_api_v1_to_v9_comparison_report(
+        v1_dir=DEFAULT_EXPERIMENT_ROOT / v1_run_id,
+        v2_dir=DEFAULT_EXPERIMENT_ROOT / v2_run_id,
+        v3_dir=DEFAULT_EXPERIMENT_ROOT / v3_run_id,
+        v4_dir=DEFAULT_EXPERIMENT_ROOT / v4_run_id,
+        v5_dir=DEFAULT_EXPERIMENT_ROOT / v5_run_id,
+        v6_dir=DEFAULT_EXPERIMENT_ROOT / v6_run_id,
+        v7_dir=DEFAULT_EXPERIMENT_ROOT / v7_run_id,
+        v8_dir=DEFAULT_EXPERIMENT_ROOT / v8_run_id,
+        v9_dir=DEFAULT_EXPERIMENT_ROOT / v9_run_id,
+    )
+    console.print("[green]Wrote anny API experiment v1/v2/v3/v4/v5/v6/v7/v8/v9 comparison.[/green]")
 
 
 @run_app.command("review-v6-claim-hygiene")
