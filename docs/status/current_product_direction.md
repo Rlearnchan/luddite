@@ -498,6 +498,21 @@ Milestone 1.17.5: Human Review Feedback Template
 - No API calls, production Anny agent, batch runner, PPT generator, or external
   research automation are part of this milestone.
 
+Milestone 1.17.6: Human Review Pilot
+
+- Add a human review pilot pack:
+  `docs/reviews/anny_storyline_human_review_pilot_pack.md`.
+- Add a per-reviewer result template:
+  `docs/reviews/results/anny_storyline_sample_review_YYYY-MM-DD.md`.
+- Add a consolidated summary template:
+  `docs/reviews/anny_storyline_sample_review_summary_template.md`.
+- The pilot asks reviewers to read the compact AI knowledge institution and
+  productive finance manual samples first, then record whether the artifact
+  feels useful as a newsletter draft, storyline draft, research memo, or source
+  checklist.
+- Keep productive finance API v1 as failure analysis only.
+- Keep `ready_for_production_agent=false` and `ready_for_broadcast=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

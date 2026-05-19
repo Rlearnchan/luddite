@@ -25,6 +25,9 @@ Usage guidance:
 - Do not present `productive_finance_api_v1.md` as a product example; it is failure analysis.
 - Review guide: `docs/reviews/anny_storyline_sample_review_guide.md`
 - Review template: `docs/reviews/anny_storyline_sample_review_template.md`
+- Human review pilot pack: `docs/reviews/anny_storyline_human_review_pilot_pack.md`
+- Review result template: `docs/reviews/results/anny_storyline_sample_review_YYYY-MM-DD.md`
+- Review summary template: `docs/reviews/anny_storyline_sample_review_summary_template.md`
 
 Generated files:
 

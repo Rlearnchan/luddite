@@ -15,6 +15,12 @@ Use this form while reviewing:
 
 - `docs/reviews/anny_storyline_sample_review_template.md`
 
+Pilot pack and result templates:
+
+- `docs/reviews/anny_storyline_human_review_pilot_pack.md`
+- `docs/reviews/results/anny_storyline_sample_review_YYYY-MM-DD.md`
+- `docs/reviews/anny_storyline_sample_review_summary_template.md`
+
 ## What The Samples Are
 
 - `manual_enriched` samples are GPT Pro/manual dry-run storyline examples with
@@ -67,6 +73,9 @@ Focus on whether this helps the research workflow:
 - Which slides should be cut or rewritten?
 - Should this be framed as a newsletter, storyline draft, or research memo?
 - What should Anny produce next?
+
+Save one completed result per reviewer under `docs/reviews/results/`, then use
+the summary template to consolidate common signals.
 
 ## Current Recommendation
 
