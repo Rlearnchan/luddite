@@ -629,6 +629,33 @@ Milestone 1.19.3: Apply Syukaworld Style Profile to Piti Renderer
   chart generation, Google Slides integration, LLM/API calls, and final
   Syukaworld visual fidelity claims.
 
+Milestone 1.19.4: Piti Styled Renderer Layout Tuning
+
+- Keep the extracted Syukaworld style profile but make styled drafts more
+  readable with adaptive body font sizing: 28pt for short text, 24pt for
+  medium text, and 20pt for long or visual-heavy slides.
+- Separate text and visual placeholder regions on styled slides so placeholders
+  do not collide with body text; overlap is now a failure for styled drafts and
+  a warning for legacy scaffold outputs.
+- Shorten on-slide visual placeholder labels to compact cues such as
+  `[이미지 후보]`, `[차트 후보]`, `[도식 후보]`, and preserve detailed visual-plan
+  descriptions in speaker notes.
+- Keep section titles large but avoid forcing red on section-title slides; use
+  theme/default black unless a stronger section-title color is explicitly
+  extracted later.
+- Add render-report metrics for adaptive font usage, downgraded font sizes,
+  body line estimates, visually dense slides, visual+long-body slides, and
+  text/visual overlap warnings.
+- Regenerate styled draft PPTX outputs:
+  `outputs/pptx/ai_knowledge_institution_styled_draft.pptx` and
+  `outputs/pptx/productive_finance_policy_styled_draft.pptx`.
+- Current readiness:
+  `ready_for_ppt_generation=true` for scaffold/styled draft review only,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: production Piti agent, image auto collection/insertion,
+  chart generation, Google Slides integration, LLM/API calls, and final
+  Syukaworld visual fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

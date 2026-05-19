@@ -139,6 +139,7 @@ def test_render_report_created(tmp_path: Path) -> None:
     text = report_path.read_text(encoding="utf-8")
     assert "Piti PPTX Render Report" in text
     assert "ready_for_ppt_generation: true (scaffold only)" in text
+    assert "Adaptive body font" in text
 
 
 def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
@@ -184,7 +185,14 @@ def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
     assert result["style_profile_loaded"] is True
     assert result["applied_font_family"] == "맑은 고딕"
     assert result["applied_layout_count"] >= 1
+    assert result["adaptive_font_applied"] is True
+    assert result["visual_placeholder_shortened"] is True
+    assert result["font_size_downgraded_slides"]
+    assert result["slides_with_text_placeholder_overlap"] == []
     assert result["parse_back_slide_count"] == 4
     assert parsed["slide_count"] == 4
     notes_text = "\n".join(slide["notes"] for slide in parsed["slides"])
     assert "style_profile_loaded: True" in notes_text
+    assert "visual_plan" in notes_text
+    visible_text = "\n".join(slide["visible_text"] for slide in parsed["slides"])
+    assert "diagram candidate" not in visible_text
