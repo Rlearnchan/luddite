@@ -536,6 +536,31 @@ Milestone 1.18: Piti Storyline-to-Deck Plan MVP
   `ready_for_production_piti_agent=false`, `ready_for_production_agent=false`,
   and `ready_for_broadcast=false`.
 
+Milestone 1.19: Piti PPTX Renderer Scaffold
+
+- Add `luddite render-piti-pptx` and `make render-piti-pptx`.
+- Render existing Piti deck plans into editable 16:9 PowerPoint skeletons:
+  `outputs/pptx/ai_knowledge_institution_draft.pptx` and
+  `outputs/pptx/productive_finance_policy_draft.pptx`.
+- Add renderer documentation:
+  `docs/product/piti_pptx_renderer_scaffold.md`.
+- The renderer uses simple scaffold layouts, editable text boxes, visual
+  placeholder boxes, and speaker notes preservation. It does not implement
+  final Syukaworld visual fidelity.
+- Speaker notes preserve source URLs, image URLs, visual plans, edit notes,
+  `needs_source`, `needs_fact_check`, `required_before_broadcast`, and copyright
+  risk markers.
+- Production checklist slides are rendered as internal/appendix checklist
+  material rather than normal broadcast claims.
+- Render report:
+  `outputs/reports/piti_pptx_render_report_2026-05-19.md`.
+- Current readiness:
+  `ready_for_ppt_generation=true` for scaffold review only,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: image auto collection/insertion, chart generation,
+  Google Slides integration, LLM calls, production Piti agent, and production
+  Anny agent.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
