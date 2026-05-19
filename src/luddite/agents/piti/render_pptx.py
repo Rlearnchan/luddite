@@ -270,6 +270,50 @@ def _first_url(slide_plan: dict[str, Any], key: str) -> str | None:
     return None
 
 
+def _has_source_urls(slide_plan: dict[str, Any]) -> bool:
+    return _first_url(slide_plan, "source_urls") is not None
+
+
+def _is_internal_or_structural_slide(slide_plan: dict[str, Any]) -> bool:
+    layout_type = str(slide_plan.get("layout_type") or "")
+    slide_type = str(slide_plan.get("slide_type") or "")
+    return layout_type in {
+        "title",
+        "section_title",
+        "checklist",
+        "appendix_checklist",
+    } or slide_type in {"production_checklist", "source_heavy"}
+
+
+def _source_name_from_url(url: str | None) -> str:
+    if not url:
+        return "Source"
+    host = urlparse(url).netloc or url
+    host = host.removeprefix("www.")
+    known = {
+        "bbc.com": "BBC",
+        "bbc.co.uk": "BBC",
+        "microsoft.com": "Microsoft",
+        "unesco.org": "UNESCO",
+        "oecd.org": "OECD",
+        "fsc.go.kr": "금융위원회",
+        "kdb.co.kr": "산업은행",
+        "korea.kr": "정책브리핑",
+        "bis.org": "BIS",
+    }
+    for domain, label in known.items():
+        if domain in host:
+            return label
+    return host.split("/")[0]
+
+
+def _short_text(value: str, limit: int = 34) -> str:
+    text = re.sub(r"\s+", " ", value).strip()
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
+
+
 def _proof_object(slide_plan: dict[str, Any]) -> ProofObject:
     visual_plan = slide_plan.get("visual_plan") or {}
     kind = _visual_kind(slide_plan)
@@ -294,6 +338,8 @@ def _proof_object(slide_plan: dict[str, Any]) -> ProofObject:
             proof_type = "image"
         elif layout_type in {"chart_placeholder", "table", "data_table"}:
             proof_type = "chart"
+        elif _has_source_urls(slide_plan) and not _is_internal_or_structural_slide(slide_plan):
+            proof_type = "article_quote"
     elif layout_type == "quote" or slide_type == "quote":
         proof_type = "article_quote"
 
@@ -524,6 +570,11 @@ def _screen_body_lines(slide: dict[str, Any]) -> list[str]:
     limit = 4 if layout_type == "quote" and _is_bilingual_quote_slide(slide) else 3
     if layout_type in {"chart_placeholder", "table", "data_table"}:
         limit = 3
+    proof_type = _proof_object(slide).type
+    if proof_type != "none" and proof_type not in {"chart", "table", "article_quote"}:
+        limit = min(limit, 2)
+    if proof_type == "article_quote" and layout_type != "quote":
+        limit = min(limit, 2)
     return body[:limit]
 
 
@@ -581,6 +632,20 @@ def _placeholder(
         run.font.name = style.font_family if style and style.loaded else "Malgun Gothic"
         run.font.size = Pt(13 if style and style.loaded else 16)
         run.font.color.rgb = THEME["muted"]
+        run.font.bold = proof.type == "article_quote"
+    if proof.type == "article_quote":
+        source = _source_name_from_url(proof.source_url)
+        title = _short_text(str(slide_plan.get("headline") or ""), 38)
+        for text in [source, title]:
+            extra = frame.add_paragraph()
+            extra.text = text
+            extra.alignment = PP_ALIGN.CENTER
+            extra.space_before = Pt(8 if text == source else 4)
+            for run in extra.runs:
+                run.font.name = style.font_family if style and style.loaded else "Malgun Gothic"
+                run.font.size = Pt(18 if text == source else 14)
+                run.font.bold = text == source
+                run.font.color.rgb = SCREEN_BLACK if text == source else THEME["muted"]
 
 
 def _add_footer(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
@@ -728,7 +793,7 @@ def _render_big_headline(slide: Any, slide_plan: dict[str, Any], style: PptxStyl
     body_top = 2.05 if style.loaded else max(top + height + 0.35, 2.8)
     if style.loaded and left_image:
         body_width = 5.8
-    elif style.loaded and has_visual:
+    elif has_visual:
         body_width = 7.4
     else:
         body_width = 10.8
@@ -972,6 +1037,98 @@ def _chart_title(slide_plan: dict[str, Any]) -> str:
     return str(slide_plan.get("headline") or "차트/표 후보")
 
 
+def _chart_label_candidates(slide_plan: dict[str, Any]) -> list[str]:
+    body = _body_lines(slide_plan)
+    candidates = body[1:] if len(body) > 1 else body
+    labels = [line for line in candidates if line.strip()]
+    return labels[:6] or ["데이터 라벨", "비교값", "확인 필요"]
+
+
+def _render_reference_chart_skeleton(
+    slide: Any,
+    slide_plan: dict[str, Any],
+    style: PptxStyle,
+) -> None:
+    chart_left = 1.0
+    chart_top = 2.0
+    chart_width = 11.35
+    chart_height = 4.2
+    chart_area = slide.shapes.add_shape(
+        1,
+        Inches(chart_left),
+        Inches(chart_top),
+        Inches(chart_width),
+        Inches(chart_height),
+    )
+    _fill(chart_area, THEME["light"])
+    _line(chart_area, THEME["line"], 1.2)
+    # Reference-like axes and bar/data-label placeholders. Real chart generation
+    # stays out of scope; these editable boxes reserve the proof-object grammar.
+    axis_y = chart_top + chart_height - 0.58
+    axis_x = chart_left + 0.72
+    y_axis = slide.shapes.add_shape(
+        1,
+        Inches(axis_x),
+        Inches(chart_top + 0.52),
+        Inches(0.018),
+        Inches(chart_height - 1.02),
+    )
+    _fill(y_axis, RGBColor(210, 210, 210))
+    _no_line(y_axis)
+    x_axis = slide.shapes.add_shape(
+        1,
+        Inches(axis_x),
+        Inches(axis_y),
+        Inches(chart_width - 1.25),
+        Inches(0.018),
+    )
+    _fill(x_axis, RGBColor(210, 210, 210))
+    _no_line(x_axis)
+    labels = _chart_label_candidates(slide_plan)
+    slot = (chart_width - 1.8) / max(len(labels), 1)
+    for index, label in enumerate(labels):
+        bar_height = 0.85 + (len(labels) - index) * 0.32
+        bar_height = min(bar_height, 2.95)
+        bar_left = axis_x + 0.36 + index * slot
+        bar_width = min(0.72, max(0.48, slot * 0.42))
+        bar_top = axis_y - bar_height
+        bar = slide.shapes.add_shape(
+            1,
+            Inches(bar_left),
+            Inches(bar_top),
+            Inches(bar_width),
+            Inches(bar_height),
+        )
+        _fill(bar, RGBColor(72, 114, 196))
+        _no_line(bar)
+        _textbox(
+            slide,
+            bar_left - 0.28,
+            max(chart_top + 0.45, bar_top - 0.34),
+            bar_width + 0.56,
+            0.26,
+            _short_text(label, 18),
+            font_size=18,
+            bold=True,
+            color=CHART_DARK,
+            align=PP_ALIGN.CENTER,
+            style=style,
+        )
+        _textbox(
+            slide,
+            bar_left - 0.32,
+            axis_y + 0.08,
+            bar_width + 0.64,
+            0.33,
+            _short_text(label.split()[0], 10),
+            font_size=14,
+            bold=True,
+            color=CHART_DARK,
+            align=PP_ALIGN.CENTER,
+            style=style,
+        )
+
+
 def _render_chart_table_layout(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     _slide_background(slide)
     _textbox(
@@ -997,28 +1154,7 @@ def _render_chart_table_layout(slide: Any, slide_plan: dict[str, Any], style: Pp
         align=PP_ALIGN.CENTER,
         style=style,
     )
-    chart_area = slide.shapes.add_shape(
-        1,
-        Inches(1.0),
-        Inches(2.0),
-        Inches(11.35),
-        Inches(4.2),
-    )
-    _fill(chart_area, THEME["light"])
-    _line(chart_area, THEME["line"], 1.2)
-    body = _screen_body_lines(slide_plan)[1:] or ["데이터 라벨/차트 본문 후보"]
-    _body_box(
-        slide,
-        body,
-        1.35,
-        2.65,
-        10.6,
-        2.75,
-        font_size=18,
-        color=CHART_DARK,
-        bold=True,
-        style=style,
-    )
+    _render_reference_chart_skeleton(slide, slide_plan, style)
     _textbox(
         slide,
         6.7,
@@ -1363,7 +1499,7 @@ def _planned_text_placeholder_rects(
                 Rect(6.55, 2.05, 5.8, 2.9),
                 Rect(0.78, 1.55, 5.35, 4.5),
             )
-        body_width = 7.4 if style.loaded else 10.8
+        body_width = 7.4 if _has_screen_visual(slide, style) else 10.8
         return (
             Rect(0.78, 2.05 if style.loaded else max(top + height + 0.35, 2.8), body_width, 2.9),
             Rect(9.25, 4.8, 2.8, 1.2),
@@ -1473,6 +1609,66 @@ def _proof_object_type_counts(deck_plan: dict[str, Any]) -> dict[str, int]:
     return dict(
         Counter(proof.type for proof in _proof_objects(deck_plan) if proof.type != "none")
     )
+
+
+def _layout_template(slide: dict[str, Any]) -> str:
+    proof = _proof_object(slide)
+    if proof.type in {"chart", "table"}:
+        return "chart_table_reference"
+    if proof.type == "article_quote":
+        return "source_card_or_article_quote"
+    if proof.type in LEFT_PROOF_TYPES:
+        return "image_left_quote_right"
+    return "text_only_calculation"
+
+
+def _layout_template_counts(deck_plan: dict[str, Any]) -> dict[str, int]:
+    return dict(Counter(_layout_template(slide) for slide in deck_plan.get("slides", [])))
+
+
+def _legacy_proof_object_type(slide_plan: dict[str, Any]) -> str:
+    kind = _visual_kind(slide_plan)
+    layout_type = str(slide_plan.get("layout_type") or "headline_body")
+    slide_type = str(slide_plan.get("slide_type") or "")
+    if _is_chart_table_slide(slide_plan) or kind == "chart_candidate":
+        return "table" if layout_type in {"table", "data_table"} else "chart"
+    if kind == "diagram":
+        return "diagram"
+    if kind == "screenshot_candidate":
+        return "screenshot"
+    if kind in {"photo_candidate", "image_placeholder"}:
+        return "image"
+    if kind == "ai_image_prompt":
+        return "generated_image_candidate"
+    if kind == "manual" and (layout_type == "quote" or slide_type == "quote"):
+        return "article_quote"
+    if layout_type == "quote" or slide_type == "quote":
+        return "article_quote"
+    return "none"
+
+
+def _legacy_proof_object_slide_count(deck_plan: dict[str, Any]) -> int:
+    return sum(
+        1 for slide in deck_plan.get("slides", []) if _legacy_proof_object_type(slide) != "none"
+    )
+
+
+def _source_backed_text_only_slides(deck_plan: dict[str, Any]) -> list[int]:
+    return [
+        int(slide.get("slide_no") or 0)
+        for slide in deck_plan.get("slides", [])
+        if _proof_object(slide).type == "none" and _has_source_urls(slide)
+    ]
+
+
+def _source_backed_text_only_should_have_card_slides(deck_plan: dict[str, Any]) -> list[int]:
+    return [
+        int(slide.get("slide_no") or 0)
+        for slide in deck_plan.get("slides", [])
+        if _proof_object(slide).type == "none"
+        and _has_source_urls(slide)
+        and not _is_internal_or_structural_slide(slide)
+    ]
 
 
 def _proof_object_slide_count(deck_plan: dict[str, Any]) -> int:
@@ -1644,6 +1840,11 @@ def render_result(
     split_recommended = _split_recommended_slides(deck_plan)
     slides_using_20pt = _slides_using_20pt(deck_plan, style)
     proof_type_counts = _proof_object_type_counts(deck_plan)
+    layout_template_counts = _layout_template_counts(deck_plan)
+    legacy_proof_count = _legacy_proof_object_slide_count(deck_plan)
+    proof_count = _proof_object_slide_count(deck_plan)
+    source_backed_text_only = _source_backed_text_only_slides(deck_plan)
+    source_backed_should_have_card = _source_backed_text_only_should_have_card_slides(deck_plan)
     warnings = list(validation.get("warnings", []))
     for warning in overlap_warnings:
         warnings.append(
@@ -1683,6 +1884,35 @@ def render_result(
         "manual_placeholder_hidden_count": _manual_placeholder_hidden_count(deck_plan, style),
         "proof_object_slide_count": _proof_object_slide_count(deck_plan),
         "proof_object_type_counts": proof_type_counts,
+        "layout_template_counts": layout_template_counts,
+        "chart_table_reference_count": layout_template_counts.get(
+            "chart_table_reference",
+            0,
+        ),
+        "image_left_quote_right_count": layout_template_counts.get(
+            "image_left_quote_right",
+            0,
+        ),
+        "text_only_calculation_count": layout_template_counts.get(
+            "text_only_calculation",
+            0,
+        ),
+        "source_card_or_article_quote_count": layout_template_counts.get(
+            "source_card_or_article_quote",
+            0,
+        ),
+        "source_backed_text_only_count": len(source_backed_text_only),
+        "source_backed_text_only_slides": source_backed_text_only,
+        "source_backed_text_only_should_have_card_count": len(source_backed_should_have_card),
+        "source_backed_text_only_should_have_card_slides": source_backed_should_have_card,
+        "text_only_slide_count_before_after": {
+            "before": len(slides) - legacy_proof_count,
+            "after": len(slides) - proof_count,
+        },
+        "proof_object_slide_count_before_after": {
+            "before": legacy_proof_count,
+            "after": proof_count,
+        },
         "proof_object_required_but_missing_count": _proof_object_required_but_missing_count(
             deck_plan,
             style,
@@ -1756,6 +1986,8 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "in speaker notes",
         "- Proof object scaffold: reserves screen areas for chart/table, article "
         "quote, image, screenshot, and diagram evidence objects without inserting assets",
+        "- Reference layout templates v0: chart_table_reference, "
+        "image_left_quote_right, text_only_calculation, source_card_or_article_quote",
         "- Styled screen footers: hidden from slides and preserved in speaker notes/report",
         "- Adaptive body font: enabled only as overflow protection for styled drafts",
         "- Visual placeholder text: shortened for styled drafts",
@@ -1834,6 +2066,27 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"{result.get('manual_placeholder_hidden_count')}",
                 f"- proof_object_slide_count: {result.get('proof_object_slide_count')}",
                 f"- proof_object_type_counts: {result.get('proof_object_type_counts')}",
+                f"- layout_template_counts: {result.get('layout_template_counts')}",
+                "- chart_table_reference_count: "
+                f"{result.get('chart_table_reference_count')}",
+                "- image_left_quote_right_count: "
+                f"{result.get('image_left_quote_right_count')}",
+                "- text_only_calculation_count: "
+                f"{result.get('text_only_calculation_count')}",
+                "- source_card_or_article_quote_count: "
+                f"{result.get('source_card_or_article_quote_count')}",
+                "- source_backed_text_only_count: "
+                f"{result.get('source_backed_text_only_count')}",
+                "- source_backed_text_only_slides: "
+                f"{result.get('source_backed_text_only_slides')}",
+                "- source_backed_text_only_should_have_card_count: "
+                f"{result.get('source_backed_text_only_should_have_card_count')}",
+                "- source_backed_text_only_should_have_card_slides: "
+                f"{result.get('source_backed_text_only_should_have_card_slides')}",
+                "- text_only_slide_count_before_after: "
+                f"{result.get('text_only_slide_count_before_after')}",
+                "- proof_object_slide_count_before_after: "
+                f"{result.get('proof_object_slide_count_before_after')}",
                 "- proof_object_required_but_missing_count: "
                 f"{result.get('proof_object_required_but_missing_count')}",
                 "- proof_object_area_reserved_count: "

@@ -1,6 +1,6 @@
 # Piti PPTX Render Report
 
-- Generated at: 2026-05-19T11:25:13.187029+00:00
+- Generated at: 2026-05-19T11:33:01.817052+00:00
 - Rendered deck count: 4
 - Passed: 4
 - Failed: 0
@@ -10,6 +10,7 @@
 - Chart/table rules: title 28pt bold underline; body/data labels 18pt bold; source 20pt underline
 - Manual visual placeholders: hidden from styled screens and preserved in speaker notes
 - Proof object scaffold: reserves screen areas for chart/table, article quote, image, screenshot, and diagram evidence objects without inserting assets
+- Reference layout templates v0: chart_table_reference, image_left_quote_right, text_only_calculation, source_card_or_article_quote
 - Styled screen footers: hidden from slides and preserved in speaker notes/report
 - Adaptive body font: enabled only as overflow protection for styled drafts
 - Visual placeholder text: shortened for styled drafts
@@ -22,10 +23,10 @@
 
 | Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | Visuals | Proof Objects | Text Only | Dense | Overflow | Split | 20pt | Manual Hidden | Footer Hidden | Proof/Text Overlap | Missing Notes | Overlap | PPTX | Passed |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| piti_deck_plan_ai_knowledge_institution | no | 26 | 4 | 0 | 0 | 16 | 25 | 8 | 18 | 8 | 2 | 2 | 12 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_draft.pptx | yes |
-| piti_deck_plan_productive_finance_policy | no | 24 | 4 | 2 | 1 | 17 | 22 | 11 | 13 | 12 | 1 | 1 | 8 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_draft.pptx | yes |
-| piti_deck_plan_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 25 | 8 | 18 | 16 | 2 | 2 | 0 | 19 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_styled_draft.pptx | yes |
-| piti_deck_plan_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 22 | 11 | 13 | 18 | 1 | 1 | 0 | 12 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_styled_draft.pptx | yes |
+| piti_deck_plan_ai_knowledge_institution | no | 26 | 4 | 0 | 0 | 16 | 25 | 17 | 9 | 15 | 15 | 2 | 12 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_draft.pptx | yes |
+| piti_deck_plan_productive_finance_policy | no | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 6 | 16 | 16 | 1 | 8 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_draft.pptx | yes |
+| piti_deck_plan_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 25 | 17 | 9 | 16 | 15 | 2 | 0 | 19 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_styled_draft.pptx | yes |
+| piti_deck_plan_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 6 | 17 | 16 | 1 | 0 | 12 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_styled_draft.pptx | yes |
 
 ## Style Profile Application
 
@@ -46,26 +47,37 @@
 - chart_table_style_applied_count: 0
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 0
-- proof_object_slide_count: 8
-- proof_object_type_counts: {'article_quote': 2, 'diagram': 5, 'chart': 1}
+- proof_object_slide_count: 17
+- proof_object_type_counts: {'article_quote': 11, 'diagram': 5, 'chart': 1}
+- layout_template_counts: {'text_only_calculation': 9, 'source_card_or_article_quote': 11, 'image_left_quote_right': 5, 'chart_table_reference': 1}
+- chart_table_reference_count: 1
+- image_left_quote_right_count: 5
+- text_only_calculation_count: 9
+- source_card_or_article_quote_count: 11
+- source_backed_text_only_count: 1
+- source_backed_text_only_slides: [24]
+- source_backed_text_only_should_have_card_count: 0
+- source_backed_text_only_should_have_card_slides: []
+- text_only_slide_count_before_after: {'before': 18, 'after': 9}
+- proof_object_slide_count_before_after: {'before': 8, 'after': 17}
 - proof_object_required_but_missing_count: 0
-- proof_object_area_reserved_count: 8
-- text_only_slide_count: 18
+- proof_object_area_reserved_count: 17
+- text_only_slide_count: 9
 - text_only_dense_count: 0
 - chart_table_skeleton_count: 1
-- article_quote_skeleton_count: 2
+- article_quote_skeleton_count: 11
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 0
-- screen_body_overflow_count: 2
-- screen_body_overflow_slides: [22, 24]
+- screen_body_overflow_count: 15
+- screen_body_overflow_slides: [2, 4, 5, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22, 23, 24]
 - split_recommended_slide_count: 2
 - split_recommended_slides: [22, 24]
 - slides_using_20pt: [3, 4, 7, 8, 10, 11, 13, 14, 15, 16, 20, 22]
-- slides_with_long_body: [3, 5, 9, 11, 17, 18, 21, 22, 23, 24]
-- visually_dense_slides: [3, 5, 9, 11, 17, 18, 21, 23]
+- slides_with_long_body: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24]
+- visually_dense_slides: [2, 3, 4, 5, 8, 10, 11, 14, 15, 16, 17, 18, 19, 21, 23]
 - slides_with_text_placeholder_overlap: []
-- slides_with_visual_and_long_body: [3, 5, 9, 11, 18, 21, 23]
-- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 22}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 6, 'font_size': 20}, {'slide_no': 4, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 5, 'body_line_estimate': 6, 'font_size': 23}, {'slide_no': 6, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 20}, {'slide_no': 8, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 9, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 10, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 11, 'body_line_estimate': 5, 'font_size': 20}, {'slide_no': 12, 'body_line_estimate': 3, 'font_size': 24}, {'slide_no': 13, 'body_line_estimate': 1, 'font_size': 20}, {'slide_no': 14, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 15, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 16, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 17, 'body_line_estimate': 4, 'font_size': 17}, {'slide_no': 18, 'body_line_estimate': 6, 'font_size': 23}, {'slide_no': 19, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 20, 'body_line_estimate': 1, 'font_size': 20}, {'slide_no': 21, 'body_line_estimate': 5, 'font_size': 19}, {'slide_no': 22, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 23, 'body_line_estimate': 5, 'font_size': 23}, {'slide_no': 24, 'body_line_estimate': 3, 'font_size': 18}, {'slide_no': 25, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 26, 'body_line_estimate': 2, 'font_size': 24}]
+- slides_with_visual_and_long_body: [2, 3, 4, 5, 8, 10, 11, 14, 15, 16, 18, 19, 21, 23]
+- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 22}, {'slide_no': 2, 'body_line_estimate': 3, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 6, 'font_size': 20}, {'slide_no': 4, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 5, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 6, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 20}, {'slide_no': 8, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 9, 'body_line_estimate': 2, 'font_size': 19}, {'slide_no': 10, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 11, 'body_line_estimate': 5, 'font_size': 20}, {'slide_no': 12, 'body_line_estimate': 3, 'font_size': 24}, {'slide_no': 13, 'body_line_estimate': 1, 'font_size': 20}, {'slide_no': 14, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 15, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 16, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 17, 'body_line_estimate': 4, 'font_size': 17}, {'slide_no': 18, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 19, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 20, 'body_line_estimate': 1, 'font_size': 20}, {'slide_no': 21, 'body_line_estimate': 3, 'font_size': 19}, {'slide_no': 22, 'body_line_estimate': 2, 'font_size': 20}, {'slide_no': 23, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 24, 'body_line_estimate': 3, 'font_size': 18}, {'slide_no': 25, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 26, 'body_line_estimate': 2, 'font_size': 24}]
 - slides_with_font_fallback: []
 - parse_back_slide_count: 26
 - parse_back_notes_slide_count: 26
@@ -90,26 +102,37 @@
 - chart_table_style_applied_count: 0
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 0
-- proof_object_slide_count: 11
-- proof_object_type_counts: {'diagram': 9, 'chart': 1, 'article_quote': 1}
+- proof_object_slide_count: 18
+- proof_object_type_counts: {'article_quote': 8, 'diagram': 9, 'chart': 1}
+- layout_template_counts: {'text_only_calculation': 6, 'source_card_or_article_quote': 8, 'image_left_quote_right': 9, 'chart_table_reference': 1}
+- chart_table_reference_count: 1
+- image_left_quote_right_count: 9
+- text_only_calculation_count: 6
+- source_card_or_article_quote_count: 8
+- source_backed_text_only_count: 2
+- source_backed_text_only_slides: [21, 23]
+- source_backed_text_only_should_have_card_count: 0
+- source_backed_text_only_should_have_card_slides: []
+- text_only_slide_count_before_after: {'before': 13, 'after': 6}
+- proof_object_slide_count_before_after: {'before': 11, 'after': 18}
 - proof_object_required_but_missing_count: 0
-- proof_object_area_reserved_count: 11
-- text_only_slide_count: 13
-- text_only_dense_count: 1
+- proof_object_area_reserved_count: 18
+- text_only_slide_count: 6
+- text_only_dense_count: 0
 - chart_table_skeleton_count: 1
-- article_quote_skeleton_count: 1
+- article_quote_skeleton_count: 8
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 0
-- screen_body_overflow_count: 1
-- screen_body_overflow_slides: [11]
+- screen_body_overflow_count: 16
+- screen_body_overflow_slides: [2, 3, 4, 5, 7, 9, 10, 11, 13, 14, 16, 17, 18, 20, 22, 24]
 - split_recommended_slide_count: 1
 - split_recommended_slides: [11]
 - slides_using_20pt: [3, 6, 7, 12, 14, 15, 19, 20]
-- slides_with_long_body: [4, 5, 8, 9, 10, 11, 15, 16, 17, 18, 22]
-- visually_dense_slides: [4, 5, 8, 9, 10, 11, 13, 15, 16, 17, 18, 22]
+- slides_with_long_body: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- visually_dense_slides: [2, 3, 4, 5, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
 - slides_with_text_placeholder_overlap: []
-- slides_with_visual_and_long_body: [4, 5, 9, 10, 11, 15, 16, 17, 18, 22]
-- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 22}, {'slide_no': 2, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 4, 'body_line_estimate': 7, 'font_size': 23}, {'slide_no': 5, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 7, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 8, 'body_line_estimate': 4, 'font_size': 17}, {'slide_no': 9, 'body_line_estimate': 5, 'font_size': 19}, {'slide_no': 10, 'body_line_estimate': 6, 'font_size': 23}, {'slide_no': 11, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 13, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 14, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 15, 'body_line_estimate': 5, 'font_size': 20}, {'slide_no': 16, 'body_line_estimate': 5, 'font_size': 19}, {'slide_no': 17, 'body_line_estimate': 6, 'font_size': 19}, {'slide_no': 18, 'body_line_estimate': 6, 'font_size': 23}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 20, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 18}, {'slide_no': 22, 'body_line_estimate': 5, 'font_size': 19}, {'slide_no': 23, 'body_line_estimate': 4, 'font_size': 18}, {'slide_no': 24, 'body_line_estimate': 4, 'font_size': 23}]
+- slides_with_visual_and_long_body: [2, 3, 4, 5, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 22}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 4, 'body_line_estimate': 5, 'font_size': 23}, {'slide_no': 5, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 7, 'body_line_estimate': 2, 'font_size': 20}, {'slide_no': 8, 'body_line_estimate': 4, 'font_size': 17}, {'slide_no': 9, 'body_line_estimate': 3, 'font_size': 19}, {'slide_no': 10, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 11, 'body_line_estimate': 2, 'font_size': 23}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 13, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 14, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 15, 'body_line_estimate': 5, 'font_size': 20}, {'slide_no': 16, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 17, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 18, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 20, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 18}, {'slide_no': 22, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 23, 'body_line_estimate': 4, 'font_size': 18}, {'slide_no': 24, 'body_line_estimate': 4, 'font_size': 23}]
 - slides_with_font_fallback: []
 - parse_back_slide_count: 24
 - parse_back_notes_slide_count: 24
@@ -125,35 +148,46 @@
 - applied_font_family: 맑은 고딕
 - applied_fallback_font: Malgun Gothic
 - applied_layout_count: 18
-- font_size_downgraded_slides: [{'slide_no': 3, 'font_size': 24, 'body_lines': 3}, {'slide_no': 5, 'font_size': 24, 'body_lines': 3}, {'slide_no': 9, 'font_size': 24, 'body_lines': 3}, {'slide_no': 11, 'font_size': 24, 'body_lines': 3}, {'slide_no': 18, 'font_size': 24, 'body_lines': 3}, {'slide_no': 21, 'font_size': 24, 'body_lines': 3}, {'slide_no': 23, 'font_size': 24, 'body_lines': 3}]
+- font_size_downgraded_slides: [{'slide_no': 3, 'font_size': 24, 'body_lines': 3}, {'slide_no': 11, 'font_size': 24, 'body_lines': 3}]
 - visual_placeholder_shortened: True
 - section_title_color_policy: theme/default black; do not force #FF0000
 - headline_red_count: 23
 - body_black_count: 26
 - bilingual_quote_slide_count: 0
 - chart_table_style_applied_count: 1
-- image_left_layout_count: 7
+- image_left_layout_count: 16
 - manual_placeholder_hidden_count: 19
-- proof_object_slide_count: 8
-- proof_object_type_counts: {'article_quote': 2, 'diagram': 5, 'chart': 1}
+- proof_object_slide_count: 17
+- proof_object_type_counts: {'article_quote': 11, 'diagram': 5, 'chart': 1}
+- layout_template_counts: {'text_only_calculation': 9, 'source_card_or_article_quote': 11, 'image_left_quote_right': 5, 'chart_table_reference': 1}
+- chart_table_reference_count: 1
+- image_left_quote_right_count: 5
+- text_only_calculation_count: 9
+- source_card_or_article_quote_count: 11
+- source_backed_text_only_count: 1
+- source_backed_text_only_slides: [24]
+- source_backed_text_only_should_have_card_count: 0
+- source_backed_text_only_should_have_card_slides: []
+- text_only_slide_count_before_after: {'before': 18, 'after': 9}
+- proof_object_slide_count_before_after: {'before': 8, 'after': 17}
 - proof_object_required_but_missing_count: 0
-- proof_object_area_reserved_count: 8
-- text_only_slide_count: 18
-- text_only_dense_count: 8
+- proof_object_area_reserved_count: 17
+- text_only_slide_count: 9
+- text_only_dense_count: 0
 - chart_table_skeleton_count: 1
-- article_quote_skeleton_count: 2
+- article_quote_skeleton_count: 11
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 26
-- screen_body_overflow_count: 2
-- screen_body_overflow_slides: [22, 24]
+- screen_body_overflow_count: 15
+- screen_body_overflow_slides: [2, 4, 5, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22, 23, 24]
 - split_recommended_slide_count: 2
 - split_recommended_slides: [22, 24]
 - slides_using_20pt: []
-- slides_with_long_body: [3, 5, 9, 11, 17, 18, 21, 22, 23, 24]
+- slides_with_long_body: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24]
 - visually_dense_slides: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 23]
 - slides_with_text_placeholder_overlap: []
-- slides_with_visual_and_long_body: [3, 5, 9, 11, 18, 21, 23]
-- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 7, 'font_size': 24}, {'slide_no': 4, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 6, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 10, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 7, 'font_size': 24}, {'slide_no': 12, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 16, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 19, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 22, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 24, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 25, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 26, 'body_line_estimate': 2, 'font_size': 28}]
+- slides_with_visual_and_long_body: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 18, 19, 21, 23]
+- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 7, 'font_size': 24}, {'slide_no': 4, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 7, 'font_size': 24}, {'slide_no': 12, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 16, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 22, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 24, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 25, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 26, 'body_line_estimate': 2, 'font_size': 28}]
 - slides_with_font_fallback: []
 - parse_back_slide_count: 26
 - parse_back_notes_slide_count: 26
@@ -169,35 +203,46 @@
 - applied_font_family: 맑은 고딕
 - applied_fallback_font: Malgun Gothic
 - applied_layout_count: 12
-- font_size_downgraded_slides: [{'slide_no': 4, 'font_size': 24, 'body_lines': 3}, {'slide_no': 5, 'font_size': 24, 'body_lines': 3}, {'slide_no': 9, 'font_size': 24, 'body_lines': 3}, {'slide_no': 10, 'font_size': 24, 'body_lines': 3}, {'slide_no': 11, 'font_size': 24, 'body_lines': 4}, {'slide_no': 15, 'font_size': 24, 'body_lines': 3}, {'slide_no': 16, 'font_size': 24, 'body_lines': 3}, {'slide_no': 17, 'font_size': 24, 'body_lines': 3}, {'slide_no': 18, 'font_size': 24, 'body_lines': 3}, {'slide_no': 21, 'font_size': 24, 'body_lines': 3}, {'slide_no': 22, 'font_size': 24, 'body_lines': 3}, {'slide_no': 23, 'font_size': 24, 'body_lines': 2}]
+- font_size_downgraded_slides: [{'slide_no': 2, 'font_size': 24, 'body_lines': 3}, {'slide_no': 15, 'font_size': 24, 'body_lines': 3}, {'slide_no': 21, 'font_size': 24, 'body_lines': 3}, {'slide_no': 23, 'font_size': 24, 'body_lines': 2}]
 - visual_placeholder_shortened: True
 - section_title_color_policy: theme/default black; do not force #FF0000
 - headline_red_count: 19
 - body_black_count: 21
 - bilingual_quote_slide_count: 0
 - chart_table_style_applied_count: 1
-- image_left_layout_count: 10
+- image_left_layout_count: 17
 - manual_placeholder_hidden_count: 12
-- proof_object_slide_count: 11
-- proof_object_type_counts: {'diagram': 9, 'chart': 1, 'article_quote': 1}
+- proof_object_slide_count: 18
+- proof_object_type_counts: {'article_quote': 8, 'diagram': 9, 'chart': 1}
+- layout_template_counts: {'text_only_calculation': 6, 'source_card_or_article_quote': 8, 'image_left_quote_right': 9, 'chart_table_reference': 1}
+- chart_table_reference_count: 1
+- image_left_quote_right_count: 9
+- text_only_calculation_count: 6
+- source_card_or_article_quote_count: 8
+- source_backed_text_only_count: 2
+- source_backed_text_only_slides: [21, 23]
+- source_backed_text_only_should_have_card_count: 0
+- source_backed_text_only_should_have_card_slides: []
+- text_only_slide_count_before_after: {'before': 13, 'after': 6}
+- proof_object_slide_count_before_after: {'before': 11, 'after': 18}
 - proof_object_required_but_missing_count: 0
-- proof_object_area_reserved_count: 11
-- text_only_slide_count: 13
-- text_only_dense_count: 7
+- proof_object_area_reserved_count: 18
+- text_only_slide_count: 6
+- text_only_dense_count: 0
 - chart_table_skeleton_count: 1
-- article_quote_skeleton_count: 1
+- article_quote_skeleton_count: 8
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 24
-- screen_body_overflow_count: 1
-- screen_body_overflow_slides: [11]
+- screen_body_overflow_count: 16
+- screen_body_overflow_slides: [2, 3, 4, 5, 7, 9, 10, 11, 13, 14, 16, 17, 18, 20, 22, 24]
 - split_recommended_slide_count: 1
 - split_recommended_slides: [11]
 - slides_using_20pt: []
-- slides_with_long_body: [4, 5, 8, 9, 10, 11, 15, 16, 17, 18, 22]
-- visually_dense_slides: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- slides_with_long_body: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- visually_dense_slides: [2, 3, 4, 5, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
 - slides_with_text_placeholder_overlap: []
-- slides_with_visual_and_long_body: [4, 5, 9, 10, 11, 15, 16, 17, 18, 22]
-- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 7, 'font_size': 24}, {'slide_no': 5, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 10, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 11, 'body_line_estimate': 3, 'font_size': 24}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 16, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 17, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 18, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 22, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 23, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 24, 'body_line_estimate': 5, 'font_size': 28}]
+- slides_with_visual_and_long_body: [2, 3, 4, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 16, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 22, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 24, 'body_line_estimate': 5, 'font_size': 28}]
 - slides_with_font_fallback: []
 - parse_back_slide_count: 24
 - parse_back_notes_slide_count: 24
@@ -220,7 +265,7 @@
 - piti_deck_plan_ai_knowledge_institution: slide 9: visual plan requires manual check
 - piti_deck_plan_ai_knowledge_institution: slide 10: visual plan requires manual check
 - piti_deck_plan_ai_knowledge_institution: slide 11: visual plan requires manual check
-- piti_deck_plan_ai_knowledge_institution: ... +36 more
+- piti_deck_plan_ai_knowledge_institution: ... +56 more
 - piti_deck_plan_productive_finance_policy: slide 11: consider_split: more than three body bullets
 - piti_deck_plan_productive_finance_policy: slide 1: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 2: visual plan requires manual check
@@ -233,7 +278,7 @@
 - piti_deck_plan_productive_finance_policy: slide 9: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 10: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 11: visual plan requires manual check
-- piti_deck_plan_productive_finance_policy: ... +32 more
+- piti_deck_plan_productive_finance_policy: ... +51 more
 - piti_deck_plan_ai_knowledge_institution: slide 22: consider_split: more than three body bullets
 - piti_deck_plan_ai_knowledge_institution: slide 1: visual plan requires manual check
 - piti_deck_plan_ai_knowledge_institution: slide 2: visual plan requires manual check
@@ -246,7 +291,7 @@
 - piti_deck_plan_ai_knowledge_institution: slide 9: visual plan requires manual check
 - piti_deck_plan_ai_knowledge_institution: slide 10: visual plan requires manual check
 - piti_deck_plan_ai_knowledge_institution: slide 11: visual plan requires manual check
-- piti_deck_plan_ai_knowledge_institution: ... +33 more
+- piti_deck_plan_ai_knowledge_institution: ... +46 more
 - piti_deck_plan_productive_finance_policy: slide 11: consider_split: more than three body bullets
 - piti_deck_plan_productive_finance_policy: slide 1: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 2: visual plan requires manual check
@@ -259,7 +304,7 @@
 - piti_deck_plan_productive_finance_policy: slide 9: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 10: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 11: visual plan requires manual check
-- piti_deck_plan_productive_finance_policy: ... +31 more
+- piti_deck_plan_productive_finance_policy: ... +45 more
 
 ## Readiness
 

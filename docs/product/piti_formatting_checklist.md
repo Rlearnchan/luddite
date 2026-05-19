@@ -61,6 +61,25 @@ belongs in speaker notes.
 - Proof object and text regions must not overlap. Styled drafts should fail the
   render hygiene check if an overlap is detected.
 
+## Reference Layout Templates v0
+
+- `chart_table_reference`: use for chart/table proof objects, numeric ranking,
+  ratios, amounts, or data-heavy slides. The chart/table area should dominate
+  the screen. Use a red story headline, black underlined chart title, editable
+  axis/bar/data-label skeleton, and underlined source label.
+- `image_left_quote_right`: use for image, logo, person-photo, screenshot,
+  diagram, or generated-image proof objects. Reserve the left half for the
+  proof object and keep the interpretation text on the right.
+- `text_only_calculation`: use only when the text itself is the scene, such as
+  a calculation, rhetorical turn, closing question, or tight logic step. Keep
+  the body to 2-3 visible lines.
+- `source_card_or_article_quote`: use for source-backed claims without a real
+  screenshot yet. Render a compact source card on the left with source name and
+  short title, keep URLs in notes, and place the interpretation text on the
+  right.
+- Source-backed manual slides should not remain text-only by default. Prefer a
+  source card unless the slide is title/section/checklist/internal material.
+
 ## Non-goals
 
 - This is not a production Piti agent.

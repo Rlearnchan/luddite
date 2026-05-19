@@ -730,6 +730,34 @@ Milestone 1.19.7: Piti Proof Object Layout Scaffold
   Google Slides integration, production Piti agent, LLM/API calls, and final
   Syukaworld visual fidelity claims.
 
+Milestone 1.19.8: Piti Reference Layout Templates v0
+
+- Add a template assignment layer over `proof_object` so styled drafts use four
+  reference-inspired screen grammars: `chart_table_reference`,
+  `image_left_quote_right`, `text_only_calculation`, and
+  `source_card_or_article_quote`.
+- Promote source-backed manual slides into source-card/article-quote proof
+  objects unless they are title, section, checklist, appendix, or other
+  structural/internal slides. This reduces source-backed text-only cards without
+  inventing assets.
+- Strengthen chart/table placeholders into editable reference-like skeletons
+  with a red story headline, black underlined chart title, large chart area,
+  axes, bars, data-label placeholders, and underlined source label.
+- Render source-backed article cards with compact on-screen source identity and
+  short title, while keeping full URLs and detailed visual plans in speaker
+  notes.
+- Keep proof-object slides to shorter screen bodies and move overflow into
+  notes; text-only slides remain allowed for calculation/question beats.
+- Add render-report metrics for layout template counts, before/after
+  proof-object and text-only counts, source-backed text-only slides, source
+  cards, chart/table skeletons, and proof/text overlap.
+- Styled drafts remain scaffold outputs only:
+  `ready_for_ppt_generation=true` for review,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: actual image insertion, chart generation, Google Slides
+  integration, production Piti agent, LLM/API calls, and final Syukaworld visual
+  fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

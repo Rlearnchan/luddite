@@ -453,3 +453,102 @@ def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None
     assert result["image_left_layout_count"] == 1
     assert "proof_object_slide_count" in report_text
     assert "proof_object_type_counts" in report_text
+
+
+def test_source_backed_manual_slide_uses_source_card_template(tmp_path: Path) -> None:
+    output_path = tmp_path / "source_card.pptx"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    slide = {
+        "slide_no": 1,
+        "layout_type": "headline_body",
+        "slide_type": "explainer",
+        "headline": "BBC가 던진 질문",
+        "body": ["출처가 있는 주장은 카드로 보여준다", "긴 설명은 노트에 둔다"],
+        "source_urls": ["https://www.bbc.com/news/example"],
+        "image_urls": [],
+        "speaker_notes": "source-backed manual slide",
+        "visual_plan": {"kind": "manual", "description": "manual source card"},
+    }
+
+    result = render_pptx.render_deck_plan_to_pptx(
+        _minimal_deck(slide),
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+    parsed = parse_presentation(output_path)
+    visible_text = "\n".join(item["visible_text"] for item in parsed["slides"])
+    notes_text = "\n".join(item["notes"] for item in parsed["slides"])
+
+    assert result["proof_object_type_counts"] == {"article_quote": 1}
+    assert result["layout_template_counts"] == {"source_card_or_article_quote": 1}
+    assert result["source_card_or_article_quote_count"] == 1
+    assert result["text_only_slide_count"] == 0
+    assert result["text_only_slide_count_before_after"] == {"before": 1, "after": 0}
+    assert result["proof_object_slide_count_before_after"] == {"before": 0, "after": 1}
+    assert result["source_backed_text_only_should_have_card_count"] == 0
+    assert "[기사 인용]" in visible_text
+    assert "BBC" in visible_text
+    assert "proof_object_type: article_quote" in notes_text
+
+
+def test_reference_layout_report_exposes_template_metrics(tmp_path: Path) -> None:
+    output_path = tmp_path / "templates.pptx"
+    report_path = tmp_path / "report.md"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    slides = [
+        {
+            "slide_no": 1,
+            "layout_type": "chart_placeholder",
+            "slide_type": "data",
+            "headline": "차트가 주인공",
+            "body": ["차트 제목", "A 10", "B 7"],
+            "source_urls": ["https://example.com/chart"],
+            "image_urls": [],
+            "speaker_notes": "chart",
+            "visual_plan": {"kind": "chart_candidate"},
+        },
+        {
+            "slide_no": 2,
+            "layout_type": "question",
+            "slide_type": "bridge",
+            "headline": "텍스트 자체가 장면",
+            "body": ["그래서 무엇을 물어야 하나"],
+            "source_urls": [],
+            "image_urls": [],
+            "speaker_notes": "calculation",
+            "visual_plan": {"kind": "none"},
+        },
+        {
+            "slide_no": 3,
+            "layout_type": "image_placeholder",
+            "slide_type": "image",
+            "headline": "이미지 왼쪽",
+            "body": ["오른쪽 해석"],
+            "source_urls": [],
+            "image_urls": [],
+            "speaker_notes": "image",
+            "visual_plan": {"kind": "screenshot_candidate"},
+        },
+    ]
+    deck = {"deck_id": "template_metrics", "sections": [{"slides": slides}], "slides": slides}
+
+    result = render_pptx.render_deck_plan_to_pptx(
+        deck,
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+    render_pptx.write_render_report(report_path, [result])
+    report_text = report_path.read_text(encoding="utf-8")
+
+    assert result["layout_template_counts"] == {
+        "chart_table_reference": 1,
+        "text_only_calculation": 1,
+        "image_left_quote_right": 1,
+    }
+    assert result["chart_table_reference_count"] == 1
+    assert result["image_left_quote_right_count"] == 1
+    assert result["text_only_calculation_count"] == 1
+    assert "layout_template_counts" in report_text
+    assert "source_backed_text_only_should_have_card_count" in report_text
