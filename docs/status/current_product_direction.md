@@ -656,6 +656,31 @@ Milestone 1.19.4: Piti Styled Renderer Layout Tuning
   chart generation, Google Slides integration, LLM/API calls, and final
   Syukaworld visual fidelity claims.
 
+Milestone 1.19.5: Piti Screen Formatting Rules v0.1
+
+- Treat explicit screen-formatting rules as higher priority than style-profile
+  frequency counts. Red `#FF0000` and 28pt are not generic body defaults.
+- Document the v0.1 rules in `docs/product/piti_formatting_checklist.md`.
+- Apply headline red 28pt while keeping normal Korean body text black by
+  default.
+- Add bilingual quote handling: English source lines render black 28pt and
+  Korean translation/interpretation lines render red 28pt.
+- Add chart/table placeholder grammar: black 28pt bold-underlined title,
+  18pt bold data/body labels, and 20pt underlined parenthesized source label.
+- Hide manual visual placeholders from styled screens by default; keep the
+  visual plan and overflow body lines in speaker notes.
+- Prefer left-side image/screenshot areas for image-heavy slides while keeping
+  text on the right.
+- Track report metrics for headline red count, body black count, bilingual
+  quote count, chart/table style count, image-left count, hidden manual
+  placeholders, screen-body overflow, split recommendations, and 20pt usage.
+- Current readiness:
+  `ready_for_ppt_generation=true` for scaffold/styled draft review only,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: production Piti agent, image auto collection/insertion,
+  chart generation, Google Slides integration, LLM/API calls, and final
+  Syukaworld visual fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
