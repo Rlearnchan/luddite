@@ -1,6 +1,6 @@
 # Piti PPTX Render Report
 
-- Generated at: 2026-05-19T09:51:05.106289+00:00
+- Generated at: 2026-05-19T11:09:15.974976+00:00
 - Rendered deck count: 4
 - Passed: 4
 - Failed: 0
@@ -9,6 +9,7 @@
 - Screen formatting rules: headline red 28pt; normal body black; bilingual quote Korean translation red
 - Chart/table rules: title 28pt bold underline; body/data labels 18pt bold; source 20pt underline
 - Manual visual placeholders: hidden from styled screens and preserved in speaker notes
+- Styled screen footers: hidden from slides and preserved in speaker notes/report
 - Adaptive body font: enabled only as overflow protection for styled drafts
 - Visual placeholder text: shortened for styled drafts
 - Text/visual overlap policy: styled drafts fail on overlap; legacy scaffold outputs report overlap as warnings only
@@ -18,12 +19,12 @@
 
 ## Decks
 
-| Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | Visuals | Dense | Overflow | Split | 20pt | Manual Hidden | Text/Visual Overlap | Missing Notes | Overlap | PPTX | Passed |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| piti_deck_plan_ai_knowledge_institution | no | 26 | 4 | 0 | 0 | 16 | 25 | 20 | 2 | 2 | 12 | 0 | 3 | 0 | 0 | outputs/pptx/ai_knowledge_institution_draft.pptx | yes |
-| piti_deck_plan_productive_finance_policy | no | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 1 | 1 | 8 | 0 | 2 | 0 | 0 | outputs/pptx/productive_finance_policy_draft.pptx | yes |
-| piti_deck_plan_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 25 | 22 | 2 | 2 | 0 | 19 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_styled_draft.pptx | yes |
-| piti_deck_plan_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 1 | 1 | 0 | 12 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_styled_draft.pptx | yes |
+| Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | Visuals | Dense | Overflow | Split | 20pt | Manual Hidden | Footer Hidden | Text/Visual Overlap | Missing Notes | Overlap | PPTX | Passed |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| piti_deck_plan_ai_knowledge_institution | no | 26 | 4 | 0 | 0 | 16 | 25 | 20 | 2 | 2 | 12 | 0 | 0 | 3 | 0 | 0 | outputs/pptx/ai_knowledge_institution_draft.pptx | yes |
+| piti_deck_plan_productive_finance_policy | no | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 1 | 1 | 8 | 0 | 0 | 2 | 0 | 0 | outputs/pptx/productive_finance_policy_draft.pptx | yes |
+| piti_deck_plan_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 25 | 22 | 2 | 2 | 0 | 19 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_styled_draft.pptx | yes |
+| piti_deck_plan_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 1 | 1 | 0 | 12 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_styled_draft.pptx | yes |
 
 ## Style Profile Application
 
@@ -44,6 +45,7 @@
 - chart_table_style_applied_count: 0
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 0
+- screen_footer_hidden_count: 0
 - screen_body_overflow_count: 2
 - screen_body_overflow_slides: [22, 24]
 - split_recommended_slide_count: 2
@@ -78,6 +80,7 @@
 - chart_table_style_applied_count: 0
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 0
+- screen_footer_hidden_count: 0
 - screen_body_overflow_count: 1
 - screen_body_overflow_slides: [11]
 - split_recommended_slide_count: 1
@@ -112,6 +115,7 @@
 - chart_table_style_applied_count: 1
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 19
+- screen_footer_hidden_count: 26
 - screen_body_overflow_count: 2
 - screen_body_overflow_slides: [22, 24]
 - split_recommended_slide_count: 2
@@ -146,6 +150,7 @@
 - chart_table_style_applied_count: 1
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 12
+- screen_footer_hidden_count: 24
 - screen_body_overflow_count: 1
 - screen_body_overflow_slides: [11]
 - split_recommended_slide_count: 1

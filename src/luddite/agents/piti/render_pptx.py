@@ -115,6 +115,7 @@ THEME = {
 SYUKA_RED = RGBColor(255, 0, 0)
 SCREEN_BLACK = RGBColor(0, 0, 0)
 CHART_DARK = RGBColor(55, 55, 55)
+CONTENT_HEADLINE_BOX = (0.626, 0.39, 12.24, 0.57)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -505,6 +506,8 @@ def _placeholder(
 
 
 def _add_footer(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
+    if style.loaded:
+        return
     flags = []
     if slide_plan.get("needs_source"):
         flags.append("needs_source")
@@ -546,11 +549,8 @@ def _slide_background(slide: Any, *, dark: bool = False) -> None:
 
 def _render_title(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     _slide_background(slide, dark=False if style.loaded else True)
-    if style.loaded:
-        left, top, width, height = (0.75, 0.48, 11.8, 0.75)
-    else:
-        left, top, width, height = _layout_box(style, "title", (0.8, 1.35, 11.8, 1.7))
-    headline_color = SYUKA_RED if style.loaded else THEME["light"]
+    left, top, width, height = _layout_box(style, "title", (0.8, 1.35, 11.8, 1.7))
+    headline_color = SCREEN_BLACK if style.loaded else THEME["light"]
     _textbox(
         slide,
         left,
@@ -558,23 +558,24 @@ def _render_title(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
         width,
         height,
         str(slide_plan.get("headline") or ""),
-        font_size=28 if style.loaded else _layout_font_size(style, "title", 38),
+        font_size=54 if style.loaded else _layout_font_size(style, "title", 38),
         bold=True,
         color=headline_color,
         style=style,
     )
     body = _screen_body_lines(slide_plan)
-    _body_box(
-        slide,
-        body,
-        left,
-        min(top + 1.1, 6.2),
-        min(width, 10.8),
-        1.4,
-        font_size=_body_font_size(style, body, 22, has_visual=False),
-        color=SCREEN_BLACK if style.loaded else THEME["ink"],
-        style=style,
-    )
+    if not style.loaded:
+        _body_box(
+            slide,
+            body,
+            left + 0.1,
+            min(top + 2.1, 6.2),
+            min(width, 10.8),
+            1.0,
+            font_size=_body_font_size(style, body, 22, has_visual=False),
+            color=THEME["ink"],
+            style=style,
+        )
     for shape in slide.shapes:
         if getattr(shape, "has_text_frame", False) and shape.text_frame.text:
             for paragraph in shape.text_frame.paragraphs:
@@ -602,18 +603,19 @@ def _render_section_title(slide: Any, slide_plan: dict[str, Any], style: PptxSty
         color=THEME["ink"] if style.loaded else THEME["light"],
         style=style,
     )
-    body = _body_lines(slide_plan)
-    _body_box(
-        slide,
-        body,
-        left,
-        min(top + 1.35, 6.2),
-        min(width, 10.8),
-        1.0,
-        font_size=_body_font_size(style, body, 20, has_visual=False),
-        color=THEME["ink"],
-        style=style,
-    )
+    body = _screen_body_lines(slide_plan)
+    if not style.loaded:
+        _body_box(
+            slide,
+            body,
+            left,
+            min(top + 1.35, 6.2),
+            min(width, 10.8),
+            1.0,
+            font_size=_body_font_size(style, body, 20, has_visual=False),
+            color=THEME["ink"],
+            style=style,
+        )
     for shape in slide.shapes:
         if getattr(shape, "has_text_frame", False):
             for paragraph in shape.text_frame.paragraphs:
@@ -624,7 +626,11 @@ def _render_section_title(slide: Any, slide_plan: dict[str, Any], style: PptxSty
 
 def _render_big_headline(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     _slide_background(slide)
-    left, top, width, height = _layout_box(style, "big_headline", (0.7, 1.0, 11.8, 1.4))
+    left, top, width, height = (
+        CONTENT_HEADLINE_BOX
+        if style.loaded
+        else _layout_box(style, "big_headline", (0.7, 1.0, 11.8, 1.4))
+    )
     _textbox(
         slide,
         left,
@@ -644,7 +650,7 @@ def _render_big_headline(slide: Any, slide_plan: dict[str, Any], style: PptxStyl
         slide,
         body,
         0.78,
-        max(top + height + 0.35, 2.8),
+        2.05 if style.loaded else max(top + height + 0.35, 2.8),
         body_width,
         2.9,
         font_size=_body_font_size(style, body, 24, has_visual=has_visual),
@@ -663,14 +669,16 @@ def _render_headline_body(slide: Any, slide_plan: dict[str, Any], style: PptxSty
         width = 5.9 if left_image else min(width, 7.35)
         left = 6.55 if left_image else left
         height = min(height, 3.85)
-    headline_top = max(0.45, top - 0.95) if style.loaded else 0.55
+    headline_left, headline_top, headline_width, headline_height = (
+        CONTENT_HEADLINE_BOX if style.loaded else (left, 0.55, min(width, 12.0), 0.9)
+    )
     headline_color = SYUKA_RED if style.loaded else THEME["ink"]
     _textbox(
         slide,
-        left,
+        headline_left,
         headline_top,
-        min(width, 12.0),
-        0.75 if style.loaded else 0.9,
+        headline_width,
+        headline_height,
         str(slide_plan.get("headline") or ""),
         font_size=_layout_font_size(style, "headline_body", 28),
         bold=True,
@@ -682,7 +690,7 @@ def _render_headline_body(slide: Any, slide_plan: dict[str, Any], style: PptxSty
         slide,
         body,
         left,
-        top,
+        2.05 if style.loaded and not left_image else top,
         width,
         height,
         font_size=_body_font_size(style, body, 20, has_visual=has_visual),
@@ -715,12 +723,17 @@ def _render_quote(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
     )
     _fill(box, THEME["light"])
     _line(box, THEME["line"], 1.2)
+    headline_left, headline_top, headline_width, headline_height = (
+        CONTENT_HEADLINE_BOX
+        if style.loaded
+        else (left, max(1.0, top - 0.55), min(11.0, width), 0.95)
+    )
     _textbox(
         slide,
-        left,
-        max(1.0, top - 0.55),
-        min(11.0, width),
-        0.95,
+        headline_left,
+        headline_top,
+        headline_width,
+        headline_height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else _layout_font_size(style, "quote", 28),
         bold=True,
@@ -733,7 +746,7 @@ def _render_quote(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
         slide,
         body,
         left,
-        top + 0.8,
+        2.05 if style.loaded and not left_image else top + 0.8,
         min(10.6, width),
         2.7,
         font_size=28 if style.loaded else _body_font_size(style, body, 20, has_visual=False),
@@ -745,27 +758,27 @@ def _render_quote(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
 
 def _render_question(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     _slide_background(slide)
+    left, top, width, height = CONTENT_HEADLINE_BOX if style.loaded else (1.0, 1.35, 11.3, 1.4)
     _textbox(
         slide,
-        1.0,
-        1.35,
-        11.3,
-        1.4,
+        left,
+        top,
+        width,
+        height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else 32,
         bold=True,
         color=SYUKA_RED if style.loaded else THEME["ink"],
-        align=PP_ALIGN.CENTER,
         style=style,
     )
     body = _screen_body_lines(slide_plan)
     _body_box(
         slide,
         body,
-        1.55,
-        3.2,
-        10.2,
-        2.2,
+        1.55 if not style.loaded else 0.78,
+        3.2 if not style.loaded else 2.3,
+        10.2 if not style.loaded else 11.65,
+        2.2 if not style.loaded else 3.2,
         font_size=_body_font_size(style, body, 23, has_visual=False),
         color=SCREEN_BLACK if style.loaded else THEME["ink"],
         style=style,
@@ -774,12 +787,13 @@ def _render_question(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -
 
 def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     _slide_background(slide)
+    left, top, width, height = CONTENT_HEADLINE_BOX if style.loaded else (0.65, 0.55, 12.0, 0.85)
     _textbox(
         slide,
-        0.65,
-        0.55,
-        12.0,
-        0.85,
+        left,
+        top,
+        width,
+        height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else 27,
         bold=True,
@@ -790,8 +804,9 @@ def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle)
     midpoint = max(1, (len(body) + 1) // 2)
     left_body = body[:midpoint]
     right_body = body[midpoint:]
-    left = slide.shapes.add_shape(1, Inches(0.8), Inches(1.75), Inches(5.75), Inches(4.45))
-    right = slide.shapes.add_shape(1, Inches(6.75), Inches(1.75), Inches(5.75), Inches(4.45))
+    box_top = 1.75 if not style.loaded else 1.55
+    left = slide.shapes.add_shape(1, Inches(0.8), Inches(box_top), Inches(5.75), Inches(4.45))
+    right = slide.shapes.add_shape(1, Inches(6.75), Inches(box_top), Inches(5.75), Inches(4.45))
     _fill(left, THEME["light"])
     _fill(right, RGBColor(239, 246, 247))
     _line(left)
@@ -800,7 +815,7 @@ def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle)
         slide,
         left_body,
         1.05,
-        2.05,
+        box_top + 0.3,
         5.25,
         3.7,
         font_size=_body_font_size(style, left_body, 19, has_visual=False),
@@ -811,7 +826,7 @@ def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle)
         slide,
         right_body,
         7.0,
-        2.05,
+        box_top + 0.3,
         5.25,
         3.7,
         font_size=_body_font_size(style, right_body, 19, has_visual=False),
@@ -828,15 +843,31 @@ def _source_label(slide_plan: dict[str, Any]) -> str:
     return f"(출처: {host}; speaker notes 참조)"
 
 
+def _chart_title(slide_plan: dict[str, Any]) -> str:
+    body = _body_lines(slide_plan)
+    if body:
+        return body[0]
+    return str(slide_plan.get("headline") or "차트/표 후보")
+
+
 def _render_chart_table_layout(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
     _slide_background(slide)
     _textbox(
         slide,
+        *CONTENT_HEADLINE_BOX,
+        str(slide_plan.get("headline") or ""),
+        font_size=28,
+        bold=True,
+        color=SYUKA_RED,
+        style=style,
+    )
+    _textbox(
+        slide,
         0.95,
-        0.55,
+        1.25,
         11.7,
         0.65,
-        str(slide_plan.get("headline") or ""),
+        _chart_title(slide_plan),
         font_size=28,
         bold=True,
         underline=True,
@@ -847,20 +878,20 @@ def _render_chart_table_layout(slide: Any, slide_plan: dict[str, Any], style: Pp
     chart_area = slide.shapes.add_shape(
         1,
         Inches(1.0),
-        Inches(1.35),
+        Inches(2.0),
         Inches(11.35),
-        Inches(4.85),
+        Inches(4.2),
     )
     _fill(chart_area, THEME["light"])
     _line(chart_area, THEME["line"], 1.2)
-    body = _screen_body_lines(slide_plan) or ["데이터 라벨/차트 본문 후보"]
+    body = _screen_body_lines(slide_plan)[1:] or ["데이터 라벨/차트 본문 후보"]
     _body_box(
         slide,
         body,
         1.35,
-        2.0,
+        2.65,
         10.6,
-        3.15,
+        2.75,
         font_size=18,
         color=CHART_DARK,
         bold=True,
@@ -894,10 +925,10 @@ def _render_placeholder_layout(slide: Any, slide_plan: dict[str, Any], style: Pp
         left, top, width, height = (0.78, 1.55, 5.35, 4.5)
     _textbox(
         slide,
-        0.75 if style.loaded else left,
-        0.48 if style.loaded else max(0.45, top - 0.95),
-        11.8 if style.loaded else min(12.0, width),
-        0.85,
+        CONTENT_HEADLINE_BOX[0] if style.loaded else left,
+        CONTENT_HEADLINE_BOX[1] if style.loaded else max(0.45, top - 0.95),
+        CONTENT_HEADLINE_BOX[2] if style.loaded else min(12.0, width),
+        CONTENT_HEADLINE_BOX[3] if style.loaded else 0.85,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else _layout_font_size(style, layout_type, 27),
         bold=True,
@@ -929,6 +960,8 @@ def _render_checklist(
     _slide_background(slide)
     prefix = "[내부 체크리스트] " if appendix else ""
     left, top, width, height = _layout_box(style, "checklist", (0.65, 0.55, 12.0, 0.85))
+    if style.loaded and not appendix:
+        left, top, width, height = CONTENT_HEADLINE_BOX
     _textbox(
         slide,
         left,
@@ -1173,7 +1206,7 @@ def _planned_text_placeholder_rects(
         left, top, width, height = _layout_box(style, "big_headline", (0.7, 1.0, 11.8, 1.4))
         body_width = 7.4 if style.loaded else 10.8
         return (
-            Rect(0.78, max(top + height + 0.35, 2.8), body_width, 2.9),
+            Rect(0.78, 2.05 if style.loaded else max(top + height + 0.35, 2.8), body_width, 2.9),
             Rect(9.25, 4.8, 2.8, 1.2),
         )
     if layout_type in {"image_placeholder", "timeline"}:
@@ -1192,6 +1225,7 @@ def _planned_text_placeholder_rects(
             placeholder = Rect(0.78, 1.55, 5.35, 4.5)
         else:
             width = min(width, 7.35)
+            top = 2.05
             placeholder = Rect(8.75, 1.72, 3.65, 3.95)
         height = min(height, 3.85)
     else:
@@ -1280,6 +1314,10 @@ def _image_left_layout_count(deck_plan: dict[str, Any], style: PptxStyle) -> int
     if not style.loaded:
         return 0
     return sum(1 for slide in deck_plan.get("slides", []) if _prefers_left_image(slide, style))
+
+
+def _screen_footer_hidden_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return len(deck_plan.get("slides", [])) if style.loaded else 0
 
 
 def _applied_layout_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
@@ -1418,6 +1456,7 @@ def render_result(
         ),
         "image_left_layout_count": _image_left_layout_count(deck_plan, style),
         "manual_placeholder_hidden_count": _manual_placeholder_hidden_count(deck_plan, style),
+        "screen_footer_hidden_count": _screen_footer_hidden_count(deck_plan, style),
         "screen_body_overflow_count": len(screen_overflow),
         "screen_body_overflow_slides": screen_overflow,
         "split_recommended_slide_count": len(split_recommended),
@@ -1478,6 +1517,7 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "bold; source 20pt underline",
         "- Manual visual placeholders: hidden from styled screens and preserved "
         "in speaker notes",
+        "- Styled screen footers: hidden from slides and preserved in speaker notes/report",
         "- Adaptive body font: enabled only as overflow protection for styled drafts",
         "- Visual placeholder text: shortened for styled drafts",
         "- Text/visual overlap policy: styled drafts fail on overlap; legacy "
@@ -1490,17 +1530,17 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "",
         (
             "| Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | "
-            "Visuals | Dense | Overflow | Split | 20pt | Manual Hidden | Text/Visual Overlap | "
-            "Missing Notes | Overlap | PPTX | Passed |"
+            "Visuals | Dense | Overflow | Split | 20pt | Manual Hidden | Footer Hidden | "
+            "Text/Visual Overlap | Missing Notes | Overlap | PPTX | Passed |"
         ),
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|",
     ]
     for result in results:
         lines.append(
             "| {deck} | {styled} | {slides} | {sections} | {appendix} | {needs_source} | "
             "{needs_fact_check} | {visuals} | {dense} | {overflow} | {split} | "
-            "{twenty_pt} | {manual_hidden} | {text_visual_overlap} | {missing_notes} | "
-            "{overlap} | {pptx} | {passed} |".format(
+            "{twenty_pt} | {manual_hidden} | {footer_hidden} | {text_visual_overlap} | "
+            "{missing_notes} | {overlap} | {pptx} | {passed} |".format(
                 deck=result.get("deck_id"),
                 styled="yes" if result.get("style_profile_loaded") else "no",
                 slides=result.get("slide_count"),
@@ -1514,6 +1554,7 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 split=result.get("split_recommended_slide_count"),
                 twenty_pt=len(result.get("slides_using_20pt", [])),
                 manual_hidden=result.get("manual_placeholder_hidden_count"),
+                footer_hidden=result.get("screen_footer_hidden_count"),
                 text_visual_overlap=len(result.get("slides_with_text_placeholder_overlap", [])),
                 missing_notes=len(result.get("slides_with_missing_notes", [])),
                 overlap=result.get("source_image_overlap_count"),
@@ -1546,6 +1587,7 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"- image_left_layout_count: {result.get('image_left_layout_count')}",
                 "- manual_placeholder_hidden_count: "
                 f"{result.get('manual_placeholder_hidden_count')}",
+                f"- screen_footer_hidden_count: {result.get('screen_footer_hidden_count')}",
                 f"- screen_body_overflow_count: {result.get('screen_body_overflow_count')}",
                 f"- screen_body_overflow_slides: {result.get('screen_body_overflow_slides')}",
                 "- split_recommended_slide_count: "

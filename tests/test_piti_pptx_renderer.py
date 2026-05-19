@@ -130,6 +130,14 @@ def _first_run_for_text(prs: Presentation, text: str):
     return next(_runs_for_text(prs, text))
 
 
+def _first_shape_for_text(prs: Presentation, text: str):
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if getattr(shape, "has_text_frame", False) and text in shape.text:
+                return shape
+    raise AssertionError(f"No shape found for text: {text}")
+
+
 def _minimal_deck(slide: dict) -> dict:
     return {
         "deck_id": "format_test",
@@ -226,12 +234,18 @@ def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
     assert "visual_plan" in notes_text
     visible_text = "\n".join(slide["visible_text"] for slide in parsed["slides"])
     assert "diagram candidate" not in visible_text
+    assert "draft skeleton" not in visible_text
+    assert "needs_fact_check" not in visible_text
+    assert result["screen_footer_hidden_count"] == 4
 
     prs = Presentation(str(output_path))
     headline_run = _first_run_for_text(prs, "출처가 있는 장표")
+    headline_shape = _first_shape_for_text(prs, "출처가 있는 장표")
     body_run = _first_run_for_text(prs, "본문 메시지 하나")
     assert headline_run.font.size.pt == 28
     assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
+    assert 1.4 <= headline_shape.left.cm <= 1.8
+    assert 0.8 <= headline_shape.top.cm <= 1.2
     assert body_run.font.color.rgb == RGBColor(0, 0, 0)
 
 
@@ -277,8 +291,8 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
         "slide_no": 1,
         "layout_type": "chart_placeholder",
         "slide_type": "data",
-        "headline": "미국주식 보관금액 상위 10종목",
-        "body": ["테슬라 264", "엔비디아 195"],
+        "headline": "한국인의 사랑을 듬뿍 받는 테슬라",
+        "body": ["미국주식 보관금액 상위 10종목", "테슬라 264", "엔비디아 195"],
         "source_urls": ["https://example.com/seibro"],
         "image_urls": [],
         "speaker_notes": "chart notes",
@@ -293,9 +307,11 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
 
     prs = Presentation(str(output_path))
     title_run = _first_run_for_text(prs, "미국주식 보관금액")
+    headline_run = _first_run_for_text(prs, "한국인의 사랑")
     data_run = _first_run_for_text(prs, "테슬라 264")
     source_run = _first_run_for_text(prs, "(출처:")
     assert result["chart_table_style_applied_count"] == 1
+    assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
     assert title_run.font.size.pt == 28
     assert title_run.font.bold is True
     assert title_run.font.underline is True

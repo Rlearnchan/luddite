@@ -9,6 +9,8 @@ belongs in speaker notes.
 
 - Headline: 28pt, red `#FF0000`, top-left by default, one line preferred and
   two lines at most.
+- Content slide headline position: use the reference-style top-left band by
+  default. Avoid centered headline layouts except for title/section slides.
 - Normal Korean body: black, 28pt baseline. Do not make ordinary Korean body
   red by default.
 - Body length: keep screen body to roughly 2-3 lines. Four or more lines should
@@ -31,6 +33,8 @@ belongs in speaker notes.
   the visual plan in speaker notes.
 - Visible placeholders: show only compact labels for chart, diagram,
   screenshot, image, or AI-image candidates.
+- Footer/debug labels: do not show `draft skeleton`, `needs_fact_check`, or
+  slide numbers on styled screens. Keep them in notes and reports.
 - Speaker notes: preserve long explanation, source URLs, image URLs,
   fact-check flags, visual plan, copyright risk, and overflow body lines.
 

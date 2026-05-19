@@ -681,6 +681,29 @@ Milestone 1.19.5: Piti Screen Formatting Rules v0.1
   chart generation, Google Slides integration, LLM/API calls, and final
   Syukaworld visual fidelity claims.
 
+Milestone 1.19.6: Piti Reference Layout Grammar Patch
+
+- Tighten styled drafts against the pawn PPT reference grammar rather than
+  only applying extracted colors and font sizes.
+- Hide styled on-screen debug footers (`draft skeleton`, `needs_fact_check`,
+  slide numbers); keep flags and source/fact-check state in speaker notes and
+  reports.
+- Restore title and section-title slides closer to reference rhythm: large
+  centered black title/section treatment with body text moved to notes.
+- Force normal content-slide headlines into the reference top-left band
+  (`x≈1.59cm`, `y≈0.99cm`) instead of allowing centered/right-shifted headline
+  layouts.
+- Keep chart/table slides as a two-level screen: red top-left story headline
+  plus black underlined chart/table title and large proof-object area.
+- Continue to hide manual visual placeholders while making chart/diagram/image
+  candidate placeholders compact and secondary.
+- Current readiness:
+  `ready_for_ppt_generation=true` for scaffold/styled draft review only,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: production Piti agent, image auto collection/insertion,
+  chart generation, Google Slides integration, LLM/API calls, and final
+  Syukaworld visual fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
