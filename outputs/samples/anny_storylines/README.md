@@ -23,6 +23,8 @@ Usage guidance:
 - Use `compact/` for research-team reading.
 - Use root-level audit samples for validator and source-hygiene review.
 - Do not present `productive_finance_api_v1.md` as a product example; it is failure analysis.
+- Review guide: `docs/reviews/anny_storyline_sample_review_guide.md`
+- Review template: `docs/reviews/anny_storyline_sample_review_template.md`
 
 Generated files:
 

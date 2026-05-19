@@ -485,6 +485,19 @@ Milestone 1.17.4: Human-readable Sample Renderer Polish
   reading sample and warns that productive finance API v1 is failure analysis,
   not a product example.
 
+Milestone 1.17.5: Human Review Feedback Template
+
+- Add a review template for research-team feedback:
+  `docs/reviews/anny_storyline_sample_review_template.md`.
+- Add a sample review guide:
+  `docs/reviews/anny_storyline_sample_review_guide.md`.
+- The guide points reviewers to the compact manual enriched samples first,
+  explains manual enriched vs API experiment outputs, and reiterates that the
+  samples are not production output or broadcast-ready scripts.
+- The sample README links to the guide and template.
+- No API calls, production Anny agent, batch runner, PPT generator, or external
+  research automation are part of this milestone.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
