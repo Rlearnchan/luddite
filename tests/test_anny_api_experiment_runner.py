@@ -9,6 +9,7 @@ from luddite.agents.anny.api_experiment_runner import (
     write_api_v1_to_v5_comparison_report,
     write_api_v1_to_v6_comparison_report,
     write_api_v1_to_v7_comparison_report,
+    write_api_v1_to_v8_comparison_report,
     write_api_v1_v2_comparison_report,
     write_api_v1_v2_v3_comparison_report,
     write_api_v1_v2_v3_v4_comparison_report,
@@ -312,6 +313,83 @@ def test_closing_question_with_factual_premise_requires_source(tmp_path) -> None
     )
 
     assert "unsupported_claim" in result.failure_modes
+
+
+def test_pure_section_title_question_without_source_passes(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    section_title = payload["sections"][0]["slides"][3]
+    section_title["slide_type"] = "section_title"
+    section_title["headline"] = "학교와 지식기관은 무엇을 해야 하나?"
+    section_title["body"] = ["섹션 질문으로 다음 흐름을 연다."]
+    section_title["source_urls"] = []
+    section_title["needs_source"] = False
+    section_title["needs_fact_check"] = False
+    raw_path = tmp_path / "pure_section_title_question.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "pure_section_title_question",
+        report_path=tmp_path / "reports" / "pure_section_title_question.md",
+    )
+
+    assert "unsupported_claim" not in result.failure_modes
+
+
+def test_section_title_institution_role_claim_without_source_fails(tmp_path) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    section_title = payload["sections"][0]["slides"][3]
+    section_title["slide_type"] = "section_title"
+    section_title["headline"] = "지식기관의 역할 변화"
+    section_title["body"] = ["AI 시대에는 질문하는 능력이 핵심이 된다."]
+    section_title["source_urls"] = []
+    section_title["needs_source"] = False
+    section_title["needs_fact_check"] = False
+    raw_path = tmp_path / "section_title_role_claim.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "section_title_role_claim",
+        report_path=tmp_path / "reports" / "section_title_role_claim.md",
+    )
+    report_text = result.report_path.read_text(encoding="utf-8")
+
+    assert "unsupported_claim" in result.failure_modes
+    assert "triggered_marker" in report_text
+    assert "institution_role" in report_text
+
+
+def test_section_title_role_claim_with_needs_source_passes_unsupported_check(
+    tmp_path,
+) -> None:
+    result = _run_fixture(tmp_path, "rhetorical_source_rule_raw.txt")
+    parsed = result.experiment_dir / "parsed_storyline.json"
+    payload = json.loads(parsed.read_text(encoding="utf-8"))
+    section_title = payload["sections"][0]["slides"][3]
+    section_title["slide_type"] = "section_title"
+    section_title["headline"] = "지식기관의 역할 변화"
+    section_title["body"] = ["AI 시대에는 질문하는 능력이 핵심이 된다."]
+    section_title["source_urls"] = []
+    section_title["needs_source"] = True
+    section_title["needs_fact_check"] = False
+    raw_path = tmp_path / "section_title_role_claim_needs_source.txt"
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    result = validate_api_experiment_raw_output(
+        raw_output_path=raw_path,
+        input_bundle_path=INPUT_BUNDLE,
+        evidence_pack_path=EVIDENCE_PACK,
+        experiment_dir=tmp_path / "experiments" / "section_title_role_claim_needs_source",
+        report_path=tmp_path / "reports" / "section_title_role_claim_needs_source.md",
+    )
+
+    assert "unsupported_claim" not in result.failure_modes
 
 
 def test_rhetorical_slide_with_factual_claim_still_requires_source(tmp_path) -> None:
@@ -846,4 +924,58 @@ def test_write_api_v1_to_v7_comparison_report(tmp_path) -> None:
     text = report.read_text(encoding="utf-8")
     assert "v1 to v7 Comparison" in text
     assert "claim hygiene/fact-check conservatism" in text
+    assert "ready_for_production_agent=false" in text
+
+
+def test_write_api_v1_to_v8_comparison_report(tmp_path) -> None:
+    raw = (FIXTURE_DIR / "valid_ai_knowledge_storyline_raw.txt").read_text(
+        encoding="utf-8"
+    )
+    manifest = {
+        "model": "gpt-5-mini",
+        "failure_modes": [],
+        "schema_valid": True,
+        "hygiene_passed": True,
+        "hallucinated_urls": [],
+        "do_not_claim_violations": [],
+        "unsupported_claim_details": [
+            {
+                "slide_no": 1,
+                "slide_type": "section_title",
+                "headline": "지식기관의 역할 변화",
+                "triggered_marker": "역할 변화",
+                "recommended_fix": "set_needs_source_true",
+            }
+        ],
+        "key_beat_coverage_errors": [],
+    }
+    run_dirs = []
+    for name in ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"]:
+        run_dir = tmp_path / name
+        run_dir.mkdir()
+        (run_dir / "parsed_storyline.json").write_text(raw, encoding="utf-8")
+        (run_dir / "manifest.json").write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+        run_dirs.append(run_dir)
+    report = tmp_path / "comparison.md"
+
+    result = write_api_v1_to_v8_comparison_report(
+        v1_dir=run_dirs[0],
+        v2_dir=run_dirs[1],
+        v3_dir=run_dirs[2],
+        v4_dir=run_dirs[3],
+        v5_dir=run_dirs[4],
+        v6_dir=run_dirs[5],
+        v7_dir=run_dirs[6],
+        v8_dir=run_dirs[7],
+        comparison_report_path=report,
+    )
+
+    assert result["v8"]["manifest"]["model"] == "gpt-5-mini"
+    text = report.read_text(encoding="utf-8")
+    assert "v1 to v8 Comparison" in text
+    assert "section_title claim hygiene" in text
+    assert "marker=역할 변화" in text
     assert "ready_for_production_agent=false" in text

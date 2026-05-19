@@ -106,6 +106,11 @@ run-anny-api-experiment-v7:
 		--run-id anny_api_experiment_ai_knowledge_institution_v7 \
 		--timeout 300
 
+run-anny-api-experiment-v8:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment \
+		--run-id anny_api_experiment_ai_knowledge_institution_v8 \
+		--timeout 300
+
 compare-anny-api-experiment-v1-v2:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment compare-v1-v2
 
@@ -123,6 +128,9 @@ compare-anny-api-experiment-v1-v2-v3-v4-v5-v6:
 
 compare-anny-api-experiment-v1-v2-v3-v4-v5-v6-v7:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment compare-v1-v2-v3-v4-v5-v6-v7
+
+compare-anny-api-experiment-v1-v2-v3-v4-v5-v6-v7-v8:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment compare-v1-v2-v3-v4-v5-v6-v7-v8
 
 review-anny-api-v6-claim-hygiene:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment review-v6-claim-hygiene

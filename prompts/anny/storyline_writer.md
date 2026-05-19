@@ -75,6 +75,10 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
   notes에 `rhetorical bridge / no factual claim`처럼 남긴다.
 - 제목/질문/전환 slide라도 수치, 기관 발언, 교육 효과, 인지 변화, 정책 효과,
   연구/조사 결과를 주장하면 source 또는 `needs_source=true`가 필요하다.
+- `section_title`도 claim을 담으면 source 또는 `needs_source=true`가 필요하다.
+  source 없는 `section_title`은 질문형/라벨형으로 쓴다.
+- "역할 변화", "역량", "필요해진다", "바뀐다", "중요해진다",
+  "핵심이 된다", "가르쳐야 한다" 같은 표현은 claim으로 취급된다.
 - Royal Observatory, BBC, 왕립천문대, 보도, 경고, 발언, says/warns 같은
   source-specific phrase를 title/bridge/closing에 쓰면 `source_urls`를 붙이거나
   `needs_source=true`로 남긴다.
