@@ -37,6 +37,39 @@
 RTF storyline은 사고 과정이고, 최종 PPT가 아니다.
 RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
 
+## Piti-ready Screen Contract Rule
+
+장기적으로 Anny는 Piti가 바로 배치할 수 있는 slide spec을 함께 제공해야 한다.
+기존 `headline/body/notes`만으로는 Piti가 화면 문구와 설명문을 뒤늦게
+구분해야 하므로 어색한 PPT가 나온다.
+
+각 slide에서 아래 개념을 분리한다.
+
+- `screen_headline`: 실제 화면에 올라갈 짧은 헤드라인
+- `screen_body`: 실제 화면에 올라갈 본문, 0~3줄
+- `speaker_notes_expanded`: 설명, 근거, 주의, 맥락
+- `overflow_notes`: 화면에서 뺀 긴 설명문
+- `proof_object`: 화면에 놓을 증거물
+- `editor_instruction`: 편집자에게 보내는 작업 지시
+- `needs_source` / `needs_fact_check` / `required_before_broadcast`: 검증 상태
+
+규칙:
+
+- `screen_headline/screen_body`는 방송 화면 문구다.
+- 설명문, 주의문, 근거문, fact-check 문장은 `speaker_notes_expanded`나
+  `overflow_notes`로 보낸다.
+- `screen_body`는 1~2줄 권장, 3줄까지 허용한다.
+- source URL이 있다고 무조건 `article_quote`가 아니다.
+- 실제 인용문, 영어/한국어 quote 리듬, 특정 발언문이 있으면
+  `proof_object.type=article_quote`다.
+- 인용문이 없고 출처 identity만 보여줘야 하면 `proof_object.type=source_card`다.
+- `source_card.display_title`은 slide headline을 반복하지 않는다.
+- `diagram`은 `diagram_nodes`와 `diagram_edges`를 제공한다.
+- `chart/table`은 `chart_title`, `chart_source_label`, `data_hint`를 제공하고,
+  긴 설명은 notes로 보낸다.
+- `editor_instruction`은 화면 본문으로 섞지 않는다.
+- Piti는 의미를 재해석하지 않고 이 spec을 슈카월드식 화면으로 배치하는 역할이다.
+
 ## Input Bundle Rule
 
 `anny_input_bundle`이 있으면 이를 최우선 입력 형식으로 본다.

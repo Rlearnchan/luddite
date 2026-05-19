@@ -29,6 +29,12 @@ from luddite.agents.jibi.score_candidates import app as score_candidates_app
 from luddite.agents.piti.build_deck_plan_from_storyline import (
     app as build_piti_deck_plan_app,
 )
+from luddite.agents.piti.build_slide_spec_from_storyline import (
+    build_app as build_piti_slide_spec_app,
+)
+from luddite.agents.piti.build_slide_spec_from_storyline import (
+    validate_app as validate_piti_slide_spec_app,
+)
 from luddite.agents.piti.render_deck_storyboard import app as render_piti_storyboard_app
 from luddite.agents.piti.render_pptx import app as render_piti_pptx_app
 from luddite.analysis.extract_pptx_style import app as extract_pptx_style_app
@@ -74,6 +80,8 @@ app.add_typer(run_anny_api_experiment_app, name="run-anny-api-experiment")
 app.add_typer(anny_run_storyline_app, name="anny-run-storyline")
 app.add_typer(render_anny_storyline_sample_app, name="render-anny-storyline-sample")
 app.add_typer(build_piti_deck_plan_app, name="build-piti-deck-plan")
+app.add_typer(build_piti_slide_spec_app, name="build-piti-slide-spec")
+app.add_typer(validate_piti_slide_spec_app, name="validate-piti-slide-spec")
 app.add_typer(render_piti_storyboard_app, name="render-piti-storyboard")
 app.add_typer(render_piti_pptx_app, name="render-piti-pptx")
 app.add_typer(extract_pptx_style_app, name="extract-pptx-style")

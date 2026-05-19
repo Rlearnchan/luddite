@@ -11,6 +11,7 @@ def test_specs_are_valid_json_schemas() -> None:
         "evidence_cluster_schema.json",
         "anny_storyline_schema.json",
         "piti_slide_schema.json",
+        "piti_slide_spec_schema.json",
         "deck_schema.json",
         "corpus_manifest_schema.json",
         "article_schema.json",

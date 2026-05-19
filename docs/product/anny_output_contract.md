@@ -173,6 +173,70 @@ risk section that cannot be folded into the normal four-part arc.
   move to appendix, notes, or a checklist instead of the main PPT body.
 - `do_not_claim` and `avoid` are hard guardrails.
 
+## Anny-to-Piti Screen Contract
+
+Milestone 1.20 introduces a Piti-ready slide spec contract. The current adapter
+can convert existing Anny storyline JSON into this shape, but the long-term goal
+is for Anny to emit these fields directly so Piti can focus on layout instead of
+rewriting meaning.
+
+Recommended slide-level fields for Piti handoff:
+
+- `screen_headline`: the exact headline intended to appear on the slide.
+- `screen_body`: the exact visible body copy, normally 0-3 short lines.
+- `speaker_notes_expanded`: the longer explanation, evidence context, caveats,
+  and production notes.
+- `overflow_notes`: body/explanation lines that should not be placed on screen.
+- `proof_object`: the screen evidence object Piti should place.
+- `editor_instruction`: blue/editor-facing production instruction, not broadcast
+  copy.
+- `risk_notes`: optional risk-specific production notes.
+
+`proof_object` should include:
+
+- `type`: `none | source_card | article_quote | chart | table | diagram | image | screenshot | logo | person_photo`
+- `screen_position`: `left_half | right_half | center_large | full_width_chart | none`
+- `source_name`
+- `display_title`
+- `quote_text`
+- `quote_translation`
+- `source_url`
+- `image_url`
+- `chart_title`
+- `chart_source_label`
+- `data_hint`
+- `diagram_nodes`
+- `diagram_edges`
+- `manual_insert_required`
+- `copyright_risk`
+
+Screen-copy rules:
+
+- `screen_headline` and `screen_body` are what the audience sees.
+- Explanatory, cautionary, source, and fact-check language belongs in
+  `speaker_notes_expanded` or `overflow_notes`.
+- `screen_body` should be 0-3 lines. If a slide needs more explanation, split it
+  or move the explanation to notes.
+- Source URL attached does not imply `article_quote`.
+- Use `article_quote` only when there is actual quote text, English/Korean quote
+  rhythm, or a specific statement to show as a quote.
+- Use `source_card` when the slide is source-backed but not quoting text.
+- `source_card.display_title` must not repeat `screen_headline`.
+- `diagram` should provide `diagram_nodes` and `diagram_edges`; do not leave Piti
+  with only a generic `[도식]` instruction.
+- `chart`/`table` should provide `chart_title`, `chart_source_label`, and a
+  short `data_hint`; explanatory chart notes belong in notes.
+
+The contract schema is `specs/piti_slide_spec_schema.json`. The temporary
+adapter command is:
+
+```text
+luddite build-piti-slide-spec
+luddite validate-piti-slide-spec
+```
+
+This is not a production Anny agent and does not authorize LLM/API calls.
+
 ## Policy / Finance Guardrails
 
 - Do not write investment advice.

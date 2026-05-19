@@ -866,6 +866,32 @@ Milestone 1.19.12: Piti Surface Copy Rewrite + Proof Object Semantics
   integration, production Piti agent, LLM/API calls, and final Syukaworld visual
   fidelity claims.
 
+Milestone 1.20: Anny-to-Piti Screen Contract
+
+- Move the next product boundary upstream: Piti should not keep guessing which
+  Anny body lines belong on screen. Anny should eventually provide a Piti-ready
+  slide spec with explicit surface copy, expanded notes, and proof-object
+  intent.
+- Add `specs/piti_slide_spec_schema.json` for deck-level Piti slide specs with
+  `screen_headline`, `screen_body`, `speaker_notes_expanded`, `overflow_notes`,
+  `proof_object`, `editor_instruction`, `source_refs`, and fact-check flags.
+- Add temporary adapter/validator commands:
+  `luddite build-piti-slide-spec` and `luddite validate-piti-slide-spec`.
+  These convert existing manual/enriched Anny storyline samples into the new
+  contract without calling an LLM.
+- Generate AI knowledge-institution and productive-finance Piti slide spec JSON
+  fixtures in `data/candidates/piti_slide_specs/`.
+- Keep source/fact-check hygiene explicit: source URL attachment does not imply
+  `article_quote`, source cards must not repeat screen headlines, diagrams must
+  include nodes/edges, and chart/table slides should keep long explanation in
+  notes.
+- Record a future Jibi direction in
+  `docs/product/jibi_to_piti_slideability.md`: candidate scoring should later
+  account for slideability, visualizability, and likely proof-object type.
+- Still out of scope: production Anny agent, production Piti agent, image
+  insertion, chart generation, Google Slides integration, LLM/API calls, and
+  Jibi scoring changes.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
