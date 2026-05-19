@@ -1,0 +1,188 @@
+{
+  "generated_at": "2026-05-19T02:52:08.268974+00:00",
+  "deck_names": [
+    "전당포 주식회사_배형찬.pptx"
+  ],
+  "slide_size": {
+    "width_in": 13.333,
+    "height_in": 7.5,
+    "width_cm": 33.867,
+    "height_cm": 19.05
+  },
+  "shape_count": 173,
+  "text_shape_count": 130,
+  "common_fonts": [],
+  "common_font_sizes": [
+    {
+      "value": 28.0,
+      "count": 111
+    },
+    {
+      "value": 20.0,
+      "count": 12
+    },
+    {
+      "value": 54.0,
+      "count": 4
+    },
+    {
+      "value": 32.0,
+      "count": 1
+    },
+    {
+      "value": 52.0,
+      "count": 1
+    }
+  ],
+  "common_colors": [
+    {
+      "value": "#FF0000",
+      "count": 81
+    }
+  ],
+  "inherited_style_records": 130,
+  "font_family_inherited_records": 130,
+  "font_size_inherited_records": 1,
+  "font_color_inherited_records": 49,
+  "slide_type_counts": [
+    {
+      "value": "image_heavy",
+      "count": 66
+    },
+    {
+      "value": "quote",
+      "count": 39
+    },
+    {
+      "value": "chart",
+      "count": 24
+    },
+    {
+      "value": "headline_body",
+      "count": 16
+    },
+    {
+      "value": "checklist",
+      "count": 12
+    },
+    {
+      "value": "big_headline",
+      "count": 8
+    },
+    {
+      "value": "section_title",
+      "count": 4
+    },
+    {
+      "value": "title",
+      "count": 2
+    },
+    {
+      "value": "closing",
+      "count": 2
+    }
+  ],
+  "layout_patterns": {
+    "big_headline": {
+      "shape_count": 6,
+      "x_cm_median": 17.7,
+      "y_cm_median": 5.422,
+      "w_cm_median": 10.306,
+      "h_cm_median": 1.453,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "chart": {
+      "shape_count": 21,
+      "x_cm_median": 1.591,
+      "y_cm_median": 3.229,
+      "w_cm_median": 31.092,
+      "h_cm_median": 1.453,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "checklist": {
+      "shape_count": 9,
+      "x_cm_median": 9.71,
+      "y_cm_median": 8.497,
+      "w_cm_median": 9.399,
+      "h_cm_median": 1.453,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "closing": {
+      "shape_count": 2,
+      "x_cm_median": 1.591,
+      "y_cm_median": 2.11,
+      "w_cm_median": 31.092,
+      "h_cm_median": 7.023,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "headline_body": {
+      "shape_count": 13,
+      "x_cm_median": 1.591,
+      "y_cm_median": 3.357,
+      "w_cm_median": 31.092,
+      "h_cm_median": 3.616,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "image_heavy": {
+      "shape_count": 44,
+      "x_cm_median": 1.591,
+      "y_cm_median": 2.05,
+      "w_cm_median": 31.092,
+      "h_cm_median": 2.534,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "quote": {
+      "shape_count": 30,
+      "x_cm_median": 1.591,
+      "y_cm_median": 4.009,
+      "w_cm_median": 20.265,
+      "h_cm_median": 1.82,
+      "font_size_pt_median": 28.0,
+      "font_family_top": null,
+      "font_color_top": "#FF0000"
+    },
+    "section_title": {
+      "shape_count": 4,
+      "x_cm_median": 2.345,
+      "y_cm_median": 3.538,
+      "w_cm_median": 29.869,
+      "h_cm_median": 6.735,
+      "font_size_pt_median": 54.0,
+      "font_family_top": null,
+      "font_color_top": null
+    },
+    "title": {
+      "shape_count": 1,
+      "x_cm_median": 2.38,
+      "y_cm_median": 3.118,
+      "w_cm_median": 29.106,
+      "h_cm_median": 6.632,
+      "font_size_pt_median": null,
+      "font_family_top": null,
+      "font_color_top": null
+    }
+  },
+  "notes_label_patterns": {
+    "notes_with_urls": 167,
+    "source_url_present": 167,
+    "image_url_present": 74
+  },
+  "limits_and_caveats": [
+    "Theme/master inherited font values are not fully resolved; inherited_style marks likely inherited text.",
+    "Rendered line breaks can differ by OS font substitution and PowerPoint layout engine.",
+    "Group shapes and complex SmartArt/chart internals are summarized at container level.",
+    "Color values using theme scheme colors are reported as scheme:<name> unless explicit RGB is present."
+  ]
+}

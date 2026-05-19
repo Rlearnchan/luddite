@@ -20,6 +20,7 @@ LEGACY_PPT_RAW_DIR = DATA_DIR / "ppt" / "legacy" / "raw"
 SHEETS_DIR = DATA_DIR / "sheets"
 NOTION_DIR = DATA_DIR / "notion"
 MANIFESTS_DIR = DATA_DIR / "manifests"
+STYLE_PROFILES_DIR = DATA_DIR / "style_profiles"
 
 STORYLINE_PARSED_JSONL = DATA_DIR / "storylines" / "parsed_storylines.jsonl"
 PPT_PARSED_JSONL = DATA_DIR / "ppt" / "parsed_latest_ppts.jsonl"

@@ -561,6 +561,32 @@ Milestone 1.19: Piti PPTX Renderer Scaffold
   Google Slides integration, LLM calls, production Piti agent, and production
   Anny agent.
 
+Milestone 1.19.1: Syukaworld PPTX Style Extraction
+
+- Add `luddite extract-pptx-style` and `make extract-pptx-style`.
+- Analyze the first Syukaworld PPTX sample:
+  `data/ppt/latest/raw/전당포 주식회사_배형찬.pptx`.
+- Output shape-level style samples:
+  `data/style_profiles/syukaworld_ppt_shape_samples.jsonl`.
+- Output aggregate style profile:
+  `data/style_profiles/syukaworld_ppt_style_profile.json`.
+- Output human-readable report:
+  `outputs/reports/piti_style_profile_report.md`.
+- Extract slide size, shape x/y/w/h, text run font size/color/style where
+  explicit, paragraph alignment/bullet/indent/line spacing, image/chart
+  container positions, notes URL counts, and source/image URL counts.
+- Mark likely theme/master inherited text style fields separately, because the
+  PPTX sample often stores font family and some visual defaults through
+  inherited theme/master styling rather than explicit run properties.
+- Current sample profile: 16:9 slide size, 173 shape records, 130 text shape
+  records, common explicit font sizes led by 28pt / 20pt / 54pt, and common
+  explicit red text color `#FF0000`.
+- Keep `ready_for_ppt_generation=true` for scaffold review only.
+  `ready_for_renderer_style_application=false` until the next milestone.
+- Still out of scope: applying the extracted style to the Piti renderer,
+  production Piti agent, image auto collection/insertion, chart generation,
+  Google Slides integration, and LLM calls.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

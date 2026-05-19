@@ -31,6 +31,7 @@ from luddite.agents.piti.build_deck_plan_from_storyline import (
 )
 from luddite.agents.piti.render_deck_storyboard import app as render_piti_storyboard_app
 from luddite.agents.piti.render_pptx import app as render_piti_pptx_app
+from luddite.analysis.extract_pptx_style import app as extract_pptx_style_app
 from luddite.collectors.manual_article_importer import app as import_articles_app
 from luddite.collectors.rss_item_fetcher import app as fetch_rss_articles_app
 from luddite.collectors.rss_probe import app as probe_rss_sources_app
@@ -75,6 +76,7 @@ app.add_typer(render_anny_storyline_sample_app, name="render-anny-storyline-samp
 app.add_typer(build_piti_deck_plan_app, name="build-piti-deck-plan")
 app.add_typer(render_piti_storyboard_app, name="render-piti-storyboard")
 app.add_typer(render_piti_pptx_app, name="render-piti-pptx")
+app.add_typer(extract_pptx_style_app, name="extract-pptx-style")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")
 app.add_typer(append_jibi_sheet_app, name="append-jibi-sheet")
