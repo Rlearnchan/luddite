@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from luddite.agents.anny.render_storyline_sample import (
+    render_default_samples,
     render_storyline_markdown,
     render_storyline_sample,
 )
@@ -100,3 +101,34 @@ def test_render_storyline_sample_writes_markdown(tmp_path: Path) -> None:
     assert rendered == output_path
     assert output_path.exists()
     assert "샘플 스토리라인" in output_path.read_text(encoding="utf-8")
+
+
+def test_compact_markdown_uses_global_slide_numbers_and_hides_source_refs() -> None:
+    markdown = render_storyline_markdown(
+        _sample_storyline(),
+        label="sample",
+        output_type="manual_enriched",
+        description="Rendered test sample.",
+        mode="compact",
+        manifest={"failure_modes": [], "schema_valid": True},
+    )
+
+    assert "### 01. AI 즉답의 편리함" in markdown
+    assert "### 02. 방송 전 확인 리스트" in markdown
+    assert "Sources:" in markdown
+    assert "Check:" in markdown
+    assert "kind=education_research_claim" in markdown
+    assert "Source refs:" not in markdown
+    assert "supporting_article" not in markdown
+
+
+def test_render_default_samples_can_write_compact_and_audit(tmp_path: Path) -> None:
+    rendered = render_default_samples(output_dir=tmp_path, mode="both")
+    rendered_paths = {path.relative_to(tmp_path) for path in rendered}
+
+    assert Path("README.md") in rendered_paths
+    assert Path("ai_knowledge_institution_manual_enriched.md") in rendered_paths
+    assert Path("compact/ai_knowledge_institution_manual_enriched.md") in rendered_paths
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "compact/ai_knowledge_institution_manual_enriched.md" in readme
+    assert "research-team reading" in readme

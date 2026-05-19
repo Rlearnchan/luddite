@@ -468,6 +468,23 @@ Milestone 1.17.2: Human-readable Anny Storyline Samples
   `needs_source`, `needs_fact_check`, fact-check metadata, key-beat metadata,
   and production-checklist markers for human review.
 
+Milestone 1.17.4: Human-readable Sample Renderer Polish
+
+- Add `compact`, `audit`, and `both` render modes to
+  `luddite render-anny-storyline-sample`.
+- `make render-anny-storyline-samples` now creates compact research-team samples
+  under `outputs/samples/anny_storylines/compact/` while keeping root-level audit
+  samples for development and validator review.
+- Compact samples use global slide numbers and show headline, body, first
+  sources, `needs_source`, `needs_fact_check`, before-broadcast/fact-check
+  metadata, and a shortened note.
+- Detailed `source_refs`, key-beat metadata, and hygiene fields remain in audit
+  mode.
+- The sample README now recommends
+  `compact/ai_knowledge_institution_manual_enriched.md` as the first human
+  reading sample and warns that productive finance API v1 is failure analysis,
+  not a product example.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
