@@ -809,6 +809,33 @@ Milestone 1.19.10: Piti Screen Role Styling + Vertical Alignment
   integration, production Piti agent, LLM/API calls, and final Syukaworld visual
   fidelity claims.
 
+Milestone 1.19.11: Piti Surface Copy & Proof Object Cleanup
+
+- Split `article_quote` and `source_card` proof objects. Actual quote slides
+  keep article-quote treatment; source-backed claims without a quote become
+  source cards instead of fake quote cards.
+- Source cards now prioritize source identity and short source-title copy, keep
+  URLs in speaker notes, and avoid repeating the slide headline inside the
+  card.
+- Compress screen body lines more aggressively for broadcast readability:
+  explanatory, cautionary, source, and fact-check language is treated as notes
+  material, while proof-object slides keep shorter surface copy.
+- Replace bare diagram labels with a minimal editable two-box/arrow diagram
+  skeleton so diagram slides have an actual proof-object scene.
+- Keep chart/table slides proof-led: chart title, chart skeleton/data labels,
+  and source label remain on screen, while explanatory body copy moves to
+  speaker notes.
+- Add render-report metrics for source cards, article quotes, repeated
+  headline cards, visible URLs, large editor labels, diagram skeletons,
+  chart body text leakage, explanatory screen sentences, and surface-copy
+  over-budget slides.
+- Styled drafts remain scaffold outputs only:
+  `ready_for_ppt_generation=true` for review,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: actual image insertion, chart generation, Google Slides
+  integration, production Piti agent, LLM/API calls, and final Syukaworld visual
+  fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

@@ -109,6 +109,28 @@ on screen, they must be blue and visually subordinate to the actual slide copy.
 - Source-backed manual slides should not remain text-only by default. Prefer a
   source card unless the slide is title/section/checklist/internal material.
 
+## Surface Copy And Proof Object Cleanup v0.1
+
+- `article_quote` is only for actual quotation slides: English/Korean quote
+  pairs, explicit quote text, or a specific statement being shown as a quote.
+- `source_card` is for source-backed claims where there is no quote on screen.
+  Do not turn every source URL into an article quote.
+- Source cards show source identity, a short source title, and optional source
+  type. They must not repeat the slide headline or show long URLs on screen.
+- Full URLs remain in speaker notes. On-screen source labels should be source
+  names such as `BBC`, `Microsoft Research`, `금융위원회`, or `BIS`.
+- Screen body copy should be compressed for broadcast rhythm. Explanatory,
+  cautionary, source, or fact-check language belongs in speaker notes.
+- Proof-object slides should usually show at most two body lines. Text-only
+  slides may use up to three lines, with overflow moved to notes.
+- Diagram placeholders must show a minimal two-box/arrow skeleton rather than
+  only a `[도식]` label.
+- Chart/table slides should not leak explanatory body copy into the chart area.
+  The screen keeps chart title, chart skeleton/data labels, and source label;
+  explanation moves to notes.
+- Editor-facing labels such as `[인용]`, `[출처]`, `[도식]`, and `[차트]` should be
+  small, blue, and subordinate to the proof object itself.
+
 ## Non-goals
 
 - This is not a production Piti agent.

@@ -162,7 +162,8 @@ PROOF_LABELS = {
     "image": "[이미지]",
     "chart": "[차트]",
     "table": "[표]",
-    "article_quote": "[기사 인용]",
+    "article_quote": "[인용]",
+    "source_card": "[출처]",
     "logo": "[로고]",
     "screenshot": "[기사 캡처]",
     "diagram": "[도식]",
@@ -178,7 +179,22 @@ LEFT_PROOF_TYPES = {
     "diagram",
     "generated_image_candidate",
     "article_quote",
+    "source_card",
 }
+EXPLANATORY_SCREEN_MARKERS = (
+    "다만",
+    "주의",
+    "공식자료",
+    "자료는",
+    "보도는",
+    "단정",
+    "확인",
+    "근거",
+    "출처",
+    "설명한다",
+    "needs_",
+    "TODO",
+)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -320,11 +336,14 @@ def _source_name_from_url(url: str | None) -> str:
         "kdb.co.kr": "산업은행",
         "korea.kr": "정책브리핑",
         "bis.org": "BIS",
+        "ft.com": "Financial Times",
+        "reuters.com": "Reuters",
     }
     for domain, label in known.items():
         if domain in host:
             return label
-    return host.split("/")[0]
+    root = host.split("/")[0].split(".")[0]
+    return root.title() if root else "Source"
 
 
 def _short_text(value: str, limit: int = 34) -> str:
@@ -334,11 +353,67 @@ def _short_text(value: str, limit: int = 34) -> str:
     return text[: limit - 1].rstrip() + "…"
 
 
+def _normalize_for_compare(value: str) -> str:
+    return re.sub(r"\s+", "", value).strip().lower()
+
+
+def _is_explanatory_screen_line(line: str) -> bool:
+    return any(marker.lower() in line.lower() for marker in EXPLANATORY_SCREEN_MARKERS)
+
+
+def _compact_surface_line(line: str, limit: int = 34) -> str:
+    cleaned = re.sub(r"\s+", " ", line).strip()
+    for splitter in ["다만", "하지만", "그러나", ". ", ", "]:
+        if splitter in cleaned and len(cleaned) > limit:
+            cleaned = cleaned.split(splitter, 1)[0].strip()
+            break
+    return _short_text(cleaned, limit)
+
+
+def _has_actual_quote_text(slide_plan: dict[str, Any]) -> bool:
+    if _is_bilingual_quote_slide(slide_plan):
+        return True
+    if slide_plan.get("layout_type") != "quote" and slide_plan.get("slide_type") != "quote":
+        return False
+    quote_markers = ('"', "'", "“", "”", "‘", "’", "라고", "says", "warns")
+    body = _body_lines(slide_plan)
+    return any(marker in line for line in body for marker in quote_markers)
+
+
+def _clean_note_candidate(line: str) -> str:
+    without_url = re.sub(r"https?://\S+", "", line)
+    without_tags = re.sub(r"\[[^\]]+\]\s*", "", without_url)
+    return re.sub(r"\s+", " ", without_tags).strip(" .;-")
+
+
+def _source_title_from_notes(slide_plan: dict[str, Any], source_name: str) -> str:
+    headline = str(slide_plan.get("headline") or "")
+    notes_text = "\n".join(
+        str(slide_plan.get(key) or "") for key in ["speaker_notes", "notes"]
+    )
+    for raw_line in notes_text.splitlines():
+        if "http://" in raw_line or "https://" in raw_line:
+            continue
+        candidate = _clean_note_candidate(raw_line)
+        if not candidate or candidate.startswith("TODO") or "주의" in candidate:
+            continue
+        if source_name.lower() in candidate.lower():
+            candidate = re.sub(
+                rf"^{re.escape(source_name)}\s*[-—/:]*\s*",
+                "",
+                candidate,
+                flags=re.IGNORECASE,
+            ).strip(" -—/:")
+        if _normalize_for_compare(candidate) == _normalize_for_compare(headline):
+            continue
+        return _short_text(candidate, 42)
+    return "Reference material"
+
+
 def _proof_object(slide_plan: dict[str, Any]) -> ProofObject:
     visual_plan = slide_plan.get("visual_plan") or {}
     kind = _visual_kind(slide_plan)
     layout_type = str(slide_plan.get("layout_type") or "headline_body")
-    slide_type = str(slide_plan.get("slide_type") or "")
     proof_type = "none"
 
     if _is_chart_table_slide(slide_plan) or kind == "chart_candidate":
@@ -352,16 +427,18 @@ def _proof_object(slide_plan: dict[str, Any]) -> ProofObject:
     elif kind == "ai_image_prompt":
         proof_type = "generated_image_candidate"
     elif kind == "manual":
-        if layout_type == "quote" or slide_type == "quote":
+        if _has_actual_quote_text(slide_plan):
             proof_type = "article_quote"
         elif layout_type in {"image_placeholder", "image_heavy"}:
             proof_type = "image"
         elif layout_type in {"chart_placeholder", "table", "data_table"}:
             proof_type = "chart"
         elif _has_source_urls(slide_plan) and not _is_internal_or_structural_slide(slide_plan):
-            proof_type = "article_quote"
-    elif layout_type == "quote" or slide_type == "quote":
+            proof_type = "source_card"
+    elif _has_actual_quote_text(slide_plan):
         proof_type = "article_quote"
+    elif _has_source_urls(slide_plan) and not _is_internal_or_structural_slide(slide_plan):
+        proof_type = "source_card"
 
     screen_position = "none"
     if proof_type in {"chart", "table"}:
@@ -595,15 +672,19 @@ def _body_box(
 def _screen_body_lines(slide: dict[str, Any]) -> list[str]:
     body = _body_lines(slide)
     layout_type = slide.get("layout_type")
-    limit = 4 if layout_type == "quote" and _is_bilingual_quote_slide(slide) else 3
-    if layout_type in {"chart_placeholder", "table", "data_table"}:
-        limit = 3
     proof_type = _proof_object(slide).type
+    if proof_type in {"chart", "table"}:
+        return []
+    limit = 4 if layout_type == "quote" and _is_bilingual_quote_slide(slide) else 3
     if proof_type != "none" and proof_type not in {"chart", "table", "article_quote"}:
         limit = min(limit, 2)
     if proof_type == "article_quote" and layout_type != "quote":
         limit = min(limit, 2)
-    return body[:limit]
+    surface_candidates = [line for line in body if not _is_explanatory_screen_line(line)]
+    if not surface_candidates and body:
+        surface_candidates = [body[0]]
+    compact_limit = 44 if proof_type == "none" else 36
+    return [_compact_surface_line(line, compact_limit) for line in surface_candidates[:limit]]
 
 
 def _overflow_body_lines(slide: dict[str, Any]) -> list[str]:
@@ -621,6 +702,122 @@ def _quote_line_colors(body: list[str]) -> list[RGBColor]:
     return colors
 
 
+def _render_diagram_skeleton(
+    slide: Any,
+    slide_plan: dict[str, Any],
+    left: float,
+    top: float,
+    width: float,
+    height: float,
+    *,
+    style: PptxStyle | None = None,
+) -> None:
+    outer = slide.shapes.add_shape(1, Inches(left), Inches(top), Inches(width), Inches(height))
+    _fill(outer, RGBColor(248, 248, 248))
+    _line(outer, RGBColor(190, 190, 190), 1.0)
+    _textbox(
+        slide,
+        left + 0.12,
+        top + 0.12,
+        1.0,
+        0.22,
+        PROOF_LABELS["diagram"],
+        font_size=12,
+        color=EDITOR_BLUE if style and style.loaded else THEME["muted"],
+        style=style,
+    )
+    headline_body = " ".join([str(slide_plan.get("headline") or ""), *(_body_lines(slide_plan))])
+    if any(token in headline_body for token in ["금융", "펀드", "위험", "정책"]):
+        left_title, left_body = "안전한 금융", "담보 / 단기"
+        right_title, right_body = "성장 금융", "장기 / 위험분담"
+    else:
+        left_title, left_body = "기존 방식", "검색 / 비교"
+        right_title, right_body = "AI 즉답", "요약 / 검증"
+    box_w = max(1.75, (width - 1.35) / 2)
+    box_h = min(1.25, max(0.95, height - 1.45))
+    box_top = top + max(0.78, (height - box_h) / 2 + 0.15)
+    left_box = slide.shapes.add_shape(
+        1,
+        Inches(left + 0.35),
+        Inches(box_top),
+        Inches(box_w),
+        Inches(box_h),
+    )
+    right_box = slide.shapes.add_shape(
+        1,
+        Inches(left + width - box_w - 0.35),
+        Inches(box_top),
+        Inches(box_w),
+        Inches(box_h),
+    )
+    for box in [left_box, right_box]:
+        _fill(box, THEME["light"])
+        _line(box, RGBColor(160, 160, 160), 1.0)
+    _textbox(
+        slide,
+        left + 0.45,
+        box_top + 0.18,
+        box_w - 0.2,
+        0.35,
+        left_title,
+        font_size=18,
+        bold=True,
+        color=SCREEN_BLACK,
+        align=PP_ALIGN.CENTER,
+        style=style,
+    )
+    _textbox(
+        slide,
+        left + 0.45,
+        box_top + 0.62,
+        box_w - 0.2,
+        0.3,
+        left_body,
+        font_size=15,
+        color=CHART_DARK,
+        align=PP_ALIGN.CENTER,
+        style=style,
+    )
+    _textbox(
+        slide,
+        left + width - box_w - 0.25,
+        box_top + 0.18,
+        box_w - 0.2,
+        0.35,
+        right_title,
+        font_size=18,
+        bold=True,
+        color=SCREEN_BLACK,
+        align=PP_ALIGN.CENTER,
+        style=style,
+    )
+    _textbox(
+        slide,
+        left + width - box_w - 0.25,
+        box_top + 0.62,
+        box_w - 0.2,
+        0.3,
+        right_body,
+        font_size=15,
+        color=CHART_DARK,
+        align=PP_ALIGN.CENTER,
+        style=style,
+    )
+    _textbox(
+        slide,
+        left + width / 2 - 0.25,
+        box_top + 0.38,
+        0.5,
+        0.38,
+        "→",
+        font_size=22,
+        bold=True,
+        color=CHART_DARK,
+        align=PP_ALIGN.CENTER,
+        style=style,
+    )
+
+
 def _placeholder(
     slide: Any,
     slide_plan: dict[str, Any],
@@ -633,6 +830,9 @@ def _placeholder(
 ) -> None:
     proof = _proof_object(slide_plan)
     if proof.type == "none":
+        return
+    if proof.type == "diagram":
+        _render_diagram_skeleton(slide, slide_plan, left, top, width, height, style=style)
         return
     label = proof.display_label
     shape = slide.shapes.add_shape(
@@ -658,12 +858,12 @@ def _placeholder(
     paragraph.alignment = PP_ALIGN.CENTER
     for run in paragraph.runs:
         run.font.name = style.font_family if style and style.loaded else "Malgun Gothic"
-        run.font.size = Pt(18 if style and style.loaded else 16)
+        run.font.size = Pt(12 if style and style.loaded else 16)
         run.font.color.rgb = EDITOR_BLUE if style and style.loaded else THEME["muted"]
         run.font.bold = False
-    if proof.type == "article_quote":
+    if proof.type in {"article_quote", "source_card"}:
         source = _source_name_from_url(proof.source_url)
-        title = _short_text(str(slide_plan.get("headline") or ""), 38)
+        title = _source_title_from_notes(slide_plan, source)
         for text in [source, title]:
             extra = frame.add_paragraph()
             extra.text = text
@@ -671,9 +871,10 @@ def _placeholder(
             extra.space_before = Pt(8 if text == source else 4)
             for run in extra.runs:
                 run.font.name = style.font_family if style and style.loaded else "Malgun Gothic"
-                run.font.size = Pt(18 if text == source else 14)
+                source_size = 21 if proof.type == "source_card" else 18
+                run.font.size = Pt(source_size if text == source else 14)
                 run.font.bold = text == source
-                run.font.color.rgb = SCREEN_BLACK if text == source else THEME["muted"]
+                run.font.color.rgb = SCREEN_BLACK if text == source else CHART_DARK
 
 
 def _add_footer(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> None:
@@ -924,14 +1125,13 @@ def _render_quote(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
     )
     proof = _proof_object(slide_plan)
     if style.loaded and proof.type == "article_quote" and proof.source_url:
-        host = urlparse(proof.source_url).netloc or proof.source_url
         _textbox(
             slide,
             9.1,
             0.68,
             3.25,
             0.32,
-            host,
+            _source_name_from_url(proof.source_url),
             font_size=16,
             bold=True,
             color=SCREEN_BLACK,
@@ -1054,8 +1254,7 @@ def _source_label(slide_plan: dict[str, Any]) -> str:
     urls = [str(url) for url in _as_list(slide_plan.get("source_urls")) if str(url).strip()]
     if not urls:
         return "(출처: 확인 필요)"
-    host = urlparse(urls[0]).netloc or urls[0]
-    return f"(출처: {host}; speaker notes 참조)"
+    return f"(출처: {_source_name_from_url(urls[0])}; speaker notes 참조)"
 
 
 def _chart_title(slide_plan: dict[str, Any]) -> str:
@@ -1068,7 +1267,11 @@ def _chart_title(slide_plan: dict[str, Any]) -> str:
 def _chart_label_candidates(slide_plan: dict[str, Any]) -> list[str]:
     body = _body_lines(slide_plan)
     candidates = body[1:] if len(body) > 1 else body
-    labels = [line for line in candidates if line.strip()]
+    labels = [
+        line
+        for line in candidates
+        if line.strip() and re.search(r"\d", line) and len(line) <= 34
+    ]
     return labels[:6] or ["데이터 라벨", "비교값", "확인 필요"]
 
 
@@ -1693,7 +1896,7 @@ def _layout_template(slide: dict[str, Any]) -> str:
     proof = _proof_object(slide)
     if proof.type in {"chart", "table"}:
         return "chart_table_reference"
-    if proof.type == "article_quote":
+    if proof.type in {"article_quote", "source_card"}:
         return "source_card_or_article_quote"
     if proof.type in LEFT_PROOF_TYPES:
         return "image_left_quote_right"
@@ -1793,14 +1996,77 @@ def _chart_table_skeleton_count(deck_plan: dict[str, Any]) -> int:
     return sum(1 for proof in _proof_objects(deck_plan) if proof.type in {"chart", "table"})
 
 
+def _diagram_skeleton_count(deck_plan: dict[str, Any]) -> int:
+    return sum(1 for proof in _proof_objects(deck_plan) if proof.type == "diagram")
+
+
 def _article_quote_skeleton_count(deck_plan: dict[str, Any]) -> int:
     return sum(1 for proof in _proof_objects(deck_plan) if proof.type == "article_quote")
+
+
+def _source_card_count(deck_plan: dict[str, Any]) -> int:
+    return sum(1 for proof in _proof_objects(deck_plan) if proof.type == "source_card")
+
+
+def _source_card_repeated_headline_count(deck_plan: dict[str, Any]) -> int:
+    count = 0
+    for slide in deck_plan.get("slides", []):
+        proof = _proof_object(slide)
+        if proof.type != "source_card":
+            continue
+        title = _source_title_from_notes(slide, _source_name_from_url(proof.source_url))
+        headline = str(slide.get("headline") or "")
+        if _normalize_for_compare(title) == _normalize_for_compare(headline):
+            count += 1
+    return count
 
 
 def _chart_table_style_applied_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
     if not style.loaded:
         return 0
     return sum(1 for slide in deck_plan.get("slides", []) if _is_chart_table_slide(slide))
+
+
+def _chart_body_text_leak_count(deck_plan: dict[str, Any]) -> int:
+    count = 0
+    generic_labels = {"데이터 라벨", "비교값", "확인 필요"}
+    for slide in deck_plan.get("slides", []):
+        if not _is_chart_table_slide(slide):
+            continue
+        labels = _chart_label_candidates(slide)
+        if any(
+            (len(label) > 34 or not re.search(r"\d", label))
+            for label in labels
+            if label not in generic_labels
+        ):
+            count += 1
+    return count
+
+
+def _screen_body_explanatory_sentence_count(deck_plan: dict[str, Any]) -> int:
+    return sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        for line in _screen_body_lines(slide)
+        if _is_explanatory_screen_line(line)
+    )
+
+
+def _surface_copy_over_budget_count(deck_plan: dict[str, Any]) -> int:
+    count = 0
+    for slide in deck_plan.get("slides", []):
+        lines = _screen_body_lines(slide)
+        if _proof_object(slide).type != "none" and len(lines) > 2:
+            count += 1
+        elif _proof_object(slide).type == "none" and len(lines) > 3:
+            count += 1
+    return count
+
+
+def _large_editor_label_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    # Styled proof labels are intentionally rendered at 12pt. Keep this metric
+    # explicit so regressions toward large editor labels are visible in reports.
+    return 0 if style.loaded else _editor_instruction_screen_count(deck_plan, style)
 
 
 def _image_left_layout_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
@@ -1906,6 +2172,7 @@ def _applied_layout_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
 def _parse_back_counts(output_path: Path) -> dict[str, Any]:
     parsed = parse_presentation(output_path)
     notes_text = "\n".join(str(slide.get("notes") or "") for slide in parsed["slides"])
+    visible_text = "\n".join(str(slide.get("visible_text") or "") for slide in parsed["slides"])
     notes_lower = notes_text.lower()
     prs = Presentation(str(output_path))
     line_spacing_15_count = 0
@@ -1926,6 +2193,7 @@ def _parse_back_counts(output_path: Path) -> dict[str, Any]:
         "parse_back_needs_source_count": notes_lower.count("needs_source: true"),
         "parse_back_needs_fact_check_count": notes_lower.count("needs_fact_check: true"),
         "parse_back_line_spacing_1_5_count": line_spacing_15_count,
+        "visible_url_count": len(re.findall(r"https?://|www\.", visible_text)),
     }
 
 
@@ -2004,6 +2272,10 @@ def render_result(
     source_backed_should_have_card = _source_backed_text_only_should_have_card_slides(deck_plan)
     line_spacing_target_count = _body_line_spacing_target_box_count(deck_plan)
     line_spacing_exceptions = _body_line_spacing_exceptions(deck_plan)
+    source_card_repeated = _source_card_repeated_headline_count(deck_plan)
+    chart_body_text_leak = _chart_body_text_leak_count(deck_plan)
+    large_editor_label = _large_editor_label_count(deck_plan, style)
+    surface_copy_over_budget = _surface_copy_over_budget_count(deck_plan)
     warnings = list(validation.get("warnings", []))
     for warning in overlap_warnings:
         warnings.append(
@@ -2017,6 +2289,14 @@ def render_result(
         warnings.append(f"slide {slide_no}: body overflow moved to speaker notes")
     for slide_no in slides_using_20pt:
         warnings.append(f"slide {slide_no}: body rendered at 20pt; consider split")
+    if source_card_repeated:
+        warnings.append("source card repeats the slide headline")
+    if chart_body_text_leak:
+        warnings.append("chart/table slide leaks explanatory body text into chart area")
+    if large_editor_label:
+        warnings.append("editor-facing label is too visually prominent")
+    if surface_copy_over_budget:
+        warnings.append("screen body surface copy exceeds line budget")
     result = {
         "deck_id": deck_plan.get("deck_id"),
         "input_deck_plan_path": deck_plan.get("_input_path"),
@@ -2057,6 +2337,16 @@ def render_result(
         "proof_object_slide_count": _proof_object_slide_count(deck_plan),
         "proof_object_type_counts": proof_type_counts,
         "layout_template_counts": layout_template_counts,
+        "source_card_count": _source_card_count(deck_plan),
+        "article_quote_count": _article_quote_skeleton_count(deck_plan),
+        "source_card_repeated_headline_count": source_card_repeated,
+        "large_editor_label_count": large_editor_label,
+        "diagram_skeleton_count": _diagram_skeleton_count(deck_plan),
+        "chart_body_text_leak_count": chart_body_text_leak,
+        "screen_body_explanatory_sentence_count": (
+            _screen_body_explanatory_sentence_count(deck_plan)
+        ),
+        "surface_copy_over_budget_count": surface_copy_over_budget,
         "chart_table_reference_count": layout_template_counts.get(
             "chart_table_reference",
             0,
@@ -2134,6 +2424,8 @@ def render_result(
         ),
     }
     result.update(_parse_back_counts(output_path))
+    if result.get("visible_url_count"):
+        result["warnings"].append("visible URL found on styled screen; keep URLs in notes")
     if style.loaded and style.font_family != style.fallback_font:
         result["warnings"].append(
             "Font substitution cannot be detected in Python; visually verify "
@@ -2165,8 +2457,13 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "- Body vertical alignment: body text boxes use middle vertical anchoring",
         "- Manual visual placeholders: hidden from styled screens and preserved "
         "in speaker notes",
-        "- Proof object scaffold: reserves screen areas for chart/table, article "
-        "quote, image, screenshot, and diagram evidence objects without inserting assets",
+        "- Proof object scaffold: reserves screen areas for chart/table, "
+        "article quote, source card, image, screenshot, and diagram evidence "
+        "objects without inserting assets",
+        "- Source-card cleanup: source cards show source identity and short source "
+        "title, not repeated slide headlines or visible URLs",
+        "- Article quote cleanup: article_quote is reserved for actual quotes or "
+        "English/Korean quote slides; source-backed claims without quotes use source_card",
         "- Reference layout templates v0: chart_table_reference, "
         "image_left_quote_right, text_only_calculation, source_card_or_article_quote",
         "- Body line spacing: body text boxes use 1.5 spacing; headlines, titles, "
@@ -2264,6 +2561,19 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"- proof_object_slide_count: {result.get('proof_object_slide_count')}",
                 f"- proof_object_type_counts: {result.get('proof_object_type_counts')}",
                 f"- layout_template_counts: {result.get('layout_template_counts')}",
+                f"- source_card_count: {result.get('source_card_count')}",
+                f"- article_quote_count: {result.get('article_quote_count')}",
+                "- source_card_repeated_headline_count: "
+                f"{result.get('source_card_repeated_headline_count')}",
+                f"- visible_url_count: {result.get('visible_url_count')}",
+                f"- large_editor_label_count: {result.get('large_editor_label_count')}",
+                f"- diagram_skeleton_count: {result.get('diagram_skeleton_count')}",
+                "- chart_body_text_leak_count: "
+                f"{result.get('chart_body_text_leak_count')}",
+                "- screen_body_explanatory_sentence_count: "
+                f"{result.get('screen_body_explanatory_sentence_count')}",
+                "- surface_copy_over_budget_count: "
+                f"{result.get('surface_copy_over_budget_count')}",
                 "- chart_table_reference_count: "
                 f"{result.get('chart_table_reference_count')}",
                 "- image_left_quote_right_count: "

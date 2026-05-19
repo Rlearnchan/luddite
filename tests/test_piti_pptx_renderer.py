@@ -327,7 +327,12 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
         "layout_type": "chart_placeholder",
         "slide_type": "data",
         "headline": "한국인의 사랑을 듬뿍 받는 테슬라",
-        "body": ["미국주식 보관금액 상위 10종목", "테슬라 264", "엔비디아 195"],
+        "body": [
+            "미국주식 보관금액 상위 10종목",
+            "테슬라 264",
+            "차트 설명은 노트로 보낸다",
+            "엔비디아 195",
+        ],
         "source_urls": ["https://example.com/seibro"],
         "image_urls": [],
         "speaker_notes": "chart notes",
@@ -347,8 +352,12 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     data_paragraph = _first_paragraph_for_text(prs, "테슬라 264")
     source_run = _first_run_for_text(prs, "(출처:")
     source_paragraph = _first_paragraph_for_text(prs, "(출처:")
+    visible_text = "\n".join(
+        slide["visible_text"] for slide in parse_presentation(output_path)["slides"]
+    )
     assert result["chart_table_style_applied_count"] == 1
     assert result["chart_table_skeleton_count"] == 1
+    assert result["chart_body_text_leak_count"] == 0
     assert result["proof_object_type_counts"] == {"chart": 1}
     assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
     assert headline_run.font.bold is False
@@ -363,6 +372,7 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     assert source_run.font.underline is True
     assert source_paragraph.line_spacing is None
     assert result["chart_title_bold_underline_count"] == 1
+    assert "차트 설명은 노트로 보낸다" not in visible_text
 
 
 def test_section_title_is_not_forced_red_by_headline_rule(tmp_path: Path) -> None:
@@ -471,16 +481,19 @@ def test_article_quote_proof_object_reserves_left_area(tmp_path: Path) -> None:
     notes_text = "\n".join(item["notes"] for item in parsed["slides"])
 
     assert result["article_quote_skeleton_count"] == 1
+    assert result["article_quote_count"] == 1
     assert result["proof_object_type_counts"] == {"article_quote": 1}
     assert result["proof_object_area_reserved_count"] == 1
     assert result["proof_text_overlap_count"] == 0
-    assert "[기사 인용]" in visible_text
-    assert "example.com" in visible_text
+    assert "[인용]" in visible_text
+    assert "Example" in visible_text
+    assert "example.com" not in visible_text
     assert "proof_object_type: article_quote" in notes_text
-    editor_run = _first_run_for_text(prs := Presentation(str(output_path)), "[기사 인용]")
-    source_run = _first_run_for_text(prs, "example.com")
+    editor_run = _first_run_for_text(prs := Presentation(str(output_path)), "[인용]")
+    source_run = _first_run_for_text(prs, "Example")
     assert editor_run.font.color.rgb == RGBColor(0, 112, 192)
     assert source_run.font.color.rgb == RGBColor(0, 0, 0)
+    assert result["visible_url_count"] == 0
 
 
 def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None:
@@ -527,8 +540,14 @@ def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None
     assert result["text_only_slide_count"] == 1
     assert result["proof_object_required_but_missing_count"] == 0
     assert result["image_left_layout_count"] == 1
+    assert result["diagram_skeleton_count"] == 1
     assert "proof_object_slide_count" in report_text
     assert "proof_object_type_counts" in report_text
+    visible_text = "\n".join(
+        slide["visible_text"] for slide in parse_presentation(output_path)["slides"]
+    )
+    assert "기존 방식" in visible_text
+    assert "AI 즉답" in visible_text
 
 
 def test_source_backed_manual_slide_uses_source_card_template(tmp_path: Path) -> None:
@@ -556,16 +575,20 @@ def test_source_backed_manual_slide_uses_source_card_template(tmp_path: Path) ->
     visible_text = "\n".join(item["visible_text"] for item in parsed["slides"])
     notes_text = "\n".join(item["notes"] for item in parsed["slides"])
 
-    assert result["proof_object_type_counts"] == {"article_quote": 1}
+    assert result["proof_object_type_counts"] == {"source_card": 1}
     assert result["layout_template_counts"] == {"source_card_or_article_quote": 1}
     assert result["source_card_or_article_quote_count"] == 1
+    assert result["source_card_count"] == 1
+    assert result["article_quote_count"] == 0
+    assert result["source_card_repeated_headline_count"] == 0
     assert result["text_only_slide_count"] == 0
     assert result["text_only_slide_count_before_after"] == {"before": 1, "after": 0}
     assert result["proof_object_slide_count_before_after"] == {"before": 0, "after": 1}
     assert result["source_backed_text_only_should_have_card_count"] == 0
-    assert "[기사 인용]" in visible_text
+    assert "[출처]" in visible_text
     assert "BBC" in visible_text
-    assert "proof_object_type: article_quote" in notes_text
+    assert visible_text.count("BBC가 던진 질문") == 1
+    assert "proof_object_type: source_card" in notes_text
 
 
 def test_reference_layout_report_exposes_template_metrics(tmp_path: Path) -> None:
