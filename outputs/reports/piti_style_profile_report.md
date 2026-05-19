@@ -1,6 +1,6 @@
 # Piti Style Profile Report
 
-- Generated at: 2026-05-19T02:52:08.268974+00:00
+- Generated at: 2026-05-19T03:01:32.657913+00:00
 - Analyzed decks: 전당포 주식회사_배형찬.pptx
 - Shape records: 173
 - Text shape records: 130
@@ -28,6 +28,23 @@
 - font family inherited/implicit records: 130
 - font size inherited/implicit records: 1
 - font color inherited/implicit records: 49
+
+## Theme / Master Font Candidates
+
+- theme files: ['ppt/theme/theme1.xml', 'ppt/theme/theme2.xml']
+- master files: ['ppt/slideMasters/slideMaster1.xml']
+- layout files: 11 layout XML files
+- major_latin: 맑은 고딕
+- major_east_asia: 맑은 고딕
+- minor_latin: 맑은 고딕
+- minor_east_asia: 맑은 고딕
+- resolved font candidates: ['맑은 고딕']
+- renderer fallback font: 맑은 고딕
+- explicit font families are sparse because most slide text inherits theme/master font references such as `+mj-ea` and `+mn-ea`.
+- title style fonts/sizes: ['맑은 고딕'] / [44.0]
+- body style fonts/sizes: ['맑은 고딕'] / [28.0, 24.0, 20.0, 18.0]
+- other style fonts/sizes: ['맑은 고딕'] / [18.0]
+- PowerPoint, Windows, and Google Slides may substitute fonts differently; visual QA is still required after renderer application.
 
 ## Layout Patterns
 
@@ -109,7 +126,8 @@
 
 ## Piti Renderer Recommendations
 
-- Start with `Malgun Gothic` as the first explicit font candidate, while noting theme inheritance.
+- Start with `맑은 고딕` as the first explicit font candidate, while noting theme inheritance.
+- Keep `Malgun Gothic` as a cross-environment fallback when the Korean theme font is unavailable.
 - Use observed common font sizes as candidates: [28.0, 20.0, 54.0, 32.0, 52.0].
 - title: median box x/y/w/h cm 2.38/3.118/29.106/6.632, font None pt.
 - section_title: median box x/y/w/h cm 2.345/3.538/29.869/6.735, font 54.0 pt.

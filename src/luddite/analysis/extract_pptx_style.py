@@ -57,6 +57,15 @@ SLIDE_TYPE_GUESSES = {
     "closing",
 }
 
+THEME_FONT_REFS = {
+    "+mj-lt": "major_latin",
+    "+mj-ea": "major_east_asia",
+    "+mj-cs": "major_complex_script",
+    "+mn-lt": "minor_latin",
+    "+mn-ea": "minor_east_asia",
+    "+mn-cs": "minor_complex_script",
+}
+
 
 @dataclass(frozen=True)
 class ExtractOutputs:
@@ -301,6 +310,12 @@ def _slide_paths(deck: zipfile.ZipFile) -> list[str]:
     return sorted(paths_found, key=lambda name: int(slide_re.match(name).group(1)))  # type: ignore[union-attr]
 
 
+def _xml_part_paths(deck: zipfile.ZipFile, prefix: str, stem: str) -> list[str]:
+    pattern = re.compile(rf"^{re.escape(prefix)}/{re.escape(stem)}(\d+)\.xml$")
+    paths_found = [name for name in deck.namelist() if pattern.match(name)]
+    return sorted(paths_found, key=lambda name: int(pattern.match(name).group(1)))  # type: ignore[union-attr]
+
+
 def _slide_number(slide_path: str) -> int:
     match = re.search(r"slide(\d+)\.xml$", slide_path)
     return int(match.group(1)) if match else 0
@@ -332,6 +347,357 @@ def _notes_text(deck: zipfile.ZipFile, slide_no: int) -> str:
 def _media_count(deck: zipfile.ZipFile, slide_no: int) -> int:
     rels = _relationships(deck, _rels_path_for_slide(slide_no))
     return sum(1 for rel in rels if "/image" in rel["type"] or "/chart" in rel["type"])
+
+
+def _typeface(node: ET.Element | None) -> str | None:
+    if node is None:
+        return None
+    value = node.attrib.get("typeface")
+    return value or None
+
+
+def _script_typeface(font_block: ET.Element | None, script: str) -> str | None:
+    if font_block is None:
+        return None
+    for node in font_block.findall("a:font", NS):
+        if node.attrib.get("script") == script:
+            return _typeface(node)
+    return None
+
+
+def _extract_theme_fonts_from_root(root: ET.Element) -> dict[str, str | None]:
+    major = root.find(".//a:fontScheme/a:majorFont", NS)
+    minor = root.find(".//a:fontScheme/a:minorFont", NS)
+    return {
+        "major_latin": _typeface(major.find("a:latin", NS) if major is not None else None),
+        "major_east_asia": _typeface(major.find("a:ea", NS) if major is not None else None)
+        or _script_typeface(major, "Hang")
+        or _script_typeface(major, "Jpan"),
+        "major_complex_script": _typeface(
+            major.find("a:cs", NS) if major is not None else None
+        ),
+        "minor_latin": _typeface(minor.find("a:latin", NS) if minor is not None else None),
+        "minor_east_asia": _typeface(minor.find("a:ea", NS) if minor is not None else None)
+        or _script_typeface(minor, "Hang")
+        or _script_typeface(minor, "Jpan"),
+        "minor_complex_script": _typeface(
+            minor.find("a:cs", NS) if minor is not None else None
+        ),
+    }
+
+
+def _font_refs_from_rpr(rpr: ET.Element | None) -> dict[str, str | None]:
+    if rpr is None:
+        return {"latin": None, "east_asia": None, "complex_script": None}
+    return {
+        "latin": _typeface(rpr.find("a:latin", NS)),
+        "east_asia": _typeface(rpr.find("a:ea", NS)),
+        "complex_script": _typeface(rpr.find("a:cs", NS)),
+    }
+
+
+def _resolve_font_ref(value: str | None, theme_fonts: dict[str, str | None]) -> str | None:
+    if not value:
+        return None
+    if value in THEME_FONT_REFS:
+        return theme_fonts.get(THEME_FONT_REFS[value])
+    return value
+
+
+def _resolved_font_from_refs(
+    font_refs: dict[str, str | None],
+    theme_fonts: dict[str, str | None],
+) -> str | None:
+    for key in ["east_asia", "latin", "complex_script"]:
+        resolved = _resolve_font_ref(font_refs.get(key), theme_fonts)
+        if resolved:
+            return resolved
+    return None
+
+
+def _style_entry_from_rpr(
+    *,
+    part_name: str,
+    style_name: str,
+    level: str,
+    rpr: ET.Element | None,
+    theme_fonts: dict[str, str | None],
+) -> dict[str, Any]:
+    font_refs = _font_refs_from_rpr(rpr)
+    return {
+        "part_name": part_name,
+        "style_name": style_name,
+        "level": level,
+        "font_refs": font_refs,
+        "resolved_font_family": _resolved_font_from_refs(font_refs, theme_fonts),
+        "font_size_pt": _font_size_from_rpr(rpr),
+        "font_color": _font_color_from_rpr(rpr),
+    }
+
+
+def _summarize_style_entries(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "font_family_candidates": _unique_ordered(
+            entry.get("resolved_font_family") for entry in entries
+        ),
+        "font_size_pt_candidates": _unique_ordered(
+            entry.get("font_size_pt") for entry in entries
+        ),
+        "font_color_candidates": _unique_ordered(entry.get("font_color") for entry in entries),
+        "levels": entries,
+    }
+
+
+def _extract_tx_styles(
+    root: ET.Element,
+    *,
+    part_name: str,
+    theme_fonts: dict[str, str | None],
+) -> dict[str, dict[str, Any]]:
+    styles: dict[str, dict[str, Any]] = {}
+    tx_styles = root.find(".//p:txStyles", NS)
+    if tx_styles is None:
+        return styles
+    for style_name in ["title", "body", "other"]:
+        style_node = tx_styles.find(f"p:{style_name}Style", NS)
+        if style_node is None:
+            continue
+        entries: list[dict[str, Any]] = []
+        for child in list(style_node):
+            tag = child.tag.split("}")[-1]
+            if not (tag == "defPPr" or tag.endswith("pPr")):
+                continue
+            rpr = child.find("a:defRPr", NS)
+            if rpr is None:
+                continue
+            entries.append(
+                _style_entry_from_rpr(
+                    part_name=part_name,
+                    style_name=style_name,
+                    level=tag,
+                    rpr=rpr,
+                    theme_fonts=theme_fonts,
+                )
+            )
+        styles[style_name] = _summarize_style_entries(entries)
+    return styles
+
+
+def _placeholder_type(shape: ET.Element) -> str | None:
+    placeholder = shape.find(".//p:nvPr/p:ph", NS)
+    if placeholder is None:
+        return None
+    return placeholder.attrib.get("type") or "body"
+
+
+def _placeholder_style_entries(
+    root: ET.Element,
+    *,
+    part_name: str,
+    theme_fonts: dict[str, str | None],
+) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    for shape in root.findall(".//p:sp", NS):
+        placeholder = _placeholder_type(shape)
+        if not placeholder:
+            continue
+        geometry = _shape_geometry(shape)
+        run_style = _run_style_values(shape)
+        explicit_style_count = run_style.pop("explicit_text_style_count")
+        rpr = shape.find(".//a:defRPr", NS)
+        if rpr is None:
+            rpr = shape.find(".//a:rPr", NS)
+        font_refs = _font_refs_from_rpr(rpr)
+        entries.append(
+            {
+                "part_name": part_name,
+                "placeholder_type": placeholder,
+                **geometry,
+                "x_cm": _emu_to_cm(geometry["x_emu"]),
+                "y_cm": _emu_to_cm(geometry["y_emu"]),
+                "w_cm": _emu_to_cm(geometry["w_emu"]),
+                "h_cm": _emu_to_cm(geometry["h_emu"]),
+                "font_refs": font_refs,
+                "resolved_font_family": _resolved_font_from_refs(font_refs, theme_fonts)
+                or run_style.get("font_family"),
+                "font_size_pt": _font_size_from_rpr(rpr) or run_style.get("font_size_pt"),
+                "font_color": _font_color_from_rpr(rpr) or run_style.get("font_color"),
+                "explicit_text_style_count": explicit_style_count,
+            }
+        )
+    return entries
+
+
+def _font_profile_for_deck(deck: zipfile.ZipFile) -> dict[str, Any]:
+    namelist = set(deck.namelist())
+    theme_paths = _xml_part_paths(deck, "ppt/theme", "theme")
+    master_paths = _xml_part_paths(deck, "ppt/slideMasters", "slideMaster")
+    layout_paths = _xml_part_paths(deck, "ppt/slideLayouts", "slideLayout")
+    theme_font_records = []
+    for theme_path in theme_paths:
+        root = _load_xml(deck, theme_path)
+        theme_font_records.append({"part_name": theme_path, **_extract_theme_fonts_from_root(root)})
+    theme_fonts = _merge_theme_fonts(theme_font_records)
+    master_style_entries: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    placeholder_entries: list[dict[str, Any]] = []
+    for part_name in [*master_paths, *layout_paths]:
+        if part_name not in namelist:
+            continue
+        root = _load_xml(deck, part_name)
+        for style_name, summary in _extract_tx_styles(
+            root,
+            part_name=part_name,
+            theme_fonts=theme_fonts,
+        ).items():
+            master_style_entries[style_name].extend(summary.get("levels", []))
+        placeholder_entries.extend(
+            _placeholder_style_entries(
+                root,
+                part_name=part_name,
+                theme_fonts=theme_fonts,
+            )
+        )
+    return {
+        "theme_files": theme_paths,
+        "master_files": master_paths,
+        "layout_files": layout_paths,
+        "theme_fonts": theme_fonts,
+        "master_text_styles": {
+            style_name: _summarize_style_entries(entries)
+            for style_name, entries in sorted(master_style_entries.items())
+        },
+        "placeholder_styles": _summarize_placeholder_styles(placeholder_entries),
+    }
+
+
+def _merge_theme_fonts(records: list[dict[str, Any]]) -> dict[str, str | None]:
+    merged: dict[str, str | None] = {}
+    for key in [
+        "major_latin",
+        "major_east_asia",
+        "major_complex_script",
+        "minor_latin",
+        "minor_east_asia",
+        "minor_complex_script",
+    ]:
+        merged[key] = _first_non_empty(record.get(key) for record in records)
+    return merged
+
+
+def _summarize_placeholder_styles(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    by_type: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for entry in entries:
+        by_type[entry.get("placeholder_type", "unknown")].append(entry)
+    return {
+        placeholder_type: {
+            "count": len(values),
+            "font_family_candidates": _unique_ordered(
+                item.get("resolved_font_family") for item in values
+            ),
+            "font_size_pt_candidates": _unique_ordered(item.get("font_size_pt") for item in values),
+            "x_cm_median": _median_field(values, "x_cm"),
+            "y_cm_median": _median_field(values, "y_cm"),
+            "w_cm_median": _median_field(values, "w_cm"),
+            "h_cm_median": _median_field(values, "h_cm"),
+            "samples": values[:5],
+        }
+        for placeholder_type, values in sorted(by_type.items())
+    }
+
+
+def _merge_font_profiles(
+    font_profiles: list[dict[str, Any]],
+    text_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    theme_fonts = _merge_theme_fonts(
+        [profile.get("theme_fonts", {}) for profile in font_profiles]
+    )
+    master_text_styles: dict[str, dict[str, Any]] = {}
+    for style_name in ["title", "body", "other"]:
+        entries: list[dict[str, Any]] = []
+        for profile in font_profiles:
+            entries.extend(
+                profile.get("master_text_styles", {}).get(style_name, {}).get("levels", [])
+            )
+        if entries:
+            master_text_styles[style_name] = _summarize_style_entries(entries)
+    placeholder_styles = _merge_placeholder_summaries(font_profiles)
+    resolved_font_candidates = _unique_ordered(
+        [
+            *(record.get("font_family") for record in text_records),
+            *(theme_fonts.get(key) for key in ["major_east_asia", "minor_east_asia"]),
+            *(theme_fonts.get(key) for key in ["major_latin", "minor_latin"]),
+            *(
+                candidate
+                for summary in master_text_styles.values()
+                for candidate in summary.get("font_family_candidates", [])
+            ),
+        ]
+    )
+    fallback_font = _first_non_empty(resolved_font_candidates) or "Malgun Gothic"
+    return {
+        "theme_files": _unique_ordered(
+            path for profile in font_profiles for path in profile.get("theme_files", [])
+        ),
+        "master_files": _unique_ordered(
+            path for profile in font_profiles for path in profile.get("master_files", [])
+        ),
+        "layout_files": _unique_ordered(
+            path for profile in font_profiles for path in profile.get("layout_files", [])
+        ),
+        "theme_fonts": theme_fonts,
+        "master_text_styles": master_text_styles,
+        "placeholder_styles": placeholder_styles,
+        "font_resolution": {
+            "explicit_count": sum(1 for record in text_records if record.get("font_family")),
+            "inherited_count": sum(
+                1 for record in text_records if record.get("font_family_inherited")
+            ),
+            "resolved_font_candidates": resolved_font_candidates,
+            "fallback_font": fallback_font,
+            "renderer_fallback_note": (
+                "Use the resolved Korean theme font when available; keep "
+                "Malgun Gothic as a practical Windows/PowerPoint fallback."
+            ),
+        },
+    }
+
+
+def _merge_placeholder_summaries(font_profiles: list[dict[str, Any]]) -> dict[str, Any]:
+    by_type: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for profile in font_profiles:
+        for placeholder_type, summary in profile.get("placeholder_styles", {}).items():
+            by_type[placeholder_type].extend(summary.get("samples", []))
+    return _summarize_placeholder_styles(
+        [entry for entries in by_type.values() for entry in entries]
+    )
+
+
+def _unique_ordered(values: Any) -> list[Any]:
+    seen: set[Any] = set()
+    items: list[Any] = []
+    for value in values:
+        if value in {None, ""} or value in seen:
+            continue
+        seen.add(value)
+        items.append(value)
+    return items
+
+
+def _first_non_empty(values: Any) -> Any:
+    for value in values:
+        if value not in {None, ""}:
+            return value
+    return None
+
+
+def extract_theme_master_fonts(pptx_paths: list[Path]) -> dict[str, Any]:
+    """Extract merged theme/master font candidates without reading slide shapes."""
+    font_profiles = []
+    for pptx_path in pptx_paths:
+        with zipfile.ZipFile(pptx_path) as deck:
+            font_profiles.append(_font_profile_for_deck(deck))
+    return _merge_font_profiles(font_profiles, [])
 
 
 def _slide_type_guess(
@@ -447,10 +813,12 @@ def _extract_slide_records(
 def extract_shape_samples(pptx_paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     all_records: list[dict[str, Any]] = []
     slide_sizes: list[dict[str, Any]] = []
+    font_profiles: list[dict[str, Any]] = []
     for pptx_path in pptx_paths:
         with zipfile.ZipFile(pptx_path) as deck:
             slide_size = _slide_size(deck)
             slide_sizes.append({"deck_name": pptx_path.name, **slide_size})
+            font_profiles.append({"deck_name": pptx_path.name, **_font_profile_for_deck(deck)})
             slide_paths = _slide_paths(deck)
             for slide_path in slide_paths:
                 all_records.extend(
@@ -461,7 +829,7 @@ def extract_shape_samples(pptx_paths: list[Path]) -> tuple[list[dict[str, Any]],
                         slide_count=len(slide_paths),
                     )
                 )
-    return all_records, {"slide_sizes": slide_sizes}
+    return all_records, {"slide_sizes": slide_sizes, "font_profiles": font_profiles}
 
 
 def aggregate_style_profile(
@@ -480,6 +848,7 @@ def aggregate_style_profile(
         for layout, layout_records in sorted(by_layout.items())
         if layout in SLIDE_TYPE_GUESSES
     }
+    font_profile = _merge_font_profiles(meta.get("font_profiles", []), text_records)
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "deck_names": sorted({record["deck_name"] for record in records}),
@@ -509,6 +878,7 @@ def aggregate_style_profile(
         "slide_type_counts": _counter_values(record.get("slide_type_guess") for record in records),
         "layout_patterns": layout_patterns,
         "notes_label_patterns": _notes_label_patterns(records),
+        **font_profile,
         "limits_and_caveats": [
             "Theme/master inherited font values are not fully resolved; "
             "inherited_style marks likely inherited text.",
@@ -607,6 +977,8 @@ def write_report(path: Path, records: list[dict[str, Any]], profile: dict[str, A
             f"{profile.get('font_color_inherited_records')}",
         ]
     )
+    lines.extend(["", "## Theme / Master Font Candidates", ""])
+    lines.extend(_theme_font_report_lines(profile))
     lines.extend(["", "## Layout Patterns", ""])
     for layout, pattern in profile.get("layout_patterns", {}).items():
         lines.extend(
@@ -653,12 +1025,17 @@ def _bullet_counter(items: list[dict[str, Any]], *, suffix: str = "") -> list[st
 
 
 def _renderer_recommendations(profile: dict[str, Any]) -> list[str]:
-    font = (profile.get("common_fonts") or [{"value": "Malgun Gothic"}])[0]["value"]
+    font_resolution = profile.get("font_resolution") or {}
+    font = font_resolution.get("fallback_font")
+    if not font:
+        font = (profile.get("common_fonts") or [{"value": "Malgun Gothic"}])[0]["value"]
     sizes = [item["value"] for item in profile.get("common_font_sizes", [])[:5]]
     layout_patterns = profile.get("layout_patterns", {})
     recommendations = [
         f"- Start with `{font}` as the first explicit font candidate, "
         "while noting theme inheritance.",
+        "- Keep `Malgun Gothic` as a cross-environment fallback when the Korean "
+        "theme font is unavailable.",
         f"- Use observed common font sizes as candidates: {sizes}.",
     ]
     for key in ["title", "section_title", "headline_body", "image_heavy", "question"]:
@@ -680,6 +1057,41 @@ def _renderer_recommendations(profile: dict[str, Any]) -> list[str]:
         "- Do not apply image placement automatically until copyright workflow exists."
     )
     return recommendations
+
+
+def _theme_font_report_lines(profile: dict[str, Any]) -> list[str]:
+    theme_fonts = profile.get("theme_fonts") or {}
+    master_text_styles = profile.get("master_text_styles") or {}
+    font_resolution = profile.get("font_resolution") or {}
+    lines = [
+        f"- theme files: {profile.get('theme_files') or []}",
+        f"- master files: {profile.get('master_files') or []}",
+        f"- layout files: {len(profile.get('layout_files') or [])} layout XML files",
+        f"- major_latin: {theme_fonts.get('major_latin')}",
+        f"- major_east_asia: {theme_fonts.get('major_east_asia')}",
+        f"- minor_latin: {theme_fonts.get('minor_latin')}",
+        f"- minor_east_asia: {theme_fonts.get('minor_east_asia')}",
+        f"- resolved font candidates: {font_resolution.get('resolved_font_candidates') or []}",
+        f"- renderer fallback font: {font_resolution.get('fallback_font')}",
+        (
+            "- explicit font families are sparse because most slide text inherits "
+            "theme/master font references such as `+mj-ea` and `+mn-ea`."
+        ),
+    ]
+    for style_name in ["title", "body", "other"]:
+        summary = master_text_styles.get(style_name) or {}
+        lines.append(
+            "- {style} style fonts/sizes: {fonts} / {sizes}".format(
+                style=style_name,
+                fonts=summary.get("font_family_candidates") or [],
+                sizes=summary.get("font_size_pt_candidates") or [],
+            )
+        )
+    lines.append(
+        "- PowerPoint, Windows, and Google Slides may substitute fonts differently; "
+        "visual QA is still required after renderer application."
+    )
+    return lines
 
 
 def run_extraction(

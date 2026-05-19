@@ -1,4 +1,5 @@
 import json
+import zipfile
 from pathlib import Path
 
 from pptx import Presentation
@@ -65,4 +66,31 @@ def test_aggregate_profile_and_report(tmp_path: Path) -> None:
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     assert profile["shape_count"] >= 2
     assert profile["common_font_sizes"]
+    assert "theme_fonts" in profile
+    assert "font_resolution" in profile
     assert "Extraction Caveats" in report_path.read_text(encoding="utf-8")
+    assert "Theme / Master Font Candidates" in report_path.read_text(encoding="utf-8")
+
+
+def test_extract_theme_master_fonts_reads_theme_candidates(tmp_path: Path) -> None:
+    pptx_path = tmp_path / "sample.pptx"
+    _make_sample_pptx(pptx_path)
+
+    font_profile = extract_pptx_style.extract_theme_master_fonts([pptx_path])
+
+    assert font_profile["theme_files"]
+    assert "theme_fonts" in font_profile
+    assert "font_resolution" in font_profile
+    assert isinstance(font_profile["font_resolution"]["resolved_font_candidates"], list)
+
+
+def test_extract_theme_master_fonts_handles_missing_theme(tmp_path: Path) -> None:
+    pptx_path = tmp_path / "minimal.pptx"
+    with zipfile.ZipFile(pptx_path, "w") as deck:
+        deck.writestr("[Content_Types].xml", "<Types />")
+
+    font_profile = extract_pptx_style.extract_theme_master_fonts([pptx_path])
+
+    assert font_profile["theme_files"] == []
+    assert font_profile["theme_fonts"]["major_latin"] is None
+    assert font_profile["font_resolution"]["fallback_font"] == "Malgun Gothic"

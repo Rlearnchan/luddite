@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-19T02:52:08.268974+00:00",
+  "generated_at": "2026-05-19T03:01:32.657913+00:00",
   "deck_names": [
     "전당포 주식회사_배형찬.pptx"
   ],
@@ -178,6 +178,1041 @@
     "notes_with_urls": 167,
     "source_url_present": 167,
     "image_url_present": 74
+  },
+  "theme_files": [
+    "ppt/theme/theme1.xml",
+    "ppt/theme/theme2.xml"
+  ],
+  "master_files": [
+    "ppt/slideMasters/slideMaster1.xml"
+  ],
+  "layout_files": [
+    "ppt/slideLayouts/slideLayout1.xml",
+    "ppt/slideLayouts/slideLayout2.xml",
+    "ppt/slideLayouts/slideLayout3.xml",
+    "ppt/slideLayouts/slideLayout4.xml",
+    "ppt/slideLayouts/slideLayout5.xml",
+    "ppt/slideLayouts/slideLayout6.xml",
+    "ppt/slideLayouts/slideLayout7.xml",
+    "ppt/slideLayouts/slideLayout8.xml",
+    "ppt/slideLayouts/slideLayout9.xml",
+    "ppt/slideLayouts/slideLayout10.xml",
+    "ppt/slideLayouts/slideLayout11.xml"
+  ],
+  "theme_fonts": {
+    "major_latin": "맑은 고딕",
+    "major_east_asia": "맑은 고딕",
+    "major_complex_script": null,
+    "minor_latin": "맑은 고딕",
+    "minor_east_asia": "맑은 고딕",
+    "minor_complex_script": null
+  },
+  "master_text_styles": {
+    "title": {
+      "font_family_candidates": [
+        "맑은 고딕"
+      ],
+      "font_size_pt_candidates": [
+        44.0
+      ],
+      "font_color_candidates": [
+        "scheme:tx1"
+      ],
+      "levels": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "title",
+          "level": "lvl1pPr",
+          "font_refs": {
+            "latin": "+mj-lt",
+            "east_asia": "+mj-ea",
+            "complex_script": "+mj-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 44.0,
+          "font_color": "scheme:tx1"
+        }
+      ]
+    },
+    "body": {
+      "font_family_candidates": [
+        "맑은 고딕"
+      ],
+      "font_size_pt_candidates": [
+        28.0,
+        24.0,
+        20.0,
+        18.0
+      ],
+      "font_color_candidates": [
+        "scheme:tx1"
+      ],
+      "levels": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl1pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 28.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl2pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 24.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl3pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 20.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl4pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl5pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl6pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl7pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl8pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "body",
+          "level": "lvl9pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        }
+      ]
+    },
+    "other": {
+      "font_family_candidates": [
+        "맑은 고딕"
+      ],
+      "font_size_pt_candidates": [
+        18.0
+      ],
+      "font_color_candidates": [
+        "scheme:tx1"
+      ],
+      "levels": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "defPPr",
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl1pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl2pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl3pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl4pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl5pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl6pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl7pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl8pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        },
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "style_name": "other",
+          "level": "lvl9pPr",
+          "font_refs": {
+            "latin": "+mn-lt",
+            "east_asia": "+mn-ea",
+            "complex_script": "+mn-cs"
+          },
+          "resolved_font_family": "맑은 고딕",
+          "font_size_pt": 18.0,
+          "font_color": "scheme:tx1"
+        }
+      ]
+    }
+  },
+  "placeholder_styles": {
+    "body": {
+      "count": 5,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        24.0
+      ],
+      "x_cm_median": 2.328,
+      "y_cm_median": 5.071,
+      "w_cm_median": 21.802,
+      "h_cm_median": 12.087,
+      "samples": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "placeholder_type": "body",
+          "x_emu": 838200,
+          "y_emu": 1825625,
+          "w_emu": 10515600,
+          "h_emu": 4351338,
+          "x_cm": 2.328,
+          "y_cm": 5.071,
+          "w_cm": 29.21,
+          "h_cm": 12.087,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout2.xml",
+          "placeholder_type": "body",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout3.xml",
+          "placeholder_type": "body",
+          "x_emu": 831850,
+          "y_emu": 4589463,
+          "w_emu": 10515600,
+          "h_emu": 1500187,
+          "x_cm": 2.311,
+          "y_cm": 12.749,
+          "w_cm": 29.21,
+          "h_cm": 4.167,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 24.0,
+          "font_color": "scheme:tx1",
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout4.xml",
+          "placeholder_type": "body",
+          "x_emu": 838200,
+          "y_emu": 1825625,
+          "w_emu": 5181600,
+          "h_emu": 4351338,
+          "x_cm": 2.328,
+          "y_cm": 5.071,
+          "w_cm": 14.393,
+          "h_cm": 12.087,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout4.xml",
+          "placeholder_type": "body",
+          "x_emu": 6172200,
+          "y_emu": 1825625,
+          "w_emu": 5181600,
+          "h_emu": 4351338,
+          "x_cm": 17.145,
+          "y_cm": 5.071,
+          "w_cm": 14.393,
+          "h_cm": 12.087,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "ctrTitle": {
+      "count": 1,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        60.0
+      ],
+      "x_cm_median": 4.233,
+      "y_cm_median": 3.118,
+      "w_cm_median": 25.4,
+      "h_cm_median": 6.632,
+      "samples": [
+        {
+          "part_name": "ppt/slideLayouts/slideLayout1.xml",
+          "placeholder_type": "ctrTitle",
+          "x_emu": 1524000,
+          "y_emu": 1122363,
+          "w_emu": 9144000,
+          "h_emu": 2387600,
+          "x_cm": 4.233,
+          "y_cm": 3.118,
+          "w_cm": 25.4,
+          "h_cm": 6.632,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 60.0,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "dt": {
+      "count": 5,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        12.0
+      ],
+      "x_cm_median": 2.328,
+      "y_cm_median": 17.657,
+      "w_cm_median": 7.62,
+      "h_cm_median": 1.014,
+      "samples": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "placeholder_type": "dt",
+          "x_emu": 838200,
+          "y_emu": 6356350,
+          "w_emu": 2743200,
+          "h_emu": 365125,
+          "x_cm": 2.328,
+          "y_cm": 17.657,
+          "w_cm": 7.62,
+          "h_cm": 1.014,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 12.0,
+          "font_color": "scheme:tx1",
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout1.xml",
+          "placeholder_type": "dt",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout2.xml",
+          "placeholder_type": "dt",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout3.xml",
+          "placeholder_type": "dt",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout4.xml",
+          "placeholder_type": "dt",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "ftr": {
+      "count": 5,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        12.0
+      ],
+      "x_cm_median": 11.218,
+      "y_cm_median": 17.657,
+      "w_cm_median": 11.43,
+      "h_cm_median": 1.014,
+      "samples": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "placeholder_type": "ftr",
+          "x_emu": 4038600,
+          "y_emu": 6356350,
+          "w_emu": 4114800,
+          "h_emu": 365125,
+          "x_cm": 11.218,
+          "y_cm": 17.657,
+          "w_cm": 11.43,
+          "h_cm": 1.014,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 12.0,
+          "font_color": "scheme:tx1",
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout1.xml",
+          "placeholder_type": "ftr",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout2.xml",
+          "placeholder_type": "ftr",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout3.xml",
+          "placeholder_type": "ftr",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout4.xml",
+          "placeholder_type": "ftr",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "pic": {
+      "count": 1,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        32.0
+      ],
+      "x_cm_median": 14.398,
+      "y_cm_median": 2.743,
+      "w_cm_median": 17.145,
+      "h_cm_median": 13.538,
+      "samples": [
+        {
+          "part_name": "ppt/slideLayouts/slideLayout9.xml",
+          "placeholder_type": "pic",
+          "x_emu": 5183188,
+          "y_emu": 987425,
+          "w_emu": 6172200,
+          "h_emu": 4873625,
+          "x_cm": 14.398,
+          "y_cm": 2.743,
+          "w_cm": 17.145,
+          "h_cm": 13.538,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 32.0,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "sldNum": {
+      "count": 5,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        12.0
+      ],
+      "x_cm_median": 23.918,
+      "y_cm_median": 17.657,
+      "w_cm_median": 7.62,
+      "h_cm_median": 1.014,
+      "samples": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "placeholder_type": "sldNum",
+          "x_emu": 8610600,
+          "y_emu": 6356350,
+          "w_emu": 2743200,
+          "h_emu": 365125,
+          "x_cm": 23.918,
+          "y_cm": 17.657,
+          "w_cm": 7.62,
+          "h_cm": 1.014,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 12.0,
+          "font_color": "scheme:tx1",
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout1.xml",
+          "placeholder_type": "sldNum",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout2.xml",
+          "placeholder_type": "sldNum",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout3.xml",
+          "placeholder_type": "sldNum",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout4.xml",
+          "placeholder_type": "sldNum",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "subTitle": {
+      "count": 1,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        24.0
+      ],
+      "x_cm_median": 4.233,
+      "y_cm_median": 10.006,
+      "w_cm_median": 25.4,
+      "h_cm_median": 4.599,
+      "samples": [
+        {
+          "part_name": "ppt/slideLayouts/slideLayout1.xml",
+          "placeholder_type": "subTitle",
+          "x_emu": 1524000,
+          "y_emu": 3602038,
+          "w_emu": 9144000,
+          "h_emu": 1655762,
+          "x_cm": 4.233,
+          "y_cm": 10.006,
+          "w_cm": 25.4,
+          "h_cm": 4.599,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 24.0,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    },
+    "title": {
+      "count": 5,
+      "font_family_candidates": [],
+      "font_size_pt_candidates": [
+        60.0
+      ],
+      "x_cm_median": 2.328,
+      "y_cm_median": 1.014,
+      "w_cm_median": 29.21,
+      "h_cm_median": 3.682,
+      "samples": [
+        {
+          "part_name": "ppt/slideMasters/slideMaster1.xml",
+          "placeholder_type": "title",
+          "x_emu": 838200,
+          "y_emu": 365125,
+          "w_emu": 10515600,
+          "h_emu": 1325563,
+          "x_cm": 2.328,
+          "y_cm": 1.014,
+          "w_cm": 29.21,
+          "h_cm": 3.682,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout2.xml",
+          "placeholder_type": "title",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout3.xml",
+          "placeholder_type": "title",
+          "x_emu": 831850,
+          "y_emu": 1709738,
+          "w_emu": 10515600,
+          "h_emu": 2852737,
+          "x_cm": 2.311,
+          "y_cm": 4.749,
+          "w_cm": 29.21,
+          "h_cm": 7.924,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": 60.0,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout4.xml",
+          "placeholder_type": "title",
+          "x_emu": null,
+          "y_emu": null,
+          "w_emu": null,
+          "h_emu": null,
+          "x_cm": null,
+          "y_cm": null,
+          "w_cm": null,
+          "h_cm": null,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        },
+        {
+          "part_name": "ppt/slideLayouts/slideLayout5.xml",
+          "placeholder_type": "title",
+          "x_emu": 839788,
+          "y_emu": 365125,
+          "w_emu": 10515600,
+          "h_emu": 1325563,
+          "x_cm": 2.333,
+          "y_cm": 1.014,
+          "w_cm": 29.21,
+          "h_cm": 3.682,
+          "font_refs": {
+            "latin": null,
+            "east_asia": null,
+            "complex_script": null
+          },
+          "resolved_font_family": null,
+          "font_size_pt": null,
+          "font_color": null,
+          "explicit_text_style_count": 0
+        }
+      ]
+    }
+  },
+  "font_resolution": {
+    "explicit_count": 0,
+    "inherited_count": 130,
+    "resolved_font_candidates": [
+      "맑은 고딕"
+    ],
+    "fallback_font": "맑은 고딕",
+    "renderer_fallback_note": "Use the resolved Korean theme font when available; keep Malgun Gothic as a practical Windows/PowerPoint fallback."
   },
   "limits_and_caveats": [
     "Theme/master inherited font values are not fully resolved; inherited_style marks likely inherited text.",

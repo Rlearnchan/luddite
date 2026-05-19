@@ -587,6 +587,26 @@ Milestone 1.19.1: Syukaworld PPTX Style Extraction
   production Piti agent, image auto collection/insertion, chart generation,
   Google Slides integration, and LLM calls.
 
+Milestone 1.19.2: Theme/Master Font Extraction
+
+- Extend `luddite extract-pptx-style` to parse PPTX theme/master/layout XML:
+  `ppt/theme/theme*.xml`, `ppt/slideMasters/slideMaster*.xml`, and
+  `ppt/slideLayouts/slideLayout*.xml`.
+- Resolve theme font references such as `+mj-ea` and `+mn-ea` into actual
+  candidate font families where possible.
+- Add `theme_fonts`, `master_text_styles`, `placeholder_styles`, and
+  `font_resolution` to `data/style_profiles/syukaworld_ppt_style_profile.json`.
+- The first Syukaworld sample resolves the inherited Korean theme font to
+  `맑은 고딕`; keep `Malgun Gothic` as the practical fallback name for
+  Windows/PowerPoint-style rendering code.
+- Update `outputs/reports/piti_style_profile_report.md` with theme/master font
+  candidates, sparse explicit-font explanation, and renderer fallback notes.
+- Keep `ready_for_renderer_style_application=false`; the extracted font profile
+  is a reference for the next milestone, not yet applied to PPTX output.
+- Still out of scope: Piti renderer style application, PPTX regeneration,
+  image auto insertion, chart generation, Google Slides integration, and
+  production Piti agent implementation.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
