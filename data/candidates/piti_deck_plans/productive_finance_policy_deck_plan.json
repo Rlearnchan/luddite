@@ -1,0 +1,1957 @@
+{
+  "deck_id": "piti_deck_plan_productive_finance_policy",
+  "source_storyline_id": "anny_dry_run_productive_finance_policy_v1_enriched",
+  "source_storyline_path": "outputs/model_dry_runs/anny_storyline/productive_finance_policy_gpt_pro_storyline_enriched.json",
+  "title": "생산적 금융과 정책자금 전환",
+  "theme": "syuka_default_v0",
+  "length_mode": "representative_storyboard",
+  "target_slide_count": 24,
+  "sections": [
+    {
+      "section_no": 1,
+      "section_title": "안전한 금융의 본능과 새로운 질문",
+      "purpose": "담보 중심 금융의 자연스러운 논리와 문제 제기를 세운다.",
+      "target_slide_count": 5,
+      "slides": [
+        {
+          "slide_no": 1,
+          "section_no": 1,
+          "local_order": 1,
+          "source_slide_refs": [
+            1
+          ],
+          "slide_type": "title",
+          "layout_type": "title",
+          "layout": "title",
+          "headline": "생산적 금융과 정책자금 전환",
+          "body": [
+            "금융은 안전하게 돈을 빌려주는 산업인가",
+            "아니면 성장 위험을 나눠지는 산업인가"
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 2,
+          "section_no": 1,
+          "local_order": 2,
+          "source_slide_refs": [
+            2
+          ],
+          "slide_type": "hook",
+          "layout_type": "big_headline",
+          "layout": "big_headline",
+          "headline": "금융위원장이 던진 질문 하나",
+          "body": [
+            "“담보 및 단기수익 중심 금융 경쟁은 앞서가기 어렵다”는 문제 제기가 나왔다.",
+            "금융위원회 공식자료는 국민성장펀드가 5년간 150조 원, 2026년 30조 원 규모로 첨단산업 생태계에 자금을 공급하는 틀이라고 설명한다.",
+            "다만 이 발언과 정책 숫자가 곧 정책 성공을 뜻하는 것은 아니다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://news.einfomax.co.kr/news/articleView.html?idxno=4415444; https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://news.einfomax.co.kr/news/articleView.html?idxno=4415444",
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText="
+          ],
+          "image_urls": [],
+          "speaker_notes": "[내용] 연합인포맥스 후보 기사 + 금융위원회 공식자료. 발언 원문 맥락은 방송 전 재확인.\n[내용] https://news.einfomax.co.kr/news/articleView.html?idxno=4415444\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[내용] 연합인포맥스 후보 기사 + 금융위원회 공식자료. 발언 원문 맥락은 방송 전 재확인.\n[내용] https://news.einfomax.co.kr/news/articleView.html?idxno=4415444\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "institution_quote_context",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 3,
+          "section_no": 1,
+          "local_order": 3,
+          "source_slide_refs": [
+            3
+          ],
+          "slide_type": "explainer",
+          "layout_type": "headline_body",
+          "layout": "headline_body",
+          "headline": "은행 입장에서는 담보가 제일 편하다",
+          "body": [
+            "돈을 빌려줄 때 가장 쉬운 질문은 “담보가 있나?”다.",
+            "은행은 자본규제와 위험가중자산을 고려해야 하므로, 위험한 자산을 무한정 늘릴 수 없다.",
+            "그래서 장기 위험자본 논의는 은행의 본능을 비난하는 문제가 아니라 금융 시스템의 설계 문제에 가깝다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.bis.org/bcbs/basel3.htm; https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.bis.org/bcbs/basel3.htm",
+            "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] BIS Basel III 프레임워크 + 국내 인내자본/건전성 규제 논의. 국내 감독규정은 방송 전 추가 확인.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] BIS Basel III 프레임워크 + 국내 인내자본/건전성 규제 논의. 국내 감독규정은 방송 전 추가 확인.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "source_context",
+          "fact_check_priority": "medium",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 4,
+          "section_no": 1,
+          "local_order": 4,
+          "source_slide_refs": [
+            4
+          ],
+          "slide_type": "bridge",
+          "layout_type": "question",
+          "layout": "question",
+          "headline": "그런데 AI 산업은 담보보다 시간이 먼저 필요하다",
+          "body": [
+            "AI와 반도체는 소프트웨어 개발비만의 문제가 아니라 설비, 전력, 공정, 인력, 공급망이 함께 필요한 산업이다.",
+            "정책자료는 국민성장펀드가 AI·반도체 같은 첨단전략산업에 장기 자금을 공급하려는 틀이라고 설명한다.",
+            "그래서 이 이야기는 “대출을 늘리자”보다 “누가 긴 위험을 나눌 것인가”에 가깝다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4; https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+            "https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText="
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 국민성장펀드 AI·반도체 집중 투자 자료. 투자 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 국민성장펀드 AI·반도체 집중 투자 자료. 투자 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 5,
+          "section_no": 1,
+          "local_order": 5,
+          "source_slide_refs": [
+            5
+          ],
+          "slide_type": "rhetorical",
+          "layout_type": "question",
+          "layout": "question",
+          "headline": "금융은 원래 안전해야 하는가, 위험을 져야 하는가",
+          "body": [
+            "너무 안전하면 성장산업이 돈을 못 받는다.",
+            "너무 위험하면 결국 손실을 누가 떠안느냐는 문제가 생긴다.",
+            "이 사이의 균형이 정책금융 논쟁의 본론이다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": []
+        }
+      ]
+    },
+    {
+      "section_no": 2,
+      "section_title": "AI·반도체 투자와 장기 위험자본",
+      "purpose": "왜 첨단산업에는 긴 시간과 위험자본이 필요한지 설명한다.",
+      "target_slide_count": 6,
+      "slides": [
+        {
+          "slide_no": 6,
+          "section_no": 2,
+          "local_order": 1,
+          "source_slide_refs": [
+            6
+          ],
+          "slide_type": "section_title",
+          "layout_type": "section_title",
+          "layout": "section_title",
+          "headline": "AI·반도체 투자와 장기 위험자본",
+          "body": [],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 7,
+          "section_no": 2,
+          "local_order": 2,
+          "source_slide_refs": [
+            7
+          ],
+          "slide_type": "explainer",
+          "layout_type": "headline_body",
+          "layout": "headline_body",
+          "headline": "AI가 소프트웨어만의 문제가 아니게 된 순간",
+          "body": [
+            "AI는 모델만으로 돌아가지 않는다.",
+            "반도체, 전력망, 데이터센터, 장비, 소재가 함께 필요하다.",
+            "공식자료가 “인내자본”을 말하는 이유도 이 산업이 긴 회수 기간과 대규모 선투자를 요구하기 때문이다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4; https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+            "https://m.korea.kr/news/policyNewsView.do?newsId=148956795"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] AI·반도체 장기 투자와 1차 메가프로젝트 자료. 세부 투자 규모는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] AI·반도체 장기 투자와 1차 메가프로젝트 자료. 세부 투자 규모는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 8,
+          "section_no": 2,
+          "local_order": 3,
+          "source_slide_refs": [
+            8
+          ],
+          "slide_type": "data",
+          "layout_type": "chart_placeholder",
+          "layout": "chart_placeholder",
+          "headline": "장기 투자에는 기다릴 수 있는 돈이 필요하다",
+          "body": [
+            "첨단산업 투자는 회수 기간이 길고 실패 가능성도 크다.",
+            "정부는 국민성장펀드를 통해 장기 자금을 공급하겠다고 설명하지만, 그 자체가 수익을 보장한다는 말은 아니다.",
+            "여기서 “장기 위험자본”이라는 말은 가능성과 손실 가능성을 함께 본다는 뜻이다."
+          ],
+          "visual_plan": {
+            "kind": "chart_candidate",
+            "description": "Chart or simple number card candidate; no chart is rendered yet.",
+            "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4; https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText="
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 공식 정책자료. 수익률·정책 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 공식 정책자료. 수익률·정책 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 9,
+          "section_no": 2,
+          "local_order": 4,
+          "source_slide_refs": [
+            9
+          ],
+          "slide_type": "comparison",
+          "layout_type": "comparison",
+          "layout": "comparison",
+          "headline": "부동산 담보는 보이지만, 기술의 미래는 잘 안 보인다",
+          "body": [
+            "공장, 토지, 건물은 담보로 잡기 쉽다.",
+            "하지만 초기 기술, 인력, 데이터, 공정 노하우는 평가하기 어렵다.",
+            "위험가중자산과 자본규제가 있는 은행 입장에서는 이런 불확실성이 비용이 된다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": "https://www.bis.org/bcbs/basel3.htm; https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.bis.org/bcbs/basel3.htm",
+            "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] BIS 위험가중자산/자본규제 배경 + 국내 건전성 규제 논의.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] BIS 위험가중자산/자본규제 배경 + 국내 건전성 규제 논의.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "source_context",
+          "fact_check_priority": "medium",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 10,
+          "section_no": 2,
+          "local_order": 5,
+          "source_slide_refs": [
+            10
+          ],
+          "slide_type": "bridge",
+          "layout_type": "question",
+          "layout": "question",
+          "headline": "그래서 정책금융은 시장이 못 보는 시간을 보겠다는 말일 수 있다",
+          "body": [
+            "정책금융의 명분은 민간이 감당하기 어려운 초기 위험을 나눠지는 것이다.",
+            "하지만 정책자금이 늘 좋은 결과를 만든다고 단정할 수는 없다.",
+            "정책금융은 성장의 마중물일 수도, 손실의 통로일 수도 있다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 금융위원회 공식자료 + 정책금융/관제상품 counterpoint. 균형 유지.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 금융위원회 공식자료 + 정책금융/관제상품 counterpoint. 균형 유지.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 11,
+          "section_no": 2,
+          "local_order": 6,
+          "source_slide_refs": [
+            11
+          ],
+          "slide_type": "rhetorical",
+          "layout_type": "question",
+          "layout": "question",
+          "headline": "이건 “은행이 더 착해져야 한다”는 얘기가 아니다",
+          "body": [
+            "은행은 예금자의 돈을 지켜야 한다.",
+            "기업은 긴 투자금을 원한다.",
+            "국가는 전략산업을 키우고 싶다.",
+            "세 이해관계가 한 지점에서 충돌한다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.\n[편집 메모] consider_split: more than three body bullets",
+          "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.\n[편집 메모] consider_split: more than three body bullets",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": [
+            "consider_split: more than three body bullets"
+          ]
+        }
+      ]
+    },
+    {
+      "section_no": 3,
+      "section_title": "국민성장펀드와 정책금융 논쟁",
+      "purpose": "성장 재원과 위험분담 구조를 투자 조언 없이 질문으로 분해한다.",
+      "target_slide_count": 7,
+      "slides": [
+        {
+          "slide_no": 12,
+          "section_no": 3,
+          "local_order": 1,
+          "source_slide_refs": [
+            12
+          ],
+          "slide_type": "section_title",
+          "layout_type": "section_title",
+          "layout": "section_title",
+          "headline": "국민성장펀드와 정책금융 논쟁",
+          "body": [],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 13,
+          "section_no": 3,
+          "local_order": 2,
+          "source_slide_refs": [
+            13
+          ],
+          "slide_type": "hook",
+          "layout_type": "big_headline",
+          "layout": "big_headline",
+          "headline": "국민성장펀드라는 이름이 붙으면 이야기는 더 어려워진다",
+          "body": [
+            "국민성장펀드는 민관합동 150조 원 규모로 첨단전략산업 생태계를 지원하겠다는 정책 틀이다.",
+            "국민참여형 펀드는 일반 국민 자금도 일부 모아 자펀드에 투자하는 구조로 설계됐다.",
+            "그래서 이름은 성장 이야기지만, 실제 방송에서는 투자자 리스크와 정책 책임을 함께 봐야 한다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://ngf.kdb.co.kr/GFMNMN00N00.act",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "https://ngf.kdb.co.kr/GFMNMN00N00.act",
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 금융위원회/산업은행 공식자료. 정책상품 홍보처럼 보이지 않게 주의.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 금융위원회/산업은행 공식자료. 정책상품 홍보처럼 보이지 않게 주의.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "investment_risk_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 14,
+          "section_no": 3,
+          "local_order": 3,
+          "source_slide_refs": [
+            14
+          ],
+          "slide_type": "explainer",
+          "layout_type": "headline_body",
+          "layout": "headline_body",
+          "headline": "위험을 나눈다는 말은 손실 가능성도 나눈다는 뜻이다",
+          "body": [
+            "국민참여형 펀드 자료는 재정이 각 자펀드에서 20% 범위의 손실을 우선 부담하는 구조를 설명한다.",
+            "이 장치는 투자자의 위험을 낮추려는 설계지만, 원금 손실 가능성이 사라진다는 뜻은 아니다.",
+            "손실을 누가, 어떤 순서로, 어디까지 부담하는지가 핵심 질문이다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3; https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+            "https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 정책브리핑 판매 구조와 카드뉴스. 투자 위험 표현은 반드시 보수적으로 유지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 정책브리핑 판매 구조와 카드뉴스. 투자 위험 표현은 반드시 보수적으로 유지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "investment_risk_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 15,
+          "section_no": 3,
+          "local_order": 4,
+          "source_slide_refs": [
+            15
+          ],
+          "slide_type": "quote",
+          "layout_type": "quote",
+          "layout": "quote",
+          "headline": "정책금융의 어려움은 “누가 먼저 잃을 것인가”다",
+          "body": [
+            "정책금융의 어려움은 “돈을 넣을 것인가”보다 “손실이 나면 누가 먼저 감당할 것인가”다.",
+            "공식자료는 후순위 재정 보강을 설명하지만, 반대 관점은 손실 보전과 관제상품화 논란을 제기한다.",
+            "이 둘을 같이 봐야 정책금융 논쟁이 단순 찬반으로 흐르지 않는다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3; https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+            "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 정책 mechanism + counterpoint. 손실분담 수치와 구조는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 정책 mechanism + counterpoint. 손실분담 수치와 구조는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 16,
+          "section_no": 3,
+          "local_order": 5,
+          "source_slide_refs": [
+            16
+          ],
+          "slide_type": "comparison",
+          "layout_type": "comparison",
+          "layout": "comparison",
+          "headline": "성장산업을 돕는 것과 특정 기업을 밀어주는 것은 다르다",
+          "body": [
+            "공식자료는 AI, 반도체, 이차전지 등 첨단전략산업을 넓은 지원 대상으로 제시한다.",
+            "하지만 방송에서는 이것이 특정 기업 성공 보장이나 특정 상품 추천처럼 들리면 안 된다.",
+            "성장산업 지원과 특정 기업 밀어주기는 구분해서 다뤄야 한다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": "https://m.korea.kr/news/policyNewsView.do?newsId=148956795; https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 공식 지원대상 자료 + counterpoint. 기업 홍보/투자 조언 금지.\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 공식 지원대상 자료 + counterpoint. 기업 홍보/투자 조언 금지.\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "medium",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 17,
+          "section_no": 3,
+          "local_order": 6,
+          "source_slide_refs": [
+            17
+          ],
+          "slide_type": "counterpoint",
+          "layout_type": "comparison",
+          "layout": "comparison",
+          "headline": "반대쪽 질문도 있다: 그럼 아무도 위험을 안 지면 어떻게 하나",
+          "body": [
+            "반대쪽 질문도 있다. 재정이 위험을 먼저 떠안으면 민간은 얼마나 책임 있게 투자할까.",
+            "또 은행과 금융회사는 건전성 규제, 위험가중자산, 예금자 보호 논리 안에서 움직인다.",
+            "그래서 아무도 위험을 안 지는 문제와, 누군가에게 위험을 떠넘기는 문제를 동시에 봐야 한다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": "https://www.investchosun.com/m/article.html?contid=2026042180102; https://www.bis.org/bcbs/basel3.htm",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "https://www.bis.org/bcbs/basel3.htm",
+            "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] counterpoint + BIS/국내 건전성 규제 논의. 추가 정책금융 실패 사례는 보강 필요.\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] counterpoint + BIS/국내 건전성 규제 논의. 추가 정책금융 실패 사례는 보강 필요.\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "medium",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 18,
+          "section_no": 3,
+          "local_order": 7,
+          "source_slide_refs": [
+            18
+          ],
+          "slide_type": "bridge",
+          "layout_type": "question",
+          "layout": "question",
+          "headline": "결국 질문은 성장의 과실보다 위험의 배분이다",
+          "body": [
+            "성장의 과실을 함께 나누자는 말은 듣기 좋다.",
+            "하지만 위험도 함께 나눠야 한다면, 손실이 발생했을 때 재정·운용사·투자자·금융권의 책임선이 중요해진다.",
+            "국민성장펀드 이야기는 결국 수익보다 위험 배분의 설계로 읽어야 한다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3; https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] 국민참여형 펀드 구조 + counterpoint. 수익률 전망 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] 국민참여형 펀드 구조 + counterpoint. 수익률 전망 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "investment_risk_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        }
+      ]
+    },
+    {
+      "section_no": 4,
+      "section_title": "금융권은 어디까지 위험을 나눌 수 있는가",
+      "purpose": "리스크와 반대 관점을 두고 마지막 질문으로 회수한다.",
+      "target_slide_count": 6,
+      "slides": [
+        {
+          "slide_no": 19,
+          "section_no": 4,
+          "local_order": 1,
+          "source_slide_refs": [
+            19
+          ],
+          "slide_type": "section_title",
+          "layout_type": "section_title",
+          "layout": "section_title",
+          "headline": "금융권은 어디까지 위험을 나눌 수 있는가",
+          "body": [],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 20,
+          "section_no": 4,
+          "local_order": 2,
+          "source_slide_refs": [
+            20
+          ],
+          "slide_type": "explainer",
+          "layout_type": "headline_body",
+          "layout": "headline_body",
+          "headline": "금융권에 “성장에 베팅하라”고 말하는 순간 생기는 문제",
+          "body": [
+            "금융권에 성장산업 투자를 요구하면 곧바로 건전성 문제가 따라온다.",
+            "위험가중자산이 커지면 자본 부담도 커질 수 있고, 예금자 보호 논리와도 충돌할 수 있다.",
+            "따라서 생산적 금융은 구호가 아니라 자본규제와 위험분담 설계의 문제다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.bis.org/bcbs/basel3.htm; https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.bis.org/bcbs/basel3.htm",
+            "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[근거] BIS Basel III + 국내 인내자본 논의. 국내 감독자료 추가 확인 필요.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[근거] BIS Basel III + 국내 인내자본 논의. 국내 감독자료 추가 확인 필요.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 21,
+          "section_no": 4,
+          "local_order": 3,
+          "source_slide_refs": [
+            21
+          ],
+          "slide_type": "production_checklist",
+          "layout_type": "appendix_checklist",
+          "layout": "appendix_checklist",
+          "headline": "이 부분은 아직 숫자가 필요하다",
+          "body": [
+            "방송 전 숫자 체크리스트: 150조 원 전체 규모, 2026년 30조 원 운용, 국민참여형 6000억 원, 재정 1200억 원, 손실 우선 부담 20% 범위.",
+            "정책 효과가 아니라 구조를 설명하는 숫자로만 사용한다.",
+            "추가로 정책금융 실패 사례와 은행 건전성 자료를 더 확인하면 완성도가 올라간다."
+          ],
+          "visual_plan": {
+            "kind": "none",
+            "description": "No visual required at deck-plan stage.",
+            "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+            "copyright_risk": false,
+            "manual_check_required": false,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "https://www.bis.org/bcbs/basel3.htm"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[제작체크] 숫자는 공식자료 기준으로 재확인. production checklist는 본문보다 notes/appendix 성격.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+          "notes": "[제작체크] 숫자는 공식자료 기준으로 재확인. production checklist는 본문보다 notes/appendix 성격.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "production_checklist",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": [
+            "internal_appendix: keep out of main broadcast deck body"
+          ]
+        },
+        {
+          "slide_no": 22,
+          "section_no": 4,
+          "local_order": 4,
+          "source_slide_refs": [
+            22
+          ],
+          "slide_type": "risk",
+          "layout_type": "comparison",
+          "layout": "comparison",
+          "headline": "투자 이야기로 들리지 않게 조심해야 한다",
+          "body": [
+            "이 주제는 곧바로 특정 산업·기업·펀드 투자 판단처럼 보일 수 있다.",
+            "그래서 수익률, 주가, 매수·매도, 유망종목식 표현은 피해야 한다.",
+            "핵심은 투자 추천이 아니라 위험을 누가 나누느냐는 제도 설계다."
+          ],
+          "visual_plan": {
+            "kind": "diagram",
+            "description": "Simple comparison/question diagram candidate for manual design.",
+            "source_note": null,
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [],
+          "image_urls": [],
+          "speaker_notes": "do_not_claim guardrail slide. 투자 조언 금지.",
+          "notes": "do_not_claim guardrail slide. 투자 조언 금지.",
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "fact_check_kind": "rhetorical_caution",
+          "fact_check_priority": "low",
+          "risk_flags": [],
+          "edit_notes": []
+        },
+        {
+          "slide_no": 23,
+          "section_no": 4,
+          "local_order": 5,
+          "source_slide_refs": [
+            23
+          ],
+          "slide_type": "production_checklist",
+          "layout_type": "appendix_checklist",
+          "layout": "appendix_checklist",
+          "headline": "방송 전 꼭 채워야 할 자료",
+          "body": [
+            "방송 전 꼭 채워야 할 자료: 금융위/산은 공식 원문, 국민참여형 펀드 손실분담 구조, AI·반도체 장기 투자 규모, 관치금융/정책금융 실패 반론, 은행 건전성·위험가중자산 자료.",
+            "지금 evidence pack은 enriched dry run에는 충분하지만, 방송용 완성본에는 추가 counterpoint가 필요하다."
+          ],
+          "visual_plan": {
+            "kind": "none",
+            "description": "No visual required at deck-plan stage.",
+            "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://ngf.kdb.co.kr/GFMNMN00N00.act",
+            "copyright_risk": false,
+            "manual_check_required": false,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "https://ngf.kdb.co.kr/GFMNMN00N00.act",
+            "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "https://www.bis.org/bcbs/basel3.htm",
+            "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[제작체크] enriched dry run 후에도 방송 전 수동 검증 필요.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_source=true: source must be added or verified.\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+          "notes": "[제작체크] enriched dry run 후에도 방송 전 수동 검증 필요.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_source=true: source must be added or verified.\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+          "needs_source": true,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "production_checklist",
+          "fact_check_priority": "high",
+          "risk_flags": [],
+          "edit_notes": [
+            "internal_appendix: keep out of main broadcast deck body"
+          ]
+        },
+        {
+          "slide_no": 24,
+          "section_no": 4,
+          "local_order": 6,
+          "source_slide_refs": [
+            24
+          ],
+          "slide_type": "closing_question",
+          "layout_type": "closing_question",
+          "layout": "closing_question",
+          "headline": "금융은 위험을 피하는 기술인가, 좋은 위험을 고르는 기술인가",
+          "body": [
+            "생산적 금융의 질문은 “정부 정책이 맞다/틀리다”가 아니다.",
+            "좋은 위험을 고르는 능력, 손실을 나누는 규칙, 금융권 건전성을 함께 설계할 수 있느냐는 질문이다.",
+            "국민성장펀드는 그 질문을 보여주는 한 사례일 뿐, 성공을 단정할 수는 없다."
+          ],
+          "visual_plan": {
+            "kind": "manual",
+            "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+            "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "copyright_risk": false,
+            "manual_check_required": true,
+            "prompt_if_ai_image": null
+          },
+          "image_slots": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+            "https://www.investchosun.com/m/article.html?contid=2026042180102",
+            "https://www.bis.org/bcbs/basel3.htm"
+          ],
+          "image_urls": [],
+          "speaker_notes": "[마무리] 정책 찬반이 아니라 위험분담 설계의 질문으로 닫기.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "notes": "[마무리] 정책 찬반이 아니라 위험분담 설계의 질문으로 닫기.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.",
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "fact_check_kind": "policy_effect_claim",
+          "fact_check_priority": "medium",
+          "risk_flags": [],
+          "edit_notes": []
+        }
+      ]
+    }
+  ],
+  "slides": [
+    {
+      "slide_no": 1,
+      "section_no": 1,
+      "local_order": 1,
+      "source_slide_refs": [
+        1
+      ],
+      "slide_type": "title",
+      "layout_type": "title",
+      "layout": "title",
+      "headline": "생산적 금융과 정책자금 전환",
+      "body": [
+        "금융은 안전하게 돈을 빌려주는 산업인가",
+        "아니면 성장 위험을 나눠지는 산업인가"
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 2,
+      "section_no": 1,
+      "local_order": 2,
+      "source_slide_refs": [
+        2
+      ],
+      "slide_type": "hook",
+      "layout_type": "big_headline",
+      "layout": "big_headline",
+      "headline": "금융위원장이 던진 질문 하나",
+      "body": [
+        "“담보 및 단기수익 중심 금융 경쟁은 앞서가기 어렵다”는 문제 제기가 나왔다.",
+        "금융위원회 공식자료는 국민성장펀드가 5년간 150조 원, 2026년 30조 원 규모로 첨단산업 생태계에 자금을 공급하는 틀이라고 설명한다.",
+        "다만 이 발언과 정책 숫자가 곧 정책 성공을 뜻하는 것은 아니다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://news.einfomax.co.kr/news/articleView.html?idxno=4415444; https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://news.einfomax.co.kr/news/articleView.html?idxno=4415444",
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText="
+      ],
+      "image_urls": [],
+      "speaker_notes": "[내용] 연합인포맥스 후보 기사 + 금융위원회 공식자료. 발언 원문 맥락은 방송 전 재확인.\n[내용] https://news.einfomax.co.kr/news/articleView.html?idxno=4415444\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[내용] 연합인포맥스 후보 기사 + 금융위원회 공식자료. 발언 원문 맥락은 방송 전 재확인.\n[내용] https://news.einfomax.co.kr/news/articleView.html?idxno=4415444\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "institution_quote_context",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 3,
+      "section_no": 1,
+      "local_order": 3,
+      "source_slide_refs": [
+        3
+      ],
+      "slide_type": "explainer",
+      "layout_type": "headline_body",
+      "layout": "headline_body",
+      "headline": "은행 입장에서는 담보가 제일 편하다",
+      "body": [
+        "돈을 빌려줄 때 가장 쉬운 질문은 “담보가 있나?”다.",
+        "은행은 자본규제와 위험가중자산을 고려해야 하므로, 위험한 자산을 무한정 늘릴 수 없다.",
+        "그래서 장기 위험자본 논의는 은행의 본능을 비난하는 문제가 아니라 금융 시스템의 설계 문제에 가깝다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.bis.org/bcbs/basel3.htm; https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.bis.org/bcbs/basel3.htm",
+        "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] BIS Basel III 프레임워크 + 국내 인내자본/건전성 규제 논의. 국내 감독규정은 방송 전 추가 확인.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] BIS Basel III 프레임워크 + 국내 인내자본/건전성 규제 논의. 국내 감독규정은 방송 전 추가 확인.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "source_context",
+      "fact_check_priority": "medium",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 4,
+      "section_no": 1,
+      "local_order": 4,
+      "source_slide_refs": [
+        4
+      ],
+      "slide_type": "bridge",
+      "layout_type": "question",
+      "layout": "question",
+      "headline": "그런데 AI 산업은 담보보다 시간이 먼저 필요하다",
+      "body": [
+        "AI와 반도체는 소프트웨어 개발비만의 문제가 아니라 설비, 전력, 공정, 인력, 공급망이 함께 필요한 산업이다.",
+        "정책자료는 국민성장펀드가 AI·반도체 같은 첨단전략산업에 장기 자금을 공급하려는 틀이라고 설명한다.",
+        "그래서 이 이야기는 “대출을 늘리자”보다 “누가 긴 위험을 나눌 것인가”에 가깝다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4; https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+        "https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText="
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 국민성장펀드 AI·반도체 집중 투자 자료. 투자 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 국민성장펀드 AI·반도체 집중 투자 자료. 투자 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 5,
+      "section_no": 1,
+      "local_order": 5,
+      "source_slide_refs": [
+        5
+      ],
+      "slide_type": "rhetorical",
+      "layout_type": "question",
+      "layout": "question",
+      "headline": "금융은 원래 안전해야 하는가, 위험을 져야 하는가",
+      "body": [
+        "너무 안전하면 성장산업이 돈을 못 받는다.",
+        "너무 위험하면 결국 손실을 누가 떠안느냐는 문제가 생긴다.",
+        "이 사이의 균형이 정책금융 논쟁의 본론이다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 6,
+      "section_no": 2,
+      "local_order": 1,
+      "source_slide_refs": [
+        6
+      ],
+      "slide_type": "section_title",
+      "layout_type": "section_title",
+      "layout": "section_title",
+      "headline": "AI·반도체 투자와 장기 위험자본",
+      "body": [],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 7,
+      "section_no": 2,
+      "local_order": 2,
+      "source_slide_refs": [
+        7
+      ],
+      "slide_type": "explainer",
+      "layout_type": "headline_body",
+      "layout": "headline_body",
+      "headline": "AI가 소프트웨어만의 문제가 아니게 된 순간",
+      "body": [
+        "AI는 모델만으로 돌아가지 않는다.",
+        "반도체, 전력망, 데이터센터, 장비, 소재가 함께 필요하다.",
+        "공식자료가 “인내자본”을 말하는 이유도 이 산업이 긴 회수 기간과 대규모 선투자를 요구하기 때문이다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4; https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+        "https://m.korea.kr/news/policyNewsView.do?newsId=148956795"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] AI·반도체 장기 투자와 1차 메가프로젝트 자료. 세부 투자 규모는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] AI·반도체 장기 투자와 1차 메가프로젝트 자료. 세부 투자 규모는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 8,
+      "section_no": 2,
+      "local_order": 3,
+      "source_slide_refs": [
+        8
+      ],
+      "slide_type": "data",
+      "layout_type": "chart_placeholder",
+      "layout": "chart_placeholder",
+      "headline": "장기 투자에는 기다릴 수 있는 돈이 필요하다",
+      "body": [
+        "첨단산업 투자는 회수 기간이 길고 실패 가능성도 크다.",
+        "정부는 국민성장펀드를 통해 장기 자금을 공급하겠다고 설명하지만, 그 자체가 수익을 보장한다는 말은 아니다.",
+        "여기서 “장기 위험자본”이라는 말은 가능성과 손실 가능성을 함께 본다는 뜻이다."
+      ],
+      "visual_plan": {
+        "kind": "chart_candidate",
+        "description": "Chart or simple number card candidate; no chart is rendered yet.",
+        "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4; https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText="
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 공식 정책자료. 수익률·정책 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 공식 정책자료. 수익률·정책 효과 단정 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 9,
+      "section_no": 2,
+      "local_order": 4,
+      "source_slide_refs": [
+        9
+      ],
+      "slide_type": "comparison",
+      "layout_type": "comparison",
+      "layout": "comparison",
+      "headline": "부동산 담보는 보이지만, 기술의 미래는 잘 안 보인다",
+      "body": [
+        "공장, 토지, 건물은 담보로 잡기 쉽다.",
+        "하지만 초기 기술, 인력, 데이터, 공정 노하우는 평가하기 어렵다.",
+        "위험가중자산과 자본규제가 있는 은행 입장에서는 이런 불확실성이 비용이 된다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": "https://www.bis.org/bcbs/basel3.htm; https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.bis.org/bcbs/basel3.htm",
+        "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] BIS 위험가중자산/자본규제 배경 + 국내 건전성 규제 논의.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] BIS 위험가중자산/자본규제 배경 + 국내 건전성 규제 논의.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "source_context",
+      "fact_check_priority": "medium",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 10,
+      "section_no": 2,
+      "local_order": 5,
+      "source_slide_refs": [
+        10
+      ],
+      "slide_type": "bridge",
+      "layout_type": "question",
+      "layout": "question",
+      "headline": "그래서 정책금융은 시장이 못 보는 시간을 보겠다는 말일 수 있다",
+      "body": [
+        "정책금융의 명분은 민간이 감당하기 어려운 초기 위험을 나눠지는 것이다.",
+        "하지만 정책자금이 늘 좋은 결과를 만든다고 단정할 수는 없다.",
+        "정책금융은 성장의 마중물일 수도, 손실의 통로일 수도 있다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 금융위원회 공식자료 + 정책금융/관제상품 counterpoint. 균형 유지.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 금융위원회 공식자료 + 정책금융/관제상품 counterpoint. 균형 유지.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 11,
+      "section_no": 2,
+      "local_order": 6,
+      "source_slide_refs": [
+        11
+      ],
+      "slide_type": "rhetorical",
+      "layout_type": "question",
+      "layout": "question",
+      "headline": "이건 “은행이 더 착해져야 한다”는 얘기가 아니다",
+      "body": [
+        "은행은 예금자의 돈을 지켜야 한다.",
+        "기업은 긴 투자금을 원한다.",
+        "국가는 전략산업을 키우고 싶다.",
+        "세 이해관계가 한 지점에서 충돌한다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.\n[편집 메모] consider_split: more than three body bullets",
+      "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.\n[편집 메모] consider_split: more than three body bullets",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": [
+        "consider_split: more than three body bullets"
+      ]
+    },
+    {
+      "slide_no": 12,
+      "section_no": 3,
+      "local_order": 1,
+      "source_slide_refs": [
+        12
+      ],
+      "slide_type": "section_title",
+      "layout_type": "section_title",
+      "layout": "section_title",
+      "headline": "국민성장펀드와 정책금융 논쟁",
+      "body": [],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 13,
+      "section_no": 3,
+      "local_order": 2,
+      "source_slide_refs": [
+        13
+      ],
+      "slide_type": "hook",
+      "layout_type": "big_headline",
+      "layout": "big_headline",
+      "headline": "국민성장펀드라는 이름이 붙으면 이야기는 더 어려워진다",
+      "body": [
+        "국민성장펀드는 민관합동 150조 원 규모로 첨단전략산업 생태계를 지원하겠다는 정책 틀이다.",
+        "국민참여형 펀드는 일반 국민 자금도 일부 모아 자펀드에 투자하는 구조로 설계됐다.",
+        "그래서 이름은 성장 이야기지만, 실제 방송에서는 투자자 리스크와 정책 책임을 함께 봐야 한다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://ngf.kdb.co.kr/GFMNMN00N00.act",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "https://ngf.kdb.co.kr/GFMNMN00N00.act",
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 금융위원회/산업은행 공식자료. 정책상품 홍보처럼 보이지 않게 주의.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 금융위원회/산업은행 공식자료. 정책상품 홍보처럼 보이지 않게 주의.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "investment_risk_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 14,
+      "section_no": 3,
+      "local_order": 3,
+      "source_slide_refs": [
+        14
+      ],
+      "slide_type": "explainer",
+      "layout_type": "headline_body",
+      "layout": "headline_body",
+      "headline": "위험을 나눈다는 말은 손실 가능성도 나눈다는 뜻이다",
+      "body": [
+        "국민참여형 펀드 자료는 재정이 각 자펀드에서 20% 범위의 손실을 우선 부담하는 구조를 설명한다.",
+        "이 장치는 투자자의 위험을 낮추려는 설계지만, 원금 손실 가능성이 사라진다는 뜻은 아니다.",
+        "손실을 누가, 어떤 순서로, 어디까지 부담하는지가 핵심 질문이다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3; https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 정책브리핑 판매 구조와 카드뉴스. 투자 위험 표현은 반드시 보수적으로 유지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 정책브리핑 판매 구조와 카드뉴스. 투자 위험 표현은 반드시 보수적으로 유지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "investment_risk_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 15,
+      "section_no": 3,
+      "local_order": 4,
+      "source_slide_refs": [
+        15
+      ],
+      "slide_type": "quote",
+      "layout_type": "quote",
+      "layout": "quote",
+      "headline": "정책금융의 어려움은 “누가 먼저 잃을 것인가”다",
+      "body": [
+        "정책금융의 어려움은 “돈을 넣을 것인가”보다 “손실이 나면 누가 먼저 감당할 것인가”다.",
+        "공식자료는 후순위 재정 보강을 설명하지만, 반대 관점은 손실 보전과 관제상품화 논란을 제기한다.",
+        "이 둘을 같이 봐야 정책금융 논쟁이 단순 찬반으로 흐르지 않는다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3; https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 정책 mechanism + counterpoint. 손실분담 수치와 구조는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 정책 mechanism + counterpoint. 손실분담 수치와 구조는 방송 전 재확인.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://m.korea.kr/briefing/pressReleaseView.do?newsId=156739847\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 16,
+      "section_no": 3,
+      "local_order": 5,
+      "source_slide_refs": [
+        16
+      ],
+      "slide_type": "comparison",
+      "layout_type": "comparison",
+      "layout": "comparison",
+      "headline": "성장산업을 돕는 것과 특정 기업을 밀어주는 것은 다르다",
+      "body": [
+        "공식자료는 AI, 반도체, 이차전지 등 첨단전략산업을 넓은 지원 대상으로 제시한다.",
+        "하지만 방송에서는 이것이 특정 기업 성공 보장이나 특정 상품 추천처럼 들리면 안 된다.",
+        "성장산업 지원과 특정 기업 밀어주기는 구분해서 다뤄야 한다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": "https://m.korea.kr/news/policyNewsView.do?newsId=148956795; https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://m.korea.kr/news/policyNewsView.do?newsId=148956795",
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 공식 지원대상 자료 + counterpoint. 기업 홍보/투자 조언 금지.\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 공식 지원대상 자료 + counterpoint. 기업 홍보/투자 조언 금지.\n[내용] https://m.korea.kr/news/policyNewsView.do?newsId=148956795\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "medium",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 17,
+      "section_no": 3,
+      "local_order": 6,
+      "source_slide_refs": [
+        17
+      ],
+      "slide_type": "counterpoint",
+      "layout_type": "comparison",
+      "layout": "comparison",
+      "headline": "반대쪽 질문도 있다: 그럼 아무도 위험을 안 지면 어떻게 하나",
+      "body": [
+        "반대쪽 질문도 있다. 재정이 위험을 먼저 떠안으면 민간은 얼마나 책임 있게 투자할까.",
+        "또 은행과 금융회사는 건전성 규제, 위험가중자산, 예금자 보호 논리 안에서 움직인다.",
+        "그래서 아무도 위험을 안 지는 문제와, 누군가에게 위험을 떠넘기는 문제를 동시에 봐야 한다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": "https://www.investchosun.com/m/article.html?contid=2026042180102; https://www.bis.org/bcbs/basel3.htm",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "https://www.bis.org/bcbs/basel3.htm",
+        "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] counterpoint + BIS/국내 건전성 규제 논의. 추가 정책금융 실패 사례는 보강 필요.\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] counterpoint + BIS/국내 건전성 규제 논의. 추가 정책금융 실패 사례는 보강 필요.\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "medium",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 18,
+      "section_no": 3,
+      "local_order": 7,
+      "source_slide_refs": [
+        18
+      ],
+      "slide_type": "bridge",
+      "layout_type": "question",
+      "layout": "question",
+      "headline": "결국 질문은 성장의 과실보다 위험의 배분이다",
+      "body": [
+        "성장의 과실을 함께 나누자는 말은 듣기 좋다.",
+        "하지만 위험도 함께 나눠야 한다면, 손실이 발생했을 때 재정·운용사·투자자·금융권의 책임선이 중요해진다.",
+        "국민성장펀드 이야기는 결국 수익보다 위험 배분의 설계로 읽어야 한다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3; https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] 국민참여형 펀드 구조 + counterpoint. 수익률 전망 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] 국민참여형 펀드 구조 + counterpoint. 수익률 전망 금지.\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.korea.kr/multi/visualNewsView.do?newsId=148964200&pWise=main&pWiseMain=K3\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "investment_risk_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 19,
+      "section_no": 4,
+      "local_order": 1,
+      "source_slide_refs": [
+        19
+      ],
+      "slide_type": "section_title",
+      "layout_type": "section_title",
+      "layout": "section_title",
+      "headline": "금융권은 어디까지 위험을 나눌 수 있는가",
+      "body": [],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "notes": "방송용 전환/질문 slide. 사실 주장으로 과확장하지 말 것.",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 20,
+      "section_no": 4,
+      "local_order": 2,
+      "source_slide_refs": [
+        20
+      ],
+      "slide_type": "explainer",
+      "layout_type": "headline_body",
+      "layout": "headline_body",
+      "headline": "금융권에 “성장에 베팅하라”고 말하는 순간 생기는 문제",
+      "body": [
+        "금융권에 성장산업 투자를 요구하면 곧바로 건전성 문제가 따라온다.",
+        "위험가중자산이 커지면 자본 부담도 커질 수 있고, 예금자 보호 논리와도 충돌할 수 있다.",
+        "따라서 생산적 금융은 구호가 아니라 자본규제와 위험분담 설계의 문제다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.bis.org/bcbs/basel3.htm; https://www.donga.com/news/Economy/article/all/20251113/132765077/4",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.bis.org/bcbs/basel3.htm",
+        "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[근거] BIS Basel III + 국내 인내자본 논의. 국내 감독자료 추가 확인 필요.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[근거] BIS Basel III + 국내 인내자본 논의. 국내 감독자료 추가 확인 필요.\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 21,
+      "section_no": 4,
+      "local_order": 3,
+      "source_slide_refs": [
+        21
+      ],
+      "slide_type": "production_checklist",
+      "layout_type": "appendix_checklist",
+      "layout": "appendix_checklist",
+      "headline": "이 부분은 아직 숫자가 필요하다",
+      "body": [
+        "방송 전 숫자 체크리스트: 150조 원 전체 규모, 2026년 30조 원 운용, 국민참여형 6000억 원, 재정 1200억 원, 손실 우선 부담 20% 범위.",
+        "정책 효과가 아니라 구조를 설명하는 숫자로만 사용한다.",
+        "추가로 정책금융 실패 사례와 은행 건전성 자료를 더 확인하면 완성도가 올라간다."
+      ],
+      "visual_plan": {
+        "kind": "none",
+        "description": "No visual required at deck-plan stage.",
+        "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "copyright_risk": false,
+        "manual_check_required": false,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "https://www.bis.org/bcbs/basel3.htm"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[제작체크] 숫자는 공식자료 기준으로 재확인. production checklist는 본문보다 notes/appendix 성격.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+      "notes": "[제작체크] 숫자는 공식자료 기준으로 재확인. production checklist는 본문보다 notes/appendix 성격.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148961201&pWise=main&pWiseMain=A4\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "production_checklist",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": [
+        "internal_appendix: keep out of main broadcast deck body"
+      ]
+    },
+    {
+      "slide_no": 22,
+      "section_no": 4,
+      "local_order": 4,
+      "source_slide_refs": [
+        22
+      ],
+      "slide_type": "risk",
+      "layout_type": "comparison",
+      "layout": "comparison",
+      "headline": "투자 이야기로 들리지 않게 조심해야 한다",
+      "body": [
+        "이 주제는 곧바로 특정 산업·기업·펀드 투자 판단처럼 보일 수 있다.",
+        "그래서 수익률, 주가, 매수·매도, 유망종목식 표현은 피해야 한다.",
+        "핵심은 투자 추천이 아니라 위험을 누가 나누느냐는 제도 설계다."
+      ],
+      "visual_plan": {
+        "kind": "diagram",
+        "description": "Simple comparison/question diagram candidate for manual design.",
+        "source_note": null,
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [],
+      "image_urls": [],
+      "speaker_notes": "do_not_claim guardrail slide. 투자 조언 금지.",
+      "notes": "do_not_claim guardrail slide. 투자 조언 금지.",
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "fact_check_kind": "rhetorical_caution",
+      "fact_check_priority": "low",
+      "risk_flags": [],
+      "edit_notes": []
+    },
+    {
+      "slide_no": 23,
+      "section_no": 4,
+      "local_order": 5,
+      "source_slide_refs": [
+        23
+      ],
+      "slide_type": "production_checklist",
+      "layout_type": "appendix_checklist",
+      "layout": "appendix_checklist",
+      "headline": "방송 전 꼭 채워야 할 자료",
+      "body": [
+        "방송 전 꼭 채워야 할 자료: 금융위/산은 공식 원문, 국민참여형 펀드 손실분담 구조, AI·반도체 장기 투자 규모, 관치금융/정책금융 실패 반론, 은행 건전성·위험가중자산 자료.",
+        "지금 evidence pack은 enriched dry run에는 충분하지만, 방송용 완성본에는 추가 counterpoint가 필요하다."
+      ],
+      "visual_plan": {
+        "kind": "none",
+        "description": "No visual required at deck-plan stage.",
+        "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://ngf.kdb.co.kr/GFMNMN00N00.act",
+        "copyright_risk": false,
+        "manual_check_required": false,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "https://ngf.kdb.co.kr/GFMNMN00N00.act",
+        "https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "https://www.bis.org/bcbs/basel3.htm",
+        "https://www.donga.com/news/Economy/article/all/20251113/132765077/4"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[제작체크] enriched dry run 후에도 방송 전 수동 검증 필요.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_source=true: source must be added or verified.\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+      "notes": "[제작체크] enriched dry run 후에도 방송 전 수동 검증 필요.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://ngf.kdb.co.kr/GFMNMN00N00.act\n[내용] https://www.korea.kr/news/policyNewsView.do?newsId=148963908&pWise=main&pWiseMain=R3\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[내용] https://www.donga.com/news/Economy/article/all/20251113/132765077/4\n[TODO] needs_source=true: source must be added or verified.\n[TODO] needs_fact_check=true: claim must be manually checked.\n[편집 메모] internal_appendix: keep out of main broadcast deck body",
+      "needs_source": true,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "production_checklist",
+      "fact_check_priority": "high",
+      "risk_flags": [],
+      "edit_notes": [
+        "internal_appendix: keep out of main broadcast deck body"
+      ]
+    },
+    {
+      "slide_no": 24,
+      "section_no": 4,
+      "local_order": 6,
+      "source_slide_refs": [
+        24
+      ],
+      "slide_type": "closing_question",
+      "layout_type": "closing_question",
+      "layout": "closing_question",
+      "headline": "금융은 위험을 피하는 기술인가, 좋은 위험을 고르는 기술인가",
+      "body": [
+        "생산적 금융의 질문은 “정부 정책이 맞다/틀리다”가 아니다.",
+        "좋은 위험을 고르는 능력, 손실을 나누는 규칙, 금융권 건전성을 함께 설계할 수 있느냐는 질문이다.",
+        "국민성장펀드는 그 질문을 보여주는 한 사례일 뿐, 성공을 단정할 수는 없다."
+      ],
+      "visual_plan": {
+        "kind": "manual",
+        "description": "Manual visual placeholder; choose asset during later Piti/PPT work.",
+        "source_note": "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=; https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "copyright_risk": false,
+        "manual_check_required": true,
+        "prompt_if_ai_image": null
+      },
+      "image_slots": [],
+      "source_urls": [
+        "https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=",
+        "https://www.investchosun.com/m/article.html?contid=2026042180102",
+        "https://www.bis.org/bcbs/basel3.htm"
+      ],
+      "image_urls": [],
+      "speaker_notes": "[마무리] 정책 찬반이 아니라 위험분담 설계의 질문으로 닫기.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "notes": "[마무리] 정책 찬반이 아니라 위험분담 설계의 질문으로 닫기.\n[내용] https://www.fsc.go.kr/no010101/86834?curPage=2&srchBeginDt=&srchCtgry=&srchEndDt=&srchKey=&srchText=\n[내용] https://www.investchosun.com/m/article.html?contid=2026042180102\n[내용] https://www.bis.org/bcbs/basel3.htm\n[TODO] needs_fact_check=true: claim must be manually checked.",
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "fact_check_kind": "policy_effect_claim",
+      "fact_check_priority": "medium",
+      "risk_flags": [],
+      "edit_notes": []
+    }
+  ],
+  "risk_flags": [
+    "investment_advice_risk",
+    "policy_effect_uncertainty",
+    "needs_human_review"
+  ],
+  "required_fact_checks": [
+    "금융위원회/산업은행 국민성장펀드 공식자료의 최신 원문과 수치 확인",
+    "국민참여형 펀드 손실 우선 부담 구조와 투자자 리스크 재확인",
+    "AI·반도체 장기 투자 규모와 집행 현황 추가 확인",
+    "관치금융, 정책금융 실패, 손실 전가 논란 추가 counterpoint 보강",
+    "은행 건전성·위험가중자산·예금자 보호 관련 국내 감독자료 추가 확인"
+  ],
+  "notes": "Generated from Anny storyline for Piti deck-plan/storyboard review. This is not a PPTX and not broadcast-ready.",
+  "generation_options": {
+    "aspect_ratio": "16:9",
+    "default_font": "Malgun Gothic",
+    "default_body_pt": 28,
+    "render_pptx": false
+  },
+  "created_at": "2026-05-19T02:12:24.803529+00:00"
+}

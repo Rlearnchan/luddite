@@ -513,6 +513,29 @@ Milestone 1.17.6: Human Review Pilot
 - Keep productive finance API v1 as failure analysis only.
 - Keep `ready_for_production_agent=false` and `ready_for_broadcast=false`.
 
+Milestone 1.18: Piti Storyline-to-Deck Plan MVP
+
+- Convert existing manual/enriched Anny storyline samples into deterministic
+  Piti deck-plan JSON, without generating PPTX or calling an LLM.
+- Add `luddite build-piti-deck-plan` / `make build-piti-deck-plans`.
+- Add `luddite render-piti-storyboard` / `make render-piti-storyboards`.
+- Output deck plans:
+  `data/candidates/piti_deck_plans/ai_knowledge_institution_deck_plan.json`
+  and
+  `data/candidates/piti_deck_plans/productive_finance_policy_deck_plan.json`.
+- Output storyboards:
+  `outputs/samples/piti_storyboards/ai_knowledge_institution_storyboard.md`
+  and
+  `outputs/samples/piti_storyboards/productive_finance_policy_storyboard.md`.
+- The deck plan keeps source URLs and image URLs separate, preserves
+  `needs_source` / `needs_fact_check`, carries speaker notes forward, and marks
+  production-checklist slides as appendix/internal material.
+- The storyboard README states that these are storyboard/deck-plan samples, not
+  PPTX, Google Slides, production Piti agent output, or broadcast-ready decks.
+- Keep `ready_for_ppt_generation=false`,
+  `ready_for_production_piti_agent=false`, `ready_for_production_agent=false`,
+  and `ready_for_broadcast=false`.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

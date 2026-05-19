@@ -14,69 +14,271 @@
     "title": {
       "type": "string"
     },
+    "source_storyline_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_storyline_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "theme": {
       "type": "string",
       "default": "syuka_default_v0"
     },
-    "slides": {
+    "length_mode": {
+      "type": "string"
+    },
+    "target_slide_count": {
+      "type": "integer"
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_fact_checks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "sections": {
       "type": "array",
       "items": {
         "type": "object",
         "required": [
-          "slide_no",
-          "slide_type",
-          "headline",
-          "body",
-          "notes"
+          "section_no",
+          "section_title",
+          "slides"
         ],
         "properties": {
-          "slide_no": {
+          "section_no": {
             "type": "integer"
           },
-          "slide_type": {
-            "type": "string",
-            "enum": [
-              "title",
-              "section_title",
-              "hook",
-              "explainer",
-              "quote",
-              "data",
-              "comparison",
-              "image_centered",
-              "bridge",
-              "punchline",
-              "closing_question",
-              "source_heavy"
-            ]
-          },
-          "headline": {
+          "section_title": {
             "type": "string"
           },
-          "body": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "layout": {
+          "purpose": {
             "type": [
               "string",
               "null"
             ]
           },
-          "font_family": {
-            "type": "string",
-            "default": "Malgun Gothic"
+          "target_slide_count": {
+            "type": "integer"
           },
-          "notes": {
-            "type": "string"
-          },
-          "image_slots": {
+          "slides": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/$defs/slide"
             }
+          }
+        }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slide"
+      }
+    },
+    "generation_options": {
+      "type": "object"
+    },
+    "created_at": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "slide": {
+      "type": "object",
+      "required": [
+        "slide_no",
+        "slide_type",
+        "headline",
+        "body",
+        "notes"
+      ],
+      "properties": {
+        "slide_no": {
+          "type": "integer"
+        },
+        "section_no": {
+          "type": "integer"
+        },
+        "local_order": {
+          "type": "integer"
+        },
+        "source_slide_refs": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "string",
+              "null"
+            ]
+          }
+        },
+        "slide_type": {
+          "type": "string",
+          "enum": [
+            "title",
+            "section_title",
+            "hook",
+            "explainer",
+            "quote",
+            "data",
+            "comparison",
+            "image_centered",
+            "bridge",
+            "punchline",
+            "closing_question",
+            "source_heavy",
+            "counterpoint",
+            "risk",
+            "production_checklist",
+            "rhetorical"
+          ]
+        },
+        "layout_type": {
+          "type": "string",
+          "enum": [
+            "title",
+            "section_title",
+            "big_headline",
+            "headline_body",
+            "quote",
+            "question",
+            "comparison",
+            "timeline",
+            "chart_placeholder",
+            "image_placeholder",
+            "checklist",
+            "closing_question",
+            "appendix_checklist"
+          ]
+        },
+        "headline": {
+          "type": "string"
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "layout": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "font_family": {
+          "type": "string",
+          "default": "Malgun Gothic"
+        },
+        "visual_plan": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "none",
+                "photo_candidate",
+                "chart_candidate",
+                "diagram",
+                "screenshot_candidate",
+                "ai_image_prompt",
+                "manual"
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "source_note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "copyright_risk": {
+              "type": "boolean"
+            },
+            "manual_check_required": {
+              "type": "boolean"
+            },
+            "prompt_if_ai_image": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "source_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        },
+        "speaker_notes": {
+          "type": "string"
+        },
+        "needs_source": {
+          "type": "boolean"
+        },
+        "needs_fact_check": {
+          "type": "boolean"
+        },
+        "required_before_broadcast": {
+          "type": "boolean"
+        },
+        "fact_check_kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fact_check_priority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "image_slots": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "edit_notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }

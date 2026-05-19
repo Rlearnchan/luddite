@@ -26,6 +26,10 @@ from luddite.agents.jibi.daily_digest import app as jibi_digest_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
 from luddite.agents.jibi.score_candidates import app as score_candidates_app
+from luddite.agents.piti.build_deck_plan_from_storyline import (
+    app as build_piti_deck_plan_app,
+)
+from luddite.agents.piti.render_deck_storyboard import app as render_piti_storyboard_app
 from luddite.collectors.manual_article_importer import app as import_articles_app
 from luddite.collectors.rss_item_fetcher import app as fetch_rss_articles_app
 from luddite.collectors.rss_probe import app as probe_rss_sources_app
@@ -67,6 +71,8 @@ app.add_typer(anny_api_experiment_app, name="validate-anny-api-experiment")
 app.add_typer(run_anny_api_experiment_app, name="run-anny-api-experiment")
 app.add_typer(anny_run_storyline_app, name="anny-run-storyline")
 app.add_typer(render_anny_storyline_sample_app, name="render-anny-storyline-sample")
+app.add_typer(build_piti_deck_plan_app, name="build-piti-deck-plan")
+app.add_typer(render_piti_storyboard_app, name="render-piti-storyboard")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")
 app.add_typer(append_jibi_sheet_app, name="append-jibi-sheet")
