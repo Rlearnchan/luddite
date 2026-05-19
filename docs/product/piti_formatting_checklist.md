@@ -8,7 +8,7 @@ belongs in speaker notes.
 ## Screen Rules v0.1
 
 - Headline: 28pt, red `#FF0000`, top-left by default, one line preferred and
-  two lines at most.
+  two lines at most. Ordinary content headlines are not bold by default.
 - Content slide headline position: use the reference-style top-left band by
   default. Avoid centered headline layouts except for title/section slides.
 - Normal Korean body: black, 28pt baseline. Do not make ordinary Korean body
@@ -18,6 +18,8 @@ belongs in speaker notes.
 - Body line spacing: use 1.5 spacing for screen body text boxes. Do not apply
   this rule to headlines, title slides, section titles, chart/table titles,
   chart/table data labels, chart/table source labels, or speaker notes.
+- Body vertical alignment: screen body boxes should be vertically centered
+  inside their content area rather than hard top-anchored.
 - Quote bilingual mode: use only when English source text and Korean
   translation/interpretation are interleaved.
 - Quote bilingual text: English line black 28pt, Korean translation line red
@@ -41,6 +43,28 @@ belongs in speaker notes.
   slide numbers on styled screens. Keep them in notes and reports.
 - Speaker notes: preserve long explanation, source URLs, image URLs,
   fact-check flags, visual plan, copyright risk, and overflow body lines.
+
+## Screen Role Styling v0.1
+
+- `actual_headline`: red `#FF0000`, 28pt, non-bold by default.
+- `actual_body`: black, 28pt/adaptive, 1.5 line spacing, vertically centered.
+- `quote_english`: black, 28pt.
+- `quote_korean_translation`: red `#FF0000`, 28pt.
+- `chart_title`: black, 28pt, bold, underline.
+- `chart_data_label`: black or dark gray, 18pt, bold.
+- `chart_source`: black, 20pt, underline, parenthesized.
+- `proof_object_skeleton`: neutral gray/black proof area. It is a screen object,
+  not a body paragraph.
+- `editor_instruction`: blue `#0070C0`, 18-20pt, shown only when a screen note is
+  useful. Prefer speaker notes for detailed editor instructions.
+- `debug_or_internal_note`: blue `#0070C0` or hidden. Raw debug labels should not
+  appear as ordinary screen copy.
+
+Editor-facing phrases include `[수동 삽입]`, `[이미지 후보]`, `[차트 후보]`,
+`[도식 후보]`, `[기사 캡처]`, `needs_fact_check`, `needs_source`,
+`before_broadcast`, `split_recommended`, `edit_notes`, `copyright_risk`,
+`manual_check_required`, and draft/scaffold/debug labels. If any of these appear
+on screen, they must be blue and visually subordinate to the actual slide copy.
 
 ## Proof Object Rules v0.1
 

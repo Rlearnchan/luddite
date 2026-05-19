@@ -7,6 +7,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any
 from urllib.parse import urlparse
@@ -14,7 +15,7 @@ from urllib.parse import urlparse
 import typer
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 from rich.console import Console
 
@@ -95,6 +96,19 @@ class ProofObject:
         }
 
 
+class ScreenRole(StrEnum):
+    ACTUAL_HEADLINE = "actual_headline"
+    ACTUAL_BODY = "actual_body"
+    QUOTE_ENGLISH = "quote_english"
+    QUOTE_KOREAN_TRANSLATION = "quote_korean_translation"
+    CHART_TITLE = "chart_title"
+    CHART_DATA_LABEL = "chart_data_label"
+    CHART_SOURCE = "chart_source"
+    PROOF_OBJECT_SKELETON = "proof_object_skeleton"
+    EDITOR_INSTRUCTION = "editor_instruction"
+    DEBUG_OR_INTERNAL_NOTE = "debug_or_internal_note"
+
+
 DEFAULT_CASES = [
     PptxRenderCase(
         deck_plan_path=paths.PITI_DECK_PLANS_DIR / "ai_knowledge_institution_deck_plan.json",
@@ -140,6 +154,7 @@ THEME = {
 SYUKA_RED = RGBColor(255, 0, 0)
 SCREEN_BLACK = RGBColor(0, 0, 0)
 CHART_DARK = RGBColor(55, 55, 55)
+EDITOR_BLUE = RGBColor(0, 112, 192)
 CONTENT_HEADLINE_BOX = (0.626, 0.39, 12.24, 0.57)
 BODY_LINE_SPACING = 1.5
 PROOF_LABELS = {
@@ -256,6 +271,10 @@ def _layout_font_size(style: PptxStyle, layout_type: str, fallback: int) -> int:
 def _layout_color(style: PptxStyle, layout_type: str, fallback: RGBColor) -> RGBColor:
     pattern = style.layout_patterns.get(layout_type) or {}
     return _rgb_from_hex(pattern.get("font_color_top"), fallback)
+
+
+def _ordinary_headline_bold(style: PptxStyle) -> bool:
+    return False if style.loaded else True
 
 
 def _visual_kind(slide_plan: dict[str, Any]) -> str:
@@ -542,11 +561,14 @@ def _body_box(
     underline: bool = False,
     style: PptxStyle | None = None,
     line_spacing: float | None = BODY_LINE_SPACING,
+    vertical_anchor: MSO_ANCHOR | None = MSO_ANCHOR.MIDDLE,
 ) -> Any:
     shape = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
     frame = shape.text_frame
     frame.clear()
     frame.word_wrap = True
+    if vertical_anchor is not None:
+        frame.vertical_anchor = vertical_anchor
     if not body:
         paragraph = frame.paragraphs[0]
         paragraph.text = ""
@@ -636,9 +658,9 @@ def _placeholder(
     paragraph.alignment = PP_ALIGN.CENTER
     for run in paragraph.runs:
         run.font.name = style.font_family if style and style.loaded else "Malgun Gothic"
-        run.font.size = Pt(13 if style and style.loaded else 16)
-        run.font.color.rgb = THEME["muted"]
-        run.font.bold = proof.type == "article_quote"
+        run.font.size = Pt(18 if style and style.loaded else 16)
+        run.font.color.rgb = EDITOR_BLUE if style and style.loaded else THEME["muted"]
+        run.font.bold = False
     if proof.type == "article_quote":
         source = _source_name_from_url(proof.source_url)
         title = _short_text(str(slide_plan.get("headline") or ""), 38)
@@ -788,7 +810,7 @@ def _render_big_headline(slide: Any, slide_plan: dict[str, Any], style: PptxStyl
         height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else _layout_font_size(style, "big_headline", 34),
-        bold=True,
+        bold=_ordinary_headline_bold(style),
         color=SYUKA_RED if style.loaded else THEME["ink"],
         style=style,
     )
@@ -841,7 +863,7 @@ def _render_headline_body(slide: Any, slide_plan: dict[str, Any], style: PptxSty
         headline_height,
         str(slide_plan.get("headline") or ""),
         font_size=_layout_font_size(style, "headline_body", 28),
-        bold=True,
+        bold=_ordinary_headline_bold(style),
         color=headline_color,
         style=style,
     )
@@ -896,7 +918,7 @@ def _render_quote(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -> N
         headline_height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else _layout_font_size(style, "quote", 28),
-        bold=True,
+        bold=_ordinary_headline_bold(style),
         color=SYUKA_RED if style.loaded else THEME["ink"],
         style=style,
     )
@@ -943,7 +965,7 @@ def _render_question(slide: Any, slide_plan: dict[str, Any], style: PptxStyle) -
         height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else 32,
-        bold=True,
+        bold=_ordinary_headline_bold(style),
         color=SYUKA_RED if style.loaded else THEME["ink"],
         style=style,
     )
@@ -975,7 +997,7 @@ def _render_comparison(slide: Any, slide_plan: dict[str, Any], style: PptxStyle)
         height,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else 27,
-        bold=True,
+        bold=_ordinary_headline_bold(style),
         color=SYUKA_RED if style.loaded else THEME["ink"],
         style=style,
     )
@@ -1142,7 +1164,7 @@ def _render_chart_table_layout(slide: Any, slide_plan: dict[str, Any], style: Pp
         *CONTENT_HEADLINE_BOX,
         str(slide_plan.get("headline") or ""),
         font_size=28,
-        bold=True,
+        bold=False,
         color=SYUKA_RED,
         style=style,
     )
@@ -1195,7 +1217,7 @@ def _render_placeholder_layout(slide: Any, slide_plan: dict[str, Any], style: Pp
         CONTENT_HEADLINE_BOX[3] if style.loaded else 0.85,
         str(slide_plan.get("headline") or ""),
         font_size=28 if style.loaded else _layout_font_size(style, layout_type, 27),
-        bold=True,
+        bold=_ordinary_headline_bold(style),
         color=SYUKA_RED if style.loaded else THEME["ink"],
         style=style,
     )
@@ -1236,8 +1258,10 @@ def _render_checklist(
         font_size=(
             28 if style.loaded and not appendix else _layout_font_size(style, "checklist", 26)
         ),
-        bold=True,
-        color=THEME["warn"] if appendix else (SYUKA_RED if style.loaded else THEME["ink"]),
+        bold=True if appendix else _ordinary_headline_bold(style),
+        color=EDITOR_BLUE if appendix and style.loaded else (
+            THEME["warn"] if appendix else (SYUKA_RED if style.loaded else THEME["ink"])
+        ),
         style=style,
     )
     body = _screen_body_lines(slide_plan)
@@ -1249,7 +1273,9 @@ def _render_checklist(
         11.4,
         4.9,
         font_size=_body_font_size(style, body, 18, has_visual=False),
-        color=SCREEN_BLACK if style.loaded else THEME["ink"],
+        color=EDITOR_BLUE if appendix and style.loaded else (
+            SCREEN_BLACK if style.loaded else THEME["ink"]
+        ),
         style=style,
     )
 
@@ -1634,13 +1660,7 @@ def _body_line_spacing_exceptions(deck_plan: dict[str, Any]) -> list[dict[str, A
 
 
 def _headline_red_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
-    if not style.loaded:
-        return 0
-    return sum(
-        1
-        for slide in deck_plan.get("slides", [])
-        if slide.get("layout_type") not in {"section_title", "appendix_checklist"}
-    )
+    return _ordinary_headline_slide_count(deck_plan, style)
 
 
 def _body_black_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
@@ -1798,6 +1818,74 @@ def _screen_footer_hidden_count(deck_plan: dict[str, Any], style: PptxStyle) -> 
     return len(deck_plan.get("slides", [])) if style.loaded else 0
 
 
+def _ordinary_headline_slide_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    if not style.loaded:
+        return 0
+    return sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if slide.get("layout_type") not in {"title", "section_title", "appendix_checklist"}
+        and slide.get("slide_type") != "production_checklist"
+    )
+
+
+def _headline_bold_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return 0 if style.loaded else _ordinary_headline_slide_count(deck_plan, style)
+
+
+def _headline_nonbold_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return _ordinary_headline_slide_count(deck_plan, style)
+
+
+def _body_vertical_middle_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return _body_line_spacing_target_box_count(deck_plan) if style.loaded else 0
+
+
+def _body_vertical_top_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return 0 if style.loaded else _body_line_spacing_target_box_count(deck_plan)
+
+
+def _editor_instruction_screen_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    if not style.loaded:
+        return 0
+    placeholder_count = sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if _screen_placeholder_visible(slide, style)
+    )
+    appendix_count = sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if slide.get("layout_type") == "appendix_checklist"
+        or slide.get("slide_type") == "production_checklist"
+    )
+    return placeholder_count + appendix_count
+
+
+def _editor_instruction_blue_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return _editor_instruction_screen_count(deck_plan, style)
+
+
+def _debug_label_visible_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return 0 if style.loaded else len(deck_plan.get("slides", []))
+
+
+def _quote_korean_red_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    if not style.loaded:
+        return 0
+    return sum(
+        1
+        for slide in deck_plan.get("slides", [])
+        if _is_bilingual_quote_slide(slide)
+        for line in _screen_body_lines(slide)
+        if _is_korean_line(line) and not _is_english_line(line)
+    )
+
+
+def _chart_title_bold_underline_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
+    return _chart_table_style_applied_count(deck_plan, style)
+
+
 def _applied_layout_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
     if not style.loaded:
         return 0
@@ -1943,16 +2031,29 @@ def render_result(
             else "legacy scaffold"
         ),
         "headline_red_count": _headline_red_count(deck_plan, style),
+        "headline_bold_count": _headline_bold_count(deck_plan, style),
+        "headline_nonbold_count": _headline_nonbold_count(deck_plan, style),
         "body_black_count": _body_black_count(deck_plan, style),
+        "actual_body_black_count": _body_black_count(deck_plan, style),
         "bilingual_quote_slide_count": sum(
             1 for slide in slides if _is_bilingual_quote_slide(slide)
         ),
+        "quote_korean_red_count": _quote_korean_red_count(deck_plan, style),
         "chart_table_style_applied_count": _chart_table_style_applied_count(
+            deck_plan,
+            style,
+        ),
+        "chart_title_bold_underline_count": _chart_title_bold_underline_count(
             deck_plan,
             style,
         ),
         "image_left_layout_count": _image_left_layout_count(deck_plan, style),
         "manual_placeholder_hidden_count": _manual_placeholder_hidden_count(deck_plan, style),
+        "body_vertical_middle_count": _body_vertical_middle_count(deck_plan, style),
+        "body_vertical_top_count": _body_vertical_top_count(deck_plan, style),
+        "editor_instruction_blue_count": _editor_instruction_blue_count(deck_plan, style),
+        "editor_instruction_screen_count": _editor_instruction_screen_count(deck_plan, style),
+        "debug_label_visible_count": _debug_label_visible_count(deck_plan, style),
         "proof_object_slide_count": _proof_object_slide_count(deck_plan),
         "proof_object_type_counts": proof_type_counts,
         "layout_template_counts": layout_template_counts,
@@ -2055,8 +2156,13 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "- Styled draft support: optional Syukaworld style profile",
         "- Screen formatting rules: headline red 28pt; normal body black; "
         "bilingual quote Korean translation red",
+        "- Screen role styling: actual slide copy stays red/black; "
+        "editor-facing instructions use blue #0070C0",
+        "- Ordinary headline weight: red 28pt non-bold; chart titles remain "
+        "black 28pt bold underline",
         "- Chart/table rules: title 28pt bold underline; body/data labels 18pt "
         "bold; source 20pt underline",
+        "- Body vertical alignment: body text boxes use middle vertical anchoring",
         "- Manual visual placeholders: hidden from styled screens and preserved "
         "in speaker notes",
         "- Proof object scaffold: reserves screen areas for chart/table, article "
@@ -2133,14 +2239,28 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"- visual_placeholder_shortened: {result.get('visual_placeholder_shortened')}",
                 f"- section_title_color_policy: {result.get('section_title_color_policy')}",
                 f"- headline_red_count: {result.get('headline_red_count')}",
+                f"- headline_bold_count: {result.get('headline_bold_count')}",
+                f"- headline_nonbold_count: {result.get('headline_nonbold_count')}",
                 f"- body_black_count: {result.get('body_black_count')}",
+                f"- actual_body_black_count: {result.get('actual_body_black_count')}",
                 "- bilingual_quote_slide_count: "
                 f"{result.get('bilingual_quote_slide_count')}",
+                f"- quote_korean_red_count: {result.get('quote_korean_red_count')}",
                 "- chart_table_style_applied_count: "
                 f"{result.get('chart_table_style_applied_count')}",
+                "- chart_title_bold_underline_count: "
+                f"{result.get('chart_title_bold_underline_count')}",
                 f"- image_left_layout_count: {result.get('image_left_layout_count')}",
                 "- manual_placeholder_hidden_count: "
                 f"{result.get('manual_placeholder_hidden_count')}",
+                "- body_vertical_middle_count: "
+                f"{result.get('body_vertical_middle_count')}",
+                f"- body_vertical_top_count: {result.get('body_vertical_top_count')}",
+                "- editor_instruction_blue_count: "
+                f"{result.get('editor_instruction_blue_count')}",
+                "- editor_instruction_screen_count: "
+                f"{result.get('editor_instruction_screen_count')}",
+                f"- debug_label_visible_count: {result.get('debug_label_visible_count')}",
                 f"- proof_object_slide_count: {result.get('proof_object_slide_count')}",
                 f"- proof_object_type_counts: {result.get('proof_object_type_counts')}",
                 f"- layout_template_counts: {result.get('layout_template_counts')}",

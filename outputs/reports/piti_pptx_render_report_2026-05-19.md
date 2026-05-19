@@ -1,13 +1,16 @@
 # Piti PPTX Render Report
 
-- Generated at: 2026-05-19T11:39:28.037436+00:00
+- Generated at: 2026-05-19T11:51:26.980029+00:00
 - Rendered deck count: 4
 - Passed: 4
 - Failed: 0
 - Renderer type: scaffold PPTX skeleton
 - Styled draft support: optional Syukaworld style profile
 - Screen formatting rules: headline red 28pt; normal body black; bilingual quote Korean translation red
+- Screen role styling: actual slide copy stays red/black; editor-facing instructions use blue #0070C0
+- Ordinary headline weight: red 28pt non-bold; chart titles remain black 28pt bold underline
 - Chart/table rules: title 28pt bold underline; body/data labels 18pt bold; source 20pt underline
+- Body vertical alignment: body text boxes use middle vertical anchoring
 - Manual visual placeholders: hidden from styled screens and preserved in speaker notes
 - Proof object scaffold: reserves screen areas for chart/table, article quote, image, screenshot, and diagram evidence objects without inserting assets
 - Reference layout templates v0: chart_table_reference, image_left_quote_right, text_only_calculation, source_card_or_article_quote
@@ -43,11 +46,21 @@
 - visual_placeholder_shortened: False
 - section_title_color_policy: legacy scaffold
 - headline_red_count: 0
+- headline_bold_count: 0
+- headline_nonbold_count: 0
 - body_black_count: 0
+- actual_body_black_count: 0
 - bilingual_quote_slide_count: 0
+- quote_korean_red_count: 0
 - chart_table_style_applied_count: 0
+- chart_title_bold_underline_count: 0
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 0
+- body_vertical_middle_count: 0
+- body_vertical_top_count: 20
+- editor_instruction_blue_count: 0
+- editor_instruction_screen_count: 0
+- debug_label_visible_count: 26
 - proof_object_slide_count: 17
 - proof_object_type_counts: {'article_quote': 11, 'diagram': 5, 'chart': 1}
 - layout_template_counts: {'text_only_calculation': 9, 'source_card_or_article_quote': 11, 'image_left_quote_right': 5, 'chart_table_reference': 1}
@@ -103,11 +116,21 @@
 - visual_placeholder_shortened: False
 - section_title_color_policy: legacy scaffold
 - headline_red_count: 0
+- headline_bold_count: 0
+- headline_nonbold_count: 0
 - body_black_count: 0
+- actual_body_black_count: 0
 - bilingual_quote_slide_count: 0
+- quote_korean_red_count: 0
 - chart_table_style_applied_count: 0
+- chart_title_bold_underline_count: 0
 - image_left_layout_count: 0
 - manual_placeholder_hidden_count: 0
+- body_vertical_middle_count: 0
+- body_vertical_top_count: 17
+- editor_instruction_blue_count: 0
+- editor_instruction_screen_count: 0
+- debug_label_visible_count: 24
 - proof_object_slide_count: 18
 - proof_object_type_counts: {'article_quote': 8, 'diagram': 9, 'chart': 1}
 - layout_template_counts: {'text_only_calculation': 6, 'source_card_or_article_quote': 8, 'image_left_quote_right': 9, 'chart_table_reference': 1}
@@ -162,12 +185,22 @@
 - font_size_downgraded_slides: [{'slide_no': 3, 'font_size': 24, 'body_lines': 3}, {'slide_no': 11, 'font_size': 24, 'body_lines': 3}]
 - visual_placeholder_shortened: True
 - section_title_color_policy: theme/default black; do not force #FF0000
-- headline_red_count: 23
+- headline_red_count: 22
+- headline_bold_count: 0
+- headline_nonbold_count: 22
 - body_black_count: 26
+- actual_body_black_count: 26
 - bilingual_quote_slide_count: 0
+- quote_korean_red_count: 0
 - chart_table_style_applied_count: 1
+- chart_title_bold_underline_count: 1
 - image_left_layout_count: 16
 - manual_placeholder_hidden_count: 19
+- body_vertical_middle_count: 20
+- body_vertical_top_count: 0
+- editor_instruction_blue_count: 16
+- editor_instruction_screen_count: 16
+- debug_label_visible_count: 0
 - proof_object_slide_count: 17
 - proof_object_type_counts: {'article_quote': 11, 'diagram': 5, 'chart': 1}
 - layout_template_counts: {'text_only_calculation': 9, 'source_card_or_article_quote': 11, 'image_left_quote_right': 5, 'chart_table_reference': 1}
@@ -222,12 +255,22 @@
 - font_size_downgraded_slides: [{'slide_no': 2, 'font_size': 24, 'body_lines': 3}, {'slide_no': 15, 'font_size': 24, 'body_lines': 3}, {'slide_no': 21, 'font_size': 24, 'body_lines': 3}, {'slide_no': 23, 'font_size': 24, 'body_lines': 2}]
 - visual_placeholder_shortened: True
 - section_title_color_policy: theme/default black; do not force #FF0000
-- headline_red_count: 19
+- headline_red_count: 18
+- headline_bold_count: 0
+- headline_nonbold_count: 18
 - body_black_count: 21
+- actual_body_black_count: 21
 - bilingual_quote_slide_count: 0
+- quote_korean_red_count: 0
 - chart_table_style_applied_count: 1
+- chart_title_bold_underline_count: 1
 - image_left_layout_count: 17
 - manual_placeholder_hidden_count: 12
+- body_vertical_middle_count: 17
+- body_vertical_top_count: 0
+- editor_instruction_blue_count: 19
+- editor_instruction_screen_count: 19
+- debug_label_visible_count: 0
 - proof_object_slide_count: 18
 - proof_object_type_counts: {'article_quote': 8, 'diagram': 9, 'chart': 1}
 - layout_template_counts: {'text_only_calculation': 6, 'source_card_or_article_quote': 8, 'image_left_quote_right': 9, 'chart_table_reference': 1}

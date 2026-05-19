@@ -781,6 +781,34 @@ Milestone 1.19.9: Piti Body Text Line Spacing + Template Detail Tuning
   integration, production Piti agent, LLM/API calls, and final Syukaworld visual
   fidelity claims.
 
+Milestone 1.19.10: Piti Screen Role Styling + Vertical Alignment
+
+- Separate actual broadcast screen copy from editor-facing instructions in the
+  styled PPTX renderer. Actual headlines/bodies keep the Syukaworld red/black
+  screen grammar, while editor instructions use blue `#0070C0` or move into
+  speaker notes.
+- Make ordinary content headlines red 28pt and non-bold by default. Title,
+  section-title, and chart/table title treatments remain separate; chart/table
+  titles stay black 28pt bold underline.
+- Vertically center screen body text boxes within their content regions,
+  including right-side interpretation text next to left-half proof objects.
+- Keep 1.5 line spacing on actual body text and quote/source-card explanation
+  bodies, while excluding headlines, title/section slides, chart labels, chart
+  sources, and speaker notes.
+- Keep proof object skeletons visually separate from editor labels: chart axes,
+  bars, and source-card source names remain screen proof objects, while labels
+  such as `[차트]`, `[도식]`, or `[기사 인용]` are blue editor instructions.
+- Add render-report metrics for headline bold/non-bold counts, body vertical
+  alignment counts, blue editor-instruction counts, debug-label visibility,
+  actual body black count, quote Korean red count, and chart-title
+  bold/underline count.
+- Styled drafts remain scaffold outputs only:
+  `ready_for_ppt_generation=true` for review,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: actual image insertion, chart generation, Google Slides
+  integration, production Piti agent, LLM/API calls, and final Syukaworld visual
+  fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge

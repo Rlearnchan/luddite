@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.enum.text import MSO_ANCHOR
 
 from luddite.agents.piti import build_deck_plan_from_storyline, render_pptx
 from luddite.parsers.parse_pptx import parse_presentation
@@ -254,16 +255,25 @@ def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
     prs = Presentation(str(output_path))
     headline_run = _first_run_for_text(prs, "출처가 있는 장표")
     headline_shape = _first_shape_for_text(prs, "출처가 있는 장표")
+    body_shape = _first_shape_for_text(prs, "본문 메시지 하나")
     body_run = _first_run_for_text(prs, "본문 메시지 하나")
     body_paragraph = _first_paragraph_for_text(prs, "본문 메시지 하나")
     headline_paragraph = _first_paragraph_for_text(prs, "출처가 있는 장표")
     assert headline_run.font.size.pt == 28
     assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
+    assert headline_run.font.bold is False
     assert headline_paragraph.line_spacing is None
     assert 1.4 <= headline_shape.left.cm <= 1.8
     assert 0.8 <= headline_shape.top.cm <= 1.2
     assert body_run.font.color.rgb == RGBColor(0, 0, 0)
+    assert body_shape.text_frame.vertical_anchor == MSO_ANCHOR.MIDDLE
     assert body_paragraph.line_spacing == 1.5
+    assert result["headline_bold_count"] == 0
+    assert result["headline_nonbold_count"] > 0
+    assert result["body_vertical_middle_count"] > 0
+    assert result["body_vertical_top_count"] == 0
+    assert result["debug_label_visible_count"] == 0
+    assert result["actual_body_black_count"] > 0
     assert result["body_line_spacing_applied_count"] > 0
     assert result["body_line_spacing_value"] == 1.5
     assert result["body_line_spacing_missing_count"] == 0
@@ -341,6 +351,7 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     assert result["chart_table_skeleton_count"] == 1
     assert result["proof_object_type_counts"] == {"chart": 1}
     assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
+    assert headline_run.font.bold is False
     assert title_run.font.size.pt == 28
     assert title_run.font.bold is True
     assert title_run.font.underline is True
@@ -351,6 +362,35 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     assert source_run.font.size.pt == 20
     assert source_run.font.underline is True
     assert source_paragraph.line_spacing is None
+    assert result["chart_title_bold_underline_count"] == 1
+
+
+def test_section_title_is_not_forced_red_by_headline_rule(tmp_path: Path) -> None:
+    output_path = tmp_path / "section.pptx"
+    style_path = tmp_path / "style.json"
+    _write_style_profile(style_path)
+    slide = {
+        "slide_no": 1,
+        "layout_type": "section_title",
+        "slide_type": "section_title",
+        "headline": "섹션 제목은 별도 규칙",
+        "body": [],
+        "source_urls": [],
+        "image_urls": [],
+        "speaker_notes": "section notes",
+        "visual_plan": {"kind": "none"},
+    }
+
+    render_pptx.render_deck_plan_to_pptx(
+        _minimal_deck(slide),
+        output_path,
+        style_profile=render_pptx.load_style_profile(style_path),
+    )
+
+    prs = Presentation(str(output_path))
+    section_run = _first_run_for_text(prs, "섹션 제목")
+    assert section_run.font.bold is True
+    assert section_run.font.color.rgb == RGBColor(24, 28, 35)
 
 
 def test_manual_placeholder_hidden_and_image_left_counted(tmp_path: Path) -> None:
@@ -388,6 +428,7 @@ def test_manual_placeholder_hidden_and_image_left_counted(tmp_path: Path) -> Non
         output_path,
         style_profile=render_pptx.load_style_profile(style_path),
     )
+    prs = Presentation(str(output_path))
     parsed = parse_presentation(output_path)
     visible_text = "\n".join(slide["visible_text"] for slide in parsed["slides"])
     notes_text = "\n".join(slide["notes"] for slide in parsed["slides"])
@@ -398,6 +439,10 @@ def test_manual_placeholder_hidden_and_image_left_counted(tmp_path: Path) -> Non
     assert "[수동" not in visible_text
     assert "manual_placeholder_hidden: True" in notes_text
     assert "proof_object_type: screenshot" in notes_text
+    right_text_shape = _first_shape_for_text(prs, "오른쪽에 해석을 둔다")
+    assert right_text_shape.text_frame.vertical_anchor == MSO_ANCHOR.MIDDLE
+    assert result["editor_instruction_blue_count"] >= 1
+    assert result["editor_instruction_screen_count"] >= 1
 
 
 def test_article_quote_proof_object_reserves_left_area(tmp_path: Path) -> None:
@@ -432,6 +477,10 @@ def test_article_quote_proof_object_reserves_left_area(tmp_path: Path) -> None:
     assert "[기사 인용]" in visible_text
     assert "example.com" in visible_text
     assert "proof_object_type: article_quote" in notes_text
+    editor_run = _first_run_for_text(prs := Presentation(str(output_path)), "[기사 인용]")
+    source_run = _first_run_for_text(prs, "example.com")
+    assert editor_run.font.color.rgb == RGBColor(0, 112, 192)
+    assert source_run.font.color.rgb == RGBColor(0, 0, 0)
 
 
 def test_text_only_and_proof_object_metrics_are_reported(tmp_path: Path) -> None:
