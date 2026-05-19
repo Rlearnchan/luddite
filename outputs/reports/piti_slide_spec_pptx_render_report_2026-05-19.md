@@ -1,6 +1,6 @@
 # Piti PPTX Render Report
 
-- Generated at: 2026-05-19T12:39:16.842344+00:00
+- Generated at: 2026-05-19T12:47:50.855064+00:00
 - Rendered deck count: 2
 - Passed: 2
 - Failed: 0
@@ -31,8 +31,8 @@
 
 | Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | Visuals | Proof Objects | Text Only | Dense | Overflow | Split | 20pt | Manual Hidden | Footer Hidden | Proof/Text Overlap | Missing Notes | Overlap | PPTX | Passed |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| piti_slide_spec_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 18 | 18 | 8 | 0 | 18 | 18 | 0 | 17 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_slide_spec_styled_draft.pptx | yes |
-| piti_slide_spec_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 18 | 18 | 6 | 2 | 19 | 19 | 0 | 11 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_slide_spec_styled_draft.pptx | yes |
+| piti_slide_spec_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 22 | 22 | 4 | 0 | 23 | 23 | 0 | 3 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_slide_spec_styled_draft.pptx | yes |
+| piti_slide_spec_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 18 | 18 | 6 | 1 | 20 | 20 | 0 | 2 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_slide_spec_styled_draft.pptx | yes |
 
 ## Style Profile Application
 
@@ -49,67 +49,67 @@
 - adaptive_font_applied: True
 - applied_font_family: 맑은 고딕
 - applied_fallback_font: Malgun Gothic
-- applied_layout_count: 22
+- applied_layout_count: 8
 - font_size_downgraded_slides: []
 - visual_placeholder_shortened: True
 - section_title_color_policy: theme/default black; do not force #FF0000
 - headline_red_count: 22
 - headline_bold_count: 0
 - headline_nonbold_count: 22
-- body_black_count: 22
-- actual_body_black_count: 22
-- bilingual_quote_slide_count: 3
+- body_black_count: 5
+- actual_body_black_count: 5
+- bilingual_quote_slide_count: 0
 - quote_korean_red_count: 0
 - chart_table_style_applied_count: 1
 - chart_title_bold_underline_count: 1
-- image_left_layout_count: 17
-- manual_placeholder_hidden_count: 17
-- body_vertical_middle_count: 21
+- image_left_layout_count: 3
+- manual_placeholder_hidden_count: 3
+- body_vertical_middle_count: 1
 - body_vertical_top_count: 0
-- editor_instruction_blue_count: 17
-- editor_instruction_screen_count: 17
+- editor_instruction_blue_count: 21
+- editor_instruction_screen_count: 21
 - debug_label_visible_count: 0
-- proof_object_slide_count: 18
-- proof_object_type_counts: {'source_card': 17, 'chart': 1}
-- layout_template_counts: {'text_only_calculation': 8, 'source_card_or_article_quote': 17, 'chart_table_reference': 1}
-- source_card_count: 17
+- proof_object_slide_count: 22
+- proof_object_type_counts: {'diagram': 18, 'source_card': 3, 'chart': 1}
+- layout_template_counts: {'text_only_calculation': 4, 'image_left_quote_right': 18, 'source_card_or_article_quote': 3, 'chart_table_reference': 1}
+- source_card_count: 3
 - article_quote_count: 0
 - article_quote_without_quote_text_count: 0
 - source_card_repeated_headline_count: 0
 - visible_url_count: 0
 - visible_editor_label_count: 0
 - large_editor_label_count: 0
-- diagram_skeleton_count: 0
-- diagram_box_arrow_count: 0
+- diagram_skeleton_count: 18
+- diagram_box_arrow_count: 18
 - chart_body_text_leak_count: 0
 - chart_slide_body_leak_count: 0
-- screen_body_explanatory_sentence_count: 6
+- screen_body_explanatory_sentence_count: 0
 - screen_body_rewritten_count: 0
 - surface_copy_over_budget_count: 0
 - chart_table_reference_count: 1
-- image_left_quote_right_count: 0
-- text_only_calculation_count: 8
-- source_card_or_article_quote_count: 17
+- image_left_quote_right_count: 18
+- text_only_calculation_count: 4
+- source_card_or_article_quote_count: 3
 - source_backed_text_only_count: 0
 - source_backed_text_only_slides: []
 - source_backed_text_only_should_have_card_count: 0
 - source_backed_text_only_should_have_card_slides: []
-- text_only_slide_count_before_after: {'before': 8, 'after': 8}
-- proof_object_slide_count_before_after: {'before': 18, 'after': 18}
+- text_only_slide_count_before_after: {'before': 4, 'after': 4}
+- proof_object_slide_count_before_after: {'before': 22, 'after': 22}
 - proof_object_required_but_missing_count: 0
-- proof_object_area_reserved_count: 18
-- text_only_slide_count: 8
+- proof_object_area_reserved_count: 22
+- text_only_slide_count: 4
 - text_only_dense_count: 0
 - chart_table_skeleton_count: 1
 - article_quote_skeleton_count: 0
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 26
-- screen_body_overflow_count: 18
-- screen_body_overflow_slides: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24]
-- split_recommended_slide_count: 18
-- split_recommended_slides: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24]
+- screen_body_overflow_count: 23
+- screen_body_overflow_slides: [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26]
+- split_recommended_slide_count: 23
+- split_recommended_slides: [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26]
 - slides_using_20pt: []
-- body_line_spacing_applied_count: 21
+- body_line_spacing_applied_count: 1
 - body_line_spacing_value: 1.5
 - body_line_spacing_missing_count: 0
 - body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 7, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 13, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 20, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}]
@@ -117,14 +117,14 @@
 - visually_dense_slides: []
 - slides_with_text_placeholder_overlap: []
 - slides_with_visual_and_long_body: []
-- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 12, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 16, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 22, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 24, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 25, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 26, 'body_line_estimate': 2, 'font_size': 28}]
+- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 16, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 22, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 24, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 25, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 26, 'body_line_estimate': 0, 'font_size': 28}]
 - slides_with_font_fallback: []
 - parse_back_slide_count: 26
 - parse_back_notes_slide_count: 26
 - parse_back_source_url_count: 8
 - parse_back_needs_source_count: 0
 - parse_back_needs_fact_check_count: 16
-- parse_back_line_spacing_1_5_count: 28
+- parse_back_line_spacing_1_5_count: 22
 
 ### piti_slide_spec_productive_finance_policy -> outputs/pptx/productive_finance_policy_slide_spec_styled_draft.pptx
 
@@ -139,47 +139,47 @@
 - adaptive_font_applied: True
 - applied_font_family: 맑은 고딕
 - applied_fallback_font: Malgun Gothic
-- applied_layout_count: 19
+- applied_layout_count: 10
 - font_size_downgraded_slides: []
 - visual_placeholder_shortened: True
 - section_title_color_policy: theme/default black; do not force #FF0000
 - headline_red_count: 18
 - headline_bold_count: 0
 - headline_nonbold_count: 18
-- body_black_count: 14
-- actual_body_black_count: 14
+- body_black_count: 6
+- actual_body_black_count: 6
 - bilingual_quote_slide_count: 0
 - quote_korean_red_count: 0
 - chart_table_style_applied_count: 4
 - chart_title_bold_underline_count: 4
-- image_left_layout_count: 11
-- manual_placeholder_hidden_count: 11
-- body_vertical_middle_count: 11
+- image_left_layout_count: 2
+- manual_placeholder_hidden_count: 2
+- body_vertical_middle_count: 1
 - body_vertical_top_count: 0
 - editor_instruction_blue_count: 16
 - editor_instruction_screen_count: 16
 - debug_label_visible_count: 0
 - proof_object_slide_count: 18
-- proof_object_type_counts: {'chart': 4, 'source_card': 10, 'diagram': 3, 'article_quote': 1}
-- layout_template_counts: {'text_only_calculation': 6, 'chart_table_reference': 4, 'source_card_or_article_quote': 11, 'image_left_quote_right': 3}
-- source_card_count: 10
+- proof_object_type_counts: {'chart': 4, 'diagram': 12, 'source_card': 1, 'article_quote': 1}
+- layout_template_counts: {'text_only_calculation': 6, 'chart_table_reference': 4, 'image_left_quote_right': 12, 'source_card_or_article_quote': 2}
+- source_card_count: 1
 - article_quote_count: 1
 - article_quote_without_quote_text_count: 0
 - source_card_repeated_headline_count: 0
 - visible_url_count: 0
 - visible_editor_label_count: 0
 - large_editor_label_count: 0
-- diagram_skeleton_count: 3
-- diagram_box_arrow_count: 3
+- diagram_skeleton_count: 12
+- diagram_box_arrow_count: 12
 - chart_body_text_leak_count: 0
 - chart_slide_body_leak_count: 0
-- screen_body_explanatory_sentence_count: 1
+- screen_body_explanatory_sentence_count: 0
 - screen_body_rewritten_count: 0
 - surface_copy_over_budget_count: 0
 - chart_table_reference_count: 4
-- image_left_quote_right_count: 3
+- image_left_quote_right_count: 12
 - text_only_calculation_count: 6
-- source_card_or_article_quote_count: 11
+- source_card_or_article_quote_count: 2
 - source_backed_text_only_count: 2
 - source_backed_text_only_slides: [21, 23]
 - source_backed_text_only_should_have_card_count: 0
@@ -189,25 +189,25 @@
 - proof_object_required_but_missing_count: 0
 - proof_object_area_reserved_count: 18
 - text_only_slide_count: 6
-- text_only_dense_count: 1
+- text_only_dense_count: 0
 - chart_table_skeleton_count: 4
 - article_quote_skeleton_count: 1
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 24
-- screen_body_overflow_count: 19
-- screen_body_overflow_slides: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 23, 24]
-- split_recommended_slide_count: 19
-- split_recommended_slides: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 23, 24]
+- screen_body_overflow_count: 20
+- screen_body_overflow_slides: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24]
+- split_recommended_slide_count: 20
+- split_recommended_slides: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24]
 - slides_using_20pt: []
-- body_line_spacing_applied_count: 11
+- body_line_spacing_applied_count: 1
 - body_line_spacing_value: 1.5
 - body_line_spacing_missing_count: 0
-- body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 21, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}, {'slide_no': 23, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}]
+- body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 12, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 19, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 21, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}, {'slide_no': 23, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}]
 - slides_with_long_body: []
-- visually_dense_slides: [15, 21]
+- visually_dense_slides: [15]
 - slides_with_text_placeholder_overlap: []
 - slides_with_visual_and_long_body: [15]
-- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 1, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 16, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 22, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 24, 'body_line_estimate': 2, 'font_size': 28}]
+- body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 3, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 12, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 16, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 22, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 24, 'body_line_estimate': 0, 'font_size': 28}]
 - slides_with_font_fallback: []
 - parse_back_slide_count: 24
 - parse_back_notes_slide_count: 24
@@ -219,32 +219,32 @@
 
 ## Warnings
 
+- piti_slide_spec_ai_knowledge_institution: slide 2: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 4: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 5: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 6: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 8: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 9: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 10: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 12: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 14: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 15: visual plan requires manual check
+- piti_slide_spec_ai_knowledge_institution: slide 16: visual plan requires manual check
 - piti_slide_spec_ai_knowledge_institution: slide 17: visual plan requires manual check
-- piti_slide_spec_ai_knowledge_institution: slide 2: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 3: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 4: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 5: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 8: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 9: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 10: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 11: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 14: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 15: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: slide 16: body overflow moved to speaker notes
-- piti_slide_spec_ai_knowledge_institution: ... +8 more
+- piti_slide_spec_ai_knowledge_institution: ... +31 more
 - piti_slide_spec_productive_finance_policy: slide 2: visual plan requires manual check
+- piti_slide_spec_productive_finance_policy: slide 3: visual plan requires manual check
+- piti_slide_spec_productive_finance_policy: slide 4: visual plan requires manual check
 - piti_slide_spec_productive_finance_policy: slide 5: visual plan requires manual check
 - piti_slide_spec_productive_finance_policy: slide 8: visual plan requires manual check
+- piti_slide_spec_productive_finance_policy: slide 9: visual plan requires manual check
+- piti_slide_spec_productive_finance_policy: slide 10: visual plan requires manual check
 - piti_slide_spec_productive_finance_policy: slide 11: visual plan requires manual check
 - piti_slide_spec_productive_finance_policy: slide 13: visual plan requires manual check
 - piti_slide_spec_productive_finance_policy: slide 14: visual plan requires manual check
 - piti_slide_spec_productive_finance_policy: slide 15: visual plan requires manual check
-- piti_slide_spec_productive_finance_policy: slide 22: visual plan requires manual check
-- piti_slide_spec_productive_finance_policy: slide 15: visually dense body estimate
-- piti_slide_spec_productive_finance_policy: slide 21: visually dense body estimate
-- piti_slide_spec_productive_finance_policy: slide 2: body overflow moved to speaker notes
-- piti_slide_spec_productive_finance_policy: slide 3: body overflow moved to speaker notes
-- piti_slide_spec_productive_finance_policy: ... +18 more
+- piti_slide_spec_productive_finance_policy: slide 16: visual plan requires manual check
+- piti_slide_spec_productive_finance_policy: ... +27 more
 
 ## Readiness
 

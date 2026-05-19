@@ -20,7 +20,7 @@ def _storyline(slides):
     }
 
 
-def test_piti_slide_spec_builds_screen_copy_and_source_card() -> None:
+def test_piti_slide_spec_builds_screen_copy_and_diagram_for_conceptual_slide() -> None:
     storyline = _storyline(
         [
             {
@@ -55,13 +55,46 @@ def test_piti_slide_spec_builds_screen_copy_and_source_card() -> None:
     slide = spec["slides"][0]
 
     assert slide["screen_headline"] == "AI가 답을 바로 주는 건 편리하다"
-    assert len(slide["screen_body"]) == 1
+    assert slide["screen_body"] == []
     assert "다만 편리함" not in "\n".join(slide["screen_body"])
     assert "다만 편리함" in "\n".join(slide["overflow_notes"])
-    assert slide["proof_object"]["type"] == "source_card"
-    assert slide["proof_object"]["source_name"] == "Microsoft Research"
-    assert slide["proof_object"]["display_title"] != slide["screen_headline"]
+    assert slide["proof_object"]["type"] == "diagram"
+    assert "기존 검색" in slide["proof_object"]["diagram_nodes"]
+    assert "AI 즉답" in slide["proof_object"]["diagram_nodes"]
     assert slide["source_refs"][0]["url"] == "https://www.microsoft.com/research/example"
+    assert validate_piti_slide_spec(spec)["passed"] is True
+
+
+def test_piti_slide_spec_keeps_source_card_for_source_identity_slide() -> None:
+    storyline = _storyline(
+        [
+            {
+                "slide_no": 1,
+                "slide_type": "quote",
+                "headline": "영국 왕립천문대 쪽에서 나온 경고",
+                "body": [
+                    (
+                        "BBC 보도는 Royal Observatory 쪽 경고를 AI 의존과 "
+                        "인간 지식의 역할이라는 맥락에서 소개한다"
+                    ),
+                    "단일 기관 사례이므로 모든 지식기관의 공식 입장처럼 일반화하지 않는다",
+                ],
+                "source_urls": ["https://www.bbc.com/news/example"],
+                "image_urls": [],
+                "notes": "BBC — Royal Observatory warning context",
+                "needs_source": False,
+                "needs_fact_check": True,
+                "required_before_broadcast": True,
+            }
+        ]
+    )
+
+    spec = build_piti_slide_spec_from_storyline(storyline, deck_id="source")
+    slide = spec["slides"][0]
+
+    assert slide["proof_object"]["type"] == "source_card"
+    assert slide["proof_object"]["source_name"] == "BBC"
+    assert slide["proof_object"]["display_title"] != slide["screen_headline"]
     assert validate_piti_slide_spec(spec)["passed"] is True
 
 

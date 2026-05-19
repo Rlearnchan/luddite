@@ -67,10 +67,42 @@ EXPLANATORY_MARKERS = (
     "자료는",
     "단정",
     "보수적으로",
-    "검증",
     "확인 필요",
     "needs_",
 )
+
+CONCEPTUAL_DIAGRAM_MARKERS = (
+    "검색",
+    "즉답",
+    "답안지",
+    "질문",
+    "검증",
+    "과정",
+    "맥락",
+    "역할",
+    "학교",
+    "박물관",
+    "천문관",
+    "과학관",
+    "도서관",
+    "AI 정답",
+    "AI 검산",
+    "금지",
+    "다루",
+    "담보",
+    "단기",
+    "장기",
+    "위험",
+    "손실",
+    "분담",
+    "정책금융",
+    "국민성장펀드",
+    "은행",
+    "건전성",
+    "예금자",
+)
+
+SOURCE_CARD_TYPES = {"quote", "source_heavy"}
 
 EDITOR_MARKERS = (
     "[수동",
@@ -259,9 +291,34 @@ def _screen_position(proof_type: str) -> str:
 
 def _diagram_payload(slide: dict[str, Any]) -> tuple[list[str], list[dict[str, str | None]]]:
     text = " ".join([str(slide.get("headline") or ""), *_body_lines(slide)])
+    if any(token in text for token in ["검색", "즉답", "답안지"]):
+        nodes = ["기존 검색", "AI 즉답", "비교·검증", "바로 답"]
+        edges = [
+            {"from": "기존 검색", "to": "비교·검증", "label": "여러 결과를 확인"},
+            {"from": "AI 즉답", "to": "바로 답", "label": "과정 압축"},
+        ]
+        return nodes, edges
+    if any(token in text for token in ["학교", "박물관", "천문관", "과학관", "지식기관"]):
+        nodes = ["답 제공", "질문 훈련", "검증", "맥락"]
+        edges = [
+            {"from": "답 제공", "to": "질문 훈련", "label": "역할 변화"},
+            {"from": "질문 훈련", "to": "검증", "label": "확인"},
+            {"from": "검증", "to": "맥락", "label": "이해"},
+        ]
+        return nodes, edges
+    if any(token in text for token in ["질문", "검증", "출처", "AI 검산"]):
+        nodes = ["질문", "검증", "맥락"]
+        edges = [
+            {"from": "질문", "to": "검증", "label": "출처 확인"},
+            {"from": "검증", "to": "맥락", "label": "다른 자료와 비교"},
+        ]
+        return nodes, edges
     if any(token in text for token in ["금융", "펀드", "담보", "위험", "손실"]):
-        nodes = ["안전한 금융", "성장 금융"]
-        edges = [{"from": "안전한 금융", "to": "성장 금융", "label": "위험분담"}]
+        nodes = ["안전한 금융", "성장 금융", "담보·단기", "장기·위험분담"]
+        edges = [
+            {"from": "안전한 금융", "to": "담보·단기", "label": "낮은 위험"},
+            {"from": "성장 금융", "to": "장기·위험분담", "label": "불확실성"},
+        ]
         return nodes, edges
     nodes = ["기존 검색", "AI 즉답"]
     edges = [{"from": "기존 검색", "to": "AI 즉답", "label": "비교·검증"}]
@@ -274,6 +331,61 @@ def _chart_source_label(slide: dict[str, Any]) -> str | None:
     return f"(출처: {source_name})" if source_name else None
 
 
+def _has_numeric_chart_signal(slide: dict[str, Any]) -> bool:
+    body = _body_lines(slide)
+    text = " ".join(body)
+    if str(slide.get("slide_type") or "") == "data":
+        return True
+    if not re.search(r"\d", text):
+        return False
+    chart_markers = (
+        "규모",
+        "원",
+        "%",
+        "비율",
+        "순위",
+        "금액",
+        "조",
+        "억",
+        "기간",
+        "수치",
+        "체크리스트",
+    )
+    return any(marker in text for marker in chart_markers)
+
+
+def _is_source_card_candidate(slide: dict[str, Any]) -> bool:
+    slide_type = str(slide.get("slide_type") or "")
+    if slide_type in SOURCE_CARD_TYPES:
+        return True
+    text = " ".join([str(slide.get("headline") or ""), *_body_lines(slide)])
+    markers = (
+        "BBC",
+        "Royal Observatory",
+        "보도",
+        "원문",
+        "보고서",
+        "체크리스트",
+    )
+    return any(marker in text for marker in markers)
+
+
+def _is_conceptual_diagram_candidate(slide: dict[str, Any]) -> bool:
+    slide_type = str(slide.get("slide_type") or "")
+    if slide_type in {
+        "comparison",
+        "risk",
+        "counterpoint",
+        "bridge",
+        "rhetorical",
+        "closing_question",
+        "punchline",
+    }:
+        return True
+    text = " ".join([str(slide.get("headline") or ""), *_body_lines(slide)])
+    return any(marker in text for marker in CONCEPTUAL_DIAGRAM_MARKERS)
+
+
 def _proof_object(slide: dict[str, Any]) -> dict[str, Any]:
     slide_type = str(slide.get("slide_type") or "explainer")
     source_url = _first_url(slide, "source_urls")
@@ -282,15 +394,17 @@ def _proof_object(slide: dict[str, Any]) -> dict[str, Any]:
     proof_type = "none"
     if slide_type in {"production_checklist", "title", "section_title"}:
         proof_type = "none"
-    elif slide_type == "data" or any(re.search(r"\d", line) for line in body):
+    elif _has_numeric_chart_signal(slide):
         proof_type = "chart"
     elif image_url:
         proof_type = "image"
     elif _has_actual_quote_text(slide) and source_url:
         proof_type = "article_quote"
+    elif _is_conceptual_diagram_candidate(slide) and not _is_source_card_candidate(slide):
+        proof_type = "diagram"
     elif source_url:
         proof_type = "source_card"
-    elif slide_type in {"comparison", "risk", "counterpoint", "bridge", "rhetorical"}:
+    elif _is_conceptual_diagram_candidate(slide):
         proof_type = "diagram"
     proof_source_url = source_url if proof_type != "none" else None
     source_name = _source_name_from_url(proof_source_url)
@@ -332,14 +446,40 @@ def _is_explanatory_line(line: str) -> bool:
     return any(marker.lower() in lowered for marker in EXPLANATORY_MARKERS)
 
 
-def _screen_body(slide: dict[str, Any], proof_type: str) -> list[str]:
+def _rewrite_screen_body(slide: dict[str, Any], proof_type: str) -> list[str] | None:
     if proof_type in {"chart", "table", "diagram"}:
+        return []
+    text = " ".join([str(slide.get("headline") or ""), *_body_lines(slide)])
+    if "바로 답" in text or "즉답" in text or "답안지" in text:
+        return ["검색창을 열기도 전에", "답안지가 먼저 나온다"]
+    if "검색어" in text and ("비교" in text or "검증" in text):
+        return ["예전 검색은 느렸지만", "비교하고 검증하는 흔적이 남았다"]
+    if "질문" in text and "검증" in text:
+        return ["답보다 남겨야 할 것", "질문하고 검증하는 습관"]
+    if "학교" in text and "정답" in text:
+        return ["정답을 외웠나보다", "어떻게 확인했나를 묻는다"]
+    if "박물관" in text or "천문관" in text:
+        return ["설명보다 중요한 건", "보고 묻고 연결하는 경험"]
+    if "담보" in text and "단기" in text:
+        return ["안전한 대출은 쉽지만", "긴 위험은 잘 담기 어렵다"]
+    if "위험" in text and any(token in text for token in ["분담", "손실", "금융권"]):
+        return ["돈이 필요한 곳은 길고", "위험은 누가 나눌 것인가"]
+    if "국민성장펀드" in text:
+        return ["성장이라는 이름 뒤에", "손실을 나누는 규칙이 있다"]
+    return None
+
+
+def _screen_body(slide: dict[str, Any], proof_type: str) -> list[str]:
+    rewritten = _rewrite_screen_body(slide, proof_type)
+    if rewritten is not None:
+        return rewritten[:2]
+    if proof_type == "source_card":
         return []
     limit = 1 if proof_type == "source_card" else 3
     candidates = [line for line in _body_lines(slide) if not _is_explanatory_line(line)]
     if not candidates and _body_lines(slide):
         candidates = [_body_lines(slide)[0]]
-    return [_short_text(line, 42) for line in candidates[:limit]]
+    return [_short_text(line, 34) for line in candidates[: min(limit, 2)]]
 
 
 def _overflow_notes(slide: dict[str, Any], screen_body: list[str]) -> list[str]:
@@ -507,6 +647,84 @@ def _source_urls(slide: dict[str, Any]) -> set[str]:
     return {canonicalize_url(str(ref.get("url"))) for ref in slide.get("source_refs", [])}
 
 
+def _proof_type(slide: dict[str, Any]) -> str:
+    proof = slide.get("proof_object")
+    return str(proof.get("type") or "none") if isinstance(proof, dict) else "none"
+
+
+def _max_consecutive_proof_type(slides: list[dict[str, Any]], proof_type: str) -> int:
+    max_run = 0
+    current = 0
+    for slide in slides:
+        if _proof_type(slide) == proof_type:
+            current += 1
+            max_run = max(max_run, current)
+        else:
+            current = 0
+    return max_run
+
+
+def _source_card_run_warnings(slides: list[dict[str, Any]]) -> list[str]:
+    warnings = []
+    run: list[int] = []
+    for slide in slides:
+        if _proof_type(slide) == "source_card":
+            run.append(int(slide.get("slide_no") or 0))
+            continue
+        if len(run) >= 3:
+            warnings.append(f"source_card_run_length_warning: slides {run}")
+        run = []
+    if len(run) >= 3:
+        warnings.append(f"source_card_run_length_warning: slides {run}")
+    return warnings
+
+
+def _screen_body_explanatory_slides(slides: list[dict[str, Any]]) -> list[int]:
+    return [
+        int(slide.get("slide_no") or 0)
+        for slide in slides
+        if any(_is_explanatory_line(str(line)) for line in _as_list(slide.get("screen_body")))
+    ]
+
+
+def _screen_body_overflow_slides(slides: list[dict[str, Any]]) -> list[int]:
+    return [
+        int(slide.get("slide_no") or 0)
+        for slide in slides
+        if _as_list(slide.get("overflow_notes"))
+    ]
+
+
+def _has_conceptual_topic(spec: dict[str, Any]) -> bool:
+    text = " ".join(
+        [
+            str(spec.get("story_seed_title") or ""),
+            *[str(slide.get("screen_headline") or "") for slide in spec.get("slides", [])],
+        ]
+    )
+    return any(marker in text for marker in CONCEPTUAL_DIAGRAM_MARKERS)
+
+
+def _has_numeric_topic(spec: dict[str, Any]) -> bool:
+    text = " ".join(
+        [
+            str(spec.get("story_seed_title") or ""),
+            *[
+                str(line)
+                for slide in spec.get("slides", [])
+                for line in _as_list(slide.get("overflow_notes"))
+            ],
+            *[
+                str(slide.get("speaker_notes_expanded") or "")
+                for slide in spec.get("slides", [])
+            ],
+        ]
+    )
+    return bool(re.search(r"\d", text)) and any(
+        marker in text for marker in ["규모", "원", "%", "비율", "수치", "순위", "조", "억"]
+    )
+
+
 def validate_piti_slide_spec(spec: dict[str, Any]) -> dict[str, Any]:
     schema_errors = [error.message for error in _schema_validator().iter_errors(spec)]
     slides = spec.get("slides", [])
@@ -554,6 +772,27 @@ def validate_piti_slide_spec(spec: dict[str, Any]) -> dict[str, Any]:
             and slide.get("layout_intent") != "appendix_checklist"
         ):
             warnings.append(f"slide {slide_no}: source-backed slide has no proof object")
+    source_card_count = sum(1 for slide in slides if _proof_type(slide) == "source_card")
+    diagram_count = sum(1 for slide in slides if _proof_type(slide) == "diagram")
+    chart_table_count = sum(1 for slide in slides if _proof_type(slide) in {"chart", "table"})
+    source_card_ratio = source_card_count / len(slides) if slides else 0.0
+    max_source_card_run_length = _max_consecutive_proof_type(slides, "source_card")
+    warnings.extend(_source_card_run_warnings(slides))
+    if source_card_ratio >= 0.6:
+        warnings.append(
+            f"source_card_ratio_warning: {source_card_count}/{len(slides)} "
+            "slides use source_card"
+        )
+    if _has_conceptual_topic(spec) and diagram_count == 0:
+        warnings.append("diagram_missing_for_conceptual_topic_warning")
+    if _has_numeric_topic(spec) and chart_table_count == 0:
+        warnings.append("chart_missing_for_numeric_topic_warning")
+    explanatory_slides = _screen_body_explanatory_slides(slides)
+    for slide_no in explanatory_slides:
+        warnings.append(f"screen_body_explanatory_warning: slide {slide_no}")
+    overflow_slides = _screen_body_overflow_slides(slides)
+    if overflow_slides:
+        warnings.append(f"screen_body_overflow_warning: slides {overflow_slides}")
     passed = not schema_errors and not issues and slide_no_integrity
     return {
         "deck_id": spec.get("deck_id"),
@@ -564,20 +803,18 @@ def validate_piti_slide_spec(spec: dict[str, Any]) -> dict[str, Any]:
         "slide_no_integrity": slide_no_integrity,
         "issues": issues,
         "warnings": warnings,
-        "source_card_count": sum(
-            1 for slide in slides if slide.get("proof_object", {}).get("type") == "source_card"
-        ),
+        "source_card_count": source_card_count,
         "article_quote_count": sum(
             1 for slide in slides if slide.get("proof_object", {}).get("type") == "article_quote"
         ),
-        "diagram_count": sum(
-            1 for slide in slides if slide.get("proof_object", {}).get("type") == "diagram"
-        ),
-        "chart_table_count": sum(
-            1
-            for slide in slides
-            if slide.get("proof_object", {}).get("type") in {"chart", "table"}
-        ),
+        "diagram_count": diagram_count,
+        "chart_table_count": chart_table_count,
+        "source_card_ratio": round(source_card_ratio, 3),
+        "max_source_card_run_length": max_source_card_run_length,
+        "screen_body_explanatory_warning_count": len(explanatory_slides),
+        "screen_body_explanatory_slides": explanatory_slides,
+        "screen_body_overflow_warning_count": len(overflow_slides),
+        "screen_body_overflow_slides": overflow_slides,
         "needs_source_count": sum(1 for slide in slides if slide.get("needs_source")),
         "needs_fact_check_count": sum(
             1 for slide in slides if slide.get("needs_fact_check")
@@ -604,15 +841,20 @@ def write_validation_report(path: Path, results: list[dict[str, Any]]) -> None:
         "",
         (
             "| Deck | Slides | Sections | Schema | Source Cards | Quotes | Diagrams | "
-            "Charts/Tables | Needs Source | Needs Fact Check | Issues | Passed |"
+            "Charts/Tables | Source Card Ratio | Max Source Run | Screen Copy Warnings | "
+            "Overflow Warnings | Needs Source | Needs Fact Check | Issues | Warnings | Passed |"
         ),
-        "|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---|",
+        (
+            "|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"
+            "---:|---|"
+        ),
     ]
     for result in results:
         lines.append(
             "| {deck} | {slides} | {sections} | {schema} | {source_cards} | "
-            "{quotes} | {diagrams} | {charts} | {needs_source} | "
-            "{needs_fact_check} | {issues} | {passed} |".format(
+            "{quotes} | {diagrams} | {charts} | {ratio} | {max_run} | "
+            "{screen_warnings} | {overflow_warnings} | {needs_source} | "
+            "{needs_fact_check} | {issues} | {warnings} | {passed} |".format(
                 deck=result.get("deck_id"),
                 slides=result.get("slide_count"),
                 sections=result.get("section_count"),
@@ -621,9 +863,14 @@ def write_validation_report(path: Path, results: list[dict[str, Any]]) -> None:
                 quotes=result.get("article_quote_count"),
                 diagrams=result.get("diagram_count"),
                 charts=result.get("chart_table_count"),
+                ratio=result.get("source_card_ratio"),
+                max_run=result.get("max_source_card_run_length"),
+                screen_warnings=result.get("screen_body_explanatory_warning_count"),
+                overflow_warnings=result.get("screen_body_overflow_warning_count"),
                 needs_source=result.get("needs_source_count"),
                 needs_fact_check=result.get("needs_fact_check_count"),
                 issues=len(result.get("issues", [])),
+                warnings=len(result.get("warnings", [])),
                 passed="yes" if result.get("passed") else "no",
             )
         )
