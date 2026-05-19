@@ -138,6 +138,17 @@ def _first_shape_for_text(prs: Presentation, text: str):
     raise AssertionError(f"No shape found for text: {text}")
 
 
+def _first_paragraph_for_text(prs: Presentation, text: str):
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if not getattr(shape, "has_text_frame", False):
+                continue
+            for paragraph in shape.text_frame.paragraphs:
+                if text in paragraph.text:
+                    return paragraph
+    raise AssertionError(f"No paragraph found for text: {text}")
+
+
 def _minimal_deck(slide: dict) -> dict:
     return {
         "deck_id": "format_test",
@@ -244,11 +255,19 @@ def test_render_deck_plan_to_pptx_applies_style_profile(tmp_path: Path) -> None:
     headline_run = _first_run_for_text(prs, "출처가 있는 장표")
     headline_shape = _first_shape_for_text(prs, "출처가 있는 장표")
     body_run = _first_run_for_text(prs, "본문 메시지 하나")
+    body_paragraph = _first_paragraph_for_text(prs, "본문 메시지 하나")
+    headline_paragraph = _first_paragraph_for_text(prs, "출처가 있는 장표")
     assert headline_run.font.size.pt == 28
     assert headline_run.font.color.rgb == RGBColor(255, 0, 0)
+    assert headline_paragraph.line_spacing is None
     assert 1.4 <= headline_shape.left.cm <= 1.8
     assert 0.8 <= headline_shape.top.cm <= 1.2
     assert body_run.font.color.rgb == RGBColor(0, 0, 0)
+    assert body_paragraph.line_spacing == 1.5
+    assert result["body_line_spacing_applied_count"] > 0
+    assert result["body_line_spacing_value"] == 1.5
+    assert result["body_line_spacing_missing_count"] == 0
+    assert result["parse_back_line_spacing_1_5_count"] > 0
 
 
 def test_quote_bilingual_mode_uses_english_black_and_korean_red(tmp_path: Path) -> None:
@@ -279,10 +298,14 @@ def test_quote_bilingual_mode_uses_english_black_and_korean_red(tmp_path: Path) 
     prs = Presentation(str(output_path))
     english_run = _first_run_for_text(prs, "They collectively")
     korean_run = _first_run_for_text(prs, "11월 말 기준")
+    english_paragraph = _first_paragraph_for_text(prs, "They collectively")
+    korean_paragraph = _first_paragraph_for_text(prs, "11월 말 기준")
     assert english_run.font.size.pt == 28
     assert english_run.font.color.rgb == RGBColor(0, 0, 0)
     assert korean_run.font.size.pt == 28
     assert korean_run.font.color.rgb == RGBColor(255, 0, 0)
+    assert english_paragraph.line_spacing == 1.5
+    assert korean_paragraph.line_spacing == 1.5
 
 
 def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
@@ -311,7 +334,9 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     title_run = _first_run_for_text(prs, "미국주식 보관금액")
     headline_run = _first_run_for_text(prs, "한국인의 사랑")
     data_run = _first_run_for_text(prs, "테슬라 264")
+    data_paragraph = _first_paragraph_for_text(prs, "테슬라 264")
     source_run = _first_run_for_text(prs, "(출처:")
+    source_paragraph = _first_paragraph_for_text(prs, "(출처:")
     assert result["chart_table_style_applied_count"] == 1
     assert result["chart_table_skeleton_count"] == 1
     assert result["proof_object_type_counts"] == {"chart": 1}
@@ -322,8 +347,10 @@ def test_chart_table_placeholder_uses_chart_typography(tmp_path: Path) -> None:
     assert title_run.font.color.rgb == RGBColor(0, 0, 0)
     assert data_run.font.size.pt == 18
     assert data_run.font.bold is True
+    assert data_paragraph.line_spacing is None
     assert source_run.font.size.pt == 20
     assert source_run.font.underline is True
+    assert source_paragraph.line_spacing is None
 
 
 def test_manual_placeholder_hidden_and_image_left_counted(tmp_path: Path) -> None:

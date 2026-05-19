@@ -1,6 +1,6 @@
 # Piti PPTX Render Report
 
-- Generated at: 2026-05-19T11:33:01.817052+00:00
+- Generated at: 2026-05-19T11:39:28.037436+00:00
 - Rendered deck count: 4
 - Passed: 4
 - Failed: 0
@@ -11,6 +11,7 @@
 - Manual visual placeholders: hidden from styled screens and preserved in speaker notes
 - Proof object scaffold: reserves screen areas for chart/table, article quote, image, screenshot, and diagram evidence objects without inserting assets
 - Reference layout templates v0: chart_table_reference, image_left_quote_right, text_only_calculation, source_card_or_article_quote
+- Body line spacing: body text boxes use 1.5 spacing; headlines, titles, chart/table labels, source labels, and speaker notes are excluded
 - Styled screen footers: hidden from slides and preserved in speaker notes/report
 - Adaptive body font: enabled only as overflow protection for styled drafts
 - Visual placeholder text: shortened for styled drafts
@@ -23,10 +24,10 @@
 
 | Deck | Styled | Slides | Sections | Appendix | Needs Source | Needs Fact Check | Visuals | Proof Objects | Text Only | Dense | Overflow | Split | 20pt | Manual Hidden | Footer Hidden | Proof/Text Overlap | Missing Notes | Overlap | PPTX | Passed |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| piti_deck_plan_ai_knowledge_institution | no | 26 | 4 | 0 | 0 | 16 | 25 | 17 | 9 | 15 | 15 | 2 | 12 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_draft.pptx | yes |
-| piti_deck_plan_productive_finance_policy | no | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 6 | 16 | 16 | 1 | 8 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_draft.pptx | yes |
-| piti_deck_plan_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 25 | 17 | 9 | 16 | 15 | 2 | 0 | 19 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_styled_draft.pptx | yes |
-| piti_deck_plan_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 6 | 17 | 16 | 1 | 0 | 12 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_styled_draft.pptx | yes |
+| piti_deck_plan_ai_knowledge_institution | no | 26 | 4 | 0 | 0 | 16 | 25 | 17 | 9 | 15 | 15 | 15 | 12 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_draft.pptx | yes |
+| piti_deck_plan_productive_finance_policy | no | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 6 | 18 | 16 | 16 | 8 | 0 | 0 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_draft.pptx | yes |
+| piti_deck_plan_ai_knowledge_institution | yes | 26 | 4 | 0 | 0 | 16 | 25 | 17 | 9 | 16 | 15 | 15 | 0 | 19 | 26 | 0 | 0 | 0 | outputs/pptx/ai_knowledge_institution_styled_draft.pptx | yes |
+| piti_deck_plan_productive_finance_policy | yes | 24 | 4 | 2 | 1 | 17 | 22 | 18 | 6 | 19 | 16 | 16 | 0 | 12 | 24 | 0 | 0 | 0 | outputs/pptx/productive_finance_policy_styled_draft.pptx | yes |
 
 ## Style Profile Application
 
@@ -70,9 +71,13 @@
 - screen_footer_hidden_count: 0
 - screen_body_overflow_count: 15
 - screen_body_overflow_slides: [2, 4, 5, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22, 23, 24]
-- split_recommended_slide_count: 2
-- split_recommended_slides: [22, 24]
+- split_recommended_slide_count: 15
+- split_recommended_slides: [2, 4, 5, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22, 23, 24]
 - slides_using_20pt: [3, 4, 7, 8, 10, 11, 13, 14, 15, 16, 20, 22]
+- body_line_spacing_applied_count: 20
+- body_line_spacing_value: 1.5
+- body_line_spacing_missing_count: 0
+- body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 7, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 13, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 17, 'layout_type': 'chart_placeholder', 'reason': 'chart_table_labels'}, {'slide_no': 20, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 24, 'layout_type': 'checklist', 'reason': 'checklist_or_internal'}]
 - slides_with_long_body: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24]
 - visually_dense_slides: [2, 3, 4, 5, 8, 10, 11, 14, 15, 16, 17, 18, 19, 21, 23]
 - slides_with_text_placeholder_overlap: []
@@ -84,6 +89,7 @@
 - parse_back_source_url_count: 8
 - parse_back_needs_source_count: 0
 - parse_back_needs_fact_check_count: 16
+- parse_back_line_spacing_1_5_count: 56
 
 ### piti_deck_plan_productive_finance_policy -> outputs/pptx/productive_finance_policy_draft.pptx
 
@@ -118,18 +124,22 @@
 - proof_object_required_but_missing_count: 0
 - proof_object_area_reserved_count: 18
 - text_only_slide_count: 6
-- text_only_dense_count: 0
+- text_only_dense_count: 2
 - chart_table_skeleton_count: 1
 - article_quote_skeleton_count: 8
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 0
 - screen_body_overflow_count: 16
 - screen_body_overflow_slides: [2, 3, 4, 5, 7, 9, 10, 11, 13, 14, 16, 17, 18, 20, 22, 24]
-- split_recommended_slide_count: 1
-- split_recommended_slides: [11]
+- split_recommended_slide_count: 16
+- split_recommended_slides: [2, 3, 4, 5, 7, 9, 10, 11, 13, 14, 16, 17, 18, 20, 22, 24]
 - slides_using_20pt: [3, 6, 7, 12, 14, 15, 19, 20]
+- body_line_spacing_applied_count: 17
+- body_line_spacing_value: 1.5
+- body_line_spacing_missing_count: 0
+- body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 8, 'layout_type': 'chart_placeholder', 'reason': 'chart_table_labels'}, {'slide_no': 21, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}, {'slide_no': 23, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}]
 - slides_with_long_body: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 24]
-- visually_dense_slides: [2, 3, 4, 5, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- visually_dense_slides: [2, 3, 4, 5, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24]
 - slides_with_text_placeholder_overlap: []
 - slides_with_visual_and_long_body: [2, 3, 4, 5, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
 - body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 22}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 4, 'body_line_estimate': 5, 'font_size': 23}, {'slide_no': 5, 'body_line_estimate': 3, 'font_size': 23}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 7, 'body_line_estimate': 2, 'font_size': 20}, {'slide_no': 8, 'body_line_estimate': 4, 'font_size': 17}, {'slide_no': 9, 'body_line_estimate': 3, 'font_size': 19}, {'slide_no': 10, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 11, 'body_line_estimate': 2, 'font_size': 23}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 13, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 14, 'body_line_estimate': 4, 'font_size': 20}, {'slide_no': 15, 'body_line_estimate': 5, 'font_size': 20}, {'slide_no': 16, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 17, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 18, 'body_line_estimate': 4, 'font_size': 23}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 20}, {'slide_no': 20, 'body_line_estimate': 3, 'font_size': 20}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 18}, {'slide_no': 22, 'body_line_estimate': 4, 'font_size': 19}, {'slide_no': 23, 'body_line_estimate': 4, 'font_size': 18}, {'slide_no': 24, 'body_line_estimate': 4, 'font_size': 23}]
@@ -139,6 +149,7 @@
 - parse_back_source_url_count: 11
 - parse_back_needs_source_count: 1
 - parse_back_needs_fact_check_count: 17
+- parse_back_line_spacing_1_5_count: 48
 
 ### piti_deck_plan_ai_knowledge_institution -> outputs/pptx/ai_knowledge_institution_styled_draft.pptx
 
@@ -180,9 +191,13 @@
 - screen_footer_hidden_count: 26
 - screen_body_overflow_count: 15
 - screen_body_overflow_slides: [2, 4, 5, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22, 23, 24]
-- split_recommended_slide_count: 2
-- split_recommended_slides: [22, 24]
+- split_recommended_slide_count: 15
+- split_recommended_slides: [2, 4, 5, 8, 9, 10, 14, 15, 16, 18, 19, 21, 22, 23, 24]
 - slides_using_20pt: []
+- body_line_spacing_applied_count: 20
+- body_line_spacing_value: 1.5
+- body_line_spacing_missing_count: 0
+- body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 7, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 13, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 17, 'layout_type': 'chart_placeholder', 'reason': 'chart_table_labels'}, {'slide_no': 20, 'layout_type': 'section_title', 'reason': 'title_or_section_title'}, {'slide_no': 24, 'layout_type': 'checklist', 'reason': 'checklist_or_internal'}]
 - slides_with_long_body: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24]
 - visually_dense_slides: [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 21, 23]
 - slides_with_text_placeholder_overlap: []
@@ -194,6 +209,7 @@
 - parse_back_source_url_count: 8
 - parse_back_needs_source_count: 0
 - parse_back_needs_fact_check_count: 16
+- parse_back_line_spacing_1_5_count: 48
 
 ### piti_deck_plan_productive_finance_policy -> outputs/pptx/productive_finance_policy_styled_draft.pptx
 
@@ -228,18 +244,22 @@
 - proof_object_required_but_missing_count: 0
 - proof_object_area_reserved_count: 18
 - text_only_slide_count: 6
-- text_only_dense_count: 0
+- text_only_dense_count: 2
 - chart_table_skeleton_count: 1
 - article_quote_skeleton_count: 8
 - proof_text_overlap_count: 0
 - screen_footer_hidden_count: 24
 - screen_body_overflow_count: 16
 - screen_body_overflow_slides: [2, 3, 4, 5, 7, 9, 10, 11, 13, 14, 16, 17, 18, 20, 22, 24]
-- split_recommended_slide_count: 1
-- split_recommended_slides: [11]
+- split_recommended_slide_count: 16
+- split_recommended_slides: [2, 3, 4, 5, 7, 9, 10, 11, 13, 14, 16, 17, 18, 20, 22, 24]
 - slides_using_20pt: []
+- body_line_spacing_applied_count: 17
+- body_line_spacing_value: 1.5
+- body_line_spacing_missing_count: 0
+- body_line_spacing_exceptions: [{'slide_no': 1, 'layout_type': 'title', 'reason': 'title_or_section_title'}, {'slide_no': 8, 'layout_type': 'chart_placeholder', 'reason': 'chart_table_labels'}, {'slide_no': 21, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}, {'slide_no': 23, 'layout_type': 'appendix_checklist', 'reason': 'checklist_or_internal'}]
 - slides_with_long_body: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 20, 22, 24]
-- visually_dense_slides: [2, 3, 4, 5, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
+- visually_dense_slides: [2, 3, 4, 5, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24]
 - slides_with_text_placeholder_overlap: []
 - slides_with_visual_and_long_body: [2, 3, 4, 5, 7, 9, 10, 13, 14, 15, 16, 17, 18, 20, 22, 24]
 - body_line_estimates: [{'slide_no': 1, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 2, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 3, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 4, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 5, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 6, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 7, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 8, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 9, 'body_line_estimate': 3, 'font_size': 28}, {'slide_no': 10, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 11, 'body_line_estimate': 2, 'font_size': 28}, {'slide_no': 12, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 13, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 14, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 15, 'body_line_estimate': 6, 'font_size': 24}, {'slide_no': 16, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 17, 'body_line_estimate': 6, 'font_size': 28}, {'slide_no': 18, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 19, 'body_line_estimate': 0, 'font_size': 28}, {'slide_no': 20, 'body_line_estimate': 5, 'font_size': 28}, {'slide_no': 21, 'body_line_estimate': 4, 'font_size': 24}, {'slide_no': 22, 'body_line_estimate': 4, 'font_size': 28}, {'slide_no': 23, 'body_line_estimate': 5, 'font_size': 24}, {'slide_no': 24, 'body_line_estimate': 5, 'font_size': 28}]
@@ -249,6 +269,7 @@
 - parse_back_source_url_count: 11
 - parse_back_needs_source_count: 1
 - parse_back_needs_fact_check_count: 17
+- parse_back_line_spacing_1_5_count: 40
 
 
 ## Warnings
@@ -278,7 +299,7 @@
 - piti_deck_plan_productive_finance_policy: slide 9: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 10: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 11: visual plan requires manual check
-- piti_deck_plan_productive_finance_policy: ... +51 more
+- piti_deck_plan_productive_finance_policy: ... +53 more
 - piti_deck_plan_ai_knowledge_institution: slide 22: consider_split: more than three body bullets
 - piti_deck_plan_ai_knowledge_institution: slide 1: visual plan requires manual check
 - piti_deck_plan_ai_knowledge_institution: slide 2: visual plan requires manual check
@@ -304,7 +325,7 @@
 - piti_deck_plan_productive_finance_policy: slide 9: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 10: visual plan requires manual check
 - piti_deck_plan_productive_finance_policy: slide 11: visual plan requires manual check
-- piti_deck_plan_productive_finance_policy: ... +45 more
+- piti_deck_plan_productive_finance_policy: ... +47 more
 
 ## Readiness
 

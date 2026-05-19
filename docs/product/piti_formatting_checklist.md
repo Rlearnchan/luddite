@@ -15,10 +15,14 @@ belongs in speaker notes.
   red by default.
 - Body length: keep screen body to roughly 2-3 lines. Four or more lines should
   raise a split/edit warning or move overflow into speaker notes.
+- Body line spacing: use 1.5 spacing for screen body text boxes. Do not apply
+  this rule to headlines, title slides, section titles, chart/table titles,
+  chart/table data labels, chart/table source labels, or speaker notes.
 - Quote bilingual mode: use only when English source text and Korean
   translation/interpretation are interleaved.
 - Quote bilingual text: English line black 28pt, Korean translation line red
-  28pt.
+  28pt, with 1.5 body line spacing unless a later quote-specific exception is
+  needed.
 - Section title: large title treatment is allowed, but do not force red unless
   a future explicit section-title rule says so.
 - Chart/table title: black 28pt, bold, underline.
@@ -57,7 +61,8 @@ belongs in speaker notes.
 - Article quote slides may show a short source name or host on screen, but the
   source URL remains in speaker notes.
 - Text-only slides remain allowed, but they should be deliberate. If a slide
-  has no proof object, screen text should be especially short.
+  has no proof object, screen text should be especially short and use 1.5 line
+  spacing.
 - Proof object and text regions must not overlap. Styled drafts should fail the
   render hygiene check if an overlap is detected.
 

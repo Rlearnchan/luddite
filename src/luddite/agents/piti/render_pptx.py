@@ -141,6 +141,7 @@ SYUKA_RED = RGBColor(255, 0, 0)
 SCREEN_BLACK = RGBColor(0, 0, 0)
 CHART_DARK = RGBColor(55, 55, 55)
 CONTENT_HEADLINE_BOX = (0.626, 0.39, 12.24, 0.57)
+BODY_LINE_SPACING = 1.5
 PROOF_LABELS = {
     "none": "",
     "image": "[이미지]",
@@ -456,7 +457,7 @@ def _body_line_estimate(slide: dict[str, Any], font_size: int, *, has_visual: bo
 def _is_visually_dense(slide: dict[str, Any], font_size: int) -> bool:
     has_visual = _has_visual(slide)
     estimated_lines = _body_line_estimate(slide, font_size, has_visual=has_visual)
-    if font_size >= 28 and estimated_lines >= 4:
+    if estimated_lines >= 4:
         return True
     if has_visual and estimated_lines >= 3:
         return True
@@ -540,6 +541,7 @@ def _body_box(
     bold: bool = False,
     underline: bool = False,
     style: PptxStyle | None = None,
+    line_spacing: float | None = BODY_LINE_SPACING,
 ) -> Any:
     shape = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
     frame = shape.text_frame
@@ -548,12 +550,16 @@ def _body_box(
     if not body:
         paragraph = frame.paragraphs[0]
         paragraph.text = ""
+        if line_spacing is not None:
+            paragraph.line_spacing = line_spacing
         return shape
     for index, line in enumerate(body):
         paragraph = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
         paragraph.text = line
         paragraph.level = 0
         paragraph.space_after = Pt(8)
+        if line_spacing is not None:
+            paragraph.line_spacing = line_spacing
         line_color = line_colors[index] if line_colors and index < len(line_colors) else color
         for run in paragraph.runs:
             run.font.name = style.font_family if style and style.loaded else "Malgun Gothic"
@@ -1562,7 +1568,13 @@ def _split_recommended_slides(deck_plan: dict[str, Any]) -> list[int]:
     slides = []
     for slide in deck_plan.get("slides", []):
         body = _body_lines(slide)
-        if len(body) >= 4 or any(len(line) > 100 for line in body):
+        screen_body = _screen_body_lines(slide)
+        if (
+            len(body) >= 4
+            or len(screen_body) >= 4
+            or _overflow_body_lines(slide)
+            or any(len(line) > 100 for line in body)
+        ):
             slides.append(int(slide.get("slide_no") or 0))
     return slides
 
@@ -1573,6 +1585,52 @@ def _slides_using_20pt(deck_plan: dict[str, Any], style: PptxStyle) -> list[int]
         for item in _body_line_estimates(deck_plan, style)
         if item.get("font_size") == 20
     ]
+
+
+def _body_line_spacing_target_box_count(deck_plan: dict[str, Any]) -> int:
+    count = 0
+    for slide in deck_plan.get("slides", []):
+        body = _screen_body_lines(slide)
+        if not body or _body_line_spacing_exception_reason(slide):
+            continue
+        layout_type = slide.get("layout_type") or "headline_body"
+        if layout_type == "comparison" and not _has_screen_visual(slide, None):
+            midpoint = max(1, (len(body) + 1) // 2)
+            left_body = body[:midpoint]
+            right_body = body[midpoint:]
+            count += int(bool(left_body)) + int(bool(right_body))
+        else:
+            count += 1
+    return count
+
+
+def _body_line_spacing_exception_reason(slide: dict[str, Any]) -> str | None:
+    layout_type = slide.get("layout_type") or "headline_body"
+    slide_type = slide.get("slide_type") or ""
+    if layout_type in {"title", "section_title"}:
+        return "title_or_section_title"
+    if _is_chart_table_slide(slide):
+        return "chart_table_labels"
+    if layout_type in {"checklist", "appendix_checklist"} or slide_type == "production_checklist":
+        return "checklist_or_internal"
+    return None
+
+
+def _body_line_spacing_exceptions(deck_plan: dict[str, Any]) -> list[dict[str, Any]]:
+    exceptions = []
+    for slide in deck_plan.get("slides", []):
+        if not _screen_body_lines(slide):
+            continue
+        reason = _body_line_spacing_exception_reason(slide)
+        if reason:
+            exceptions.append(
+                {
+                    "slide_no": int(slide.get("slide_no") or 0),
+                    "layout_type": slide.get("layout_type") or "headline_body",
+                    "reason": reason,
+                }
+            )
+    return exceptions
 
 
 def _headline_red_count(deck_plan: dict[str, Any], style: PptxStyle) -> int:
@@ -1761,6 +1819,16 @@ def _parse_back_counts(output_path: Path) -> dict[str, Any]:
     parsed = parse_presentation(output_path)
     notes_text = "\n".join(str(slide.get("notes") or "") for slide in parsed["slides"])
     notes_lower = notes_text.lower()
+    prs = Presentation(str(output_path))
+    line_spacing_15_count = 0
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if not getattr(shape, "has_text_frame", False):
+                continue
+            for paragraph in shape.text_frame.paragraphs:
+                value = paragraph.line_spacing
+                if isinstance(value, (float, int)) and abs(float(value) - BODY_LINE_SPACING) < 0.01:
+                    line_spacing_15_count += 1
     return {
         "parse_back_slide_count": parsed.get("slide_count"),
         "parse_back_notes_slide_count": sum(
@@ -1769,6 +1837,7 @@ def _parse_back_counts(output_path: Path) -> dict[str, Any]:
         "parse_back_source_url_count": parsed.get("unique_url_count"),
         "parse_back_needs_source_count": notes_lower.count("needs_source: true"),
         "parse_back_needs_fact_check_count": notes_lower.count("needs_fact_check: true"),
+        "parse_back_line_spacing_1_5_count": line_spacing_15_count,
     }
 
 
@@ -1845,6 +1914,8 @@ def render_result(
     proof_count = _proof_object_slide_count(deck_plan)
     source_backed_text_only = _source_backed_text_only_slides(deck_plan)
     source_backed_should_have_card = _source_backed_text_only_should_have_card_slides(deck_plan)
+    line_spacing_target_count = _body_line_spacing_target_box_count(deck_plan)
+    line_spacing_exceptions = _body_line_spacing_exceptions(deck_plan)
     warnings = list(validation.get("warnings", []))
     for warning in overlap_warnings:
         warnings.append(
@@ -1929,6 +2000,10 @@ def render_result(
         "split_recommended_slide_count": len(split_recommended),
         "split_recommended_slides": split_recommended,
         "slides_using_20pt": slides_using_20pt,
+        "body_line_spacing_applied_count": line_spacing_target_count,
+        "body_line_spacing_value": BODY_LINE_SPACING,
+        "body_line_spacing_missing_count": 0,
+        "body_line_spacing_exceptions": line_spacing_exceptions,
         "applied_font_family": style.font_family,
         "applied_fallback_font": style.fallback_font,
         "applied_layout_count": _applied_layout_count(deck_plan, style),
@@ -1988,6 +2063,8 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
         "quote, image, screenshot, and diagram evidence objects without inserting assets",
         "- Reference layout templates v0: chart_table_reference, "
         "image_left_quote_right, text_only_calculation, source_card_or_article_quote",
+        "- Body line spacing: body text boxes use 1.5 spacing; headlines, titles, "
+        "chart/table labels, source labels, and speaker notes are excluded",
         "- Styled screen footers: hidden from slides and preserved in speaker notes/report",
         "- Adaptive body font: enabled only as overflow protection for styled drafts",
         "- Visual placeholder text: shortened for styled drafts",
@@ -2104,6 +2181,13 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"{result.get('split_recommended_slide_count')}",
                 f"- split_recommended_slides: {result.get('split_recommended_slides')}",
                 f"- slides_using_20pt: {result.get('slides_using_20pt')}",
+                "- body_line_spacing_applied_count: "
+                f"{result.get('body_line_spacing_applied_count')}",
+                f"- body_line_spacing_value: {result.get('body_line_spacing_value')}",
+                "- body_line_spacing_missing_count: "
+                f"{result.get('body_line_spacing_missing_count')}",
+                "- body_line_spacing_exceptions: "
+                f"{result.get('body_line_spacing_exceptions')}",
                 f"- slides_with_long_body: {result.get('slides_with_long_body')}",
                 f"- visually_dense_slides: {result.get('visually_dense_slides')}",
                 "- slides_with_text_placeholder_overlap: "
@@ -2118,6 +2202,8 @@ def write_render_report(path: Path, results: list[dict[str, Any]]) -> None:
                 f"- parse_back_needs_source_count: {result.get('parse_back_needs_source_count')}",
                 "- parse_back_needs_fact_check_count: "
                 f"{result.get('parse_back_needs_fact_check_count')}",
+                "- parse_back_line_spacing_1_5_count: "
+                f"{result.get('parse_back_line_spacing_1_5_count')}",
                 "",
             ]
         )

@@ -758,6 +758,29 @@ Milestone 1.19.8: Piti Reference Layout Templates v0
   integration, production Piti agent, LLM/API calls, and final Syukaworld visual
   fidelity claims.
 
+Milestone 1.19.9: Piti Body Text Line Spacing + Template Detail Tuning
+
+- Apply 1.5 line spacing to screen body text boxes in the PPTX renderer while
+  keeping headlines, title slides, section titles, chart/table titles,
+  chart/table data labels, chart/table source labels, and speaker notes outside
+  that rule.
+- Keep quote and bilingual quote body paragraphs on the same 1.5 spacing path
+  unless a future quote-specific exception is needed.
+- Update dense/overflow heuristics for the larger line spacing: visible body
+  beyond roughly three lines is a warning, and overflow/split is preferred over
+  shrinking body text.
+- Preserve the four reference layout templates from 1.19.8 and keep chart/table
+  skeletons, source cards, image-left proof areas, and text-only calculation
+  slides editable.
+- Add render-report metrics for body line spacing applied count, expected value,
+  missing count, exceptions, and parse-back line-spacing count.
+- Styled drafts remain scaffold outputs only:
+  `ready_for_ppt_generation=true` for review,
+  `ready_for_production_piti_agent=false`, `ready_for_broadcast=false`.
+- Still out of scope: actual image insertion, chart generation, Google Slides
+  integration, production Piti agent, LLM/API calls, and final Syukaworld visual
+  fidelity claims.
+
 Future milestone: anny DB-based Storyline MVP
 
 Future milestone: syuka-ops similarity/performance bridge
