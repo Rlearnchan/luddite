@@ -38,6 +38,12 @@ Schema shape contract:
 - Every top-level slide must be represented in its section's `slides` array.
 - Do not satisfy schema by outputting empty arrays.
 - Empty schema-valid output is a failure.
+- The schema requires `sections[].slides[]` to contain full slide objects, not
+  slide numbers, slide IDs, or placeholder references.
+- Top-level `slides[]` and section-level `sections[].slides[]` must cover the
+  same `slide_no` and `slide_id` set.
+- Every slide's `section_id` must match an existing section.
+- Do not invent a third section mapping structure.
 - Do not write nullable array fields as `null`.
 - Array fields must always be arrays, even when empty: `screen_body`,
   `overflow_notes`, `source_refs`, `risk_flags`, `do_not_claim`,
@@ -56,6 +62,139 @@ Schema shape contract:
   - `appendix_checklist`
 - Do not invent values such as `hook`.
 
+Schema-accurate section mapping shape example:
+
+```json
+{
+  "deck_id": "example_direct_slide_spec",
+  "story_seed_title": "Example",
+  "source_storyline_id": "example_storyline",
+  "sections": [
+    {
+      "section_id": "section_01",
+      "section_no": 1,
+      "section_title": "Opening",
+      "purpose": "Set up the question",
+      "slides": [
+        {
+          "slide_id": "slide_001",
+          "slide_no": 1,
+          "section_id": "section_01",
+          "layout_intent": "title",
+          "screen_headline": "Question for the broadcast",
+          "screen_body": [],
+          "speaker_notes_expanded": "Context belongs here, not on screen.",
+          "overflow_notes": [],
+          "proof_object": {
+            "type": "none",
+            "screen_position": "none",
+            "manual_insert_required": false,
+            "copyright_risk": false
+          },
+          "editor_instruction": null,
+          "source_refs": [],
+          "risk_flags": [],
+          "needs_source": false,
+          "needs_fact_check": false,
+          "required_before_broadcast": false,
+          "do_not_claim": []
+        },
+        {
+          "slide_id": "slide_002",
+          "slide_no": 2,
+          "section_id": "section_01",
+          "layout_intent": "diagram",
+          "screen_headline": "Actor, mechanism, and result are visible",
+          "screen_body": ["Keep the body short."],
+          "speaker_notes_expanded": "Long explanation goes here.",
+          "overflow_notes": [],
+          "proof_object": {
+            "type": "diagram",
+            "screen_position": "center_large",
+            "diagram_nodes": ["Actor does something", "Mechanism changes behavior", "Result creates tension"],
+            "diagram_edges": [
+              {"from": "Actor does something", "to": "Mechanism changes behavior", "label": "changes"},
+              {"from": "Mechanism changes behavior", "to": "Result creates tension", "label": "leads to"}
+            ],
+            "manual_insert_required": false,
+            "copyright_risk": false
+          },
+          "editor_instruction": null,
+          "source_refs": [],
+          "risk_flags": [],
+          "needs_source": false,
+          "needs_fact_check": true,
+          "required_before_broadcast": true,
+          "do_not_claim": []
+        }
+      ]
+    }
+  ],
+  "slides": [
+    {
+      "slide_id": "slide_001",
+      "slide_no": 1,
+      "section_id": "section_01",
+      "layout_intent": "title",
+      "screen_headline": "Question for the broadcast",
+      "screen_body": [],
+      "speaker_notes_expanded": "Context belongs here, not on screen.",
+      "overflow_notes": [],
+      "proof_object": {
+        "type": "none",
+        "screen_position": "none",
+        "manual_insert_required": false,
+        "copyright_risk": false
+      },
+      "editor_instruction": null,
+      "source_refs": [],
+      "risk_flags": [],
+      "needs_source": false,
+      "needs_fact_check": false,
+      "required_before_broadcast": false,
+      "do_not_claim": []
+    },
+    {
+      "slide_id": "slide_002",
+      "slide_no": 2,
+      "section_id": "section_01",
+      "layout_intent": "diagram",
+      "screen_headline": "Actor, mechanism, and result are visible",
+      "screen_body": ["Keep the body short."],
+      "speaker_notes_expanded": "Long explanation goes here.",
+      "overflow_notes": [],
+      "proof_object": {
+        "type": "diagram",
+        "screen_position": "center_large",
+        "diagram_nodes": ["Actor does something", "Mechanism changes behavior", "Result creates tension"],
+        "diagram_edges": [
+          {"from": "Actor does something", "to": "Mechanism changes behavior", "label": "changes"},
+          {"from": "Mechanism changes behavior", "to": "Result creates tension", "label": "leads to"}
+        ],
+        "manual_insert_required": false,
+        "copyright_risk": false
+      },
+      "editor_instruction": null,
+      "source_refs": [],
+      "risk_flags": [],
+      "needs_source": false,
+      "needs_fact_check": true,
+      "required_before_broadcast": true,
+      "do_not_claim": []
+    }
+  ],
+  "readiness": {
+    "ready_for_piti_renderer": true,
+    "ready_for_production_piti_agent": false,
+    "ready_for_broadcast": false
+  },
+  "notes": "Example shape only."
+}
+```
+
+Do not output `sections[].slides` as `[1, 2]` or `["slide_001", "slide_002"]`;
+the schema requires slide objects inside each section.
+
 Slide coverage contract:
 
 - Use the adapter/manual storyline as the slide coverage baseline.
@@ -73,6 +212,11 @@ Slide coverage contract:
   intended compression method.
 - The final output should preserve the representative deck structure, not
   summarize it away.
+- For `ai_knowledge_institution`, preserve the four-section structure and keep a
+  representative deck close to 26 slides.
+- Do not summarize the AI case into a short outline.
+- If unsure, copy the adapter/manual storyline coverage and improve only the
+  explicit diagram/proof object fields.
 
 Safety metadata contract:
 
@@ -160,6 +304,9 @@ Preflight checklist before final JSON:
 - Did every section include a `slides` array?
 - Did I leave any section with an empty `slides` array?
 - Did every section slide object exist in top-level `slides[]`?
+- Did top-level `slides[]` and section-level `sections[].slides[]` cover the
+  same slide numbers?
+- Did every slide have a `section_id` that matches an existing section?
 - Did I use only schema-valid `layout_intent` values?
 - Did I preserve approximate slide count?
 - Did I preserve all major beats rather than summarizing the deck?

@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.31
+# Codex Next Steps after Milestone 1.32
 
 ## 상태
 
@@ -427,17 +427,87 @@ productive_finance_policy:
 - 두 case 모두 `diagram_nodes_too_generic=0`을 유지했다.
 - production Anny/Piti/broadcast readiness는 계속 false다.
 
+## Milestone 1.32 완료 상태
+
+`specs/piti_slide_spec_schema.json`을 확인한 결과:
+
+- `sections[].slides[]`는 slide number/id reference 배열이 아니다.
+- `sections[].slides[]`는 `#/$defs/slide`를 따르는 full slide object 배열이다.
+- 따라서 top-level `slides[]`와 section-level `sections[].slides[]`는 같은
+  `slide_no`/`slide_id` set을 덮어야 한다.
+
+prompt에 추가/강화된 핵심:
+
+- `sections[].slides[]`는 full slide object이며 숫자/ID reference가 아니라는
+  명시
+- 1 section + 2 slides의 schema-accurate minimal valid shape 예시
+- section-level slide object와 top-level slide object가 같은 slide_no/slide_id
+  set을 덮어야 한다는 지시
+- every slide의 `section_id`가 existing section과 match해야 한다는 지시
+- `ai_knowledge_institution`은 4-section, 26-slide coverage를 유지하라는
+  case coverage anchor
+
+validator/report에 추가된 section mapping diagnostics:
+
+- `top_level_slide_numbers`
+- `section_mapped_slide_numbers`
+- `missing_from_sections`
+- `unknown_section_slide_refs`
+- `duplicate_section_slide_refs`
+- `slides_with_unknown_section_id`
+- `slides_missing_section_id`
+- `sections_without_matching_top_level_slides`
+- `section_mapping_complete`
+
+live opt-in 재실행:
+
+```text
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id all --live-api --run-id live_m132_20260520_all --timeout 600
+```
+
+결과:
+
+```text
+run_id: live_m132_20260520_all
+model: gpt-5-mini-2025-08-07
+overall outcome: success
+case outcomes: ai_knowledge_institution=success, productive_finance_policy=success
+```
+
+m129/m130/m131/m132 비교:
+
+```text
+ai_knowledge_institution:
+  m129 schema_valid=false, render_passed=false, slide_count=11, section_mapping_complete=false, safety_regression=true
+  m130 schema_valid=true, render_passed=true, slide_count=0, section_mapping_complete=false, safety_regression=true
+  m131 schema_valid=true, render_passed=true, slide_count=0, section_mapping_complete=false, safety_regression=true
+  m132 schema_valid=true, render_passed=true, slide_count=26, section_mapping_complete=true, safety_regression=false
+
+productive_finance_policy:
+  m129 schema_valid=false, render_passed=false, slide_count=8, section_mapping_complete=false, safety_regression=true
+  m130 schema_valid=true, render_passed=false, slide_count=24, section_mapping_complete=false, safety_regression=false
+  m131 schema_valid=true, render_passed=true, slide_count=24, section_mapping_complete=false, safety_regression=false
+  m132 schema_valid=true, render_passed=true, slide_count=24, section_mapping_complete=true, safety_regression=false
+```
+
+해석:
+
+- AI empty deck 문제가 m132 live run에서는 사라졌다.
+- Finance section mapping 문제가 m132 live run에서는 사라졌다.
+- 두 case 모두 `section_mapping_complete=true`다.
+- 두 case 모두 schema/render/safety/coverage를 통과했다.
+- 두 case 모두 `diagram_nodes_too_generic=0`을 유지했다.
+- 이것은 controlled live experiment success이지 production/broadcast readiness가
+  아니다.
+
 ## 다음 구현/평가 목표
 
-1. `sections[].slides`가 비지 않고 top-level `slides[]`와 대응되도록 Anny
-   direct section mapping contract를 더 조인다.
-2. AI case의 schema-valid empty deck 재발을 막기 위해 case coverage 또는
-   더 constrained live output path를 검토한다.
-3. live opt-in을 다시 실행해 `live_m129_20260520_all`,
-   `live_m130_20260520_all`, `live_m131_20260520_all`과 비교한다.
-4. live section mapping, empty-deck prevention, schema/render/safety가
-   안정화되면 Jibi slideability scoring으로 넘어간다.
-5. 그 이후 production agent/scheduler/Slack/Slides 검토
+1. Jibi slideability scoring으로 넘어간다.
+2. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+   넓힌다.
+3. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+   유지한다.
+4. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 

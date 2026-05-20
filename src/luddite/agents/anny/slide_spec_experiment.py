@@ -495,6 +495,25 @@ def _slide_identity(slide: dict[str, Any]) -> tuple[str | None, int | None]:
     return slide_id, slide_no
 
 
+def _slide_identity_label(slide_id: str | None, slide_no: int | None) -> str:
+    if slide_id:
+        return slide_id
+    if slide_no is not None:
+        return str(slide_no)
+    return "unknown"
+
+
+def _slide_entry_identity(entry: Any) -> tuple[str | None, int | None]:
+    if isinstance(entry, dict):
+        return _slide_identity(entry)
+    if isinstance(entry, int):
+        return None, entry
+    entry_text = str(entry).strip()
+    if entry_text.isdigit():
+        return None, int(entry_text)
+    return entry_text or None, None
+
+
 def _entry_matches_top_level(
     entry: Any,
     *,
@@ -516,14 +535,22 @@ def _entry_matches_top_level(
 def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, Any]:
     sections = [section for section in _as_list(spec.get("sections")) if isinstance(section, dict)]
     top_slides = _all_slides(spec)
+    section_ids = {
+        str(section.get("section_id") or "").strip()
+        for section in sections
+        if str(section.get("section_id") or "").strip()
+    }
     top_identities = [_slide_identity(slide) for slide in top_slides]
     top_slide_ids = {slide_id for slide_id, _slide_no_value in top_identities if slide_id}
     top_slide_nos = {slide_no for _slide_id, slide_no in top_identities if slide_no}
+    top_level_slide_numbers = sorted(top_slide_nos)
     represented_ids: set[str] = set()
     represented_nos: set[int] = set()
+    mapped_identity_counts: Counter[str] = Counter()
     missing_sections_slides_count = 0
     empty_sections_count = 0
     sections_with_empty_slides: list[str] = []
+    unknown_section_slide_refs: list[str] = []
     mismatch_count = 0
 
     for section in sections:
@@ -538,12 +565,15 @@ def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, Any]
             sections_with_empty_slides.append(section_label)
             continue
         for entry in slide_refs:
+            entry_slide_id, entry_slide_no = _slide_entry_identity(entry)
+            entry_label = _slide_identity_label(entry_slide_id, entry_slide_no)
             if not _entry_matches_top_level(
                 entry,
                 top_slide_ids=top_slide_ids,
                 top_slide_nos=top_slide_nos,
             ):
                 mismatch_count += 1
+                unknown_section_slide_refs.append(entry_label)
                 continue
             if isinstance(entry, dict):
                 slide_id, slide_no = _slide_identity(entry)
@@ -559,7 +589,9 @@ def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, Any]
                     represented_ids.add(entry_text)
                 elif entry_text.isdigit():
                     represented_nos.add(int(entry_text))
+            mapped_identity_counts[entry_label] += 1
 
+    missing_from_sections: list[int] = []
     for slide in top_slides:
         slide_id, slide_no = _slide_identity(slide)
         if slide_id and slide_id in represented_ids:
@@ -567,12 +599,67 @@ def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, Any]
         if slide_no and slide_no in represented_nos:
             continue
         mismatch_count += 1
+        if slide_no is not None:
+            missing_from_sections.append(slide_no)
+
+    section_mapped_slide_numbers = sorted(represented_nos)
+    duplicate_section_slide_refs = sorted(
+        identity for identity, count in mapped_identity_counts.items() if count > 1
+    )
+    slides_missing_section_id: list[int] = []
+    slides_with_unknown_section_id: list[int] = []
+    for slide in top_slides:
+        slide_no = _slide_no(slide)
+        section_id = str(slide.get("section_id") or "").strip()
+        if not section_id:
+            slides_missing_section_id.append(slide_no)
+        elif section_id not in section_ids:
+            slides_with_unknown_section_id.append(slide_no)
+
+    sections_without_matching_top_level_slides = sorted(
+        section_id
+        for section_id in section_ids
+        if not any(
+            str(slide.get("section_id") or "").strip() == section_id
+            for slide in top_slides
+        )
+    )
+    if duplicate_section_slide_refs:
+        mismatch_count += len(duplicate_section_slide_refs)
+    if slides_missing_section_id:
+        mismatch_count += len(slides_missing_section_id)
+    if slides_with_unknown_section_id:
+        mismatch_count += len(slides_with_unknown_section_id)
+    if sections_without_matching_top_level_slides:
+        mismatch_count += len(sections_without_matching_top_level_slides)
+    section_mapping_complete = bool(
+        top_level_slide_numbers
+        and section_mapped_slide_numbers == top_level_slide_numbers
+        and missing_sections_slides_count == 0
+        and not missing_from_sections
+        and not unknown_section_slide_refs
+        and not duplicate_section_slide_refs
+        and not slides_missing_section_id
+        and not slides_with_unknown_section_id
+        and not sections_without_matching_top_level_slides
+    )
 
     return {
         "missing_sections_slides_count": missing_sections_slides_count,
         "empty_sections_count": empty_sections_count,
         "sections_with_empty_slides": sections_with_empty_slides,
         "section_slide_ref_mismatch_count": mismatch_count,
+        "top_level_slide_numbers": top_level_slide_numbers,
+        "section_mapped_slide_numbers": section_mapped_slide_numbers,
+        "missing_from_sections": sorted(missing_from_sections),
+        "unknown_section_slide_refs": sorted(unknown_section_slide_refs),
+        "duplicate_section_slide_refs": duplicate_section_slide_refs,
+        "slides_with_unknown_section_id": sorted(slides_with_unknown_section_id),
+        "slides_missing_section_id": sorted(slides_missing_section_id),
+        "sections_without_matching_top_level_slides": (
+            sections_without_matching_top_level_slides
+        ),
+        "section_mapping_complete": section_mapping_complete,
     }
 
 
@@ -888,6 +975,26 @@ def _adapter_coverage_summary(adapter_spec: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _case_coverage_anchor(adapter_spec: dict[str, Any] | None) -> str:
+    if not adapter_spec:
+        return "No adapter coverage anchor available."
+    deck_id = str(adapter_spec.get("deck_id") or "")
+    slide_count = len(_all_slides(adapter_spec))
+    section_count = len(_as_list(adapter_spec.get("sections")))
+    if "ai_knowledge_institution" in deck_id:
+        return (
+            "For ai_knowledge_institution, preserve the four-section structure "
+            f"and keep a representative deck close to {slide_count} slides. "
+            "Do not summarize this case into a short outline. If uncertain, "
+            "copy the adapter/manual storyline coverage and improve only explicit "
+            "diagram/proof object fields."
+        )
+    return (
+        f"Preserve the adapter coverage shape: {section_count} sections and "
+        f"approximately {slide_count} slides. Do not summarize the deck away."
+    )
+
+
 def build_slide_spec_experiment_prompt(
     *,
     input_bundle: dict[str, Any],
@@ -918,7 +1025,17 @@ def build_slide_spec_experiment_prompt(
             "Every sections[] object must include a non-empty slides array.",
             "Every section must contain at least one slide.",
             "Do not satisfy schema by outputting empty arrays.",
-            "Every section slide object must correspond to a top-level slides[] object.",
+            (
+                "Schema check: sections[].slides[] items are full slide objects "
+                "($defs.slide), not slide numbers, IDs, or references."
+            ),
+            (
+                "Repeat the slide object inside its section and in top-level slides[]; "
+                "the two lists must cover the same slide_no and slide_id set."
+            ),
+            "Every slide must have section_id matching an existing section_id.",
+            "Every slide must appear in exactly one section mapping.",
+            "Do not invent a third section mapping structure.",
             "Array fields must be arrays, not null.",
             "Use only schema-valid enum strings.",
             f"Allowed layout_intent values: {', '.join(LAYOUT_INTENTS)}.",
@@ -928,6 +1045,7 @@ def build_slide_spec_experiment_prompt(
                 "do not compress 24-26 representative slides into fewer than 20."
             ),
             "If the adapter/manual storyline has 24-26 slides, output at least 20 slides.",
+            _case_coverage_anchor(adapter_spec),
             (
                 "Preserve section count, key beats, counterpoints, caution slides, "
                 "and appendix/checklist slides."
@@ -978,7 +1096,10 @@ def build_slide_spec_experiment_prompt(
             "If baseline has 24-26 slides, output has at least 20 slides.",
             "Every section has slides[].",
             "No section has an empty slides array.",
+            "Every section slide is a full slide object, not a number or ID reference.",
             "Every section slide exists in top-level slides[].",
+            "Section-mapped slide numbers equal top-level slide numbers.",
+            "Every slide's section_id matches an existing section_id.",
             "All major beats are preserved instead of summarized away.",
             "Only schema-valid layout_intent values are used.",
             "Approximate slide count is preserved.",
@@ -1160,6 +1281,18 @@ def _validate_raw_slide_spec(
         failure_modes.append("sections_slides_missing")
     if contract["empty_sections_count"]:
         failure_modes.append("empty_sections")
+    if not contract["section_mapping_complete"]:
+        failure_modes.append("section_mapping_incomplete")
+    if contract["missing_from_sections"]:
+        failure_modes.append("slides_missing_from_sections")
+    if contract["unknown_section_slide_refs"]:
+        failure_modes.append("unknown_section_slide_refs")
+    if contract["duplicate_section_slide_refs"]:
+        failure_modes.append("duplicate_section_slide_refs")
+    if contract["slides_missing_section_id"]:
+        failure_modes.append("slides_missing_section_id")
+    if contract["slides_with_unknown_section_id"]:
+        failure_modes.append("slides_with_unknown_section_id")
     if contract["section_slide_ref_mismatch_count"]:
         failure_modes.append("section_slide_refs_mismatch")
     if contract["layout_intent_invalid_enum_count"]:
@@ -1252,6 +1385,17 @@ def _validate_raw_slide_spec(
         "empty_sections_count": contract["empty_sections_count"],
         "sections_with_empty_slides": contract["sections_with_empty_slides"],
         "section_slide_ref_mismatch_count": contract["section_slide_ref_mismatch_count"],
+        "top_level_slide_numbers": contract["top_level_slide_numbers"],
+        "section_mapped_slide_numbers": contract["section_mapped_slide_numbers"],
+        "missing_from_sections": contract["missing_from_sections"],
+        "unknown_section_slide_refs": contract["unknown_section_slide_refs"],
+        "duplicate_section_slide_refs": contract["duplicate_section_slide_refs"],
+        "slides_with_unknown_section_id": contract["slides_with_unknown_section_id"],
+        "slides_missing_section_id": contract["slides_missing_section_id"],
+        "sections_without_matching_top_level_slides": contract[
+            "sections_without_matching_top_level_slides"
+        ],
+        "section_mapping_complete": contract["section_mapping_complete"],
         "slide_count_delta_vs_adapter": contract["slide_count_delta_vs_adapter"],
         "section_count_delta_vs_adapter": contract["section_count_delta_vs_adapter"],
         "source_refs_delta_vs_adapter": contract["source_refs_delta_vs_adapter"],
@@ -1376,6 +1520,30 @@ def _write_validation_report(
             "- section_slide_ref_mismatch_count: "
             f"{manifest.get('section_slide_ref_mismatch_count', 0)}"
         ),
+        f"- section_mapping_complete: {manifest.get('section_mapping_complete', False)}",
+        f"- top_level_slide_numbers: {manifest.get('top_level_slide_numbers', [])}",
+        (
+            "- section_mapped_slide_numbers: "
+            f"{manifest.get('section_mapped_slide_numbers', [])}"
+        ),
+        f"- missing_from_sections: {manifest.get('missing_from_sections', [])}",
+        (
+            "- unknown_section_slide_refs: "
+            f"{manifest.get('unknown_section_slide_refs', [])}"
+        ),
+        (
+            "- duplicate_section_slide_refs: "
+            f"{manifest.get('duplicate_section_slide_refs', [])}"
+        ),
+        (
+            "- slides_with_unknown_section_id: "
+            f"{manifest.get('slides_with_unknown_section_id', [])}"
+        ),
+        f"- slides_missing_section_id: {manifest.get('slides_missing_section_id', [])}",
+        (
+            "- sections_without_matching_top_level_slides: "
+            f"{manifest.get('sections_without_matching_top_level_slides', [])}"
+        ),
         (
             "- minimum_slide_count_failed: "
             f"{manifest.get('minimum_slide_count_failed', False)}"
@@ -1463,6 +1631,12 @@ def _write_validation_report(
         "top_level_slides_empty",
         "sections_slides_missing",
         "empty_sections",
+        "section_mapping_incomplete",
+        "slides_missing_from_sections",
+        "unknown_section_slide_refs",
+        "duplicate_section_slide_refs",
+        "slides_missing_section_id",
+        "slides_with_unknown_section_id",
         "invalid_layout_intent",
         "deck_too_compressed",
         "minimum_slide_count_failed",
@@ -1486,6 +1660,34 @@ def _write_validation_report(
             )
     else:
         lines.append("- none")
+    lines.extend(["", "## Section Mapping Diagnostics", ""])
+    section_mapping_lines = [
+        f"- section_mapping_complete: {manifest.get('section_mapping_complete', False)}",
+        f"- top_level_slide_numbers: {manifest.get('top_level_slide_numbers', [])}",
+        (
+            "- section_mapped_slide_numbers: "
+            f"{manifest.get('section_mapped_slide_numbers', [])}"
+        ),
+        f"- missing_from_sections: {manifest.get('missing_from_sections', [])}",
+        (
+            "- unknown_section_slide_refs: "
+            f"{manifest.get('unknown_section_slide_refs', [])}"
+        ),
+        (
+            "- duplicate_section_slide_refs: "
+            f"{manifest.get('duplicate_section_slide_refs', [])}"
+        ),
+        (
+            "- slides_with_unknown_section_id: "
+            f"{manifest.get('slides_with_unknown_section_id', [])}"
+        ),
+        f"- slides_missing_section_id: {manifest.get('slides_missing_section_id', [])}",
+        (
+            "- sections_without_matching_top_level_slides: "
+            f"{manifest.get('sections_without_matching_top_level_slides', [])}"
+        ),
+    ]
+    lines.extend(section_mapping_lines)
     lines.extend(["", "## Renderer Failure Diagnostics", ""])
     renderer_lines = [
         (
@@ -1572,6 +1774,7 @@ def _write_comparison_report(
         "missing_sections_slides_count",
         "empty_sections_count",
         "section_slide_ref_mismatch_count",
+        "section_mapping_complete",
         "layout_intent_invalid_enum_count",
         "chart_table_body_too_long_count",
         "article_quote_missing_quote_text_count",
@@ -1623,6 +1826,20 @@ def _write_comparison_report(
             "proof_object_renderer_contract_failed",
             False,
         ),
+        "missing_from_sections": direct_manifest.get("missing_from_sections", []),
+        "unknown_section_slide_refs": direct_manifest.get(
+            "unknown_section_slide_refs",
+            [],
+        ),
+        "duplicate_section_slide_refs": direct_manifest.get(
+            "duplicate_section_slide_refs",
+            [],
+        ),
+        "slides_with_unknown_section_id": direct_manifest.get(
+            "slides_with_unknown_section_id",
+            [],
+        ),
+        "slides_missing_section_id": direct_manifest.get("slides_missing_section_id", []),
         "do_not_claim_removed_or_ignored": direct_manifest.get(
             "do_not_claim_removed_or_ignored",
             False,
@@ -1656,6 +1873,27 @@ def _write_comparison_report(
         f"- top_level_slides_empty: {'top_level_slides_empty' in failure_modes}",
         f"- sections_slides_missing: {'sections_slides_missing' in failure_modes}",
         f"- empty_sections: {'empty_sections' in failure_modes}",
+        f"- section_mapping_incomplete: {'section_mapping_incomplete' in failure_modes}",
+        (
+            "- slides_missing_from_sections: "
+            f"{'slides_missing_from_sections' in failure_modes}"
+        ),
+        (
+            "- unknown_section_slide_refs: "
+            f"{'unknown_section_slide_refs' in failure_modes}"
+        ),
+        (
+            "- duplicate_section_slide_refs: "
+            f"{'duplicate_section_slide_refs' in failure_modes}"
+        ),
+        (
+            "- slides_missing_section_id: "
+            f"{'slides_missing_section_id' in failure_modes}"
+        ),
+        (
+            "- slides_with_unknown_section_id: "
+            f"{'slides_with_unknown_section_id' in failure_modes}"
+        ),
         f"- invalid_layout_intent: {'invalid_layout_intent' in failure_modes}",
         f"- deck_too_compressed: {'deck_too_compressed' in failure_modes}",
         f"- minimum_slide_count_failed: {'minimum_slide_count_failed' in failure_modes}",
@@ -1748,7 +1986,7 @@ def _write_comparison_report(
             "- Make diagram nodes concrete at Anny output time, not in the Piti renderer.",
             (
                 "- Make schema shape explicit: every section needs slides[], and "
-                "top-level slides must match."
+                "top-level slides must match the full slide objects inside sections[].slides."
             ),
             "- Preserve adapter-level slide coverage; do not over-compress representative decks.",
             "- Require at least one actor, one mechanism verb, and one result node for diagrams.",
@@ -1759,6 +1997,7 @@ def _write_comparison_report(
             ),
             "- Forbid arrows inside diagram node text; relationships belong in diagram_edges.",
             "- Forbid empty decks and empty section slide arrays.",
+            "- Require section_mapping_complete=true before treating live output as usable.",
             "- Keep chart/table screen_body to 0-1 lines with data_hint.",
             "- Use article_quote only when quote_text is available.",
             "- Keep overflow_notes_too_large as INFO until human review says otherwise.",
@@ -1851,6 +2090,47 @@ def _write_live_summary(
         if len(manifest_models) == 1
         else sorted(manifest_models) or ["env:LUDDITE_ANNY_API_MODEL"]
     )
+    result_columns = [
+        "case",
+        "outcome",
+        "parse",
+        "schema",
+        "render",
+        "slides",
+        "sections",
+        "proof types",
+        "needs fact check",
+        "required before broadcast",
+        "source hallucinations",
+        "do_not_claim violations",
+        "unsupported claims",
+        "visible URLs",
+        "diagram generic",
+        "manual insert missing instruction",
+        "generic source title",
+        "overflow notes large",
+        "slide delta",
+        "top slides empty",
+        "section slide missing",
+        "empty sections",
+        "section mapping complete",
+        "missing from sections",
+        "duplicate section refs",
+        "unknown section ids",
+        "minimum slide failed",
+        "section ref mismatch",
+        "source refs delta",
+        "fact-check delta",
+        "broadcast-required delta",
+        "diagram node arrows",
+        "chart body too long",
+        "quote missing text",
+        "renderer failure reasons",
+        "review delta",
+        "info delta",
+        "safety regression",
+        "diagram improved",
+    ]
     lines = [
         f"# Anny Direct Piti Slide Spec Live Summary: {run_id}",
         "",
@@ -1883,22 +2163,8 @@ def _write_live_summary(
         "",
         "## Case Results",
         "",
-        (
-            "| case | outcome | parse | schema | render | slides | sections | proof types | "
-            "needs fact check | required before broadcast | source hallucinations | "
-            "do_not_claim violations | unsupported claims | visible URLs | diagram generic | "
-            "manual insert missing instruction | generic source title | overflow notes large | "
-            "slide delta | top slides empty | section slide missing | empty sections | "
-            "minimum slide failed | section ref mismatch | source refs delta | "
-            "fact-check delta | broadcast-required delta | diagram node arrows | "
-            "chart body too long | quote missing text | renderer failure reasons | review delta | "
-            "info delta | safety regression | diagram improved |"
-        ),
-        (
-            "|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|"
-            "---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|"
-            "---:|---|---|"
-        ),
+        "| " + " | ".join(result_columns) + " |",
+        "| " + " | ".join(["---"] * len(result_columns)) + " |",
     ]
     for manifest in manifests:
         metrics = manifest.get("comparison_metrics", {})
@@ -1926,6 +2192,10 @@ def _write_live_summary(
             f"{manifest.get('top_level_slides_empty', False)} | "
             f"{manifest.get('missing_sections_slides_count', 0)} | "
             f"{manifest.get('empty_sections_count', 0)} | "
+            f"{manifest.get('section_mapping_complete', False)} | "
+            f"{_markdown_cell(manifest.get('missing_from_sections', []))} | "
+            f"{_markdown_cell(manifest.get('duplicate_section_slide_refs', []))} | "
+            f"{_markdown_cell(manifest.get('slides_with_unknown_section_id', []))} | "
             f"{manifest.get('minimum_slide_count_failed', False)} | "
             f"{manifest.get('section_slide_ref_mismatch_count', 0)} | "
             f"{manifest.get('source_refs_delta_vs_adapter', 0)} | "

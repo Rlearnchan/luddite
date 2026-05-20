@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.31
+# Current Product Direction after Milestone 1.32
 
 Status date: 2026-05-20
 
@@ -43,6 +43,14 @@ path:
   `minimum_slide_count_failed`, `deck_has_no_renderable_slides`,
   `chart_table_body_too_long_count`, `article_quote_missing_quote_text_count`,
   and `renderer_failure_reasons`.
+- Milestone 1.32 confirmed that `sections[].slides[]` is a full slide-object
+  array in `specs/piti_slide_spec_schema.json`, then fixed the Anny direct
+  section mapping contract around that schema shape.
+- The experiment reports now expose section mapping details such as
+  `section_mapping_complete`, `top_level_slide_numbers`,
+  `section_mapped_slide_numbers`, `missing_from_sections`,
+  `duplicate_section_slide_refs`, `slides_missing_section_id`, and
+  `slides_with_unknown_section_id`.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -337,6 +345,51 @@ Milestone 1.31 interpretation:
 - This live rerun does not make production Anny, production Piti, or broadcast
   readiness true.
 
+Current section-mapping live rerun:
+
+```text
+run_id: live_m132_20260520_all
+mode: live
+model: gpt-5-mini-2025-08-07
+outcome: success for both cases
+output_root: outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m132_20260520_all/
+review_note: docs/reviews/anny_slide_spec_experiments_live/live_m132_20260520_all_summary_review.md
+```
+
+Schema finding:
+
+```text
+sections[].slides[] is a full slide-object array using #/$defs/slide.
+It is not a slide number or slide ID reference array.
+Top-level slides[] and section-level sections[].slides[] must cover the same
+slide_no and slide_id set.
+```
+
+M129/M130/M131/M132 comparison:
+
+```text
+ai_knowledge_institution:
+  m129: schema_valid=false, render_passed=false, slide_count=11, section_mapping_complete=false, safety_regression=true
+  m130: schema_valid=true, render_passed=true, slide_count=0, section_mapping_complete=false, safety_regression=true
+  m131: schema_valid=true, render_passed=true, slide_count=0, section_mapping_complete=false, safety_regression=true
+  m132: schema_valid=true, render_passed=true, slide_count=26, section_mapping_complete=true, safety_regression=false
+
+productive_finance_policy:
+  m129: schema_valid=false, render_passed=false, slide_count=8, section_mapping_complete=false, safety_regression=true
+  m130: schema_valid=true, render_passed=false, slide_count=24, section_mapping_complete=false, safety_regression=false
+  m131: schema_valid=true, render_passed=true, slide_count=24, section_mapping_complete=false, safety_regression=false
+  m132: schema_valid=true, render_passed=true, slide_count=24, section_mapping_complete=true, safety_regression=false
+```
+
+Milestone 1.32 interpretation:
+
+- AI no longer emits a schema-valid empty deck in the m132 live run.
+- Finance now passes schema, render, safety, coverage, and section mapping.
+- Both live cases have `section_mapping_complete=true`.
+- Both live cases keep `diagram_nodes_too_generic=0`.
+- This is meaningful controlled-experiment evidence, not production readiness.
+- Production Anny, production Piti, and broadcast readiness remain false.
+
 Live experiment outcomes are classified as:
 
 - `success`: schema/render pass, no safety regression, and
@@ -348,16 +401,11 @@ Live experiment outcomes are classified as:
 
 ## Next Work Order
 
-1. Tighten the Anny direct section mapping contract so every
-   `sections[].slides` array contains the actual slide objects, not empty
-   placeholders, and matches top-level `slides[]`.
-2. Address the AI empty-deck recurrence with stronger case coverage or a more
-   constrained live output path.
-3. Re-run live opt-in and compare against `live_m129_20260520_all`,
-   `live_m130_20260520_all`, and `live_m131_20260520_all`.
-4. Jibi slideability scoring after live section mapping, empty-deck prevention,
-   schema/render, and safety stabilize.
-5. Later: production agent/scheduler/Slack/Slides work after contracts and
+1. Move to Jibi slideability scoring now that the current two-case live
+   section mapping experiment is green.
+2. Optionally run one more live confirmation pass before widening the case set.
+3. Keep using visual QA and comparison reports as warning-only review surfaces.
+4. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

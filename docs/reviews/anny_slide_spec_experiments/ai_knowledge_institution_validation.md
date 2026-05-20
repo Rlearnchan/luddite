@@ -1,6 +1,6 @@
 # Anny Direct Piti Slide Spec Validation: ai_knowledge_institution
 
-- generated_at: 2026-05-20T03:11:47.030220+00:00
+- generated_at: 2026-05-20T03:58:55.759539+00:00
 - mode: fixture
 - raw_model_output: outputs/model_dry_runs/anny_slide_spec_experiments/ai_knowledge_institution/raw_model_output.txt
 - parsed_piti_slide_spec: outputs/model_dry_runs/anny_slide_spec_experiments/ai_knowledge_institution/parsed_piti_slide_spec.json
@@ -23,6 +23,15 @@
 - empty_sections_count: 0
 - sections_with_empty_slides: []
 - section_slide_ref_mismatch_count: 0
+- section_mapping_complete: True
+- top_level_slide_numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+- section_mapped_slide_numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+- missing_from_sections: []
+- unknown_section_slide_refs: []
+- duplicate_section_slide_refs: []
+- slides_with_unknown_section_id: []
+- slides_missing_section_id: []
+- sections_without_matching_top_level_slides: []
 - minimum_slide_count_failed: False
 - representative_deck_compressed_to_empty: False
 - deck_has_no_renderable_slides: False
@@ -67,6 +76,12 @@
 - top_level_slides_empty: false
 - sections_slides_missing: false
 - empty_sections: false
+- section_mapping_incomplete: false
+- slides_missing_from_sections: false
+- unknown_section_slide_refs: false
+- duplicate_section_slide_refs: false
+- slides_missing_section_id: false
+- slides_with_unknown_section_id: false
 - invalid_layout_intent: false
 - deck_too_compressed: false
 - minimum_slide_count_failed: false
@@ -79,6 +94,18 @@
 ## Schema Error Details
 
 - none
+
+## Section Mapping Diagnostics
+
+- section_mapping_complete: True
+- top_level_slide_numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+- section_mapped_slide_numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+- missing_from_sections: []
+- unknown_section_slide_refs: []
+- duplicate_section_slide_refs: []
+- slides_with_unknown_section_id: []
+- slides_missing_section_id: []
+- sections_without_matching_top_level_slides: []
 
 ## Renderer Failure Diagnostics
 

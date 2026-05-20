@@ -1,6 +1,6 @@
 # Anny Direct Piti Slide Spec Comparison: productive_finance_policy
 
-- generated_at: 2026-05-20T03:11:47.219544+00:00
+- generated_at: 2026-05-20T03:58:55.919536+00:00
 - adapter_slide_spec: data/candidates/piti_slide_specs/productive_finance_policy_slide_spec.json
 - direct_schema_valid: True
 - direct_failure_modes: []
@@ -35,6 +35,7 @@
 - missing_sections_slides_count: 0
 - empty_sections_count: 0
 - section_slide_ref_mismatch_count: 0
+- section_mapping_complete: true
 - layout_intent_invalid_enum_count: 0
 - chart_table_body_too_long_count: 0
 - article_quote_missing_quote_text_count: 0
@@ -46,6 +47,11 @@
 - deck_has_no_renderable_slides: false
 - source_refs_removed_too_aggressively: false
 - proof_object_renderer_contract_failed: false
+- missing_from_sections: []
+- unknown_section_slide_refs: []
+- duplicate_section_slide_refs: []
+- slides_with_unknown_section_id: []
+- slides_missing_section_id: []
 - do_not_claim_removed_or_ignored: false
 - safety_regression_detected: false
 - diagram_quality_improved: true
@@ -61,6 +67,12 @@
 - top_level_slides_empty: False
 - sections_slides_missing: False
 - empty_sections: False
+- section_mapping_incomplete: False
+- slides_missing_from_sections: False
+- unknown_section_slide_refs: False
+- duplicate_section_slide_refs: False
+- slides_missing_section_id: False
+- slides_with_unknown_section_id: False
 - invalid_layout_intent: False
 - deck_too_compressed: False
 - minimum_slide_count_failed: False
@@ -90,13 +102,14 @@
 ### Next Prompt/Contract Suggestions
 
 - Make diagram nodes concrete at Anny output time, not in the Piti renderer.
-- Make schema shape explicit: every section needs slides[], and top-level slides must match.
+- Make schema shape explicit: every section needs slides[], and top-level slides must match the full slide objects inside sections[].slides.
 - Preserve adapter-level slide coverage; do not over-compress representative decks.
 - Require at least one actor, one mechanism verb, and one result node for diagrams.
 - Keep source/fact-check flags conservative.
 - Keep source_refs and do_not_claim guardrails unless the prompt supplies a clear reason.
 - Forbid arrows inside diagram node text; relationships belong in diagram_edges.
 - Forbid empty decks and empty section slide arrays.
+- Require section_mapping_complete=true before treating live output as usable.
 - Keep chart/table screen_body to 0-1 lines with data_hint.
 - Use article_quote only when quote_text is available.
 - Keep overflow_notes_too_large as INFO until human review says otherwise.

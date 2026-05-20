@@ -191,6 +191,7 @@ def test_slide_spec_experiment_live_api_invalid_json_preserves_raw_output(
 
 
 def test_slide_spec_experiment_prompt_states_direct_contract() -> None:
+    case = EXPERIMENT_CASES[0]
     prompt = build_slide_spec_experiment_prompt(
         input_bundle={"story_seed_title": "테스트"},
         evidence_pack={"source": "evidence"},
@@ -198,6 +199,7 @@ def test_slide_spec_experiment_prompt_states_direct_contract() -> None:
         schema={"title": "PitiSlideSpecDeck"},
         visual_qa_summary="diagram_nodes_too_generic: 30",
         allowed_urls={"https://example.com/source"},
+        adapter_spec=_synthetic_fixture_output(case),
     )
 
     assert "piti_slide_spec_schema.json" in prompt
@@ -216,6 +218,9 @@ def test_slide_spec_experiment_prompt_states_direct_contract() -> None:
     assert "Top-level slides[] must be non-empty" in prompt
     assert "article_quote requires non-empty quote_text" in prompt
     assert "Chart/table proof objects need data_hint" in prompt
+    assert "sections[].slides[] items are full slide objects" in prompt
+    assert "Section-mapped slide numbers equal top-level slide numbers" in prompt
+    assert "For ai_knowledge_institution, preserve the four-section structure" in prompt
 
 
 def test_slide_spec_contract_diagnostics_catches_live_regression_patterns() -> None:
@@ -255,9 +260,46 @@ def test_slide_spec_contract_diagnostics_catches_live_regression_patterns() -> N
     assert diagnostics["do_not_claim_removed_or_ignored"] is True
     assert diagnostics["top_level_slides_empty"] is False
     assert diagnostics["minimum_slide_count_failed"] is True
+    assert diagnostics["section_mapping_complete"] is False
+    assert diagnostics["missing_from_sections"]
     assert diagnostics["needs_fact_check_delta_vs_adapter"] < 0
     assert diagnostics["required_before_broadcast_delta_vs_adapter"] <= 0
     assert diagnostics["diagram_nodes_with_arrow_count"] == 1
+
+
+def test_slide_spec_section_mapping_diagnostics_are_explicit() -> None:
+    spec = {
+        "sections": [
+            {
+                "section_id": "section_01",
+                "slides": [
+                    {"slide_id": "slide_001", "slide_no": 1, "section_id": "section_01"},
+                    {"slide_id": "slide_001", "slide_no": 1, "section_id": "section_01"},
+                    {"slide_id": "slide_999", "slide_no": 99, "section_id": "section_01"},
+                ],
+            },
+            {"section_id": "section_02", "slides": []},
+            {"section_id": "section_03", "slides": []},
+        ],
+        "slides": [
+            {"slide_id": "slide_001", "slide_no": 1, "section_id": "section_01"},
+            {"slide_id": "slide_002", "slide_no": 2, "section_id": "section_02"},
+            {"slide_id": "slide_003", "slide_no": 3, "section_id": "section_missing"},
+            {"slide_id": "slide_004", "slide_no": 4, "section_id": ""},
+        ],
+    }
+
+    diagnostics = _contract_diagnostics(spec, spec)
+
+    assert diagnostics["top_level_slide_numbers"] == [1, 2, 3, 4]
+    assert diagnostics["section_mapped_slide_numbers"] == [1]
+    assert diagnostics["missing_from_sections"] == [2, 3, 4]
+    assert diagnostics["unknown_section_slide_refs"] == ["slide_999"]
+    assert diagnostics["duplicate_section_slide_refs"] == ["slide_001"]
+    assert diagnostics["slides_with_unknown_section_id"] == [3]
+    assert diagnostics["slides_missing_section_id"] == [4]
+    assert diagnostics["sections_without_matching_top_level_slides"] == ["section_03"]
+    assert diagnostics["section_mapping_complete"] is False
 
 
 def test_slide_spec_empty_deck_is_live_failure(tmp_path: Path, monkeypatch: Any) -> None:
@@ -286,6 +328,7 @@ def test_slide_spec_empty_deck_is_live_failure(tmp_path: Path, monkeypatch: Any)
     assert manifest["empty_sections_count"] == len(empty_deck["sections"])
     assert "top_level_slides_empty" in manifest["failure_modes"]
     assert "empty_sections" in manifest["failure_modes"]
+    assert "section_mapping_incomplete" in manifest["failure_modes"]
     assert "minimum_slide_count_failed" in manifest["failure_modes"]
     assert "deck_has_no_renderable_slides" in manifest["failure_modes"]
 

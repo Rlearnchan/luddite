@@ -1,6 +1,6 @@
 # Piti Visual QA: piti_slide_spec_productive_finance_policy
 
-- Generated at: 2026-05-20T03:11:44.332674+00:00
+- Generated at: 2026-05-20T03:58:52.568088+00:00
 - Input: data/candidates/piti_slide_specs/productive_finance_policy_slide_spec.json
 - Slides: 24
 - Flagged slides: 12
