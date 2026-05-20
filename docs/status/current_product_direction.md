@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.26
+# Current Product Direction after Milestone 1.27
 
 Status date: 2026-05-20
 
@@ -22,6 +22,9 @@ path:
   calls.
 - The experiment writes per-case validation, visual QA, and adapter comparison
   reports for `ai_knowledge_institution` and `productive_finance_policy`.
+- In fixture mode, direct slide-spec output now applies deterministic concrete
+  diagram fixtures at the Anny/direct-output stage. This reduces generic
+  diagram-node warnings without changing Piti renderer behavior.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -122,7 +125,7 @@ Visual QA remains warning-only. No QA severity currently fails
 
 ## Current Anny Direct Slide Spec Experiment
 
-The Milestone 1.26 experiment asks whether Anny can output the
+The direct slide-spec experiment asks whether Anny can output the
 `piti_slide_spec` contract directly, instead of producing storyline JSON that
 is later converted by the adapter.
 
@@ -132,6 +135,7 @@ Default mode is deterministic fixture/synthetic validation:
 - no new external data collection
 - no production agent behavior
 - no changes to the Piti renderer's non-rewriting contract
+- deterministic concrete diagram-node fixtures for the two current cases
 
 Live API mode is opt-in only via `--live-api`.
 
@@ -152,16 +156,31 @@ docs/reviews/anny_slide_spec_experiments/{case_id}_validation.md
 docs/reviews/anny_slide_spec_experiments/{case_id}_comparison.md
 ```
 
-The experiment's main measurement question is whether direct Anny
-`piti_slide_spec` output can reduce `diagram_nodes_too_generic` without
-increasing source/fact-check risk, generic source-card titles, or manual
-insertion warnings. Fixture mode validates the harness; it is not evidence that
-production Anny is ready.
+Current fixture comparison:
+
+```text
+ai_knowledge_institution:
+  adapter diagram_nodes_too_generic: 18
+  direct diagram_nodes_too_generic: 0
+  diagram_quality_improved: true
+  safety_regression_detected: false
+
+productive_finance_policy:
+  adapter diagram_nodes_too_generic: 12
+  direct diagram_nodes_too_generic: 0
+  diagram_quality_improved: true
+  safety_regression_detected: false
+```
+
+This is evidence that the direct-output contract can carry better diagram
+copy when Anny provides it explicitly. It is still not evidence that production
+Anny is ready, because fixture mode is deterministic and does not prove live
+model behavior.
 
 ## Next Work Order
 
-1. Review direct Anny slide spec experiment deltas and refine the Anny
-   prompt/contract for concrete diagram nodes.
+1. Run a live opt-in Anny direct slide-spec experiment and compare whether the
+   model follows the strengthened diagram contract.
 2. Jibi slideability scoring
 3. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature

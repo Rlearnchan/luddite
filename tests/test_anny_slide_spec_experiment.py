@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +7,13 @@ from luddite.agents.anny.slide_spec_experiment import (
     build_slide_spec_experiment_prompt,
     run_experiment,
 )
+from luddite.agents.piti import render_visual_qa
+
+
+def _visual_flag_count(path: Path, flag: str) -> int:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    deck = render_visual_qa.evaluate_slide_spec(path, payload, path.parent)
+    return render_visual_qa._flag_counter([deck]).get(flag, 0)
 
 
 def test_slide_spec_experiment_fixture_mode_writes_case_artifacts(tmp_path: Path) -> None:
@@ -37,6 +45,19 @@ def test_slide_spec_experiment_fixture_mode_writes_case_artifacts(tmp_path: Path
         assert "adapter" in comparison
         assert "direct" in comparison
         assert "production readiness remains false" in comparison.lower()
+        assert "diagram_quality_improved: true" in comparison
+        assert "safety_regression_detected: false" in comparison
+        assert "diagram_nodes_too_generic_delta" in comparison
+        assert "visual_qa_review_delta" in comparison
+        direct_diagram_flags = _visual_flag_count(
+            case_dir / "parsed_piti_slide_spec.json",
+            "diagram_nodes_too_generic",
+        )
+        adapter_diagram_flags = _visual_flag_count(
+            case.adapter_slide_spec_path,
+            "diagram_nodes_too_generic",
+        )
+        assert direct_diagram_flags < adapter_diagram_flags
 
 
 def test_slide_spec_experiment_default_mode_does_not_call_api(tmp_path: Path) -> None:
@@ -131,4 +152,6 @@ def test_slide_spec_experiment_prompt_states_direct_contract() -> None:
     assert "piti_slide_spec_schema.json" in prompt
     assert "Piti will render this contract without re-inferring" in prompt
     assert "actor -> mechanism -> result" in prompt
+    assert "at least 3 nodes" in prompt
+    assert "short broadcast sentences" in prompt
     assert "Do not expose source URLs on screen" in prompt

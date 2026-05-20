@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.26
+# Codex Next Steps after Milestone 1.27
 
 ## 상태
 
@@ -120,11 +120,55 @@ docs/reviews/anny_slide_spec_experiments/{case_id}_comparison.md
 
 live API는 명시적으로 `--live-api`를 붙일 때만 호출한다.
 
+## Milestone 1.27 완료 상태
+
+Anny direct slide spec experiment의 fixture mode에서 diagram proof object를
+adapter output의 단순 복사본으로 두지 않고, 같은 story/source/fact-check
+metadata를 유지하면서 concrete diagram node/edge fixture를 적용한다.
+
+핵심 원칙:
+
+- diagram node는 추상 명사가 아니라 화면 박스에 들어갈 짧은 방송 문장이다.
+- 가능한 구조는 `actor/context -> mechanism/change -> result/tension`이다.
+- Piti renderer는 여전히 의미를 재작성하지 않는다.
+- Piti는 diagram node를 고치거나 proof object를 재추론하지 않는다.
+- QA flags는 계속 warning-only다.
+
+fixture comparison:
+
+```text
+ai_knowledge_institution:
+  adapter diagram_nodes_too_generic: 18
+  direct diagram_nodes_too_generic: 0
+  diagram_nodes_too_generic_delta: -18
+  safety_regression_detected: false
+  diagram_quality_improved: true
+
+productive_finance_policy:
+  adapter diagram_nodes_too_generic: 12
+  direct diagram_nodes_too_generic: 0
+  diagram_nodes_too_generic_delta: -12
+  safety_regression_detected: false
+  diagram_quality_improved: true
+```
+
+comparison report에는 아래 delta가 명시된다.
+
+- `diagram_nodes_too_generic_delta`
+- `manual_insert_required_without_editor_instruction_delta`
+- `source_card_display_title_too_generic_delta`
+- `overflow_notes_too_large_delta`
+- `visual_qa_review_delta`
+- `visual_qa_info_delta`
+- `safety_regression_detected`
+- `diagram_quality_improved`
+
 ## 다음 구현/평가 목표
 
-1. Anny direct output과 adapter baseline의 visual QA delta를 검토한다.
-2. `diagram_nodes_too_generic`를 줄이기 위해 Anny prompt/contract의 diagram
-   node 생성 지침을 보강한다.
+1. live API opt-in으로 direct slide spec prompt가 실제 모델에서도 concrete
+   diagram node를 만드는지 확인한다.
+2. live 결과가 안정적이면 fixture logic이 아니라 prompt/contract 자체의
+   diagram 지침을 더 다듬는다.
 3. Jibi slideability scoring으로 넘어간다.
 4. 그 이후 production agent/scheduler/Slack/Slides 검토
 

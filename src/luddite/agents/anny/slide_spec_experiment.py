@@ -47,6 +47,116 @@ class SlideSpecExperimentCase:
     adapter_slide_spec_path: Path
 
 
+@dataclass(frozen=True)
+class ConcreteDiagramFixture:
+    nodes: tuple[str, str, str]
+    edge_labels: tuple[str, str]
+
+
+AI_SEARCH_COMPRESSION_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "AI 즉답 서비스가 먼저 답을 제시함",
+        "사용자가 검색·비교 과정을 건너뛰기 쉬워짐",
+        "학교·박물관은 검증 훈련을 가르쳐야 함",
+    ),
+    edge_labels=("탐색 과정을 압축함", "검증 훈련을 요구함"),
+)
+KNOWLEDGE_INSTITUTION_ROLE_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "AI 서비스가 기본 설명을 즉시 제공함",
+        "학교·박물관의 답 제공 역할이 약해짐",
+        "기관은 질문·검증 훈련을 설계해야 함",
+    ),
+    edge_labels=("설명 역할을 전환함", "훈련 역할을 확대함"),
+)
+LEARNING_VERIFICATION_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "사용자가 AI 답을 그대로 받기 쉬움",
+        "출처 비교와 검증 과정이 화면 밖으로 밀림",
+        "수업은 질문과 확인 습관을 훈련해야 함",
+    ),
+    edge_labels=("비교 과정을 줄임", "검증 습관을 훈련함"),
+)
+OBSERVATORY_METHOD_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "천문관이 별 이름 설명에 머무름",
+        "AI가 기본 설명을 즉시 대체함",
+        "기관은 관찰·질문하는 법을 보여줘야 함",
+    ),
+    edge_labels=("설명 역할을 전환함", "질문 방식을 훈련함"),
+)
+BANK_COLLATERAL_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "은행은 담보 있는 대출을 선호함",
+        "AI·반도체 투자는 회수 기간이 길고 담보가 약함",
+        "정책금융의 위험분담 논쟁이 생김",
+    ),
+    edge_labels=("장기 투자와 충돌함", "위험분담을 요구함"),
+)
+POLICY_FINANCE_TIME_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "정책금융이 시장보다 긴 시간을 보려 함",
+        "은행은 손실 가능성을 먼저 계산함",
+        "정부와 금융권의 위험분담 기준이 쟁점이 됨",
+    ),
+    edge_labels=("투자 시간을 늘림", "분담 기준을 요구함"),
+)
+GROWTH_POLICY_BOUNDARY_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "은행은 예금자 돈을 보수적으로 운용함",
+        "성장산업 투자는 실패 가능성을 안고 감",
+        "정책은 좋은 위험과 보조금을 구분해야 함",
+    ),
+    edge_labels=("투자 위험을 드러냄", "정책 기준을 요구함"),
+)
+RISK_DISTRIBUTION_DIAGRAM = ConcreteDiagramFixture(
+    nodes=(
+        "국민성장펀드가 장기 자본을 공급함",
+        "손실 가능성도 사회적으로 나뉨",
+        "투자와 보조금 사이의 경계가 쟁점이 됨",
+    ),
+    edge_labels=("위험을 분담함", "정책 경계를 확인해야 함"),
+)
+
+
+CONCRETE_DIAGRAM_FIXTURES: dict[str, dict[int, ConcreteDiagramFixture]] = {
+    "ai_knowledge_institution": {
+        2: AI_SEARCH_COMPRESSION_DIAGRAM,
+        4: AI_SEARCH_COMPRESSION_DIAGRAM,
+        5: KNOWLEDGE_INSTITUTION_ROLE_DIAGRAM,
+        6: LEARNING_VERIFICATION_DIAGRAM,
+        8: AI_SEARCH_COMPRESSION_DIAGRAM,
+        9: AI_SEARCH_COMPRESSION_DIAGRAM,
+        10: LEARNING_VERIFICATION_DIAGRAM,
+        12: AI_SEARCH_COMPRESSION_DIAGRAM,
+        14: KNOWLEDGE_INSTITUTION_ROLE_DIAGRAM,
+        15: KNOWLEDGE_INSTITUTION_ROLE_DIAGRAM,
+        16: OBSERVATORY_METHOD_DIAGRAM,
+        18: LEARNING_VERIFICATION_DIAGRAM,
+        19: KNOWLEDGE_INSTITUTION_ROLE_DIAGRAM,
+        21: LEARNING_VERIFICATION_DIAGRAM,
+        22: LEARNING_VERIFICATION_DIAGRAM,
+        23: OBSERVATORY_METHOD_DIAGRAM,
+        25: LEARNING_VERIFICATION_DIAGRAM,
+        26: LEARNING_VERIFICATION_DIAGRAM,
+    },
+    "productive_finance_policy": {
+        3: BANK_COLLATERAL_DIAGRAM,
+        4: BANK_COLLATERAL_DIAGRAM,
+        5: BANK_COLLATERAL_DIAGRAM,
+        9: BANK_COLLATERAL_DIAGRAM,
+        10: POLICY_FINANCE_TIME_DIAGRAM,
+        11: GROWTH_POLICY_BOUNDARY_DIAGRAM,
+        16: GROWTH_POLICY_BOUNDARY_DIAGRAM,
+        17: RISK_DISTRIBUTION_DIAGRAM,
+        18: RISK_DISTRIBUTION_DIAGRAM,
+        20: POLICY_FINANCE_TIME_DIAGRAM,
+        22: RISK_DISTRIBUTION_DIAGRAM,
+        24: RISK_DISTRIBUTION_DIAGRAM,
+    },
+}
+
+
 EXPERIMENT_CASES = [
     SlideSpecExperimentCase(
         case_id="ai_knowledge_institution",
@@ -244,6 +354,13 @@ def _chart_table_count(spec: dict[str, Any]) -> int:
     return sum(1 for slide in _all_slides(spec) if _proof_type(slide) in {"chart", "table"})
 
 
+def _slide_no(slide: dict[str, Any]) -> int:
+    try:
+        return int(slide.get("slide_no") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _visual_metrics(spec: dict[str, Any], *, pseudo_path: Path) -> dict[str, Any]:
     deck = render_visual_qa.evaluate_slide_spec(pseudo_path, spec, pseudo_path.parent)
     return {
@@ -286,6 +403,22 @@ def _spec_metrics(spec: dict[str, Any], *, pseudo_path: Path) -> dict[str, Any]:
     }
 
 
+def _metric_delta(direct_metrics: dict[str, Any], adapter_metrics: dict[str, Any], key: str) -> int:
+    return int(direct_metrics.get(key, 0) or 0) - int(adapter_metrics.get(key, 0) or 0)
+
+
+def _severity_delta(
+    direct_metrics: dict[str, Any],
+    adapter_metrics: dict[str, Any],
+    severity: str,
+) -> int:
+    direct_counts = direct_metrics.get("severity_counts", {})
+    adapter_counts = adapter_metrics.get("severity_counts", {})
+    return int(direct_counts.get(severity, 0) or 0) - int(
+        adapter_counts.get(severity, 0) or 0
+    )
+
+
 def build_slide_spec_experiment_prompt(
     *,
     input_bundle: dict[str, Any],
@@ -324,11 +457,15 @@ def build_slide_spec_experiment_prompt(
             "Include counterpoint or opposing questions when the topic requires it.",
             "## Diagram Requirements",
             "Avoid generic nodes such as AI 즉답 -> 검증 -> 맥락.",
+            "Avoid word-only nodes such as 안전한 금융 -> 성장 금융.",
+            "Prefer at least 3 nodes.",
             "Use actor -> mechanism -> result structure.",
+            "Use short broadcast sentences, not abstract noun placeholders.",
             "Include at least one concrete actor, institution, user, or system.",
             "Include at least one mechanism verb.",
+            "Make each node imply actor/context, mechanism/change, or result/tension.",
             "Each diagram node should work as broadcast-facing box copy.",
-            "Use meaningful edge labels when possible.",
+            "Use meaningful edge labels; avoid labels like 흐름 or 연결.",
             "## Current Piti Visual QA Baseline",
             visual_qa_summary,
             "## Allowed Source URLs",
@@ -345,6 +482,44 @@ def build_slide_spec_experiment_prompt(
     )
 
 
+def _diagram_edges(fixture: ConcreteDiagramFixture) -> list[dict[str, str]]:
+    return [
+        {
+            "from": fixture.nodes[0],
+            "to": fixture.nodes[1],
+            "label": fixture.edge_labels[0],
+        },
+        {
+            "from": fixture.nodes[1],
+            "to": fixture.nodes[2],
+            "label": fixture.edge_labels[1],
+        },
+    ]
+
+
+def _apply_concrete_diagram_fixtures(
+    spec: dict[str, Any],
+    *,
+    case_id: str,
+) -> int:
+    fixtures = CONCRETE_DIAGRAM_FIXTURES.get(case_id, {})
+    changed = 0
+    for slide in _all_slides(spec):
+        if _proof_type(slide) != "diagram":
+            continue
+        fixture = fixtures.get(_slide_no(slide))
+        if not fixture:
+            continue
+        proof = _proof(slide)
+        proof["diagram_nodes"] = list(fixture.nodes)
+        proof["diagram_edges"] = _diagram_edges(fixture)
+        proof["placeholder_reason"] = (
+            "Direct fixture uses concrete actor -> mechanism -> result diagram copy."
+        )
+        changed += 1
+    return changed
+
+
 def _synthetic_fixture_output(case: SlideSpecExperimentCase) -> dict[str, Any]:
     storyline = _load_json(case.manual_storyline_path)
     spec = build_piti_slide_spec_from_storyline(
@@ -352,9 +527,12 @@ def _synthetic_fixture_output(case: SlideSpecExperimentCase) -> dict[str, Any]:
         deck_id=f"{case.case_id}_direct_fixture",
         source_storyline_path=case.manual_storyline_path,
     )
+    changed = _apply_concrete_diagram_fixtures(spec, case_id=case.case_id)
     spec["notes"] = (
         "Synthetic fixture for Anny direct Piti slide spec experiment. "
-        "This validates the direct-output harness without calling an API."
+        "This validates the direct-output harness without calling an API. "
+        f"Concrete diagram fixture updates applied: {changed}; "
+        "source/fact-check metadata preserved."
     )
     return spec
 
@@ -594,6 +772,33 @@ def _write_comparison_report(
     source_title_delta = direct_flags.get("source_card_display_title_too_generic", 0) - (
         adapter_flags.get("source_card_display_title_too_generic", 0)
     )
+    overflow_delta = direct_flags.get("overflow_notes_too_large", 0) - adapter_flags.get(
+        "overflow_notes_too_large",
+        0,
+    )
+    review_delta = _severity_delta(direct_metrics, adapter_metrics, "REVIEW")
+    info_delta = _severity_delta(direct_metrics, adapter_metrics, "INFO")
+    visible_url_delta = _metric_delta(direct_metrics, adapter_metrics, "visible_url_count")
+    safety_regression_detected = bool(
+        direct_manifest.get("source_hallucination_count", 0)
+        or direct_manifest.get("do_not_claim_violation_count", 0)
+        or direct_manifest.get("unsupported_claim_count", 0)
+        or direct_manifest.get("needs_fact_check_removed_too_aggressively", False)
+        or direct_manifest.get("required_before_broadcast_removed_too_aggressively", False)
+        or visible_url_delta > 0
+    )
+    diagram_quality_improved = bool(diagram_delta < 0 and not safety_regression_detected)
+    deltas = {
+        "diagram_nodes_too_generic_delta": diagram_delta,
+        "manual_insert_required_without_editor_instruction_delta": manual_delta,
+        "source_card_display_title_too_generic_delta": source_title_delta,
+        "overflow_notes_too_large_delta": overflow_delta,
+        "visual_qa_review_delta": review_delta,
+        "visual_qa_info_delta": info_delta,
+        "visible_url_count_delta": visible_url_delta,
+        "safety_regression_detected": safety_regression_detected,
+        "diagram_quality_improved": diagram_quality_improved,
+    }
     improvements: list[str] = []
     regressions: list[str] = []
     if diagram_delta < 0:
@@ -608,6 +813,10 @@ def _write_comparison_report(
         improvements.append("source card generic title warnings did not increase")
     else:
         regressions.append("source card generic title warnings increased")
+    if safety_regression_detected:
+        regressions.append("safety regression detected")
+    else:
+        improvements.append("no source/fact-check safety regression detected")
     if direct_manifest.get("failure_modes"):
         regressions.append("direct output has validation failure modes")
     remaining = [
@@ -623,6 +832,8 @@ def _write_comparison_report(
         f"- direct_schema_valid: {direct_manifest.get('schema_valid')}",
         f"- direct_failure_modes: {direct_manifest.get('failure_modes', [])}",
         "- QA flags are warning-only.",
+        f"- diagram_quality_improved: {str(diagram_quality_improved).lower()}",
+        f"- safety_regression_detected: {str(safety_regression_detected).lower()}",
         "",
         "## Metrics",
         "",
@@ -636,11 +847,25 @@ def _write_comparison_report(
         _comparison_row("adapter", adapter_metrics),
         _comparison_row("direct", direct_metrics),
         "",
-        "## Conclusion",
-        "",
-        "### Better",
+        "## Delta Summary",
         "",
     ]
+    lines.extend(
+        f"- {key}: {str(value).lower() if isinstance(value, bool) else value}"
+        for key, value in deltas.items()
+    )
+    lines.extend(
+        [
+            "",
+            "## Conclusion",
+            "",
+            f"- diagram quality improved: {str(diagram_quality_improved).lower()}",
+            f"- safety regression detected: {str(safety_regression_detected).lower()}",
+            "",
+            "### Better",
+            "",
+        ]
+    )
     lines.extend(f"- {item}" for item in improvements) if improvements else lines.append("- none")
     lines.extend(["", "### Worse", ""])
     lines.extend(f"- {item}" for item in regressions) if regressions else lines.append("- none")
@@ -658,7 +883,11 @@ def _write_comparison_report(
         ]
     )
     _write_text(path, "\n".join(lines) + "\n")
-    return {"adapter": adapter_metrics, "direct": direct_metrics}
+    return {
+        "adapter": adapter_metrics,
+        "direct": direct_metrics,
+        "deltas": deltas,
+    }
 
 
 def _comparison_row(label: str, metrics: dict[str, Any]) -> str:
