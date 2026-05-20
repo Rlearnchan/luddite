@@ -22,6 +22,7 @@ from luddite.agents.jibi.heuristics import (
     infer_seed_type,
     text_blob,
 )
+from luddite.agents.jibi.slideability import analyze_slideability
 from luddite.utils.jsonl import read_jsonl, write_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -564,6 +565,14 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     )
     if quality_gate["forced_action"]:
         recommended_action = str(quality_gate["forced_action"])
+    slideability = analyze_slideability(
+        {
+            **candidate,
+            "possible_expansions": possible_expansions,
+            "quality_flags": quality_gate["quality_flags"],
+            "risk_flags": risk_flags,
+        }
+    )
     failure_modes = _failure_modes(
         candidate=candidate,
         risk_flags=risk_flags,
@@ -592,6 +601,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         "final_grade": final_grade,
         "risk_level": risk_level,
         "recommended_action": recommended_action,
+        "slideability": slideability,
         "blocked_reason": blocked_reason,
         "failure_modes": failure_modes,
         "status": "scored",

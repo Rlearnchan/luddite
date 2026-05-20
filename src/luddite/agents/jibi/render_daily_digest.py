@@ -144,6 +144,21 @@ def _bullet_lines(values: list[str] | None, fallback: list[str]) -> list[str]:
     return items or fallback
 
 
+def _slideability_label(candidate: dict[str, Any]) -> str:
+    slideability = candidate.get("slideability")
+    if not isinstance(slideability, dict):
+        return "low / -"
+    proof = "+".join(slideability.get("likely_proof_object_types", [])[:3]) or "-"
+    return f"{slideability.get('visualizability', 'low')} / {proof}"
+
+
+def _slideability_risks(candidate: dict[str, Any]) -> str:
+    slideability = candidate.get("slideability")
+    if not isinstance(slideability, dict):
+        return "-"
+    return ", ".join(slideability.get("risks", [])) or "-"
+
+
 def render_markdown(
     candidates: list[dict[str, Any]],
     digest_date: str,
@@ -220,6 +235,11 @@ def render_markdown(
                 "필요:",
                 *[f"  - {item}" for item in evidence_needed[:3]],
                 "",
+                f"Slideability: {_slideability_label(candidate)}",
+                "First slide idea: "
+                f"{candidate.get('slideability', {}).get('first_slide_idea', '-')}",
+                f"Visual risks: {_slideability_risks(candidate)}",
+                "",
                 f"Risk flags: {risk_flags}",
                 "",
             ]
@@ -258,6 +278,11 @@ def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_dat
         "why_interesting",
         "possible_expansions",
         "evidence_needed",
+        "slideability_score",
+        "slideability",
+        "first_slide_idea",
+        "likely_proof_object_types",
+        "visual_risks",
         "중복후보",
         "reviewer",
         "review_result",
@@ -271,6 +296,7 @@ def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_dat
             source_url_canonical = candidate.get("source_url_canonical") or canonicalize_url(
                 str(candidate.get("seed_url", ""))
             )
+            slideability = candidate.get("slideability") or {}
             writer.writerow(
                 {
                     "digest_date": digest_date,
@@ -294,6 +320,13 @@ def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_dat
                     "why_interesting": candidate.get("why_interesting", ""),
                     "possible_expansions": " | ".join(candidate.get("possible_expansions", [])),
                     "evidence_needed": " | ".join(candidate.get("evidence_needed", [])),
+                    "slideability_score": slideability.get("score", ""),
+                    "slideability": _slideability_label(candidate),
+                    "first_slide_idea": slideability.get("first_slide_idea", ""),
+                    "likely_proof_object_types": " | ".join(
+                        slideability.get("likely_proof_object_types", [])
+                    ),
+                    "visual_risks": " | ".join(slideability.get("risks", [])),
                     "중복후보": "",
                     "reviewer": "",
                     "review_result": "",
@@ -385,13 +418,24 @@ def write_quality_report(
         f"- single_company_frame count: {single_company_count}",
         f"- political_sensitivity count: {political_count}",
         "",
+        "## Slideability Summary",
+        "",
+        *[
+            f"- {level}: {count}"
+            for level, count in Counter(
+                str((item.get("slideability") or {}).get("visualizability", "low"))
+                for item in candidates
+            ).most_common()
+        ],
+        "",
         "## Top Candidates Detail",
         "",
         *[
             (
                 f"- {item.get('title')}: seed_type={item.get('seed_type')}, "
                 f"risk_flags={item.get('risk_flags', [])}, "
-                f"quality_flags={item.get('quality_flags', [])}"
+                f"quality_flags={item.get('quality_flags', [])}, "
+                f"slideability={_slideability_label(item)}"
             )
             for item in top
         ],

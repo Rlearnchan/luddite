@@ -85,13 +85,20 @@ def test_cluster_candidates_groups_same_story_key_and_validates_schema(tmp_path)
     assert len(cluster["source_ids"]) == 2
     assert cluster["readiness"] in {"ready_for_anny", "needs_more_evidence"}
     assert validate_with_schema(cluster, "story_seed_schema.json") == []
+    assert "slideability" in cluster
+    assert cluster["slideability"]["likely_proof_object_types"]
     assert output_path.exists()
     assert report_path.exists()
     assert digest_path.exists()
     assert handoff_path.exists()
     assert handoff_digest_path.exists()
     assert read_jsonl(output_path)[0]["cluster_id"] == cluster["cluster_id"]
-    assert read_jsonl(handoff_path)[0]["handoff_priority"] == "high"
+    handoff = read_jsonl(handoff_path)[0]
+    assert handoff["handoff_priority"] == "high"
+    assert "slideability_score" in handoff
+    assert handoff["first_slide_idea"]
+    assert "Slideability:" in report_path.read_text(encoding="utf-8")
+    assert "First slide idea:" in digest_path.read_text(encoding="utf-8")
 
 
 def test_high_risk_cluster_goes_to_editorial_review(tmp_path) -> None:

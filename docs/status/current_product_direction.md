@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.32
+# Current Product Direction after Milestone 1.33
 
 Status date: 2026-05-20
 
@@ -51,6 +51,12 @@ path:
   `section_mapped_slide_numbers`, `missing_from_sections`,
   `duplicate_section_slide_refs`, `slides_missing_section_id`, and
   `slides_with_unknown_section_id`.
+- Milestone 1.33 adds deterministic Jibi `slideability` scoring v0 to scored
+  candidates, story seed clusters, handoff records, daily digest output, and
+  Jibi review reports.
+- `slideability` is a review/report signal only. It does not hard reject
+  candidates, does not change `recommended_action`, and does not make
+  production/broadcast readiness true.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -108,6 +114,10 @@ make validate-piti-slide-spec
 make render-piti-slide-spec-pptx
 make render-piti-visual-qa
 make run-anny-slide-spec-experiment
+make normalize-candidates
+make score-candidates
+make cluster-jibi-candidates
+make render-daily-digest
 ```
 
 Current fixture inputs:
@@ -399,13 +409,55 @@ Live experiment outcomes are classified as:
 - `failure`: parse/schema/render failure or any source/fact-check safety
   regression.
 
+## Current Jibi Slideability Status
+
+Milestone 1.33 adds a rule-based `slideability` object to Jibi scored
+candidates and story seed clusters:
+
+```text
+score: 0.0-1.0
+visualizability: low|medium|high
+chartability: none|weak|strong
+diagramability: none|weak|strong
+screenshotability: none|weak|strong
+source_card_fit: none|weak|strong
+first_slide_idea: short human-readable first-slide suggestion
+likely_proof_object_types: diagram/chart/source_card
+risks: too_abstract, single_source, needs_official_data, policy_claim_risk, market_claim_risk, no_clear_visual
+reason: compact deterministic explanation
+```
+
+The v0 scorer is deterministic and does not call an LLM/API. It looks for
+numeric/trend cues, actor-mechanism-result cues, explicit source/report cues,
+and visual risks. It is intentionally separate from the existing Jibi score and
+handoff gate.
+
+Current generated sample reports expose slideability in:
+
+```text
+outputs/reports/jibi_quality_2026-05-20.md
+outputs/reports/jibi_clusters_2026-05-20.md
+outputs/daily_digest/2026-05-20.md
+outputs/daily_digest/2026-05-20_clusters.md
+outputs/daily_digest/2026-05-20_story_seed_handoff.md
+```
+
+GitHub-visible implementation note:
+
+```text
+docs/reviews/jibi_slideability_v0.md
+```
+
 ## Next Work Order
 
-1. Move to Jibi slideability scoring now that the current two-case live
-   section mapping experiment is green.
-2. Optionally run one more live confirmation pass before widening the case set.
-3. Keep using visual QA and comparison reports as warning-only review surfaces.
-4. Later: production agent/scheduler/Slack/Slides work after contracts and
+1. Decide whether to pass Jibi `slideability` into the Anny input bundle as
+   context, still without hard-gating candidates.
+2. Connect Jibi slideability observations to downstream Piti visual QA results.
+3. Consider a PPT contact-sheet QA surface for rendered draft decks.
+4. Optionally run one more live Anny direct confirmation pass before widening
+   the case set.
+5. Keep using visual QA and comparison reports as warning-only review surfaces.
+6. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

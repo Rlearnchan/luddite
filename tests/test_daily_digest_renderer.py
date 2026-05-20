@@ -25,6 +25,18 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
                 "evidence_needed": ["추가 출처"],
                 "possible_expansions": ["베트남 신용시장"],
                 "scores": {"total_score": 55, "broadcast_potential_proxy": 5},
+                "slideability": {
+                    "score": 0.78,
+                    "visualizability": "high",
+                    "chartability": "weak",
+                    "diagramability": "strong",
+                    "screenshotability": "weak",
+                    "source_card_fit": "strong",
+                    "first_slide_idea": "전당포 금융 구조 diagram",
+                    "likely_proof_object_types": ["diagram", "chart", "source_card"],
+                    "risks": ["market_claim_risk"],
+                    "reason": "chart=weak; diagram=strong",
+                },
                 "source_type": "manual",
                 "collected_at": "2026-05-17T00:00:00+00:00",
                 "last_seen_at": "2026-05-17T00:00:00+00:00",
@@ -62,6 +74,8 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert "- 즉시 스토리라인 후보: 1개" in markdown
     assert "바로 볼 만한 후보" not in markdown
     assert "전당포 주식회사" in markdown
+    assert "Slideability: high / diagram+chart+source_card" in markdown
+    assert "First slide idea: 전당포 금융 구조 diagram" in markdown
     assert "## Excluded / Rejected" in markdown
     assert "속보: 대통령 발언 직후 증시 급등락" in markdown
     with csv_path.open(encoding="utf-8-sig", newline="") as source:
@@ -75,6 +89,8 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert rows[0]["last_seen_at"] == "2026-05-17T00:00:00+00:00"
     assert rows[0]["duplicate_key"] == "https://example.com/f88"
     assert rows[0]["source_url_canonical"] == "https://example.com/f88"
+    assert rows[0]["slideability_score"] == "0.78"
+    assert rows[0]["first_slide_idea"] == "전당포 금융 구조 diagram"
 
 
 def test_top_candidates_excludes_rejects() -> None:

@@ -62,6 +62,38 @@
       "type": "string",
       "enum": ["low", "medium", "high"]
     },
+    "slideability": {
+      "type": "object",
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "visualizability": { "type": "string", "enum": ["low", "medium", "high"] },
+        "chartability": { "type": "string", "enum": ["none", "weak", "strong"] },
+        "diagramability": { "type": "string", "enum": ["none", "weak", "strong"] },
+        "screenshotability": { "type": "string", "enum": ["none", "weak", "strong"] },
+        "source_card_fit": { "type": "string", "enum": ["none", "weak", "strong"] },
+        "first_slide_idea": { "type": "string" },
+        "likely_proof_object_types": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "risks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "slideability_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "first_slide_idea": { "type": "string" },
+    "likely_proof_object_types": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "visual_risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "readiness": {
       "type": "string",
       "enum": [

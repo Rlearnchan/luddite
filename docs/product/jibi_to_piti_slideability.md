@@ -1,10 +1,10 @@
 # Jibi To Piti Slideability Notes
 
-Status date: 2026-05-19
+Status date: 2026-05-20
 
-Milestone 1.20 keeps Jibi scoring unchanged, but it records a later product
-need: good story seeds should be evaluated not only for news value, but also for
-how naturally they can become editable slides.
+Milestone 1.33 adds a rule-based `slideability` signal to Jibi scored
+candidates and story seed clusters. It is a review/report signal only; it does
+not hard reject candidates or change `send_to_anny` by itself.
 
 ## Why This Matters
 
@@ -13,34 +13,37 @@ yet visually weak. If Jibi selects candidates with no proof object, Piti has to
 invent weak placeholders later. A stronger future pipeline should identify the
 likely proof object at candidate time.
 
-## Future Candidate Signals
+## Candidate Signal
 
-Possible future Jibi fields:
+Current Jibi `slideability` shape:
 
-- `slideability_score`
-- `visualizability_score`
-- `proof_object_type`
-- `proof_object_confidence`
-- `chartability`
-- `quoteability`
-- `screenshotability`
-- `diagramability`
+```json
+{
+  "slideability": {
+    "score": 0.0,
+    "visualizability": "low|medium|high",
+    "chartability": "none|weak|strong",
+    "diagramability": "none|weak|strong",
+    "screenshotability": "none|weak|strong",
+    "source_card_fit": "none|weak|strong",
+    "first_slide_idea": "...",
+    "likely_proof_object_types": ["diagram", "chart", "source_card"],
+    "risks": ["too_abstract", "single_source"],
+    "reason": "..."
+  }
+}
+```
 
-Possible `proof_object_type` values:
+Current v0 likely proof object values:
 
-- `chart`
-- `table`
-- `source_quote`
-- `source_card`
-- `screenshot`
-- `image`
-- `map`
-- `person_photo`
-- `logo`
 - `diagram`
-- `none`
+- `chart`
+- `source_card`
 
-## Scoring Heuristics To Consider Later
+`screenshotability` is kept as a separate signal because screenshots may inform
+Anny/Piti planning, but `screenshot` is not a current Piti `proof_object.type`.
+
+## Rule-Based V0 Heuristics
 
 - A candidate with clear numbers, rankings, time series, ratios, or market size
   usually has stronger chart/table potential.
@@ -53,9 +56,12 @@ Possible `proof_object_type` values:
 - A candidate with only abstract claims and no concrete proof object should
   carry lower slideability unless the text itself is a strong calculation,
   question, or punchline.
+- Policy, finance, market, budget, rate, investment, and official-statistics
+  language adds `needs_official_data`, `policy_claim_risk`, or
+  `market_claim_risk` as visual review risks.
 
-## Non-goal For Now
+## Non-Goal
 
-This memo does not change Jibi scoring in Milestone 1.20. It only records the
-future direction so the current Anny-to-Piti screen contract has a place to plug
-in candidate-stage visual signals later.
+Slideability is not a hard gate in v0. Existing Jibi scoring, ranking, and
+`recommended_action` logic should remain stable while reports show whether a
+story seed is likely to become a diagram, chart, source card, or screenshot.

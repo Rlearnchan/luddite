@@ -14,6 +14,7 @@ from rich.console import Console
 
 from luddite import paths
 from luddite.agents.jibi.heuristics import text_blob
+from luddite.agents.jibi.slideability import merge_cluster_slideability
 from luddite.utils.jsonl import read_jsonl, write_jsonl
 from luddite.utils.schemas import validate_with_schema
 
@@ -186,6 +187,7 @@ def build_cluster(
         "possible_story_angles": _story_angles(ranked, editorial_category),
         "risk_flags": risk_flags,
         "risk_level": risk_level,
+        "slideability": merge_cluster_slideability(ranked),
         "readiness": readiness,
         "past_video_matches": [],
         "official_evidence_needed": bool(missing_evidence),
@@ -355,6 +357,25 @@ def _cluster_score(cluster: dict[str, Any]) -> float:
     return float(len(cluster.get("candidate_ids", []))) + len(cluster.get("source_ids", [])) * 0.5
 
 
+def _slideability_summary(slideability: dict[str, Any] | None) -> str:
+    if not isinstance(slideability, dict):
+        return "score=0.0, visual=low, proof=-"
+    proof_types = ", ".join(slideability.get("likely_proof_object_types", [])) or "-"
+    risks = ", ".join(slideability.get("risks", [])) or "-"
+    return (
+        f"score={slideability.get('score', 0.0)}, "
+        f"visual={slideability.get('visualizability', 'low')}, "
+        f"proof={proof_types}, risks={risks}"
+    )
+
+
+def _first_slide_idea(cluster: dict[str, Any]) -> str:
+    slideability = cluster.get("slideability", {})
+    if not isinstance(slideability, dict):
+        return "-"
+    return str(slideability.get("first_slide_idea") or "-")
+
+
 def _quality_flags(cluster: dict[str, Any], candidates: list[dict[str, Any]]) -> list[str]:
     flags: set[str] = set()
     why_story = str(cluster.get("why_story") or "")
@@ -521,6 +542,7 @@ def _handoff_record(cluster: dict[str, Any]) -> dict[str, Any]:
         "possible_story_angles",
         "risk_flags",
         "risk_level",
+        "slideability",
         "quality_flags",
         "official_evidence_needed",
         "suggested_official_sources",
@@ -528,7 +550,17 @@ def _handoff_record(cluster: dict[str, Any]) -> dict[str, Any]:
         "llm_enrichment_needed",
         "next_action",
     ]
-    return {key: cluster[key] for key in keys}
+    record = {key: cluster[key] for key in keys}
+    slideability = cluster.get("slideability") or {}
+    record.update(
+        {
+            "slideability_score": slideability.get("score", 0.0),
+            "first_slide_idea": slideability.get("first_slide_idea", ""),
+            "likely_proof_object_types": slideability.get("likely_proof_object_types", []),
+            "visual_risks": slideability.get("risks", []),
+        }
+    )
+    return record
 
 
 def write_cluster_report(path: Path, clusters: list[dict[str, Any]]) -> None:
@@ -596,6 +628,8 @@ def write_cluster_report(path: Path, clusters: list[dict[str, Any]]) -> None:
                 f"- sources: {', '.join(cluster['source_ids']) or '-'}",
                 f"- risk: {cluster['risk_level']}",
                 f"- quality_flags: {', '.join(cluster['quality_flags']) or '-'}",
+                f"- Slideability: {_slideability_summary(cluster.get('slideability'))}",
+                f"- First slide idea: {_first_slide_idea(cluster)}",
                 f"- why_story: {cluster['why_story']}",
                 "",
             ]
@@ -618,6 +652,8 @@ def write_cluster_report(path: Path, clusters: list[dict[str, Any]]) -> None:
                 f"- category: {cluster['editorial_category']}",
                 f"- priority: {cluster['handoff_priority']}",
                 f"- quality_flags: {', '.join(cluster['quality_flags']) or '-'}",
+                f"- Slideability: {_slideability_summary(cluster.get('slideability'))}",
+                f"- First slide idea: {_first_slide_idea(cluster)}",
                 f"- why_story: {cluster['why_story']}",
                 f"- missing_evidence: {' | '.join(cluster['missing_evidence']) or '-'}",
                 "",
@@ -641,6 +677,8 @@ def write_cluster_digest(path: Path, clusters: list[dict[str, Any]]) -> None:
                 f"- Risk: {cluster['risk_level']}",
                 f"- Handoff priority: {cluster['handoff_priority']}",
                 f"- Quality flags: {', '.join(cluster['quality_flags']) or '-'}",
+                f"- Slideability: {_slideability_summary(cluster.get('slideability'))}",
+                f"- First slide idea: {_first_slide_idea(cluster)}",
                 "",
                 "Why story:",
                 f"- {cluster['why_story']}",
@@ -700,6 +738,8 @@ def write_story_seed_handoff(path: Path, clusters: list[dict[str, Any]]) -> None
                     f"- Candidate count: {len(cluster['candidate_ids'])}",
                     f"- Risk: {cluster['risk_level']} ({', '.join(cluster['risk_flags']) or '-'})",
                     f"- Quality flags: {', '.join(cluster['quality_flags']) or '-'}",
+                    f"- Slideability: {_slideability_summary(cluster.get('slideability'))}",
+                    f"- First slide idea: {_first_slide_idea(cluster)}",
                     f"- Next action: {cluster['next_action']}",
                     "",
                     "Why story:",

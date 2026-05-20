@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.32
+# Codex Next Steps after Milestone 1.33
 
 ## 상태
 
@@ -502,12 +502,52 @@ productive_finance_policy:
 
 ## 다음 구현/평가 목표
 
-1. Jibi slideability scoring으로 넘어간다.
-2. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+Milestone 1.33에서 Jibi slideability scoring v0가 추가됐다.
+
+구현된 상태:
+
+- `score-candidates`가 각 후보에 optional `slideability` object를 붙인다.
+- `cluster-jibi-candidates`가 cluster-level `slideability`를 병합한다.
+- story seed handoff에는 `slideability_score`, `first_slide_idea`,
+  `likely_proof_object_types`, `visual_risks`가 추가된다.
+- daily digest, Jibi quality report, cluster report, story seed handoff digest에
+  slideability summary가 표시된다.
+- 구현은 rule-based deterministic v0이며 LLM/API 호출이 없다.
+- slideability는 review signal이다. `recommended_action`, 기존 scoring, handoff
+  gate를 hard 변경하지 않는다.
+
+현재 `slideability` shape:
+
+```text
+score: 0.0-1.0
+visualizability: low|medium|high
+chartability: none|weak|strong
+diagramability: none|weak|strong
+screenshotability: none|weak|strong
+source_card_fit: none|weak|strong
+first_slide_idea: short review hint
+likely_proof_object_types: diagram/chart/source_card
+risks: too_abstract, single_source, needs_official_data, policy_claim_risk, market_claim_risk, no_clear_visual
+reason: compact deterministic explanation
+```
+
+GitHub-visible review note:
+
+```text
+docs/reviews/jibi_slideability_v0.md
+```
+
+다음 후보:
+
+1. Jibi slideability를 Anny input bundle에 context로 넘길지 결정한다.
+2. slideability와 downstream Piti visual QA 결과를 연결해, Jibi 단계의 예측력이
+   실제 slide spec QA와 맞는지 본다.
+3. PPT contact sheet QA surface를 검토한다.
+4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
    넓힌다.
-3. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+5. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
    유지한다.
-4. 그 이후 production agent/scheduler/Slack/Slides 검토
+6. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -530,6 +570,10 @@ productive_finance_policy:
 - `make render-piti-slide-spec-pptx` 통과
 - `make render-piti-visual-qa` 통과
 - `make run-anny-slide-spec-experiment` 통과
+- `make normalize-candidates` 통과
+- `make score-candidates` 통과
+- `make cluster-jibi-candidates` 통과
+- 가능하면 `make render-daily-digest` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
 - `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.
 - `docs/reviews/anny_slide_spec_experiments/*.md`가 생성된다.
