@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.37
+# Codex Next Steps after Milestone 1.38
 
 ## 상태
 
@@ -569,6 +569,7 @@ docs/reviews/jibi_slideability_v0.md
 docs/reviews/anny_input_bundle_slideability_v0.md
 docs/reviews/slideability_visual_qa_comparison.md
 docs/reviews/pptx_contact_sheet_summary.md
+docs/runbooks/pptx_contact_sheet_backend.md
 ```
 
 ## Milestone 1.35 완료 상태
@@ -739,10 +740,66 @@ thumbnail backend: LibreOffice/soffice not found locally
 - thumbnail backend가 준비되면 같은 CLI로 실제 contact sheet PNG/PDF를 생성할
   수 있다.
 
+## Milestone 1.38 완료 상태
+
+PPTX contact sheet thumbnail backend를 점검하는 기능과 runbook이 추가됐다.
+
+새 CLI option:
+
+```text
+luddite render-pptx-contact-sheet --check-backend-only
+```
+
+새 Make target:
+
+```text
+make check-pptx-contact-sheet-backend
+```
+
+Backend check 항목:
+
+```text
+LibreOffice / soffice
+pdftoppm
+Pillow
+thumbnail_backend_ready
+```
+
+현재 local 상태:
+
+```text
+LibreOffice: missing
+pdftoppm: found (/opt/homebrew/bin/pdftoppm)
+Pillow: found
+thumbnail_backend_ready: false
+```
+
+Runbook:
+
+```text
+docs/runbooks/pptx_contact_sheet_backend.md
+```
+
+Contact sheet summary도 backend 상태를 명시한다.
+
+```text
+docs/reviews/pptx_contact_sheet_summary.md
+outputs/qa/pptx_contact_sheet/pptx_contact_sheet_summary.md
+```
+
+해석:
+
+- 현재 로컬에서는 LibreOffice/soffice만 빠져 있다.
+- LibreOffice가 PATH에 잡히면 `make render-pptx-contact-sheet`가 PPTX -> PDF
+  -> PNG thumbnails -> contact sheet PNG/PDF 경로로 진행할 수 있다.
+- backend가 없을 때도 graceful warning과 Markdown review surface는 계속
+  생성된다.
+- PPTX 내용 자동 수정, Piti 의미 재작성, LLM/API 호출은 없다.
+
 ## 다음 구현/평가 목표
 
-1. LibreOffice + pdftoppm 같은 thumbnail backend를 준비한 뒤 contact sheet
-   PNG/PDF를 재생성한다.
+1. LibreOffice/soffice를 설치하거나 PATH에 연결한 뒤 contact sheet PNG/PDF를
+   재생성한다.
 2. 사람이 contact sheet를 보고 manual review할 수 있는 체크리스트/template을
    추가한다.
 3. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
@@ -781,6 +838,7 @@ thumbnail backend: LibreOffice/soffice not found locally
 - `make prepare-anny-input-bundles` 통과
 - `make compare-slideability-visual-qa` 통과
 - `make render-pptx-contact-sheet` 통과
+- `make check-pptx-contact-sheet-backend` 통과
 - 가능하면 `make render-daily-digest` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
 - `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.

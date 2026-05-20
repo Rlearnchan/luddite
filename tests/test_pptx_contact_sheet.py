@@ -6,6 +6,7 @@ from pptx import Presentation
 from luddite.analysis.render_pptx_contact_sheet import (
     ContactSheetTarget,
     ThumbnailGeneration,
+    check_contact_sheet_backend,
     default_targets,
     render_pptx_contact_sheet,
 )
@@ -135,6 +136,54 @@ def test_contact_sheet_reports_backend_warning_without_crashing(tmp_path: Path) 
     assert "unchecked" in report
     assert "No LLM/API calls" in report
     assert "thumbnail_missing" in report
+
+
+def test_backend_check_reports_missing_and_found_commands(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "luddite.analysis.render_pptx_contact_sheet._pillow_available",
+        lambda: (True, None),
+    )
+
+    def missing_finder(candidates: list[str]) -> str | None:
+        return None
+
+    missing = check_contact_sheet_backend(command_finder=missing_finder)
+
+    assert not missing.libreoffice_found
+    assert not missing.pdftoppm_found
+    assert missing.pillow_available
+    assert not missing.thumbnail_backend_ready
+
+    def found_finder(candidates: list[str]) -> str | None:
+        if "soffice" in candidates:
+            return "/usr/local/bin/soffice"
+        if "pdftoppm" in candidates:
+            return "/usr/local/bin/pdftoppm"
+        return None
+
+    found = check_contact_sheet_backend(command_finder=found_finder)
+
+    assert found.libreoffice_found
+    assert found.pdftoppm_found
+    assert found.thumbnail_backend_ready
+
+
+def test_backend_check_reports_pillow_missing(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "luddite.analysis.render_pptx_contact_sheet._pillow_available",
+        lambda: (False, "missing pillow"),
+    )
+
+    def found_finder(candidates: list[str]) -> str | None:
+        return f"/mock/{candidates[0]}"
+
+    backend = check_contact_sheet_backend(command_finder=found_finder)
+
+    assert backend.libreoffice_found
+    assert backend.pdftoppm_found
+    assert not backend.pillow_available
+    assert backend.pillow_error == "missing pillow"
+    assert not backend.thumbnail_backend_ready
 
 
 def test_contact_sheet_reports_missing_pptx_gracefully(tmp_path: Path) -> None:

@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.37
+# Current Product Direction after Milestone 1.38
 
 Status date: 2026-05-21
 
@@ -69,6 +69,8 @@ path:
   specs from `live_m132_20260520_all`, alongside adapter-built Piti specs.
 - Milestone 1.37 adds a PPTX contact sheet QA surface for adapter-built and
   Anny direct live draft decks.
+- Milestone 1.38 adds a structured contact sheet backend check, a
+  `--check-backend-only` CLI path, and a backend setup runbook.
 - Contact sheet QA is review-only. It does not modify PPTX content, infer
   meaning, insert images, generate charts, call an LLM/API, or change
   readiness flags.
@@ -139,6 +141,7 @@ make build-anny-input-bundles
 make prepare-anny-input-bundles
 make compare-slideability-visual-qa
 make render-pptx-contact-sheet
+make check-pptx-contact-sheet-backend
 ```
 
 Current fixture inputs:
@@ -470,6 +473,7 @@ docs/reviews/jibi_slideability_v0.md
 docs/reviews/anny_input_bundle_slideability_v0.md
 docs/reviews/slideability_visual_qa_comparison.md
 docs/reviews/pptx_contact_sheet_summary.md
+docs/runbooks/pptx_contact_sheet_backend.md
 ```
 
 ## Current Anny Input Bundle Visual Planning Status
@@ -574,8 +578,11 @@ deck_count: 4
 slide_count: 100
 generated_contact_sheets: 0
 thumbnail_generation_status: {'metadata_only_with_warning': 4}
+LibreOffice: missing
+pdftoppm: found (/opt/homebrew/bin/pdftoppm)
+Pillow: found
+thumbnail_backend_ready: false
 failed_decks: 0
-thumbnail_backend: LibreOffice/soffice not found locally
 ```
 
 Decks covered:
@@ -595,6 +602,11 @@ Interpretation:
 - The current local machine does not have LibreOffice/soffice available, so
   thumbnail/PDF contact sheet generation is reported as a graceful warning
   instead of failing the command.
+- `pdftoppm` and Pillow are available locally. Installing/configuring
+  LibreOffice/soffice should be enough to enable actual thumbnail and contact
+  sheet PNG/PDF generation.
+- Backend setup guidance now lives in
+  `docs/runbooks/pptx_contact_sheet_backend.md`.
 - No PPTX content is modified.
 - No LLM/API calls are made.
 - Broadcast readiness remains false.
@@ -603,8 +615,8 @@ Interpretation:
 
 1. Calibrate the rule-based slideability heuristic around chart
    underprediction and diagram-quality prediction, while keeping it review-only.
-2. Install or configure a thumbnail backend such as LibreOffice + pdftoppm, then
-   regenerate actual thumbnail contact sheets.
+2. Install or configure LibreOffice/soffice locally, then regenerate actual
+   thumbnail contact sheets.
 3. Add a human contact-sheet review template/checklist after thumbnails exist.
 4. Optionally run one more live Anny direct confirmation pass before widening
    the case set.

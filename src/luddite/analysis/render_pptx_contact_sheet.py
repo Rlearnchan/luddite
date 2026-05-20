@@ -77,7 +77,28 @@ class ContactSheetResult:
     slides: list[ContactSheetSlide]
 
 
+@dataclass(frozen=True)
+class ContactSheetBackendCheck:
+    libreoffice_path: str | None
+    pdftoppm_path: str | None
+    pillow_available: bool
+    pillow_error: str | None
+
+    @property
+    def libreoffice_found(self) -> bool:
+        return self.libreoffice_path is not None
+
+    @property
+    def pdftoppm_found(self) -> bool:
+        return self.pdftoppm_path is not None
+
+    @property
+    def thumbnail_backend_ready(self) -> bool:
+        return self.libreoffice_found and self.pdftoppm_found and self.pillow_available
+
+
 ThumbnailGenerator = Callable[[ContactSheetTarget, Path], ThumbnailGeneration]
+CommandFinder = Callable[[list[str]], str | None]
 
 
 def _display_path(path: Path | None) -> str:
@@ -147,6 +168,26 @@ def _find_first_command(candidates: list[str]) -> str | None:
         if resolved:
             return resolved
     return None
+
+
+def _pillow_available() -> tuple[bool, str | None]:
+    try:
+        from PIL import Image  # noqa: F401
+    except ImportError as error:
+        return False, str(error)
+    return True, None
+
+
+def check_contact_sheet_backend(
+    command_finder: CommandFinder = _find_first_command,
+) -> ContactSheetBackendCheck:
+    pillow_available, pillow_error = _pillow_available()
+    return ContactSheetBackendCheck(
+        libreoffice_path=command_finder(["soffice", "libreoffice"]),
+        pdftoppm_path=command_finder(["pdftoppm"]),
+        pillow_available=pillow_available,
+        pillow_error=pillow_error,
+    )
 
 
 def _run_command(args: list[str]) -> tuple[bool, str]:
@@ -570,8 +611,10 @@ def _write_summary(
     *,
     results: list[ContactSheetResult],
     output_path: Path,
+    backend_check: ContactSheetBackendCheck | None = None,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    backend = backend_check or check_contact_sheet_backend()
     status_counts = Counter(result.status for result in results)
     failed = [
         result
@@ -586,6 +629,13 @@ def _write_summary(
         f"- slide_count: {sum(result.slide_count for result in results)}",
         f"- generated_contact_sheets: {sum(1 for result in results if result.contact_sheet_path)}",
         f"- thumbnail_generation_status: {dict(status_counts)}",
+        f"- LibreOffice: {'found' if backend.libreoffice_found else 'missing'}",
+        f"- LibreOffice path: {backend.libreoffice_path or '-'}",
+        f"- pdftoppm: {'found' if backend.pdftoppm_found else 'missing'}",
+        f"- pdftoppm path: {backend.pdftoppm_path or '-'}",
+        f"- Pillow: {'found' if backend.pillow_available else 'missing'}",
+        f"- Pillow error: {backend.pillow_error or '-'}",
+        f"- thumbnail_backend_ready: {str(backend.thumbnail_backend_ready).lower()}",
         f"- failed_decks: {len(failed)}",
         "- This is visual review surface only.",
         "- No PPT content was modified.",
@@ -643,6 +693,7 @@ def render_pptx_contact_sheet(
     thumbnail_generator: ThumbnailGenerator | None = None,
 ) -> list[ContactSheetResult]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    backend_check = check_contact_sheet_backend()
     selected_targets = targets or default_targets()
     results = [
         render_contact_sheet_target(
@@ -652,10 +703,35 @@ def render_pptx_contact_sheet(
         )
         for target in selected_targets
     ]
-    _write_summary(results=results, output_path=summary_output_path)
+    _write_summary(
+        results=results,
+        output_path=summary_output_path,
+        backend_check=backend_check,
+    )
     if review_summary_output_path is not None:
-        _write_summary(results=results, output_path=review_summary_output_path)
+        _write_summary(
+            results=results,
+            output_path=review_summary_output_path,
+            backend_check=backend_check,
+        )
     return results
+
+
+def _print_backend_check(backend: ContactSheetBackendCheck) -> None:
+    console.print("[bold]PPTX contact sheet backend check[/bold]")
+    console.print(
+        f"LibreOffice: {'found' if backend.libreoffice_found else 'missing'}"
+        f" ({backend.libreoffice_path or '-'})"
+    )
+    console.print(
+        f"pdftoppm: {'found' if backend.pdftoppm_found else 'missing'}"
+        f" ({backend.pdftoppm_path or '-'})"
+    )
+    console.print(
+        f"Pillow: {'found' if backend.pillow_available else 'missing'}"
+        f" ({backend.pillow_error or '-'})"
+    )
+    console.print(f"thumbnail_backend_ready: {str(backend.thumbnail_backend_ready).lower()}")
 
 
 @app.callback(invoke_without_command=True)
@@ -691,8 +767,18 @@ def main(
         Path,
         typer.Option("--direct-output-root", help="Root containing direct run outputs."),
     ] = DEFAULT_DIRECT_OUTPUT_ROOT,
+    check_backend_only: Annotated[
+        bool,
+        typer.Option(
+            "--check-backend-only",
+            help="Print thumbnail backend prerequisite status and exit.",
+        ),
+    ] = False,
 ) -> None:
     """Write review-only PPTX contact sheet QA reports."""
+    if check_backend_only:
+        _print_backend_check(check_contact_sheet_backend())
+        return
     targets = (
         _custom_targets(pptx_paths)
         if pptx_paths
