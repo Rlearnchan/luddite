@@ -1,0 +1,964 @@
+"""Controlled Anny direct Piti slide spec experiment runner."""
+
+from __future__ import annotations
+
+import json
+import shutil
+from collections import Counter
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Annotated, Any
+
+import typer
+from rich.console import Console
+
+from luddite import paths
+from luddite.agents.anny.api_experiment_runner import (
+    _collect_allowed_urls,
+    _env_api_key,
+    _env_model,
+    _env_temperature,
+    _run_openai_responses_api,
+)
+from luddite.agents.piti import render_pptx, render_visual_qa
+from luddite.agents.piti.build_slide_spec_from_storyline import (
+    build_piti_slide_spec_from_storyline,
+    validate_piti_slide_spec,
+)
+from luddite.utils.urls import canonicalize_url, extract_urls
+
+app = typer.Typer(no_args_is_help=False)
+console = Console()
+
+DEFAULT_OUTPUT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_slide_spec_experiments"
+DEFAULT_REVIEW_OUTPUT_DIR = paths.DOCS_DIR / "reviews" / "anny_slide_spec_experiments"
+DEFAULT_PROMPT_PATH = paths.PROMPTS_DIR / "anny" / "slide_spec_writer.md"
+DEFAULT_STYLE_PROFILE_PATH = paths.STYLE_PROFILES_DIR / "syukaworld_ppt_style_profile.json"
+
+
+@dataclass(frozen=True)
+class SlideSpecExperimentCase:
+    case_id: str
+    story_seed_title: str
+    input_bundle_path: Path
+    evidence_pack_path: Path
+    manual_storyline_path: Path
+    adapter_slide_spec_path: Path
+
+
+EXPERIMENT_CASES = [
+    SlideSpecExperimentCase(
+        case_id="ai_knowledge_institution",
+        story_seed_title="AI 즉답 시대의 지식기관 역할",
+        input_bundle_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR / "ai_knowledge_institution_input_bundle.json"
+        ),
+        evidence_pack_path=paths.ANNY_EVIDENCE_PACK_AI_KNOWLEDGE_JSON,
+        manual_storyline_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR
+            / "ai_knowledge_institution_gpt_pro_storyline_enriched.json"
+        ),
+        adapter_slide_spec_path=(
+            paths.PITI_SLIDE_SPECS_DIR / "ai_knowledge_institution_slide_spec.json"
+        ),
+    ),
+    SlideSpecExperimentCase(
+        case_id="productive_finance_policy",
+        story_seed_title="생산적 금융과 정책자금 전환",
+        input_bundle_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR / "productive_finance_policy_input_bundle.json"
+        ),
+        evidence_pack_path=(
+            paths.CANDIDATES_DIR / "anny_evidence_pack_productive_finance_policy.json"
+        ),
+        manual_storyline_path=(
+            paths.ANNY_STORYLINE_DRY_RUN_DIR
+            / "productive_finance_policy_gpt_pro_storyline_enriched.json"
+        ),
+        adapter_slide_spec_path=(
+            paths.PITI_SLIDE_SPECS_DIR / "productive_finance_policy_slide_spec.json"
+        ),
+    ),
+]
+
+
+def _load_json(path: Path) -> Any:
+    with path.open(encoding="utf-8") as source:
+        return json.load(source)
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(paths.REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _case_by_id(case_id: str) -> SlideSpecExperimentCase:
+    for case in EXPERIMENT_CASES:
+        if case.case_id == case_id:
+            return case
+    known = ", ".join(case.case_id for case in EXPERIMENT_CASES)
+    raise ValueError(f"Unknown case_id: {case_id}. Known cases: {known}")
+
+
+def _selected_cases(case_id: str) -> list[SlideSpecExperimentCase]:
+    if case_id == "all":
+        return EXPERIMENT_CASES
+    return [_case_by_id(case_id)]
+
+
+def _as_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _all_slides(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    return [slide for slide in _as_list(spec.get("slides")) if isinstance(slide, dict)]
+
+
+def _proof(slide: dict[str, Any]) -> dict[str, Any]:
+    proof = slide.get("proof_object")
+    return proof if isinstance(proof, dict) else {}
+
+
+def _proof_type(slide: dict[str, Any]) -> str:
+    return str(_proof(slide).get("type") or "none")
+
+
+def _proof_type_counts(spec: dict[str, Any]) -> dict[str, int]:
+    return dict(Counter(_proof_type(slide) for slide in _all_slides(spec)))
+
+
+def _slide_text_fields(slide: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            str(slide.get("screen_headline") or ""),
+            *[str(item) for item in _as_list(slide.get("screen_body"))],
+            *[str(item) for item in _as_list(slide.get("overflow_notes"))],
+            str(slide.get("speaker_notes_expanded") or ""),
+        ]
+    )
+
+
+def _visible_slide_text_fields(slide: dict[str, Any]) -> str:
+    proof = _proof(slide)
+    visible_parts = [
+        str(slide.get("screen_headline") or ""),
+        *[str(item) for item in _as_list(slide.get("screen_body"))],
+        str(proof.get("display_title") or ""),
+        str(proof.get("title") or ""),
+        str(proof.get("quote_text") or ""),
+        str(proof.get("quote_translation") or ""),
+    ]
+    for node in _as_list(proof.get("diagram_nodes")):
+        visible_parts.append(str(node))
+    for edge in _as_list(proof.get("diagram_edges")):
+        if isinstance(edge, dict):
+            visible_parts.extend(
+                str(edge.get(key) or "") for key in ("from", "to", "label")
+            )
+    return "\n".join(visible_parts)
+
+
+def _spec_text(spec: dict[str, Any]) -> str:
+    return "\n".join(_slide_text_fields(slide) for slide in _all_slides(spec))
+
+
+def _source_urls_from_spec(spec: dict[str, Any]) -> set[str]:
+    urls: set[str] = set()
+    for slide in _all_slides(spec):
+        proof = _proof(slide)
+        for key in ("source_url", "image_url"):
+            value = proof.get(key)
+            if value:
+                urls.add(canonicalize_url(str(value)))
+        for ref in _as_list(slide.get("source_refs")):
+            if isinstance(ref, dict) and ref.get("url"):
+                urls.add(canonicalize_url(str(ref["url"])))
+        for url in extract_urls(_slide_text_fields(slide)):
+            urls.add(canonicalize_url(url))
+    return urls
+
+
+def _visible_url_count(spec: dict[str, Any]) -> int:
+    count = 0
+    for slide in _all_slides(spec):
+        visible = "\n".join(
+            [
+                str(slide.get("screen_headline") or ""),
+                *[str(item) for item in _as_list(slide.get("screen_body"))],
+            ]
+        )
+        count += len(extract_urls(visible))
+    return count
+
+
+def _do_not_claim_violations(spec: dict[str, Any], input_bundle: dict[str, Any]) -> list[str]:
+    text = "\n".join(_visible_slide_text_fields(slide) for slide in _all_slides(spec))
+    violations = [
+        str(pattern)
+        for pattern in _as_list(input_bundle.get("do_not_claim"))
+        if str(pattern) and str(pattern) in text
+    ]
+    return list(dict.fromkeys(violations))
+
+
+def _unsupported_claim_count(spec: dict[str, Any]) -> int:
+    count = 0
+    for slide in _all_slides(spec):
+        layout = str(slide.get("layout_intent") or "")
+        if layout in {"title", "section_title", "appendix_checklist"}:
+            continue
+        if not (slide.get("needs_fact_check") or slide.get("required_before_broadcast")):
+            continue
+        proof_source = str(_proof(slide).get("source_url") or "").strip()
+        if not proof_source and not _as_list(slide.get("source_refs")):
+            count += 1
+    return count
+
+
+def _screen_headline_missing_count(spec: dict[str, Any]) -> int:
+    return sum(1 for slide in _all_slides(spec) if not str(slide.get("screen_headline") or ""))
+
+
+def _count_bool(spec: dict[str, Any], key: str) -> int:
+    return sum(1 for slide in _all_slides(spec) if slide.get(key))
+
+
+def _text_only_slide_count(spec: dict[str, Any]) -> int:
+    return sum(1 for slide in _all_slides(spec) if _proof_type(slide) == "none")
+
+
+def _chart_table_count(spec: dict[str, Any]) -> int:
+    return sum(1 for slide in _all_slides(spec) if _proof_type(slide) in {"chart", "table"})
+
+
+def _visual_metrics(spec: dict[str, Any], *, pseudo_path: Path) -> dict[str, Any]:
+    deck = render_visual_qa.evaluate_slide_spec(pseudo_path, spec, pseudo_path.parent)
+    return {
+        "flag_counts": dict(render_visual_qa._flag_counter([deck])),
+        "severity_counts": dict(render_visual_qa._severity_counter([deck])),
+        "flagged_slide_count": deck.flagged_slide_count,
+        "qa_flag_count": deck.flag_count,
+    }
+
+
+def _spec_metrics(spec: dict[str, Any], *, pseudo_path: Path) -> dict[str, Any]:
+    visual = _visual_metrics(spec, pseudo_path=pseudo_path)
+    proof_counts = _proof_type_counts(spec)
+    return {
+        "slide_count": len(_all_slides(spec)),
+        "section_count": len(_as_list(spec.get("sections"))),
+        "proof_object_type_counts": proof_counts,
+        "text_only_slide_count": _text_only_slide_count(spec),
+        "source_card_count": proof_counts.get("source_card", 0),
+        "diagram_count": proof_counts.get("diagram", 0),
+        "chart_table_count": _chart_table_count(spec),
+        "needs_fact_check_count": _count_bool(spec, "needs_fact_check"),
+        "required_before_broadcast_count": _count_bool(spec, "required_before_broadcast"),
+        "visible_url_count": _visible_url_count(spec),
+        "visual_qa_flag_counts": visual["flag_counts"],
+        "severity_counts": visual["severity_counts"],
+        "diagram_nodes_too_generic": visual["flag_counts"].get(
+            "diagram_nodes_too_generic",
+            0,
+        ),
+        "manual_insert_required_without_editor_instruction": visual["flag_counts"].get(
+            "manual_insert_required_without_editor_instruction",
+            0,
+        ),
+        "source_card_display_title_too_generic": visual["flag_counts"].get(
+            "source_card_display_title_too_generic",
+            0,
+        ),
+        "overflow_notes_too_large": visual["flag_counts"].get("overflow_notes_too_large", 0),
+    }
+
+
+def build_slide_spec_experiment_prompt(
+    *,
+    input_bundle: dict[str, Any],
+    evidence_pack: dict[str, Any],
+    manual_storyline: dict[str, Any],
+    schema: dict[str, Any],
+    visual_qa_summary: str,
+    allowed_urls: set[str],
+) -> str:
+    base_prompt = (
+        DEFAULT_PROMPT_PATH.read_text(encoding="utf-8")
+        if DEFAULT_PROMPT_PATH.exists()
+        else "# Anny Direct Piti Slide Spec Writer"
+    )
+    return "\n\n".join(
+        [
+            base_prompt,
+            "## Controlled Experiment Wrapper",
+            "This is a controlled experiment, not a production Anny agent.",
+            "Return JSON only. Do not browse. Do not call tools. Do not invent sources.",
+            "The output must satisfy specs/piti_slide_spec_schema.json.",
+            "Piti will render this contract without re-inferring or rewriting meaning.",
+            "Separate broadcast screen copy from notes.",
+            "screen_headline must be broadcast-facing.",
+            "screen_body must be short; move explanation, evidence, and caution to notes.",
+            "Use speaker_notes_expanded or overflow_notes for long reasoning.",
+            "Every slide must provide an explicit proof_object.",
+            (
+                "proof_object.type should be one of diagram, chart, table, source_card, "
+                "article_quote, or none."
+            ),
+            "Do not expose source URLs on screen; preserve them in source_refs or notes.",
+            "Keep needs_source, needs_fact_check, and required_before_broadcast conservative.",
+            "Do not make unchecked claims as screen copy.",
+            "Do not violate do_not_claim.",
+            "Include counterpoint or opposing questions when the topic requires it.",
+            "## Diagram Requirements",
+            "Avoid generic nodes such as AI 즉답 -> 검증 -> 맥락.",
+            "Use actor -> mechanism -> result structure.",
+            "Include at least one concrete actor, institution, user, or system.",
+            "Include at least one mechanism verb.",
+            "Each diagram node should work as broadcast-facing box copy.",
+            "Use meaningful edge labels when possible.",
+            "## Current Piti Visual QA Baseline",
+            visual_qa_summary,
+            "## Allowed Source URLs",
+            "\n".join(f"- {url}" for url in sorted(allowed_urls)),
+            "## Input Bundle JSON",
+            json.dumps(input_bundle, ensure_ascii=False, indent=2),
+            "## Evidence Pack JSON",
+            json.dumps(evidence_pack, ensure_ascii=False, indent=2),
+            "## Existing Enriched Manual Storyline JSON",
+            json.dumps(manual_storyline, ensure_ascii=False, indent=2),
+            "## Output Schema JSON",
+            json.dumps(schema, ensure_ascii=False, indent=2),
+        ]
+    )
+
+
+def _synthetic_fixture_output(case: SlideSpecExperimentCase) -> dict[str, Any]:
+    storyline = _load_json(case.manual_storyline_path)
+    spec = build_piti_slide_spec_from_storyline(
+        storyline,
+        deck_id=f"{case.case_id}_direct_fixture",
+        source_storyline_path=case.manual_storyline_path,
+    )
+    spec["notes"] = (
+        "Synthetic fixture for Anny direct Piti slide spec experiment. "
+        "This validates the direct-output harness without calling an API."
+    )
+    return spec
+
+
+def _call_live_api(
+    *,
+    prompt: str,
+    model: str | None,
+    temperature: float | None,
+    timeout_seconds: int,
+    api_caller: Any | None,
+) -> tuple[str, dict[str, Any], str, float]:
+    api_key = _env_api_key()
+    resolved_model = model or _env_model()
+    resolved_temperature = _env_temperature() if temperature is None else temperature
+    caller = api_caller or _run_openai_responses_api
+    raw_text, response_payload = caller(
+        api_key=api_key,
+        model=resolved_model,
+        prompt=prompt,
+        temperature=resolved_temperature,
+        timeout_seconds=timeout_seconds,
+    )
+    return raw_text, response_payload, resolved_model, resolved_temperature
+
+
+def _validate_raw_slide_spec(
+    *,
+    raw_path: Path,
+    parsed_path: Path,
+    input_bundle: dict[str, Any],
+    evidence_pack: dict[str, Any],
+    manual_storyline: dict[str, Any],
+    adapter_spec: dict[str, Any],
+    render_output_path: Path,
+    pseudo_path: Path,
+) -> tuple[dict[str, Any] | None, dict[str, Any], dict[str, Any] | None]:
+    raw_text = raw_path.read_text(encoding="utf-8")
+    failure_modes: list[str] = []
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        manifest = {
+            "parse_status": f"invalid_json:{exc.msg}",
+            "schema_valid": False,
+            "validation_passed": False,
+            "failure_modes": ["invalid_json"],
+            "ready_for_production_anny_agent": False,
+            "ready_for_production_piti_agent": False,
+            "ready_for_broadcast": False,
+        }
+        return None, manifest, None
+    if not isinstance(parsed, dict):
+        manifest = {
+            "parse_status": "invalid_json:not_object",
+            "schema_valid": False,
+            "validation_passed": False,
+            "failure_modes": ["invalid_json"],
+            "ready_for_production_anny_agent": False,
+            "ready_for_production_piti_agent": False,
+            "ready_for_broadcast": False,
+        }
+        return None, manifest, None
+    _write_json(parsed_path, parsed)
+    validation = validate_piti_slide_spec(parsed)
+    if not validation.get("schema_valid"):
+        failure_modes.append("schema_error")
+    allowed_urls = _collect_allowed_urls(input_bundle, evidence_pack, manual_storyline)
+    used_urls = _source_urls_from_spec(parsed)
+    hallucinated_urls = sorted(used_urls - allowed_urls)
+    if hallucinated_urls:
+        failure_modes.append("source_hallucination")
+    do_not_claim_violations = _do_not_claim_violations(parsed, input_bundle)
+    if do_not_claim_violations:
+        failure_modes.append("do_not_claim_violation")
+    unsupported_claim_count = _unsupported_claim_count(parsed)
+    if unsupported_claim_count:
+        failure_modes.append("unsupported_claim")
+    adapter_needs_fact_check = _count_bool(adapter_spec, "needs_fact_check")
+    direct_needs_fact_check = _count_bool(parsed, "needs_fact_check")
+    needs_fact_check_removed = direct_needs_fact_check < adapter_needs_fact_check
+    if needs_fact_check_removed:
+        failure_modes.append("needs_fact_check_removed_too_aggressively")
+    adapter_required = _count_bool(adapter_spec, "required_before_broadcast")
+    direct_required = _count_bool(parsed, "required_before_broadcast")
+    required_removed = direct_required < adapter_required
+    if required_removed:
+        failure_modes.append("required_before_broadcast_removed_too_aggressively")
+    headline_missing_count = _screen_headline_missing_count(parsed)
+    if headline_missing_count:
+        failure_modes.append("screen_headline_missing")
+    style = render_pptx.load_style_profile(DEFAULT_STYLE_PROFILE_PATH)
+    render_result = render_pptx.render_slide_spec_to_pptx(
+        parsed,
+        render_output_path,
+        style_profile=style,
+    )
+    if not render_result.get("passed"):
+        failure_modes.append("piti_render_failed")
+    visual_metrics = _visual_metrics(parsed, pseudo_path=pseudo_path)
+    severity_counts = visual_metrics["severity_counts"]
+    if severity_counts.get("BLOCKER", 0):
+        failure_modes.append("visual_qa_blocker")
+    manifest = {
+        "parse_status": "parsed",
+        "schema_valid": validation.get("schema_valid"),
+        "validation_passed": validation.get("passed"),
+        "schema_errors": validation.get("schema_errors", []),
+        "slide_spec_issues": validation.get("issues", []),
+        "slide_spec_warnings": validation.get("warnings", []),
+        "failure_modes": list(dict.fromkeys(failure_modes)),
+        "source_hallucination_count": len(hallucinated_urls),
+        "hallucinated_urls": hallucinated_urls,
+        "do_not_claim_violation_count": len(do_not_claim_violations),
+        "do_not_claim_violations": do_not_claim_violations,
+        "unsupported_claim_count": unsupported_claim_count,
+        "needs_fact_check_removed_too_aggressively": needs_fact_check_removed,
+        "required_before_broadcast_removed_too_aggressively": required_removed,
+        "screen_headline_missing_count": headline_missing_count,
+        "visible_url_count": render_result.get("visible_url_count", 0),
+        "source_card_repeated_headline_count": render_result.get(
+            "source_card_repeated_headline_count",
+            0,
+        ),
+        "proof_text_overlap_count": render_result.get("proof_text_overlap_count", 0),
+        "chart_body_text_leak_count": render_result.get("chart_body_text_leak_count", 0),
+        "screen_body_explanatory_sentence_count": render_result.get(
+            "screen_body_explanatory_sentence_count",
+            0,
+        ),
+        "visual_qa_flag_counts": visual_metrics["flag_counts"],
+        "visual_qa_severity_counts": severity_counts,
+        "ready_for_piti_renderer_contract": True,
+        "ready_for_api_experiment": True,
+        "ready_for_production_anny_agent": False,
+        "ready_for_production_piti_agent": False,
+        "ready_for_broadcast": False,
+    }
+    return parsed, manifest, render_result
+
+
+def _write_validation_report(
+    *,
+    path: Path,
+    case: SlideSpecExperimentCase,
+    manifest: dict[str, Any],
+    raw_path: Path,
+    parsed_path: Path,
+    render_result: dict[str, Any] | None,
+    mode: str,
+) -> None:
+    lines = [
+        f"# Anny Direct Piti Slide Spec Validation: {case.case_id}",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- mode: {mode}",
+        f"- raw_model_output: {_display_path(raw_path)}",
+        f"- parsed_piti_slide_spec: {_display_path(parsed_path) if parsed_path.exists() else None}",
+        f"- parse_status: {manifest.get('parse_status')}",
+        f"- schema_valid: {manifest.get('schema_valid')}",
+        f"- validation_passed: {manifest.get('validation_passed')}",
+        f"- failure_modes: {manifest.get('failure_modes', [])}",
+        f"- source_hallucination_count: {manifest.get('source_hallucination_count', 0)}",
+        f"- do_not_claim_violation_count: {manifest.get('do_not_claim_violation_count', 0)}",
+        f"- unsupported_claim_count: {manifest.get('unsupported_claim_count', 0)}",
+        (
+            "- needs_fact_check_removed_too_aggressively: "
+            f"{manifest.get('needs_fact_check_removed_too_aggressively', False)}"
+        ),
+        (
+            "- required_before_broadcast_removed_too_aggressively: "
+            f"{manifest.get('required_before_broadcast_removed_too_aggressively', False)}"
+        ),
+        f"- visible_url_count: {manifest.get('visible_url_count', 0)}",
+        (
+            "- source_card_repeated_headline_count: "
+            f"{manifest.get('source_card_repeated_headline_count', 0)}"
+        ),
+        f"- proof_text_overlap_count: {manifest.get('proof_text_overlap_count', 0)}",
+        f"- chart_body_text_leak_count: {manifest.get('chart_body_text_leak_count', 0)}",
+        (
+            "- screen_body_explanatory_sentence_count: "
+            f"{manifest.get('screen_body_explanatory_sentence_count', 0)}"
+        ),
+        f"- visual_qa_severity_counts: {manifest.get('visual_qa_severity_counts', {})}",
+        "- QA flags are warning-only.",
+        "- ready_for_production_anny_agent: false",
+        "- ready_for_production_piti_agent: false",
+        "- ready_for_broadcast: false",
+        "",
+        "## Render Result",
+        "",
+        f"- rendered: {bool(render_result)}",
+        f"- render_passed: {render_result.get('passed') if render_result else False}",
+        f"- output_pptx_path: {render_result.get('output_pptx_path') if render_result else None}",
+        "",
+        "## Slide Spec Issues",
+        "",
+    ]
+    issues = manifest.get("slide_spec_issues", [])
+    lines.extend(f"- {issue}" for issue in issues) if issues else lines.append("- none")
+    lines.extend(["", "## Visual QA Flag Counts", ""])
+    flag_counts = manifest.get("visual_qa_flag_counts", {})
+    lines.extend(f"- {flag}: {count}" for flag, count in sorted(flag_counts.items()))
+    if not flag_counts:
+        lines.append("- none")
+    _write_text(path, "\n".join(lines) + "\n")
+
+
+def _write_comparison_report(
+    *,
+    path: Path,
+    case: SlideSpecExperimentCase,
+    adapter_spec: dict[str, Any],
+    direct_spec: dict[str, Any] | None,
+    direct_manifest: dict[str, Any],
+) -> dict[str, Any]:
+    adapter_metrics = _spec_metrics(
+        adapter_spec,
+        pseudo_path=case.adapter_slide_spec_path,
+    )
+    direct_metrics = (
+        _spec_metrics(direct_spec, pseudo_path=path.with_suffix(".direct.json"))
+        if direct_spec
+        else {}
+    )
+    direct_flags = direct_metrics.get("visual_qa_flag_counts", {})
+    adapter_flags = adapter_metrics.get("visual_qa_flag_counts", {})
+    diagram_delta = direct_flags.get("diagram_nodes_too_generic", 0) - adapter_flags.get(
+        "diagram_nodes_too_generic",
+        0,
+    )
+    manual_delta = direct_flags.get(
+        "manual_insert_required_without_editor_instruction",
+        0,
+    ) - adapter_flags.get("manual_insert_required_without_editor_instruction", 0)
+    source_title_delta = direct_flags.get("source_card_display_title_too_generic", 0) - (
+        adapter_flags.get("source_card_display_title_too_generic", 0)
+    )
+    improvements: list[str] = []
+    regressions: list[str] = []
+    if diagram_delta < 0:
+        improvements.append("diagram_nodes_too_generic decreased")
+    elif diagram_delta > 0:
+        regressions.append("diagram_nodes_too_generic increased")
+    if manual_delta <= 0:
+        improvements.append("manual insert instruction warnings did not increase")
+    else:
+        regressions.append("manual insert instruction warnings increased")
+    if source_title_delta <= 0:
+        improvements.append("source card generic title warnings did not increase")
+    else:
+        regressions.append("source card generic title warnings increased")
+    if direct_manifest.get("failure_modes"):
+        regressions.append("direct output has validation failure modes")
+    remaining = [
+        "Direct slide spec experiment is not a production Anny agent.",
+        "Production readiness remains false.",
+        "Next prompt/contract work should target diagram actor -> mechanism -> result quality.",
+    ]
+    lines = [
+        f"# Anny Direct Piti Slide Spec Comparison: {case.case_id}",
+        "",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        f"- adapter_slide_spec: {_display_path(case.adapter_slide_spec_path)}",
+        f"- direct_schema_valid: {direct_manifest.get('schema_valid')}",
+        f"- direct_failure_modes: {direct_manifest.get('failure_modes', [])}",
+        "- QA flags are warning-only.",
+        "",
+        "## Metrics",
+        "",
+        (
+            "| Output | Slides | Sections | Proof Types | Text Only | Source Cards | "
+            "Diagrams | Charts/Tables | Needs Fact Check | Required Before Broadcast | "
+            "Visible URLs | Diagram Generic | Manual Insert Missing Instruction | "
+            "Generic Source Title | Overflow Notes Large | Severity Counts |"
+        ),
+        "|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+        _comparison_row("adapter", adapter_metrics),
+        _comparison_row("direct", direct_metrics),
+        "",
+        "## Conclusion",
+        "",
+        "### Better",
+        "",
+    ]
+    lines.extend(f"- {item}" for item in improvements) if improvements else lines.append("- none")
+    lines.extend(["", "### Worse", ""])
+    lines.extend(f"- {item}" for item in regressions) if regressions else lines.append("- none")
+    lines.extend(["", "### Remaining Before Production", ""])
+    lines.extend(f"- {item}" for item in remaining)
+    lines.extend(
+        [
+            "",
+            "### Next Prompt/Contract Suggestions",
+            "",
+            "- Make diagram nodes concrete at Anny output time, not in the Piti renderer.",
+            "- Require at least one actor, one mechanism verb, and one result node for diagrams.",
+            "- Keep source/fact-check flags conservative.",
+            "- Keep overflow_notes_too_large as INFO until human review says otherwise.",
+        ]
+    )
+    _write_text(path, "\n".join(lines) + "\n")
+    return {"adapter": adapter_metrics, "direct": direct_metrics}
+
+
+def _comparison_row(label: str, metrics: dict[str, Any]) -> str:
+    if not metrics:
+        return f"| {label} | 0 | 0 | {{}} | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | {{}} |"
+    return (
+        f"| {label} | {metrics.get('slide_count')} | {metrics.get('section_count')} | "
+        f"{metrics.get('proof_object_type_counts')} | {metrics.get('text_only_slide_count')} | "
+        f"{metrics.get('source_card_count')} | {metrics.get('diagram_count')} | "
+        f"{metrics.get('chart_table_count')} | {metrics.get('needs_fact_check_count')} | "
+        f"{metrics.get('required_before_broadcast_count')} | {metrics.get('visible_url_count')} | "
+        f"{metrics.get('diagram_nodes_too_generic')} | "
+        f"{metrics.get('manual_insert_required_without_editor_instruction')} | "
+        f"{metrics.get('source_card_display_title_too_generic')} | "
+        f"{metrics.get('overflow_notes_too_large')} | {metrics.get('severity_counts')} |"
+    )
+
+
+def _copy_review_reports(
+    *,
+    review_output_dir: Path | None,
+    case_id: str,
+    validation_report_path: Path,
+    comparison_report_path: Path,
+) -> None:
+    if review_output_dir is None:
+        return
+    review_output_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(validation_report_path, review_output_dir / f"{case_id}_validation.md")
+    shutil.copyfile(comparison_report_path, review_output_dir / f"{case_id}_comparison.md")
+
+
+def _write_failure_outputs(
+    *,
+    case: SlideSpecExperimentCase,
+    experiment_dir: Path,
+    validation_report_path: Path,
+    comparison_report_path: Path,
+    error: str,
+    mode: str,
+) -> dict[str, Any]:
+    raw_path = experiment_dir / "raw_model_output.txt"
+    _write_text(raw_path, "")
+    _write_text(experiment_dir / "api_error.txt", error)
+    manifest = {
+        "case_id": case.case_id,
+        "mode": mode,
+        "status": "failed",
+        "parse_status": "no_model_output",
+        "schema_valid": False,
+        "validation_passed": False,
+        "failure_modes": ["api_request_failed"],
+        "api_error": error,
+        "raw_model_output_retained": True,
+        "ready_for_production_anny_agent": False,
+        "ready_for_production_piti_agent": False,
+        "ready_for_broadcast": False,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    _write_json(experiment_dir / "manifest.json", manifest)
+    _write_validation_report(
+        path=validation_report_path,
+        case=case,
+        manifest=manifest,
+        raw_path=raw_path,
+        parsed_path=experiment_dir / "parsed_piti_slide_spec.json",
+        render_result=None,
+        mode=mode,
+    )
+    adapter_spec = _load_json(case.adapter_slide_spec_path)
+    _write_comparison_report(
+        path=comparison_report_path,
+        case=case,
+        adapter_spec=adapter_spec,
+        direct_spec=None,
+        direct_manifest=manifest,
+    )
+    return manifest
+
+
+def run_case(
+    *,
+    case: SlideSpecExperimentCase,
+    output_root: Path = DEFAULT_OUTPUT_ROOT,
+    review_output_dir: Path | None = DEFAULT_REVIEW_OUTPUT_DIR,
+    live_api: bool = False,
+    model: str | None = None,
+    temperature: float | None = None,
+    timeout_seconds: int = 120,
+    api_caller: Any | None = None,
+) -> dict[str, Any]:
+    experiment_dir = output_root / case.case_id
+    experiment_dir.mkdir(parents=True, exist_ok=True)
+    validation_report_path = experiment_dir / "validation_report.md"
+    comparison_report_path = experiment_dir / "comparison_against_adapter.md"
+    visual_report_path = experiment_dir / "visual_qa_report.md"
+    raw_path = experiment_dir / "raw_model_output.txt"
+    parsed_path = experiment_dir / "parsed_piti_slide_spec.json"
+    render_output_path = experiment_dir / "direct_piti_slide_spec_draft.pptx"
+
+    input_bundle = _load_json(case.input_bundle_path)
+    evidence_pack = _load_json(case.evidence_pack_path)
+    manual_storyline = _load_json(case.manual_storyline_path)
+    schema = _load_json(paths.SPECS_DIR / "piti_slide_spec_schema.json")
+    adapter_spec = _load_json(case.adapter_slide_spec_path)
+    visual_summary = (
+        (paths.DOCS_DIR / "reviews" / "piti_visual_qa" / "piti_visual_qa_summary.md")
+        .read_text(encoding="utf-8")
+        if (paths.DOCS_DIR / "reviews" / "piti_visual_qa" / "piti_visual_qa_summary.md").exists()
+        else "No visual QA summary available."
+    )
+    allowed_urls = _collect_allowed_urls(input_bundle, evidence_pack, manual_storyline)
+    prompt = build_slide_spec_experiment_prompt(
+        input_bundle=input_bundle,
+        evidence_pack=evidence_pack,
+        manual_storyline=manual_storyline,
+        schema=schema,
+        visual_qa_summary=visual_summary,
+        allowed_urls=allowed_urls,
+    )
+    _write_text(experiment_dir / "prompt.md", prompt)
+    shutil.copyfile(case.input_bundle_path, experiment_dir / "input_bundle.json")
+    shutil.copyfile(case.evidence_pack_path, experiment_dir / "evidence_pack.json")
+    shutil.copyfile(case.manual_storyline_path, experiment_dir / "manual_storyline.json")
+    shutil.copyfile(case.adapter_slide_spec_path, experiment_dir / "adapter_piti_slide_spec.json")
+    if live_api:
+        try:
+            raw_text, response_payload, resolved_model, resolved_temperature = _call_live_api(
+                prompt=prompt,
+                model=model,
+                temperature=temperature,
+                timeout_seconds=timeout_seconds,
+                api_caller=api_caller,
+            )
+        except Exception as exc:
+            manifest = _write_failure_outputs(
+                case=case,
+                experiment_dir=experiment_dir,
+                validation_report_path=validation_report_path,
+                comparison_report_path=comparison_report_path,
+                error=str(exc),
+                mode="live_api",
+            )
+            _copy_review_reports(
+                review_output_dir=review_output_dir,
+                case_id=case.case_id,
+                validation_report_path=validation_report_path,
+                comparison_report_path=comparison_report_path,
+            )
+            return manifest
+        _write_text(raw_path, raw_text)
+        _write_json(experiment_dir / "response_metadata.json", response_payload)
+        mode = "live_api"
+        model_source = resolved_model
+        temp = resolved_temperature
+    else:
+        direct_spec = _synthetic_fixture_output(case)
+        _write_text(raw_path, json.dumps(direct_spec, ensure_ascii=False, indent=2) + "\n")
+        mode = "fixture"
+        model_source = "synthetic_fixture"
+        temp = None
+
+    parsed_spec, manifest, render_result = _validate_raw_slide_spec(
+        raw_path=raw_path,
+        parsed_path=parsed_path,
+        input_bundle=input_bundle,
+        evidence_pack=evidence_pack,
+        manual_storyline=manual_storyline,
+        adapter_spec=adapter_spec,
+        render_output_path=render_output_path,
+        pseudo_path=parsed_path,
+    )
+    manifest.update(
+        {
+            "case_id": case.case_id,
+            "mode": mode,
+            "model": model_source,
+            "temperature": temp,
+            "raw_model_output_path": _display_path(raw_path),
+            "parsed_piti_slide_spec_path": _display_path(parsed_path)
+            if parsed_path.exists()
+            else None,
+            "validation_report_path": _display_path(validation_report_path),
+            "visual_qa_report_path": _display_path(visual_report_path),
+            "comparison_report_path": _display_path(comparison_report_path),
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+    )
+    _write_json(experiment_dir / "manifest.json", manifest)
+    _write_validation_report(
+        path=validation_report_path,
+        case=case,
+        manifest=manifest,
+        raw_path=raw_path,
+        parsed_path=parsed_path,
+        render_result=render_result,
+        mode=mode,
+    )
+    if parsed_spec:
+        visual_deck = render_visual_qa.evaluate_slide_spec(
+            parsed_path,
+            parsed_spec,
+            experiment_dir,
+        )
+        visual_deck = render_visual_qa.VisualQaDeck(
+            deck_id=visual_deck.deck_id,
+            input_path=visual_deck.input_path,
+            output_path=visual_report_path,
+            slides=visual_deck.slides,
+        )
+        render_visual_qa.write_deck_report(visual_deck)
+    _write_comparison_report(
+        path=comparison_report_path,
+        case=case,
+        adapter_spec=adapter_spec,
+        direct_spec=parsed_spec,
+        direct_manifest=manifest,
+    )
+    _copy_review_reports(
+        review_output_dir=review_output_dir,
+        case_id=case.case_id,
+        validation_report_path=validation_report_path,
+        comparison_report_path=comparison_report_path,
+    )
+    return manifest
+
+
+def run_experiment(
+    *,
+    case_id: str = "all",
+    output_root: Path = DEFAULT_OUTPUT_ROOT,
+    review_output_dir: Path | None = DEFAULT_REVIEW_OUTPUT_DIR,
+    live_api: bool = False,
+    model: str | None = None,
+    temperature: float | None = None,
+    timeout_seconds: int = 120,
+    api_caller: Any | None = None,
+) -> list[dict[str, Any]]:
+    return [
+        run_case(
+            case=case,
+            output_root=output_root,
+            review_output_dir=review_output_dir,
+            live_api=live_api,
+            model=model,
+            temperature=temperature,
+            timeout_seconds=timeout_seconds,
+            api_caller=api_caller,
+        )
+        for case in _selected_cases(case_id)
+    ]
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    case_id: Annotated[
+        str,
+        typer.Option("--case-id", help="Case id to run, or 'all'."),
+    ] = "all",
+    output_root: Annotated[
+        Path,
+        typer.Option("--output-root", help="Experiment output root."),
+    ] = DEFAULT_OUTPUT_ROOT,
+    review_output_dir: Annotated[
+        Path | None,
+        typer.Option("--review-output-dir", help="GitHub-visible review mirror directory."),
+    ] = DEFAULT_REVIEW_OUTPUT_DIR,
+    live_api: Annotated[
+        bool,
+        typer.Option("--live-api", help="Opt in to a live OpenAI API call."),
+    ] = False,
+    model: Annotated[
+        str | None,
+        typer.Option("--model", help="Optional model override for live API mode."),
+    ] = None,
+    temperature: Annotated[
+        float | None,
+        typer.Option("--temperature", help="Optional temperature override for live API mode."),
+    ] = None,
+    timeout_seconds: Annotated[
+        int,
+        typer.Option("--timeout", help="Live API timeout in seconds."),
+    ] = 120,
+) -> None:
+    """Run controlled Anny direct Piti slide spec experiment."""
+    try:
+        manifests = run_experiment(
+            case_id=case_id,
+            output_root=output_root,
+            review_output_dir=review_output_dir,
+            live_api=live_api,
+            model=model,
+            temperature=temperature,
+            timeout_seconds=timeout_seconds,
+        )
+    except ValueError as error:
+        console.print(f"[red]{error}[/red]")
+        raise typer.Exit(1) from error
+    failed = sum(1 for manifest in manifests if manifest.get("failure_modes"))
+    console.print(
+        "[green]Ran Anny slide spec experiment for "
+        f"{len(manifests)} case(s); failure_mode_cases={failed}.[/green]"
+    )

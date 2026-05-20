@@ -20,6 +20,9 @@ from luddite.agents.anny.render_storyline_sample import (
 )
 from luddite.agents.anny.review_fact_check import app as review_anny_fact_check_app
 from luddite.agents.anny.run_storyline import app as anny_run_storyline_app
+from luddite.agents.anny.slide_spec_experiment import (
+    app as anny_slide_spec_experiment_app,
+)
 from luddite.agents.jibi.append_to_sheet import app as append_jibi_sheet_app
 from luddite.agents.jibi.cluster_candidates import app as cluster_jibi_candidates_app
 from luddite.agents.jibi.daily_digest import app as jibi_digest_app
@@ -82,6 +85,7 @@ app.add_typer(compare_anny_enriched_dry_runs_app, name="compare-anny-enriched-dr
 app.add_typer(anny_api_experiment_app, name="validate-anny-api-experiment")
 app.add_typer(run_anny_api_experiment_app, name="run-anny-api-experiment")
 app.add_typer(anny_run_storyline_app, name="anny-run-storyline")
+app.add_typer(anny_slide_spec_experiment_app, name="run-anny-slide-spec-experiment")
 app.add_typer(render_anny_storyline_sample_app, name="render-anny-storyline-sample")
 app.add_typer(build_piti_deck_plan_app, name="build-piti-deck-plan")
 app.add_typer(build_piti_slide_spec_app, name="build-piti-slide-spec")

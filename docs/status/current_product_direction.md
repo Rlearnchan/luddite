@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.25
+# Current Product Direction after Milestone 1.26
 
 Status date: 2026-05-20
 
@@ -17,6 +17,11 @@ path:
   `docs/reviews/piti_visual_qa/`.
 - Piti visual QA now includes severity, flag reasons, review hints, top review
   queue prioritization, and next recommended fix area.
+- `luddite run-anny-slide-spec-experiment` runs a controlled Anny direct
+  `piti_slide_spec` experiment in fixture mode by default, without live API
+  calls.
+- The experiment writes per-case validation, visual QA, and adapter comparison
+  reports for `ai_knowledge_institution` and `productive_finance_policy`.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -73,6 +78,7 @@ make build-piti-slide-specs
 make validate-piti-slide-spec
 make render-piti-slide-spec-pptx
 make render-piti-visual-qa
+make run-anny-slide-spec-experiment
 ```
 
 Current fixture inputs:
@@ -114,9 +120,48 @@ Recommended next fix: improve Anny/adapter diagram node generation, not Piti ren
 Visual QA remains warning-only. No QA severity currently fails
 `make render-piti-visual-qa`.
 
+## Current Anny Direct Slide Spec Experiment
+
+The Milestone 1.26 experiment asks whether Anny can output the
+`piti_slide_spec` contract directly, instead of producing storyline JSON that
+is later converted by the adapter.
+
+Default mode is deterministic fixture/synthetic validation:
+
+- no live API call
+- no new external data collection
+- no production agent behavior
+- no changes to the Piti renderer's non-rewriting contract
+
+Live API mode is opt-in only via `--live-api`.
+
+Primary outputs:
+
+```text
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/raw_model_output.txt
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/parsed_piti_slide_spec.json
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/validation_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/visual_qa_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/comparison_against_adapter.md
+```
+
+GitHub-visible review mirrors:
+
+```text
+docs/reviews/anny_slide_spec_experiments/{case_id}_validation.md
+docs/reviews/anny_slide_spec_experiments/{case_id}_comparison.md
+```
+
+The experiment's main measurement question is whether direct Anny
+`piti_slide_spec` output can reduce `diagram_nodes_too_generic` without
+increasing source/fact-check risk, generic source-card titles, or manual
+insertion warnings. Fixture mode validates the harness; it is not evidence that
+production Anny is ready.
+
 ## Next Work Order
 
-1. Anny direct Piti slide spec experiment
+1. Review direct Anny slide spec experiment deltas and refine the Anny
+   prompt/contract for concrete diagram nodes.
 2. Jibi slideability scoring
 3. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature

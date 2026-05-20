@@ -3,7 +3,7 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHONPATH ?= src
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest append-jibi-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -75,6 +75,9 @@ validate-anny-api-experiment:
 
 run-anny-api-experiment:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment
+
+run-anny-slide-spec-experiment:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-slide-spec-experiment
 
 run-anny-api-experiment-v2:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite run-anny-api-experiment \

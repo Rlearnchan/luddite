@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.25
+# Codex Next Steps after Milestone 1.26
 
 ## 상태
 
@@ -74,11 +74,59 @@ Recommended next fix: improve Anny/adapter diagram node generation, not Piti ren
   Anny/adapter의 diagram node 생성 품질 쪽이다.
 - 모든 QA flag는 계속 warning-only다.
 
-## 다음 구현 목표
+## Milestone 1.26 완료 상태
 
-1. Anny direct Piti slide spec experiment
-2. Jibi slideability scoring
-3. 그 이후 production agent/scheduler/Slack/Slides 검토
+`luddite run-anny-slide-spec-experiment`는 Anny가 `piti_slide_spec` 계약을
+직접 출력하는 controlled experiment harness다.
+
+Make target:
+
+```text
+make run-anny-slide-spec-experiment
+```
+
+기본 모드는 fixture/synthetic validation이다.
+
+- live API를 호출하지 않는다.
+- 기존 두 case만 대상으로 한다.
+- 기존 input bundle, evidence pack, enriched manual storyline, schema, visual QA
+  기준을 재사용한다.
+- production Anny agent가 아니다.
+- Piti renderer가 의미를 재작성하거나 proof object를 재추론하지 않는다.
+
+대상 case:
+
+```text
+ai_knowledge_institution
+productive_finance_policy
+```
+
+각 case별 출력:
+
+```text
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/raw_model_output.txt
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/parsed_piti_slide_spec.json
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/validation_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/visual_qa_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments/{case_id}/comparison_against_adapter.md
+```
+
+GitHub-visible mirror:
+
+```text
+docs/reviews/anny_slide_spec_experiments/{case_id}_validation.md
+docs/reviews/anny_slide_spec_experiments/{case_id}_comparison.md
+```
+
+live API는 명시적으로 `--live-api`를 붙일 때만 호출한다.
+
+## 다음 구현/평가 목표
+
+1. Anny direct output과 adapter baseline의 visual QA delta를 검토한다.
+2. `diagram_nodes_too_generic`를 줄이기 위해 Anny prompt/contract의 diagram
+   node 생성 지침을 보강한다.
+3. Jibi slideability scoring으로 넘어간다.
+4. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -90,7 +138,7 @@ Recommended next fix: improve Anny/adapter diagram node generation, not Piti ren
 - 차트 자동 생성
 - Google Slides 연동
 - 방송 투입 가능 상태 선언
-- 신규 LLM/API 호출 추가
+- 기본 검증 경로에서 신규 LLM/API 호출 추가
 
 ## 검증 기준
 
@@ -100,6 +148,8 @@ Recommended next fix: improve Anny/adapter diagram node generation, not Piti ren
 - `make validate-piti-slide-spec` 통과
 - `make render-piti-slide-spec-pptx` 통과
 - `make render-piti-visual-qa` 통과
+- `make run-anny-slide-spec-experiment` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
 - `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.
+- `docs/reviews/anny_slide_spec_experiments/*.md`가 생성된다.
 - QA flags는 warning-only다.
