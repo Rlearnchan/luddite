@@ -132,6 +132,17 @@ def test_visual_qa_flags_cover_requested_warnings(tmp_path: Path) -> None:
                     manual_insert_required=True,
                 ),
             ),
+            _slide(
+                10,
+                layout_intent="diagram",
+                proof=_proof(
+                    "diagram",
+                    screen_position="center_large",
+                    diagram_nodes=["추상질문", "중간과정", "결론화면"],
+                    diagram_edges=[{"from": "추상질문", "to": "중간과정", "label": "흐름"}],
+                ),
+                editor_instruction="Manually refine diagram.",
+            ),
         ],
     )
 
@@ -150,6 +161,10 @@ def test_visual_qa_flags_cover_requested_warnings(tmp_path: Path) -> None:
         "proof_object_missing_for_claim_slide",
         "too_many_source_cards_in_sequence",
         "diagram_nodes_too_generic",
+        "diagram_edges_missing_or_weak",
+        "diagram_has_no_concrete_actor",
+        "diagram_has_no_mechanism_verb",
+        "diagram_nodes_need_broadcast_copy",
         "chart_without_data_hint",
         "source_card_display_title_too_generic",
         "screen_body_empty_but_no_proof_object",
@@ -159,6 +174,22 @@ def test_visual_qa_flags_cover_requested_warnings(tmp_path: Path) -> None:
     assert "too_many_source_cards_in_sequence" in deck.slides[1].visual_qa_flags
     assert "too_many_source_cards_in_sequence" in deck.slides[2].visual_qa_flags
     assert "too_many_source_cards_in_sequence" in deck.slides[3].visual_qa_flags
+    overflow_detail = next(
+        detail
+        for slide in deck.slides
+        for detail in slide.flag_details
+        if detail.flag == "overflow_notes_too_large"
+    )
+    assert overflow_detail.severity == "INFO"
+    assert "healthy screen compression" in overflow_detail.review_hint
+    diagram_detail = next(
+        detail
+        for slide in deck.slides
+        for detail in slide.flag_details
+        if detail.flag == "diagram_nodes_too_generic"
+    )
+    assert diagram_detail.severity == "REVIEW"
+    assert "actor -> mechanism -> result" in diagram_detail.review_hint
 
 
 def test_visual_qa_warnings_are_report_only(tmp_path: Path) -> None:
@@ -176,6 +207,42 @@ def test_visual_qa_warnings_are_report_only(tmp_path: Path) -> None:
     assert decks[0].flag_count == 1
     assert (output_dir / "warnings.md").exists()
     assert (output_dir / "piti_visual_qa_summary.md").exists()
+
+
+def test_visual_qa_top_queue_prioritizes_multi_flag_broadcast_slides(tmp_path: Path) -> None:
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "qa"
+    input_dir.mkdir()
+    _write_spec(
+        input_dir / "priority.json",
+        _spec(
+            "priority_deck",
+            [
+                _slide(1, proof=_proof(), overflow_notes=["a", "b", "c", "d"]),
+                _slide(
+                    2,
+                    layout_intent="diagram",
+                    proof=_proof(
+                        "diagram",
+                        screen_position="center_large",
+                        diagram_nodes=["AI 즉답", "검증", "맥락"],
+                        diagram_edges=[{"from": "AI 즉답", "to": "검증"}],
+                        manual_insert_required=True,
+                    ),
+                    needs_fact_check=True,
+                    required_before_broadcast=True,
+                ),
+            ],
+        ),
+    )
+
+    render_visual_qa.render_visual_qa(input_dir=input_dir, output_dir=output_dir)
+
+    summary_text = (output_dir / "piti_visual_qa_summary.md").read_text(encoding="utf-8")
+    assert "| 1 | priority_deck | 2 | Headline 2 | REVIEW |" in summary_text
+    assert "Replace abstract labels with concrete actor -> mechanism -> result labels." in (
+        summary_text
+    )
 
 
 def test_render_visual_qa_writes_two_deck_reports_and_summary(tmp_path: Path) -> None:
@@ -201,7 +268,13 @@ def test_render_visual_qa_writes_two_deck_reports_and_summary(tmp_path: Path) ->
     summary_text = (output_dir / "piti_visual_qa_summary.md").read_text(encoding="utf-8")
     deck_text = (output_dir / "deck_a.md").read_text(encoding="utf-8")
     assert "Piti Visual QA Summary" in summary_text
+    assert "## Severity Counts" in summary_text
+    assert "## Top Review Queue" in summary_text
+    assert "## Flag Explanations" in summary_text
+    assert "## Next Recommended Fix Area" in summary_text
     assert "| slide_no | screen_headline | layout_intent | proof_object.type |" in deck_text
+    assert "## Top Review Queue" in deck_text
+    assert "## Flag Details" in deck_text
     assert "screen_body lines" in deck_text
     assert "overflow_notes count" in deck_text
     assert "manual_insert_required" in deck_text

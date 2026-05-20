@@ -1,11 +1,11 @@
-# Codex Next Steps after Milestone 1.22
+# Codex Next Steps after Milestone 1.25
 
 ## 상태
 
 현재 Luddite는 `jibi -> anny -> piti` scaffold와
 `piti_slide_spec -> styled PPTX draft` 렌더링이 동작하는 상태다.
 
-중요한 방향은 다음과 같다.
+중요한 방향은 그대로 유지한다.
 
 - Piti는 의미를 재작성하지 않는다.
 - Piti는 proof object를 새로 추론하지 않는다.
@@ -22,22 +22,9 @@ ready_for_production_piti_agent=false
 ready_for_broadcast=false
 ```
 
-## 다음 구현 목표: Milestone 1.24 Piti Visual QA
+## Milestone 1.25 완료 상태
 
-목표는 PPT를 더 예쁘게 만드는 것이 아니다. 사람이 눈으로 검수해야 할
-슬라이드를 자동으로 드러내는 Markdown QA 리포트를 만든다.
-
-추가할 CLI:
-
-```text
-luddite render-piti-visual-qa
-```
-
-추가할 Make target:
-
-```text
-make render-piti-visual-qa
-```
+`luddite render-piti-visual-qa`는 warning-only Markdown QA 리포트를 만든다.
 
 입력:
 
@@ -59,40 +46,39 @@ docs/reviews/piti_visual_qa/{deck_id}.md
 docs/reviews/piti_visual_qa/piti_visual_qa_summary.md
 ```
 
-각 슬라이드별 리포트에는 다음 항목을 포함한다.
+Milestone 1.25에서 추가된 해석성:
 
-- `slide_no`
-- `screen_headline`
-- `layout_intent`
-- `proof_object.type`
-- `screen_body` 줄 수
-- `overflow_notes` 개수
-- `needs_source`
-- `needs_fact_check`
-- `required_before_broadcast`
-- `manual_insert_required`
-- `visual_qa_flags`
+- QA flag severity: `BLOCKER`, `REVIEW`, `INFO`
+- flagged slide별 `flag`, `severity`, `reason`, `review_hint`
+- `Top Review Queue`
+- `Severity Counts`
+- `Flag Explanations`
+- `Next Recommended Fix Area`
 
-Soft QA flags:
+현재 summary:
 
-- `proof_object_missing_for_claim_slide`
-- `too_many_source_cards_in_sequence`
-- `diagram_nodes_too_generic`
-- `chart_without_data_hint`
-- `source_card_display_title_too_generic`
-- `screen_body_empty_but_no_proof_object`
-- `overflow_notes_too_large`
-- `manual_insert_required_without_editor_instruction`
+```text
+Decks: 2
+Slides: 50
+Flagged slides: 33
+QA flags: 45
+Severity: BLOCKER 0, REVIEW 42, INFO 3
+Main weakness: diagram proof objects are still too generic.
+Recommended next fix: improve Anny/adapter diagram node generation, not Piti renderer.
+```
 
-이 flag들은 실패 조건이 아니라 review warning이다. 특히
-`overflow_notes`는 설명문을 화면 밖으로 잘 뺐다는 신호일 수 있으므로
-바로 실패 처리하지 않는다.
+중요한 해석:
 
-## 이후 순서
+- `overflow_notes_too_large`는 `INFO`다. 실패 조건이 아니다.
+- `diagram_nodes_too_generic`는 `REVIEW`다. 다음 개선은 Piti renderer가 아니라
+  Anny/adapter의 diagram node 생성 품질 쪽이다.
+- 모든 QA flag는 계속 warning-only다.
 
-1. Piti visual QA
-2. Anny direct Piti slide spec experiment
-3. Jibi slideability scoring
+## 다음 구현 목표
+
+1. Anny direct Piti slide spec experiment
+2. Jibi slideability scoring
+3. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -106,7 +92,7 @@ Soft QA flags:
 - 방송 투입 가능 상태 선언
 - 신규 LLM/API 호출 추가
 
-## 완료 기준
+## 검증 기준
 
 - `make lint` 통과
 - `make test` 통과
@@ -115,6 +101,5 @@ Soft QA flags:
 - `make render-piti-slide-spec-pptx` 통과
 - `make render-piti-visual-qa` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
-- QA 리포트가 두 샘플 deck 모두에 대해 생성된다.
-- 리포트만 보고도 사람이 어떤 슬라이드를 눈으로 검수해야 하는지
-  파악할 수 있다.
+- `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.
+- QA flags는 warning-only다.

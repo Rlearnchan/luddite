@@ -44,6 +44,150 @@ GENERIC_DIAGRAM_NODES = {
     "담보·단기",
     "장기·위험분담",
 }
+CONCRETE_ACTOR_MARKERS = {
+    "ai 서비스",
+    "ai 즉답 서비스",
+    "사용자",
+    "학생",
+    "교사",
+    "학교",
+    "박물관",
+    "천문관",
+    "기관",
+    "은행",
+    "금융위",
+    "금융위원회",
+    "정부",
+    "정책금융",
+    "국민성장펀드",
+    "기업",
+    "산업",
+    "service",
+    "user",
+    "student",
+    "school",
+    "museum",
+    "bank",
+    "government",
+    "company",
+}
+MECHANISM_VERB_MARKERS = {
+    "압축",
+    "비교",
+    "검증",
+    "확인",
+    "전환",
+    "공급",
+    "투자",
+    "분담",
+    "지원",
+    "연결",
+    "훈련",
+    "축소",
+    "확대",
+    "바꾸",
+    "줄",
+    "늘",
+    "compress",
+    "compare",
+    "verify",
+    "fund",
+    "support",
+    "shift",
+    "connect",
+}
+WEAK_EDGE_LABELS = {"", "arrow", "flow", "link", "to", "흐름", "연결"}
+SEVERITY_RANK = {"BLOCKER": 3, "REVIEW": 2, "INFO": 1}
+FLAG_METADATA = {
+    "proof_object_missing_for_claim_slide": {
+        "severity": "REVIEW",
+        "reason": "claim or review-sensitive slide has no proof object.",
+        "review_hint": "Add an explicit proof_object or confirm that this should remain text-only.",
+    },
+    "too_many_source_cards_in_sequence": {
+        "severity": "REVIEW",
+        "reason": "three or more source_card slides appear in sequence.",
+        "review_hint": (
+            "Check whether the sequence needs pacing, grouping, or a different "
+            "visual proof type."
+        ),
+    },
+    "diagram_nodes_too_generic": {
+        "severity": "REVIEW",
+        "reason": "diagram nodes are too abstract to guide an editable broadcast visual.",
+        "review_hint": "Replace abstract labels with concrete actor -> mechanism -> result labels.",
+    },
+    "diagram_edges_missing_or_weak": {
+        "severity": "REVIEW",
+        "reason": "diagram edges are missing, unlabeled, or do not connect the node set clearly.",
+        "review_hint": "Add labeled edges that explain what changes between the actor and result.",
+    },
+    "diagram_has_no_concrete_actor": {
+        "severity": "REVIEW",
+        "reason": "diagram nodes do not name a concrete actor, institution, user, or system.",
+        "review_hint": (
+            "Name the actor first, such as a service, institution, user, bank, "
+            "or policy body."
+        ),
+    },
+    "diagram_has_no_mechanism_verb": {
+        "severity": "REVIEW",
+        "reason": "diagram text does not show a mechanism verb that explains the change.",
+        "review_hint": (
+            "Add mechanism language such as compresses, verifies, funds, shifts, "
+            "or distributes risk."
+        ),
+    },
+    "diagram_nodes_need_broadcast_copy": {
+        "severity": "REVIEW",
+        "reason": "diagram node copy is placeholder-like rather than broadcast-facing.",
+        "review_hint": "Rewrite node labels upstream so each box can stand alone on screen.",
+    },
+    "chart_without_data_hint": {
+        "severity": "REVIEW",
+        "reason": "chart/table proof object has no data_hint for manual chart review.",
+        "review_hint": (
+            "Add a short data_hint that tells the editor what data the chart "
+            "should represent."
+        ),
+    },
+    "source_card_display_title_too_generic": {
+        "severity": "REVIEW",
+        "reason": "source card display title is generic or repeats the slide headline.",
+        "review_hint": (
+            "Replace generic source-card display title with a human-readable article/report "
+            "title or institution-specific evidence label."
+        ),
+    },
+    "screen_body_empty_but_no_proof_object": {
+        "severity": "REVIEW",
+        "reason": "slide has no screen_body and no proof object to carry the visual meaning.",
+        "review_hint": "Confirm whether the slide needs screen copy or an explicit proof_object.",
+    },
+    "overflow_notes_too_large": {
+        "severity": "INFO",
+        "reason": "overflow_notes has more than 3 items.",
+        "review_hint": (
+            "Check whether this is healthy screen compression or whether core logic "
+            "disappeared from the slide."
+        ),
+    },
+    "manual_insert_required_without_editor_instruction": {
+        "severity": "REVIEW",
+        "reason": "proof_object requires manual insertion, but no editor instruction is available.",
+        "review_hint": (
+            "Add a short editor_instruction describing what the editor should insert or verify."
+        ),
+    },
+}
+
+
+@dataclass(frozen=True)
+class VisualQaFlag:
+    flag: str
+    severity: str
+    reason: str
+    review_hint: str
 
 
 @dataclass(frozen=True)
@@ -58,7 +202,21 @@ class VisualQaSlide:
     needs_fact_check: bool
     required_before_broadcast: bool
     manual_insert_required: bool
-    visual_qa_flags: list[str]
+    editor_instruction_missing: bool
+    flag_details: list[VisualQaFlag]
+
+    @property
+    def visual_qa_flags(self) -> list[str]:
+        return [detail.flag for detail in self.flag_details]
+
+    @property
+    def highest_severity(self) -> str:
+        if not self.flag_details:
+            return "none"
+        return max(
+            (detail.severity for detail in self.flag_details),
+            key=lambda severity: SEVERITY_RANK[severity],
+        )
 
 
 @dataclass(frozen=True)
@@ -171,6 +329,74 @@ def _diagram_nodes_too_generic(proof: dict[str, Any]) -> bool:
     return all(node in generic_nodes for node in normalized_nodes)
 
 
+def _diagram_edges_missing_or_weak(proof: dict[str, Any]) -> bool:
+    nodes = {_normalize_text(node) for node in _as_list(proof.get("diagram_nodes"))}
+    edges = [edge for edge in _as_list(proof.get("diagram_edges")) if isinstance(edge, dict)]
+    if not edges:
+        return True
+    valid_edges = [
+        edge
+        for edge in edges
+        if str(edge.get("from") or "").strip()
+        and str(edge.get("to") or "").strip()
+        and (
+            not nodes
+            or (
+                _normalize_text(edge.get("from")) in nodes
+                and _normalize_text(edge.get("to")) in nodes
+            )
+        )
+    ]
+    if not valid_edges:
+        return True
+    labels = [_normalize_text(edge.get("label")) for edge in valid_edges]
+    return all(label in {_normalize_text(item) for item in WEAK_EDGE_LABELS} for label in labels)
+
+
+def _diagram_has_no_concrete_actor(proof: dict[str, Any]) -> bool:
+    nodes = [str(node).strip() for node in _as_list(proof.get("diagram_nodes"))]
+    nodes = [node for node in nodes if node]
+    if not nodes:
+        return True
+    generic_nodes = {_normalize_text(node) for node in GENERIC_DIAGRAM_NODES}
+    if all(_normalize_text(node) in generic_nodes for node in nodes):
+        return True
+    joined = " ".join(nodes).lower()
+    return not any(marker.lower() in joined for marker in CONCRETE_ACTOR_MARKERS)
+
+
+def _diagram_has_no_mechanism_verb(proof: dict[str, Any]) -> bool:
+    nodes = [str(node) for node in _as_list(proof.get("diagram_nodes"))]
+    edge_labels = [
+        str(edge.get("label") or "")
+        for edge in _as_list(proof.get("diagram_edges"))
+        if isinstance(edge, dict)
+    ]
+    text = " ".join([*nodes, *edge_labels]).lower()
+    return not any(marker.lower() in text for marker in MECHANISM_VERB_MARKERS)
+
+
+def _diagram_nodes_need_broadcast_copy(proof: dict[str, Any]) -> bool:
+    nodes = [str(node).strip() for node in _as_list(proof.get("diagram_nodes"))]
+    nodes = [node for node in nodes if node]
+    if not nodes:
+        return True
+    generic_nodes = {_normalize_text(node) for node in GENERIC_DIAGRAM_NODES}
+    if any(_normalize_text(node) in generic_nodes for node in nodes):
+        return True
+    return all(len(node) <= 6 and " " not in node for node in nodes)
+
+
+def _flag_detail(flag: str) -> VisualQaFlag:
+    metadata = FLAG_METADATA[flag]
+    return VisualQaFlag(
+        flag=flag,
+        severity=metadata["severity"],
+        reason=metadata["reason"],
+        review_hint=metadata["review_hint"],
+    )
+
+
 def visual_qa_flags(
     slide: dict[str, Any],
     *,
@@ -194,8 +420,18 @@ def visual_qa_flags(
         flags.append("proof_object_missing_for_claim_slide")
     if slide_no in source_card_run_slides:
         flags.append("too_many_source_cards_in_sequence")
-    if proof_type == "diagram" and _diagram_nodes_too_generic(proof):
-        flags.append("diagram_nodes_too_generic")
+    if proof_type == "diagram":
+        nodes_too_generic = _diagram_nodes_too_generic(proof)
+        if nodes_too_generic:
+            flags.append("diagram_nodes_too_generic")
+        if _diagram_edges_missing_or_weak(proof):
+            flags.append("diagram_edges_missing_or_weak")
+        if not nodes_too_generic and _diagram_has_no_concrete_actor(proof):
+            flags.append("diagram_has_no_concrete_actor")
+        if _diagram_has_no_mechanism_verb(proof):
+            flags.append("diagram_has_no_mechanism_verb")
+        if not nodes_too_generic and _diagram_nodes_need_broadcast_copy(proof):
+            flags.append("diagram_nodes_need_broadcast_copy")
     if proof_type in {"chart", "table"} and not str(proof.get("data_hint") or "").strip():
         flags.append("chart_without_data_hint")
     if proof_type == "source_card":
@@ -219,6 +455,17 @@ def visual_qa_flags(
     return flags
 
 
+def visual_qa_flag_details(
+    slide: dict[str, Any],
+    *,
+    source_card_run_slides: set[int] | None = None,
+) -> list[VisualQaFlag]:
+    return [
+        _flag_detail(flag)
+        for flag in visual_qa_flags(slide, source_card_run_slides=source_card_run_slides)
+    ]
+
+
 def evaluate_slide_spec(path: Path, spec: dict[str, Any], output_dir: Path) -> VisualQaDeck:
     slides = _sorted_slides(spec)
     source_card_run_slides = _source_card_run_slide_numbers(slides)
@@ -236,7 +483,8 @@ def evaluate_slide_spec(path: Path, spec: dict[str, Any], output_dir: Path) -> V
             needs_fact_check=bool(slide.get("needs_fact_check")),
             required_before_broadcast=bool(slide.get("required_before_broadcast")),
             manual_insert_required=bool(_proof_object(slide).get("manual_insert_required")),
-            visual_qa_flags=visual_qa_flags(
+            editor_instruction_missing=not str(slide.get("editor_instruction") or "").strip(),
+            flag_details=visual_qa_flag_details(
                 slide,
                 source_card_run_slides=source_card_run_slides,
             ),
@@ -259,6 +507,138 @@ def _flag_counter(decks: list[VisualQaDeck]) -> Counter[str]:
     return counter
 
 
+def _severity_counter(decks: list[VisualQaDeck]) -> Counter[str]:
+    counter: Counter[str] = Counter()
+    for deck in decks:
+        for slide in deck.slides:
+            counter.update(detail.severity for detail in slide.flag_details)
+    return counter
+
+
+def _slide_priority_score(slide: VisualQaSlide) -> tuple[int, int, int, int, int, int, int]:
+    flags = set(slide.visual_qa_flags)
+    return (
+        int(len(flags) >= 2),
+        int(slide.required_before_broadcast),
+        int(slide.needs_fact_check),
+        int("manual_insert_required_without_editor_instruction" in flags),
+        int("source_card_display_title_too_generic" in flags),
+        int("overflow_notes_too_large" in flags),
+        len(flags),
+    )
+
+
+def _primary_review_hint(slide: VisualQaSlide) -> str:
+    if not slide.flag_details:
+        return ""
+    detail = max(
+        slide.flag_details,
+        key=lambda item: (
+            SEVERITY_RANK[item.severity],
+            item.flag != "overflow_notes_too_large",
+        ),
+    )
+    return detail.review_hint
+
+
+def _top_review_rows(decks: list[VisualQaDeck]) -> list[tuple[int, VisualQaDeck, VisualQaSlide]]:
+    rows: list[tuple[VisualQaDeck, VisualQaSlide]] = [
+        (deck, slide)
+        for deck in decks
+        for slide in deck.slides
+        if slide.visual_qa_flags
+    ]
+    rows.sort(
+        key=lambda row: (
+            *[-score for score in _slide_priority_score(row[1])],
+            row[0].deck_id,
+            row[1].slide_no,
+        )
+    )
+    return [(priority, deck, slide) for priority, (deck, slide) in enumerate(rows, start=1)]
+
+
+def _append_top_review_queue(lines: list[str], decks: list[VisualQaDeck]) -> None:
+    lines.extend(
+        [
+            "## Top Review Queue",
+            "",
+            "| priority | deck | slide | headline | severity | flags | review_hint |",
+            "|---:|---|---:|---|---|---|---|",
+        ]
+    )
+    rows = _top_review_rows(decks)
+    if not rows:
+        lines.append("| 0 | none | 0 | none | none | none | none |")
+        return
+    for priority, deck, slide in rows:
+        lines.append(
+            f"| {priority} | {_markdown_cell(deck.deck_id)} | {slide.slide_no} | "
+            f"{_markdown_cell(slide.screen_headline)} | {slide.highest_severity} | "
+            f"{_markdown_cell(', '.join(slide.visual_qa_flags))} | "
+            f"{_markdown_cell(_primary_review_hint(slide))} |"
+        )
+
+
+def _append_flag_details(lines: list[str], decks: list[VisualQaDeck]) -> None:
+    lines.extend(
+        [
+            "## Flag Details",
+            "",
+            "| deck | slide | flag | severity | reason | review_hint |",
+            "|---|---:|---|---|---|---|",
+        ]
+    )
+    has_details = False
+    for deck in decks:
+        for slide in deck.slides:
+            for detail in slide.flag_details:
+                has_details = True
+                lines.append(
+                    f"| {_markdown_cell(deck.deck_id)} | {slide.slide_no} | "
+                    f"{detail.flag} | {detail.severity} | "
+                    f"{_markdown_cell(detail.reason)} | "
+                    f"{_markdown_cell(detail.review_hint)} |"
+                )
+    if not has_details:
+        lines.append("| none | 0 | none | none | none | none |")
+
+
+def _next_recommended_fix_area(counter: Counter[str]) -> list[str]:
+    diagram_flags = sum(
+        counter.get(flag, 0)
+        for flag in (
+            "diagram_nodes_too_generic",
+            "diagram_edges_missing_or_weak",
+            "diagram_has_no_concrete_actor",
+            "diagram_has_no_mechanism_verb",
+            "diagram_nodes_need_broadcast_copy",
+        )
+    )
+    source_title_flags = counter.get("source_card_display_title_too_generic", 0)
+    manual_insert_flags = counter.get("manual_insert_required_without_editor_instruction", 0)
+    if diagram_flags >= max(source_title_flags, manual_insert_flags):
+        return [
+            "- Main weakness: diagram proof objects are still too generic.",
+            (
+                "- Recommended next fix: improve Anny/adapter diagram node "
+                "generation, not Piti renderer."
+            ),
+            "- Do not treat overflow_notes_too_large as failure yet.",
+        ]
+    if source_title_flags >= manual_insert_flags:
+        return [
+            "- Main weakness: source card titles are still too generic.",
+            "- Recommended next fix: improve upstream source-card display labels.",
+            "- Do not synthesize source titles in the Piti renderer.",
+        ]
+    return [
+        "- Main weakness: manually inserted proof objects lack editor instructions.",
+        "- Recommended next fix: improve upstream editor_instruction coverage.",
+        "- Keep QA flags warning-only until a human review workflow exists.",
+    ]
+
+
 def write_deck_report(deck: VisualQaDeck) -> None:
     deck.output_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -273,21 +653,24 @@ def write_deck_report(deck: VisualQaDeck) -> None:
         "- LLM/API calls: none",
         "- Image insertion/chart generation/Google Slides integration: none",
         "",
-        "## Review Queue",
-        "",
     ]
+    _append_top_review_queue(lines, [deck])
+    lines.extend(["", "## Review Queue", ""])
     flagged_slides = [slide for slide in deck.slides if slide.visual_qa_flags]
     if flagged_slides:
         for slide in flagged_slides:
             lines.append(
-                "- slide {slide_no}: {headline} -- {flags}".format(
+                "- slide {slide_no} [{severity}]: {headline} -- {flags}".format(
                     slide_no=slide.slide_no,
+                    severity=slide.highest_severity,
                     headline=slide.screen_headline,
                     flags=", ".join(slide.visual_qa_flags),
                 )
             )
     else:
         lines.append("- none")
+    lines.append("")
+    _append_flag_details(lines, [deck])
     lines.extend(
         [
             "",
@@ -297,9 +680,9 @@ def write_deck_report(deck: VisualQaDeck) -> None:
                 "| slide_no | screen_headline | layout_intent | proof_object.type | "
                 "screen_body lines | overflow_notes count | needs_source | "
                 "needs_fact_check | required_before_broadcast | manual_insert_required | "
-                "visual_qa_flags |"
+                "visual_qa_flags | visual_qa_severity |"
             ),
-            "|---:|---|---|---|---:|---:|---|---|---|---|---|",
+            "|---:|---|---|---|---:|---:|---|---|---|---|---|---|",
         ]
     )
     for slide in deck.slides:
@@ -311,7 +694,8 @@ def write_deck_report(deck: VisualQaDeck) -> None:
             f"{slide.screen_body_line_count} | {slide.overflow_notes_count} | "
             f"{_bool_text(slide.needs_source)} | {_bool_text(slide.needs_fact_check)} | "
             f"{_bool_text(slide.required_before_broadcast)} | "
-            f"{_bool_text(slide.manual_insert_required)} | {_markdown_cell(flags)} |"
+            f"{_bool_text(slide.manual_insert_required)} | {_markdown_cell(flags)} | "
+            f"{slide.highest_severity} |"
         )
     deck.output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -319,6 +703,7 @@ def write_deck_report(deck: VisualQaDeck) -> None:
 def write_summary_report(path: Path, decks: list[VisualQaDeck]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     counter = _flag_counter(decks)
+    severity_counter = _severity_counter(decks)
     lines = [
         "# Piti Visual QA Summary",
         "",
@@ -351,6 +736,31 @@ def write_summary_report(path: Path, decks: list[VisualQaDeck]) -> None:
             lines.append(f"- {flag}: {count}")
     else:
         lines.append("- none")
+    lines.extend(["", "## Severity Counts", ""])
+    if severity_counter:
+        for severity in ("BLOCKER", "REVIEW", "INFO"):
+            lines.append(f"- {severity}: {severity_counter.get(severity, 0)}")
+    else:
+        lines.append("- none")
+    lines.append("")
+    _append_top_review_queue(lines, decks)
+    lines.extend(
+        [
+            "",
+            "## Flag Explanations",
+            "",
+            "| flag | severity | reason | review_hint |",
+            "|---|---|---|---|",
+        ]
+    )
+    for flag, metadata in sorted(FLAG_METADATA.items()):
+        lines.append(
+            f"| {flag} | {metadata['severity']} | "
+            f"{_markdown_cell(metadata['reason'])} | "
+            f"{_markdown_cell(metadata['review_hint'])} |"
+        )
+    lines.extend(["", "## Next Recommended Fix Area", ""])
+    lines.extend(_next_recommended_fix_area(counter))
     lines.extend(["", "## Review Queue", ""])
     any_flagged = False
     for deck in decks:
@@ -359,9 +769,10 @@ def write_summary_report(path: Path, decks: list[VisualQaDeck]) -> None:
                 continue
             any_flagged = True
             lines.append(
-                "- {deck} slide {slide_no}: {headline} -- {flags}".format(
+                "- {deck} slide {slide_no} [{severity}]: {headline} -- {flags}".format(
                     deck=deck.deck_id,
                     slide_no=slide.slide_no,
+                    severity=slide.highest_severity,
                     headline=slide.screen_headline,
                     flags=", ".join(slide.visual_qa_flags),
                 )

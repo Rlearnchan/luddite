@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.22
+# Current Product Direction after Milestone 1.25
 
 Status date: 2026-05-20
 
@@ -12,6 +12,11 @@ path:
   `piti_slide_spec` JSON.
 - `piti_slide_spec -> styled PPTX draft` rendering works for the two current
   sample decks.
+- `luddite render-piti-visual-qa` writes warning-only visual QA reports to
+  `outputs/qa/piti_visual_qa/` and GitHub-visible mirrors under
+  `docs/reviews/piti_visual_qa/`.
+- Piti visual QA now includes severity, flag reasons, review hints, top review
+  queue prioritization, and next recommended fix area.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -67,6 +72,7 @@ human must review before any broadcast workflow is considered.
 make build-piti-slide-specs
 make validate-piti-slide-spec
 make render-piti-slide-spec-pptx
+make render-piti-visual-qa
 ```
 
 Current fixture inputs:
@@ -83,23 +89,37 @@ outputs/pptx/ai_knowledge_institution_slide_spec_styled_draft.pptx
 outputs/pptx/productive_finance_policy_slide_spec_styled_draft.pptx
 ```
 
+## Current Visual QA Status
+
+Current GitHub-visible review reports:
+
+```text
+docs/reviews/piti_visual_qa/piti_visual_qa_summary.md
+docs/reviews/piti_visual_qa/piti_slide_spec_ai_knowledge_institution.md
+docs/reviews/piti_visual_qa/piti_slide_spec_productive_finance_policy.md
+```
+
+Current summary:
+
+```text
+Decks: 2
+Slides: 50
+Flagged slides: 33
+QA flags: 45
+Severity: BLOCKER 0, REVIEW 42, INFO 3
+Main weakness: diagram proof objects are still too generic.
+Recommended next fix: improve Anny/adapter diagram node generation, not Piti renderer.
+```
+
+Visual QA remains warning-only. No QA severity currently fails
+`make render-piti-visual-qa`.
+
 ## Next Work Order
 
-1. Piti visual QA
-2. Anny direct Piti slide spec experiment
-3. Jibi slideability scoring
-
-Milestone 1.24 should add a deterministic Piti visual QA report:
-
-- Input: `data/candidates/piti_slide_specs/*.json`
-- Per-deck output: `outputs/qa/piti_visual_qa/{deck_id}.md`
-- Summary output: `outputs/qa/piti_visual_qa/piti_visual_qa_summary.md`
-- GitHub-visible review mirror:
-  `docs/reviews/piti_visual_qa/{deck_id}.md` and
-  `docs/reviews/piti_visual_qa/piti_visual_qa_summary.md`
-- QA flags are review warnings only, not failure gates.
-- No LLM/API calls, image insertion, chart generation, or Google Slides
-  integration.
+1. Anny direct Piti slide spec experiment
+2. Jibi slideability scoring
+3. Later: production agent/scheduler/Slack/Slides work after contracts and
+   review workflow mature
 
 ## Out Of Scope For The Next Milestone
 
