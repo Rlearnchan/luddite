@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.36
+# Current Product Direction after Milestone 1.37
 
 Status date: 2026-05-21
 
@@ -67,6 +67,11 @@ path:
   slideability hints and downstream Piti slide specs / visual QA.
 - Milestone 1.36 extends that comparison to include Anny direct live slide
   specs from `live_m132_20260520_all`, alongside adapter-built Piti specs.
+- Milestone 1.37 adds a PPTX contact sheet QA surface for adapter-built and
+  Anny direct live draft decks.
+- Contact sheet QA is review-only. It does not modify PPTX content, infer
+  meaning, insert images, generate charts, call an LLM/API, or change
+  readiness flags.
 - The comparison is calibration only. It does not change Jibi scoring,
   `recommended_action`, handoff gates, Anny prompts, or Piti rendering.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
@@ -133,6 +138,7 @@ make render-daily-digest
 make build-anny-input-bundles
 make prepare-anny-input-bundles
 make compare-slideability-visual-qa
+make render-pptx-contact-sheet
 ```
 
 Current fixture inputs:
@@ -463,6 +469,7 @@ GitHub-visible implementation note:
 docs/reviews/jibi_slideability_v0.md
 docs/reviews/anny_input_bundle_slideability_v0.md
 docs/reviews/slideability_visual_qa_comparison.md
+docs/reviews/pptx_contact_sheet_summary.md
 ```
 
 ## Current Anny Input Bundle Visual Planning Status
@@ -551,15 +558,58 @@ Interpretation:
   chartability and diagram-quality heuristics before using slideability as a
   scoring weight.
 
+## Current PPTX Contact Sheet QA Status
+
+Current contact sheet outputs:
+
+```text
+outputs/qa/pptx_contact_sheet/
+docs/reviews/pptx_contact_sheet_summary.md
+```
+
+Current local summary:
+
+```text
+deck_count: 4
+slide_count: 100
+generated_contact_sheets: 0
+thumbnail_generation_status: {'metadata_only_with_warning': 4}
+failed_decks: 0
+thumbnail_backend: LibreOffice/soffice not found locally
+```
+
+Decks covered:
+
+```text
+adapter_ai_knowledge_institution
+adapter_productive_finance_policy
+live_m132_20260520_all_ai_knowledge_institution
+live_m132_20260520_all_productive_finance_policy
+```
+
+Interpretation:
+
+- The CLI successfully builds per-deck Markdown review surfaces with slide
+  counts, slide-spec metadata, visual QA flags, `contact_sheet_review_status:
+  unchecked`, and blank `reviewer_note` placeholders.
+- The current local machine does not have LibreOffice/soffice available, so
+  thumbnail/PDF contact sheet generation is reported as a graceful warning
+  instead of failing the command.
+- No PPTX content is modified.
+- No LLM/API calls are made.
+- Broadcast readiness remains false.
+
 ## Next Work Order
 
 1. Calibrate the rule-based slideability heuristic around chart
    underprediction and diagram-quality prediction, while keeping it review-only.
-2. Consider a PPT contact-sheet QA surface for rendered draft decks.
-3. Optionally run one more live Anny direct confirmation pass before widening
+2. Install or configure a thumbnail backend such as LibreOffice + pdftoppm, then
+   regenerate actual thumbnail contact sheets.
+3. Add a human contact-sheet review template/checklist after thumbnails exist.
+4. Optionally run one more live Anny direct confirmation pass before widening
    the case set.
-4. Keep using visual QA and comparison reports as warning-only review surfaces.
-5. Later: production agent/scheduler/Slack/Slides work after contracts and
+5. Keep using visual QA and comparison reports as warning-only review surfaces.
+6. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

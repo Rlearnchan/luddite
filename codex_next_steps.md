@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.36
+# Codex Next Steps after Milestone 1.37
 
 ## 상태
 
@@ -568,6 +568,7 @@ GitHub-visible review note:
 docs/reviews/jibi_slideability_v0.md
 docs/reviews/anny_input_bundle_slideability_v0.md
 docs/reviews/slideability_visual_qa_comparison.md
+docs/reviews/pptx_contact_sheet_summary.md
 ```
 
 ## Milestone 1.35 완료 상태
@@ -686,16 +687,71 @@ AI 즉답 시대의 지식기관 역할:
 - 따라서 다음 calibration은 chartability underprediction과 diagram quality
   prediction을 중심으로 한다.
 
+## Milestone 1.37 완료 상태
+
+`luddite render-pptx-contact-sheet`와
+`make render-pptx-contact-sheet`가 추가됐다.
+
+목적:
+
+- 렌더링된 PPTX draft를 사람이 빠르게 눈으로 볼 수 있는 contact sheet QA
+  surface로 만든다.
+- PPTX 내용을 자동 수정하지 않는다.
+- Piti가 의미를 재작성하거나 proof object를 새로 추론하지 않는다.
+- 이미지 자동 삽입, 차트 자동 생성, Google Slides 연동, LLM/API 호출은 없다.
+
+기본 대상:
+
+```text
+outputs/pptx/ai_knowledge_institution_slide_spec_styled_draft.pptx
+outputs/pptx/productive_finance_policy_slide_spec_styled_draft.pptx
+outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m132_20260520_all/ai_knowledge_institution/direct_piti_slide_spec_draft.pptx
+outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m132_20260520_all/productive_finance_policy/direct_piti_slide_spec_draft.pptx
+```
+
+출력:
+
+```text
+outputs/qa/pptx_contact_sheet/
+outputs/qa/pptx_contact_sheet/pptx_contact_sheet_summary.md
+docs/reviews/pptx_contact_sheet_summary.md
+```
+
+현재 local 실행 결과:
+
+```text
+deck_count: 4
+slide_count: 100
+generated_contact_sheets: 0
+thumbnail_generation_status: {'metadata_only_with_warning': 4}
+failed_decks: 0
+thumbnail backend: LibreOffice/soffice not found locally
+```
+
+해석:
+
+- per-deck Markdown report는 생성됐다.
+- 각 slide row는 `slide_no`, thumbnail path, `screen_headline`,
+  `layout_intent`, `proof_object.type`, visual QA flags,
+  `contact_sheet_review_status: unchecked`, `reviewer_note: ""`를 포함한다.
+- 현재 로컬에는 LibreOffice/soffice가 없어 실제 thumbnail/contact sheet image는
+  생성되지 않았고, graceful warning으로 남겼다.
+- thumbnail backend가 준비되면 같은 CLI로 실제 contact sheet PNG/PDF를 생성할
+  수 있다.
+
 ## 다음 구현/평가 목표
 
-1. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
+1. LibreOffice + pdftoppm 같은 thumbnail backend를 준비한 뒤 contact sheet
+   PNG/PDF를 재생성한다.
+2. 사람이 contact sheet를 보고 manual review할 수 있는 체크리스트/template을
+   추가한다.
+3. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
    calibration한다.
-2. PPT contact sheet QA surface를 검토한다.
-3. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
    넓힌다.
-4. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+5. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
    유지한다.
-5. 그 이후 production agent/scheduler/Slack/Slides 검토
+6. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -724,6 +780,7 @@ AI 즉답 시대의 지식기관 역할:
 - `make build-anny-input-bundles` 통과
 - `make prepare-anny-input-bundles` 통과
 - `make compare-slideability-visual-qa` 통과
+- `make render-pptx-contact-sheet` 통과
 - 가능하면 `make render-daily-digest` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
 - `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.
