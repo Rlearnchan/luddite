@@ -1,6 +1,6 @@
 # Anny Direct Piti Slide Spec Validation: productive_finance_policy
 
-- generated_at: 2026-05-20T02:29:31.298083+00:00
+- generated_at: 2026-05-20T02:47:00.728640+00:00
 - mode: fixture
 - raw_model_output: outputs/model_dry_runs/anny_slide_spec_experiments/productive_finance_policy/raw_model_output.txt
 - parsed_piti_slide_spec: outputs/model_dry_runs/anny_slide_spec_experiments/productive_finance_policy/parsed_piti_slide_spec.json
@@ -14,6 +14,19 @@
 - unsupported_claim_count: 0
 - needs_fact_check_removed_too_aggressively: False
 - required_before_broadcast_removed_too_aggressively: False
+- source_refs_removed_too_aggressively: False
+- do_not_claim_removed_or_ignored: False
+- missing_required_schema_paths: []
+- invalid_enum_values: []
+- missing_sections_slides_count: 0
+- section_slide_ref_mismatch_count: 0
+- slide_count_delta_vs_adapter: 0
+- section_count_delta_vs_adapter: 0
+- source_refs_delta_vs_adapter: 0
+- needs_fact_check_delta_vs_adapter: 0
+- required_before_broadcast_delta_vs_adapter: 0
+- do_not_claim_delta_vs_adapter: 0
+- diagram_nodes_with_arrow_count: 0
 - visible_url_count: 0
 - source_card_repeated_headline_count: 0
 - proof_text_overlap_count: 0
@@ -32,6 +45,18 @@
 - output_pptx_path: outputs/model_dry_runs/anny_slide_spec_experiments/productive_finance_policy/direct_piti_slide_spec_draft.pptx
 
 ## Slide Spec Issues
+
+- none
+
+## Contract Diagnostics
+
+- sections_slides_missing: false
+- invalid_layout_intent: false
+- deck_too_compressed: false
+- safety_metadata_removed: false
+- diagram_node_contains_arrow: false
+
+## Schema Error Details
 
 - none
 

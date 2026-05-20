@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.29
+# Codex Next Steps after Milestone 1.30
 
 ## 상태
 
@@ -275,17 +275,94 @@ productive_finance_policy:
 - 두 case 모두 `needs_fact_check` 또는 `required_before_broadcast`를 너무
   많이 제거했다.
 
+## Milestone 1.30 완료 상태
+
+Anny direct slide spec prompt/contract를 schema shape, slide coverage, safety
+metadata preservation 중심으로 강화했다.
+
+prompt에 추가된 핵심:
+
+- 정확한 `piti_slide_spec_schema.json` object 출력
+- `sections[].slides` non-empty array 요구
+- top-level `slides[]`와 section slide object 대응 요구
+- nullable array field를 `null`로 쓰지 말라는 지시
+- schema-valid `layout_intent` enum 명시
+- 24-26장 representative deck을 20장 미만으로 압축하지 말라는 지시
+- `needs_fact_check`, `required_before_broadcast`, `source_refs`,
+  `do_not_claim` 보수적 보존
+- `diagram_nodes[]` 내부 `->` 금지
+- final JSON 전 preflight checklist
+
+validator/report에 추가된 진단:
+
+- `missing_required_schema_paths`
+- `invalid_enum_values`
+- `missing_sections_slides_count`
+- `section_slide_ref_mismatch_count`
+- `slide_count_delta_vs_adapter`
+- `section_count_delta_vs_adapter`
+- `source_refs_delta_vs_adapter`
+- `needs_fact_check_delta_vs_adapter`
+- `required_before_broadcast_delta_vs_adapter`
+- `do_not_claim_delta_vs_adapter`
+- `diagram_nodes_with_arrow_count`
+- failure reason: `sections_slides_missing`, `invalid_layout_intent`,
+  `deck_too_compressed`, `safety_metadata_removed`,
+  `diagram_node_contains_arrow`
+
+live opt-in 재실행:
+
+```text
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id all --live-api --run-id live_m130_20260520_all --timeout 600
+```
+
+결과:
+
+```text
+run_id: live_m130_20260520_all
+model: gpt-5-mini-2025-08-07
+overall outcome: failure
+```
+
+m129 대비:
+
+```text
+ai_knowledge_institution:
+  schema_valid: false -> true
+  render_passed: false -> true
+  slide_count: 11 -> 0
+  safety_regression_detected: true -> true
+  result: still failure
+
+productive_finance_policy:
+  schema_valid: false -> true
+  render_passed: false -> false
+  slide_count: 8 -> 24
+  safety_regression_detected: true -> false
+  diagram_nodes_too_generic: 0 -> 0
+  diagram_nodes_with_arrow_count: 0
+  result: improved but still failure
+```
+
+해석:
+
+- Finance case는 coverage/safety/schema가 크게 좋아졌다.
+- AI case는 schema-valid empty deck을 냈고, 새 contract diagnostics가 이를
+  `sections_slides_missing`, `deck_too_compressed`, `safety_metadata_removed`로
+  잡았다.
+- live success는 아니다.
+- production/broadcast readiness는 계속 false다.
+
 ## 다음 구현/평가 목표
 
-1. Anny direct prompt/contract를 schema shape 중심으로 더 엄격하게 만든다.
-2. `sections[].slides`, nullable array 금지, layout enum-only, slide coverage
-   유지, conservative safety flag preservation을 명시한다.
-3. diagram node는 계속 concrete하게 만들되, node 내부에는 `->`를 넣지
-   않도록 한다.
-4. contract 보강 후 live opt-in을 다시 실행해 `live_m129_20260520_all`과
-   비교한다.
-5. live schema/safety가 안정화되면 Jibi slideability scoring으로 넘어간다.
-6. 그 이후 production agent/scheduler/Slack/Slides 검토
+1. AI case의 empty deck 방지를 더 강하게 건다.
+2. Finance case의 renderer failure를 줄이기 위해 chart/table body length와
+   `article_quote` quote text requirement를 prompt/report에 더 명시한다.
+3. live opt-in을 다시 실행해 `live_m129_20260520_all`,
+   `live_m130_20260520_all`과 비교한다.
+4. live schema/render/safety가 안정화되면 Jibi slideability scoring으로
+   넘어간다.
+5. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 

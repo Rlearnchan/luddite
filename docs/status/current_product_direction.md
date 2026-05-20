@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.29
+# Current Product Direction after Milestone 1.30
 
 Status date: 2026-05-20
 
@@ -31,6 +31,11 @@ path:
 - Milestone 1.29 ran the live opt-in experiment for both current cases. The
   run produced useful diagnostics, but both live cases were classified as
   `failure`.
+- Milestone 1.30 strengthened the Anny direct prompt/contract around schema
+  shape, slide coverage, safety metadata preservation, and diagram node text.
+- The experiment validation/comparison reports now expose detailed contract
+  diagnostics such as missing section slides, invalid layout intent, deck
+  compression, removed source refs, and diagram node arrows.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -248,6 +253,42 @@ Interpretation:
 - This live run does not make production Anny, production Piti, or broadcast
   readiness true.
 
+Current contract-strengthening live rerun:
+
+```text
+run_id: live_m130_20260520_all
+mode: live
+model: gpt-5-mini-2025-08-07
+outcome: failure for both cases
+output_root: outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m130_20260520_all/
+review_note: docs/reviews/anny_slide_spec_experiments_live/live_m130_20260520_all_summary_review.md
+```
+
+M129 to M130 comparison:
+
+```text
+ai_knowledge_institution:
+  schema_valid: false -> true
+  render_passed: false -> true
+  slide_count: 11 -> 0
+  safety_regression_detected: true -> true
+  diagram_nodes_too_generic: 0 -> 0
+  interpretation: still failure; schema-valid empty deck was caught by contract diagnostics.
+
+productive_finance_policy:
+  schema_valid: false -> true
+  render_passed: false -> false
+  slide_count: 8 -> 24
+  safety_regression_detected: true -> false
+  diagram_nodes_too_generic: 0 -> 0
+  diagram_nodes_with_arrow_count: 0
+  interpretation: improved; coverage/safety/schema pass, but renderer contract issues remain.
+```
+
+The m130 live rerun is not a success, but it shows the strengthened contract is
+useful: it caught an empty schema-valid AI deck and showed that the finance case
+can preserve coverage and safety metadata under the new prompt.
+
 Live experiment outcomes are classified as:
 
 - `success`: schema/render pass, no safety regression, and
@@ -259,11 +300,12 @@ Live experiment outcomes are classified as:
 
 ## Next Work Order
 
-1. Tighten Anny direct slide-spec prompt/contract for schema shape, slide
-   coverage, layout enum compliance, and safety metadata preservation.
-2. Re-run live opt-in after the contract fix and compare against
-   `live_m129_20260520_all`.
-3. Jibi slideability scoring
+1. Add the next Anny direct live prompt/report fix around non-empty slide arrays,
+   renderer-specific proof requirements, chart/table body length, and
+   `article_quote` quote text.
+2. Re-run live opt-in and compare against `live_m129_20260520_all` and
+   `live_m130_20260520_all`.
+3. Jibi slideability scoring after live schema/render/safety stabilizes.
 4. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 

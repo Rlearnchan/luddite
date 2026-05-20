@@ -9,7 +9,8 @@ context, allowed URL list, and schema.
 
 Core contract:
 
-- The output must satisfy `specs/piti_slide_spec_schema.json`.
+- The output must satisfy `specs/piti_slide_spec_schema.json` exactly. Do not
+  output merely plausible JSON.
 - Piti will render the output as given.
 - Piti will not infer meaning, rewrite screen copy, or create proof objects.
 - Keep `screen_headline` broadcast-facing.
@@ -23,6 +24,62 @@ Core contract:
 - Do not make unsupported claims as screen copy.
 - Include counterpoint or opposing questions when the topic needs them.
 
+Schema shape contract:
+
+- Preserve all top-level required fields from the schema.
+- Every `sections[]` object must include a `slides` array.
+- `sections[].slides` must be a non-empty array of slide objects that correspond
+  to the top-level `slides[]` array.
+- Every slide listed inside a section must also exist in top-level `slides[]`.
+- Every top-level slide must be represented in its section's `slides` array.
+- Do not write nullable array fields as `null`.
+- Array fields must always be arrays, even when empty: `screen_body`,
+  `overflow_notes`, `source_refs`, `risk_flags`, `do_not_claim`,
+  `proof_object.diagram_nodes`, and `proof_object.diagram_edges`.
+- String enum fields must use schema values only.
+- `layout_intent` must use one of these schema enum values only:
+  - `title`
+  - `section_title`
+  - `text_only_calculation`
+  - `headline_body`
+  - `source_card_or_article_quote`
+  - `image_left_quote_right`
+  - `chart_table_reference`
+  - `diagram`
+  - `closing_question`
+  - `appendix_checklist`
+- Do not invent values such as `hook`.
+
+Slide coverage contract:
+
+- Use the adapter/manual storyline as the slide coverage baseline.
+- Preserve approximate slide count unless explicitly instructed otherwise.
+- Do not compress a 24-26 slide representative deck into fewer than 20 slides.
+- If a slide seems redundant, keep the slide and simplify the proof object,
+  screen copy, or notes instead of deleting it.
+- Preserve section count.
+- Preserve key beat coverage.
+- Preserve counterpoint and caution slides.
+- Preserve appendix/checklist slides when they contain fact-check or source
+  requirements.
+- Slide reduction is not the goal. Short screen copy plus richer notes is the
+  intended compression method.
+
+Safety metadata contract:
+
+- Never remove `needs_fact_check=true` unless the claim is explicitly resolved by
+  supplied evidence.
+- Never remove `required_before_broadcast=true` unless the required check is
+  explicitly satisfied.
+- Preserve `source_refs` from the adapter/manual storyline unless they are
+  clearly irrelevant.
+- Preserve `do_not_claim` guardrails.
+- If uncertain, keep the conservative flag.
+- It is safer to leave a slide as `needs_fact_check=true` than to remove the
+  flag.
+- It is safer to keep `required_before_broadcast=true` than to remove it.
+- Do not convert uncertain claims into confident screen copy.
+
 Proof object contract:
 
 - Every slide must provide `proof_object`.
@@ -34,11 +91,14 @@ Proof object contract:
 
 Diagram contract:
 
-- Avoid generic nodes such as `AI 즉답 -> 검증 -> 맥락`.
-- Avoid generic nodes such as `안전한 금융 -> 성장 금융`.
-- Avoid word-only nodes such as `기존 검색 -> AI 즉답 -> 바로 답`.
-- Avoid word-only nodes such as `담보·단기 -> 장기·위험분담`.
-- Avoid word-only nodes such as `질문 -> 답 제공 -> 검증`.
+- Avoid generic chain labels such as `AI 즉답 -> 검증 -> 맥락`.
+- Avoid generic chain labels such as `안전한 금융 -> 성장 금융`.
+- Avoid word-only chain labels such as `기존 검색 -> AI 즉답 -> 바로 답`.
+- Avoid word-only chain labels such as `담보·단기 -> 장기·위험분담`.
+- Avoid word-only chain labels such as `질문 -> 답 제공 -> 검증`.
+- Do not include `->` inside any `diagram_nodes[]` string.
+- `diagram_nodes[]` are separate box labels.
+- Relationships belong in `diagram_edges[]`.
 - Diagram nodes must be short broadcast sentences that can go directly into
   screen boxes, not abstract nouns.
 - Prefer at least 3 nodes.
@@ -51,10 +111,37 @@ Diagram contract:
 - Each node should work as broadcast-facing box copy.
 - Edge labels should explain the relationship, not just say `flow`, `link`,
   `흐름`, or `연결`.
+- Node text should not be a full chain sentence containing multiple arrows.
 
-Good diagram examples:
+Good diagram story chains, which must be split into separate node strings in
+JSON:
 
 - `AI 즉답 서비스가 먼저 답을 제시함 -> 사용자가 검색/비교 과정을 건너뛰기 쉬워짐 -> 학교·박물관은 검증 훈련을 가르쳐야 함`
 - `천문관의 역할이 별 이름 설명에 머무름 -> AI가 기본 설명을 즉시 대체함 -> 기관은 관찰·질문하는 법을 보여줘야 함`
 - `은행 담보대출 관행 -> 장기 위험자본 공급 부족 -> 정책금융의 역할 논쟁`
 - `국민성장펀드 -> 손실 가능성의 사회적 분담 -> 투자와 보조금 사이의 긴장`
+
+Better diagram object pattern:
+
+- node 1: `사용자가 AI에게 질문을 던짐`
+- node 2: `AI 서비스가 응답을 즉시 생성함`
+- node 3: `출처 비교·검증 단계가 약해짐`
+- edge 1 label: `응답 과정을 압축함`
+- edge 2 label: `검증 훈련을 요구함`
+
+Preflight checklist before final JSON:
+
+- Did every section include a `slides` array?
+- Did every section slide object exist in top-level `slides[]`?
+- Did I use only schema-valid `layout_intent` values?
+- Did I preserve approximate slide count?
+- Did I preserve `needs_fact_check` conservatively?
+- Did I preserve `required_before_broadcast` conservatively?
+- Did I preserve `source_refs` and `do_not_claim` guardrails?
+- Did I avoid visible URLs in screen copy?
+- Did I avoid `->` inside diagram node text?
+- Did I put relationships in `diagram_edges[]`?
+- Did I keep production readiness false?
+
+The final answer must still be JSON only. Do not output this checklist outside
+the JSON.

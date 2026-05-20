@@ -1,9 +1,11 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 from luddite.agents.anny.slide_spec_experiment import (
     EXPERIMENT_CASES,
+    _contract_diagnostics,
     _synthetic_fixture_output,
     build_slide_spec_experiment_prompt,
     run_experiment,
@@ -114,6 +116,8 @@ def test_slide_spec_experiment_live_api_writes_separate_run_summary(
     assert "live_success" in summary_text
     assert "success" in summary_text
     assert "production readiness" in summary_text.lower()
+    assert "section slide missing" in summary_text
+    assert "diagram node arrows" in summary_text
     assert not (output_root / case.case_id).exists()
 
 
@@ -201,3 +205,49 @@ def test_slide_spec_experiment_prompt_states_direct_contract() -> None:
     assert "at least 3 nodes" in prompt
     assert "short broadcast sentences" in prompt
     assert "Do not expose source URLs on screen" in prompt
+    assert "Every sections[] object must include a non-empty slides array" in prompt
+    assert "Allowed layout_intent values" in prompt
+    assert "Never use layout_intent=hook" in prompt
+    assert "fewer than 20" in prompt
+    assert "Never remove needs_fact_check=true" in prompt
+    assert "No diagram_nodes[] string contains ->" in prompt
+
+
+def test_slide_spec_contract_diagnostics_catches_live_regression_patterns() -> None:
+    case = EXPERIMENT_CASES[0]
+    adapter = _synthetic_fixture_output(case)
+    for slide in adapter["slides"]:
+        slide["do_not_claim"] = slide.get("do_not_claim") or ["guardrail"]
+    direct = deepcopy(adapter)
+    direct["slides"] = direct["slides"][:8]
+    for section in direct["sections"]:
+        section.pop("slides", None)
+    for slide in direct["slides"]:
+        slide["source_refs"] = []
+        slide["do_not_claim"] = []
+        slide["needs_fact_check"] = False
+        slide["required_before_broadcast"] = False
+        proof = slide.get("proof_object", {})
+        proof["source_url"] = None
+        proof["image_url"] = None
+    direct["slides"][0]["layout_intent"] = "hook"
+    first_diagram = next(
+        slide
+        for slide in direct["slides"]
+        if slide.get("proof_object", {}).get("type") == "diagram"
+    )
+    first_diagram["proof_object"]["diagram_nodes"] = [
+        "사용자가 질문함 -> AI가 답함 -> 검증이 약해짐"
+    ]
+
+    diagnostics = _contract_diagnostics(direct, adapter)
+
+    assert diagnostics["slide_count_too_compressed"] is True
+    assert diagnostics["missing_sections_slides_count"] == len(direct["sections"])
+    assert diagnostics["section_slide_ref_mismatch_count"] >= len(direct["slides"])
+    assert diagnostics["layout_intent_invalid_enum_count"] == 1
+    assert diagnostics["source_refs_removed_too_aggressively"] is True
+    assert diagnostics["do_not_claim_removed_or_ignored"] is True
+    assert diagnostics["needs_fact_check_delta_vs_adapter"] < 0
+    assert diagnostics["required_before_broadcast_delta_vs_adapter"] <= 0
+    assert diagnostics["diagram_nodes_with_arrow_count"] == 1
