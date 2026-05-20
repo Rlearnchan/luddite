@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.30
+# Current Product Direction after Milestone 1.31
 
 Status date: 2026-05-20
 
@@ -36,6 +36,13 @@ path:
 - The experiment validation/comparison reports now expose detailed contract
   diagnostics such as missing section slides, invalid layout intent, deck
   compression, removed source refs, and diagram node arrows.
+- Milestone 1.31 strengthened the Anny direct prompt/contract around empty-deck
+  prevention and renderer-specific proof-object requirements.
+- The live validation/comparison reports now expose empty-deck and renderer
+  diagnostics such as `top_level_slides_empty`, `empty_sections_count`,
+  `minimum_slide_count_failed`, `deck_has_no_renderable_slides`,
+  `chart_table_body_too_long_count`, `article_quote_missing_quote_text_count`,
+  and `renderer_failure_reasons`.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -289,6 +296,47 @@ The m130 live rerun is not a success, but it shows the strengthened contract is
 useful: it caught an empty schema-valid AI deck and showed that the finance case
 can preserve coverage and safety metadata under the new prompt.
 
+Current empty-deck/render-contract live rerun:
+
+```text
+run_id: live_m131_20260520_all
+mode: live
+model: gpt-5-mini-2025-08-07
+outcome: failure for both cases
+output_root: outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m131_20260520_all/
+review_note: docs/reviews/anny_slide_spec_experiments_live/live_m131_20260520_all_summary_review.md
+```
+
+M129/M130/M131 comparison:
+
+```text
+ai_knowledge_institution:
+  m129: schema_valid=false, render_passed=false, slide_count=11, safety_regression=true
+  m130: schema_valid=true, render_passed=true, slide_count=0, safety_regression=true
+  m131: schema_valid=true, render_passed=true, slide_count=0, safety_regression=true
+  interpretation: still failure; schema-valid empty deck persists, but diagnostics are explicit.
+
+productive_finance_policy:
+  m129: schema_valid=false, render_passed=false, slide_count=8, safety_regression=true
+  m130: schema_valid=true, render_passed=false, slide_count=24, safety_regression=false
+  m131: schema_valid=true, render_passed=true, slide_count=24, safety_regression=false
+  interpretation: improved; renderer proof failures cleared, coverage/safety stayed intact,
+  but `sections[].slides` arrays are still empty and mismatched with top-level slides.
+```
+
+Milestone 1.31 interpretation:
+
+- Finance moved from renderer failure to render pass while preserving 24-slide
+  coverage and conservative safety metadata.
+- Both live cases still fail because section slide arrays are empty or missing
+  usable slide references.
+- AI still emits a schema-valid empty deck, so empty-deck prevention is not yet
+  solved for live output.
+- `diagram_nodes_too_generic` remains `0` in both live cases, so the concrete
+  diagram direction remains promising.
+- This live rerun does not make production Anny, production Piti, or broadcast
+  readiness true.
+
 Live experiment outcomes are classified as:
 
 - `success`: schema/render pass, no safety regression, and
@@ -300,13 +348,16 @@ Live experiment outcomes are classified as:
 
 ## Next Work Order
 
-1. Add the next Anny direct live prompt/report fix around non-empty slide arrays,
-   renderer-specific proof requirements, chart/table body length, and
-   `article_quote` quote text.
-2. Re-run live opt-in and compare against `live_m129_20260520_all` and
-   `live_m130_20260520_all`.
-3. Jibi slideability scoring after live schema/render/safety stabilizes.
-4. Later: production agent/scheduler/Slack/Slides work after contracts and
+1. Tighten the Anny direct section mapping contract so every
+   `sections[].slides` array contains the actual slide objects, not empty
+   placeholders, and matches top-level `slides[]`.
+2. Address the AI empty-deck recurrence with stronger case coverage or a more
+   constrained live output path.
+3. Re-run live opt-in and compare against `live_m129_20260520_all`,
+   `live_m130_20260520_all`, and `live_m131_20260520_all`.
+4. Jibi slideability scoring after live section mapping, empty-deck prevention,
+   schema/render, and safety stabilize.
+5. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.30
+# Codex Next Steps after Milestone 1.31
 
 ## 상태
 
@@ -353,15 +353,90 @@ productive_finance_policy:
 - live success는 아니다.
 - production/broadcast readiness는 계속 false다.
 
+## Milestone 1.31 완료 상태
+
+Anny direct slide spec prompt/contract를 empty deck 방지와 renderer-specific
+proof requirements 중심으로 한 번 더 강화했다.
+
+prompt에 추가된 핵심:
+
+- empty schema-valid deck은 failure라는 지시
+- top-level `slides[]` non-empty 요구
+- 모든 `sections[].slides[]` non-empty 요구
+- 24-26장 baseline이면 최소 20장 유지 요구
+- section마다 최소 1개 slide 포함 요구
+- 모든 slide가 정확히 1개 section에 속해야 한다는 지시
+- chart/table proof object의 `data_hint`와 짧은 body 요구
+- 긴 chart/table 설명은 `overflow_notes` 또는 `speaker_notes_expanded`로 이동
+- `article_quote`는 non-empty `quote_text`가 있어야 한다는 요구
+- 실제 quote가 없으면 `source_card` 또는 `diagram`을 쓰라는 지시
+
+validator/report에 추가된 진단:
+
+- `top_level_slides_empty`
+- `empty_sections_count`
+- `sections_with_empty_slides`
+- `minimum_slide_count_failed`
+- `representative_deck_compressed_to_empty`
+- `deck_has_no_renderable_slides`
+- `chart_table_body_too_long_count`
+- `chart_table_body_too_long_slides`
+- `article_quote_missing_quote_text_count`
+- `article_quote_missing_quote_text_slides`
+- `source_card_generic_title_count`
+- `proof_object_renderer_contract_failed`
+- `renderer_failure_reasons`
+
+live opt-in 재실행:
+
+```text
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id all --live-api --run-id live_m131_20260520_all --timeout 600
+```
+
+결과:
+
+```text
+run_id: live_m131_20260520_all
+model: gpt-5-mini-2025-08-07
+overall outcome: failure
+```
+
+m129/m130/m131 비교:
+
+```text
+ai_knowledge_institution:
+  m129 schema_valid=false, render_passed=false, slide_count=11, safety_regression=true
+  m130 schema_valid=true, render_passed=true, slide_count=0, safety_regression=true
+  m131 schema_valid=true, render_passed=true, slide_count=0, safety_regression=true
+  result: empty deck persists; diagnostics are now explicit.
+
+productive_finance_policy:
+  m129 schema_valid=false, render_passed=false, slide_count=8, safety_regression=true
+  m130 schema_valid=true, render_passed=false, slide_count=24, safety_regression=false
+  m131 schema_valid=true, render_passed=true, slide_count=24, safety_regression=false
+  result: renderer failure cleared, coverage/safety preserved, but section slide arrays are empty.
+```
+
+해석:
+
+- Finance case는 renderer-level proof object 문제가 개선됐다.
+- Finance case는 24-slide coverage와 source/fact-check safety metadata를 유지했다.
+- AI case는 여전히 schema-valid empty deck을 냈다.
+- 두 case 모두 `sections[].slides` arrays가 비어 있거나 top-level `slides[]`와
+  대응되지 않아 live success가 아니다.
+- 두 case 모두 `diagram_nodes_too_generic=0`을 유지했다.
+- production Anny/Piti/broadcast readiness는 계속 false다.
+
 ## 다음 구현/평가 목표
 
-1. AI case의 empty deck 방지를 더 강하게 건다.
-2. Finance case의 renderer failure를 줄이기 위해 chart/table body length와
-   `article_quote` quote text requirement를 prompt/report에 더 명시한다.
+1. `sections[].slides`가 비지 않고 top-level `slides[]`와 대응되도록 Anny
+   direct section mapping contract를 더 조인다.
+2. AI case의 schema-valid empty deck 재발을 막기 위해 case coverage 또는
+   더 constrained live output path를 검토한다.
 3. live opt-in을 다시 실행해 `live_m129_20260520_all`,
-   `live_m130_20260520_all`과 비교한다.
-4. live schema/render/safety가 안정화되면 Jibi slideability scoring으로
-   넘어간다.
+   `live_m130_20260520_all`, `live_m131_20260520_all`과 비교한다.
+4. live section mapping, empty-deck prevention, schema/render/safety가
+   안정화되면 Jibi slideability scoring으로 넘어간다.
 5. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것

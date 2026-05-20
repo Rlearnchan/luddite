@@ -53,6 +53,11 @@ LAYOUT_INTENTS = (
     "appendix_checklist",
 )
 DIAGRAM_ARROW_MARKERS = ("->", "→", "=>")
+GENERIC_SOURCE_CARD_TITLE_TEXTS = {
+    "reference material",
+    "source url carried from anny storyline.",
+    "source attached from anny storyline.",
+}
 
 
 @dataclass(frozen=True)
@@ -508,7 +513,7 @@ def _entry_matches_top_level(
     )
 
 
-def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, int]:
+def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, Any]:
     sections = [section for section in _as_list(spec.get("sections")) if isinstance(section, dict)]
     top_slides = _all_slides(spec)
     top_identities = [_slide_identity(slide) for slide in top_slides]
@@ -517,12 +522,20 @@ def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, int]
     represented_ids: set[str] = set()
     represented_nos: set[int] = set()
     missing_sections_slides_count = 0
+    empty_sections_count = 0
+    sections_with_empty_slides: list[str] = []
     mismatch_count = 0
 
     for section in sections:
         slide_refs = section.get("slides")
-        if not isinstance(slide_refs, list) or not slide_refs:
+        section_label = str(section.get("section_id") or section.get("section_no") or "")
+        if not isinstance(slide_refs, list):
             missing_sections_slides_count += 1
+            continue
+        if not slide_refs:
+            missing_sections_slides_count += 1
+            empty_sections_count += 1
+            sections_with_empty_slides.append(section_label)
             continue
         for entry in slide_refs:
             if not _entry_matches_top_level(
@@ -557,6 +570,8 @@ def _section_slide_reference_diagnostics(spec: dict[str, Any]) -> dict[str, int]
 
     return {
         "missing_sections_slides_count": missing_sections_slides_count,
+        "empty_sections_count": empty_sections_count,
+        "sections_with_empty_slides": sections_with_empty_slides,
         "section_slide_ref_mismatch_count": mismatch_count,
     }
 
@@ -582,8 +597,13 @@ def _contract_diagnostics(parsed: dict[str, Any], adapter_spec: dict[str, Any]) 
     needs_fact_check_delta = direct_needs_fact_check - adapter_needs_fact_check
     required_delta = direct_required - adapter_required
     do_not_claim_delta = direct_do_not_claim - adapter_do_not_claim
+    top_level_slides_empty = direct_slide_count == 0
+    minimum_slide_count_failed = bool(
+        24 <= adapter_slide_count <= 26 and direct_slide_count < 20
+    )
     return {
         **section_refs,
+        "top_level_slides_empty": top_level_slides_empty,
         "slide_count_delta_vs_adapter": slide_count_delta,
         "section_count_delta_vs_adapter": direct_section_count - adapter_section_count,
         "source_refs_delta_vs_adapter": source_refs_delta,
@@ -604,6 +624,11 @@ def _contract_diagnostics(parsed: dict[str, Any], adapter_spec: dict[str, Any]) 
         "slide_count_too_compressed": bool(
             adapter_slide_count >= 20 and direct_slide_count < 20
         ),
+        "minimum_slide_count_failed": minimum_slide_count_failed,
+        "representative_deck_compressed_to_empty": bool(
+            24 <= adapter_slide_count <= 26 and top_level_slides_empty
+        ),
+        "deck_has_no_renderable_slides": top_level_slides_empty,
         "source_refs_removed_too_aggressively": source_refs_delta < 0,
         "do_not_claim_removed_or_ignored": do_not_claim_delta < 0,
     }
@@ -615,6 +640,90 @@ def _text_only_slide_count(spec: dict[str, Any]) -> int:
 
 def _chart_table_count(spec: dict[str, Any]) -> int:
     return sum(1 for slide in _all_slides(spec) if _proof_type(slide) in {"chart", "table"})
+
+
+def _normalized_text(value: Any) -> str:
+    return "".join(str(value or "").lower().split())
+
+
+def _chart_table_body_too_long_slides(spec: dict[str, Any]) -> list[int]:
+    return [
+        _slide_no(slide)
+        for slide in _all_slides(spec)
+        if _proof_type(slide) in {"chart", "table"}
+        and len(_as_list(slide.get("screen_body"))) > 1
+    ]
+
+
+def _article_quote_missing_quote_text_slides(spec: dict[str, Any]) -> list[int]:
+    return [
+        _slide_no(slide)
+        for slide in _all_slides(spec)
+        if _proof_type(slide) == "article_quote"
+        and not str(_proof(slide).get("quote_text") or "").strip()
+    ]
+
+
+def _source_card_generic_title_slides(spec: dict[str, Any]) -> list[int]:
+    generic_titles = {_normalized_text(title) for title in GENERIC_SOURCE_CARD_TITLE_TEXTS}
+    slides: list[int] = []
+    for slide in _all_slides(spec):
+        if _proof_type(slide) != "source_card":
+            continue
+        proof = _proof(slide)
+        title = str(proof.get("display_title") or "").strip()
+        normalized_title = _normalized_text(title)
+        if (
+            not title
+            or normalized_title in generic_titles
+            or normalized_title == _normalized_text(slide.get("screen_headline"))
+        ):
+            slides.append(_slide_no(slide))
+    return slides
+
+
+def _renderer_contract_diagnostics(spec: dict[str, Any]) -> dict[str, Any]:
+    chart_slides = _chart_table_body_too_long_slides(spec)
+    quote_slides = _article_quote_missing_quote_text_slides(spec)
+    source_title_slides = _source_card_generic_title_slides(spec)
+    reasons: list[str] = []
+    if chart_slides:
+        reasons.append(
+            "chart/table slides have too much screen_body; move explanation to notes"
+        )
+    if quote_slides:
+        reasons.append("article_quote proof objects require non-empty quote_text")
+    return {
+        "chart_table_body_too_long_count": len(chart_slides),
+        "chart_table_body_too_long_slides": chart_slides,
+        "article_quote_missing_quote_text_count": len(quote_slides),
+        "article_quote_missing_quote_text_slides": quote_slides,
+        "source_card_generic_title_count": len(source_title_slides),
+        "source_card_generic_title_slides": source_title_slides,
+        "proof_object_renderer_contract_failed": bool(chart_slides or quote_slides),
+        "renderer_failure_reasons": reasons,
+        "renderer_suggested_prompt_fix": _renderer_suggested_prompt_fix(
+            chart_slides=chart_slides,
+            quote_slides=quote_slides,
+            source_title_slides=source_title_slides,
+        ),
+    }
+
+
+def _renderer_suggested_prompt_fix(
+    *,
+    chart_slides: list[int],
+    quote_slides: list[int],
+    source_title_slides: list[int],
+) -> str:
+    suggestions: list[str] = []
+    if chart_slides:
+        suggestions.append("Keep chart/table screen_body to 0-1 lines and move detail to notes.")
+    if quote_slides:
+        suggestions.append("Use article_quote only when quote_text is available.")
+    if source_title_slides:
+        suggestions.append("Replace generic source-card titles with article/report titles.")
+    return " ".join(suggestions) if suggestions else "none"
 
 
 def _slide_no(slide: dict[str, Any]) -> int:
@@ -651,6 +760,11 @@ def _spec_metrics(spec: dict[str, Any], *, pseudo_path: Path) -> dict[str, Any]:
         "required_before_broadcast_count": _count_bool(spec, "required_before_broadcast"),
         "visible_url_count": _visible_url_count(spec),
         "diagram_nodes_with_arrow_count": _diagram_nodes_with_arrow_count(spec),
+        "chart_table_body_too_long_count": len(_chart_table_body_too_long_slides(spec)),
+        "article_quote_missing_quote_text_count": len(
+            _article_quote_missing_quote_text_slides(spec)
+        ),
+        "source_card_generic_title_count": len(_source_card_generic_title_slides(spec)),
         "visual_qa_flag_counts": visual["flag_counts"],
         "severity_counts": visual["severity_counts"],
         "diagram_nodes_too_generic": visual["flag_counts"].get(
@@ -717,6 +831,7 @@ def _experiment_outcome(
         manifest.get("parse_status") != "parsed"
         or not manifest.get("schema_valid")
         or not manifest.get("render_passed")
+        or manifest.get("failure_modes")
         or deltas.get("safety_regression_detected")
     ):
         return "failure"
@@ -798,7 +913,11 @@ def build_slide_spec_experiment_prompt(
             "Piti will render this contract without re-inferring or rewriting meaning.",
             "Do not output merely plausible JSON; output the exact schema object.",
             "Every top-level required field must be present.",
+            "Never output an empty deck.",
+            "Top-level slides[] must be non-empty.",
             "Every sections[] object must include a non-empty slides array.",
+            "Every section must contain at least one slide.",
+            "Do not satisfy schema by outputting empty arrays.",
             "Every section slide object must correspond to a top-level slides[] object.",
             "Array fields must be arrays, not null.",
             "Use only schema-valid enum strings.",
@@ -808,6 +927,7 @@ def build_slide_spec_experiment_prompt(
                 "Use the adapter/manual storyline as the slide coverage baseline; "
                 "do not compress 24-26 representative slides into fewer than 20."
             ),
+            "If the adapter/manual storyline has 24-26 slides, output at least 20 slides.",
             (
                 "Preserve section count, key beats, counterpoints, caution slides, "
                 "and appendix/checklist slides."
@@ -821,6 +941,10 @@ def build_slide_spec_experiment_prompt(
                 "proof_object.type should be one of diagram, chart, table, source_card, "
                 "article_quote, or none."
             ),
+            "Chart/table proof objects need data_hint and 0-1 screen_body lines.",
+            "Move chart/table explanation to overflow_notes or speaker_notes_expanded.",
+            "article_quote requires non-empty quote_text; otherwise use source_card or diagram.",
+            "Source-card display_title must be a specific article/report/institution label.",
             "Do not expose source URLs on screen; preserve them in source_refs or notes.",
             "Keep needs_source, needs_fact_check, and required_before_broadcast conservative.",
             (
@@ -837,8 +961,8 @@ def build_slide_spec_experiment_prompt(
             "Do not violate do_not_claim.",
             "Include counterpoint or opposing questions when the topic requires it.",
             "## Diagram Requirements",
-            "Avoid generic nodes such as AI 즉답 -> 검증 -> 맥락.",
-            "Avoid word-only nodes such as 안전한 금융 -> 성장 금융.",
+            "Avoid generic chain labels such as AI 즉답 -> 검증 -> 맥락.",
+            "Avoid word-only chain labels such as 안전한 금융 -> 성장 금융.",
             "Prefer at least 3 nodes.",
             "Use actor -> mechanism -> result structure.",
             "Use short broadcast sentences, not abstract noun placeholders.",
@@ -850,10 +974,16 @@ def build_slide_spec_experiment_prompt(
             "Each diagram node should work as broadcast-facing box copy.",
             "Use meaningful edge labels; avoid labels like 흐름 or 연결.",
             "## Preflight Checklist Before Final JSON",
+            "Top-level slides[] is non-empty.",
+            "If baseline has 24-26 slides, output has at least 20 slides.",
             "Every section has slides[].",
+            "No section has an empty slides array.",
             "Every section slide exists in top-level slides[].",
+            "All major beats are preserved instead of summarized away.",
             "Only schema-valid layout_intent values are used.",
             "Approximate slide count is preserved.",
+            "Every chart/table slide has data_hint and short screen_body.",
+            "Every article_quote has non-empty quote_text.",
             "needs_fact_check and required_before_broadcast are conservative.",
             "source_refs and do_not_claim are preserved.",
             "No visible URLs appear in screen copy.",
@@ -921,6 +1051,22 @@ def _apply_concrete_diagram_fixtures(
     return changed
 
 
+def _apply_renderer_contract_fixtures(spec: dict[str, Any]) -> int:
+    changed = 0
+    for slide in _all_slides(spec):
+        proof = _proof(slide)
+        if proof.get("type") == "article_quote" and not str(
+            proof.get("quote_text") or ""
+        ).strip():
+            proof["type"] = "source_card"
+            proof["quote_translation"] = None
+            proof["placeholder_reason"] = (
+                "Direct fixture uses source_card because no actual quote_text is available."
+            )
+            changed += 1
+    return changed
+
+
 def _synthetic_fixture_output(case: SlideSpecExperimentCase) -> dict[str, Any]:
     storyline = _load_json(case.manual_storyline_path)
     spec = build_piti_slide_spec_from_storyline(
@@ -928,11 +1074,13 @@ def _synthetic_fixture_output(case: SlideSpecExperimentCase) -> dict[str, Any]:
         deck_id=f"{case.case_id}_direct_fixture",
         source_storyline_path=case.manual_storyline_path,
     )
-    changed = _apply_concrete_diagram_fixtures(spec, case_id=case.case_id)
+    diagram_changes = _apply_concrete_diagram_fixtures(spec, case_id=case.case_id)
+    renderer_contract_changes = _apply_renderer_contract_fixtures(spec)
     spec["notes"] = (
         "Synthetic fixture for Anny direct Piti slide spec experiment. "
         "This validates the direct-output harness without calling an API. "
-        f"Concrete diagram fixture updates applied: {changed}; "
+        f"Concrete diagram fixture updates applied: {diagram_changes}; "
+        f"renderer contract fixture updates applied: {renderer_contract_changes}; "
         "source/fact-check metadata preserved."
     )
     return spec
@@ -1003,16 +1151,27 @@ def _validate_raw_slide_spec(
     validation = validate_piti_slide_spec(parsed)
     schema_details = _schema_error_details(parsed)
     contract = _contract_diagnostics(parsed, adapter_spec)
+    renderer_contract = _renderer_contract_diagnostics(parsed)
     if not validation.get("schema_valid"):
         failure_modes.append("schema_error")
+    if contract["top_level_slides_empty"]:
+        failure_modes.append("top_level_slides_empty")
     if contract["missing_sections_slides_count"]:
         failure_modes.append("sections_slides_missing")
+    if contract["empty_sections_count"]:
+        failure_modes.append("empty_sections")
     if contract["section_slide_ref_mismatch_count"]:
         failure_modes.append("section_slide_refs_mismatch")
     if contract["layout_intent_invalid_enum_count"]:
         failure_modes.append("invalid_layout_intent")
     if contract["slide_count_too_compressed"]:
         failure_modes.append("deck_too_compressed")
+    if contract["minimum_slide_count_failed"]:
+        failure_modes.append("minimum_slide_count_failed")
+    if contract["representative_deck_compressed_to_empty"]:
+        failure_modes.append("representative_deck_compressed_to_empty")
+    if contract["deck_has_no_renderable_slides"]:
+        failure_modes.append("deck_has_no_renderable_slides")
     allowed_urls = _collect_allowed_urls(input_bundle, evidence_pack, manual_storyline)
     used_urls = _source_urls_from_spec(parsed)
     hallucinated_urls = sorted(used_urls - allowed_urls)
@@ -1047,6 +1206,8 @@ def _validate_raw_slide_spec(
         failure_modes.append("safety_metadata_removed")
     if contract["diagram_nodes_with_arrow_count"]:
         failure_modes.append("diagram_node_contains_arrow")
+    if renderer_contract["proof_object_renderer_contract_failed"]:
+        failure_modes.append("proof_object_renderer_contract_failed")
     headline_missing_count = _screen_headline_missing_count(parsed)
     if headline_missing_count:
         failure_modes.append("screen_headline_missing")
@@ -1086,7 +1247,10 @@ def _validate_raw_slide_spec(
         ],
         "do_not_claim_removed_or_ignored": contract["do_not_claim_removed_or_ignored"],
         "screen_headline_missing_count": headline_missing_count,
+        "top_level_slides_empty": contract["top_level_slides_empty"],
         "missing_sections_slides_count": contract["missing_sections_slides_count"],
+        "empty_sections_count": contract["empty_sections_count"],
+        "sections_with_empty_slides": contract["sections_with_empty_slides"],
         "section_slide_ref_mismatch_count": contract["section_slide_ref_mismatch_count"],
         "slide_count_delta_vs_adapter": contract["slide_count_delta_vs_adapter"],
         "section_count_delta_vs_adapter": contract["section_count_delta_vs_adapter"],
@@ -1108,6 +1272,34 @@ def _validate_raw_slide_spec(
         "layout_intent_invalid_enum_count": contract["layout_intent_invalid_enum_count"],
         "diagram_nodes_with_arrow_count": contract["diagram_nodes_with_arrow_count"],
         "slide_count_too_compressed": contract["slide_count_too_compressed"],
+        "minimum_slide_count_failed": contract["minimum_slide_count_failed"],
+        "representative_deck_compressed_to_empty": contract[
+            "representative_deck_compressed_to_empty"
+        ],
+        "deck_has_no_renderable_slides": contract["deck_has_no_renderable_slides"],
+        "chart_table_body_too_long_count": renderer_contract[
+            "chart_table_body_too_long_count"
+        ],
+        "chart_table_body_too_long_slides": renderer_contract[
+            "chart_table_body_too_long_slides"
+        ],
+        "article_quote_missing_quote_text_count": renderer_contract[
+            "article_quote_missing_quote_text_count"
+        ],
+        "article_quote_missing_quote_text_slides": renderer_contract[
+            "article_quote_missing_quote_text_slides"
+        ],
+        "source_card_generic_title_count": renderer_contract[
+            "source_card_generic_title_count"
+        ],
+        "source_card_generic_title_slides": renderer_contract[
+            "source_card_generic_title_slides"
+        ],
+        "proof_object_renderer_contract_failed": renderer_contract[
+            "proof_object_renderer_contract_failed"
+        ],
+        "renderer_failure_reasons": renderer_contract["renderer_failure_reasons"],
+        "renderer_suggested_prompt_fix": renderer_contract["renderer_suggested_prompt_fix"],
         "visible_url_count": render_result.get("visible_url_count", 0),
         "source_card_repeated_headline_count": render_result.get(
             "source_card_repeated_headline_count",
@@ -1173,13 +1365,28 @@ def _write_validation_report(
         ),
         f"- missing_required_schema_paths: {manifest.get('missing_required_schema_paths', [])}",
         f"- invalid_enum_values: {manifest.get('invalid_enum_values', [])}",
+        f"- top_level_slides_empty: {manifest.get('top_level_slides_empty', False)}",
         (
             "- missing_sections_slides_count: "
             f"{manifest.get('missing_sections_slides_count', 0)}"
         ),
+        f"- empty_sections_count: {manifest.get('empty_sections_count', 0)}",
+        f"- sections_with_empty_slides: {manifest.get('sections_with_empty_slides', [])}",
         (
             "- section_slide_ref_mismatch_count: "
             f"{manifest.get('section_slide_ref_mismatch_count', 0)}"
+        ),
+        (
+            "- minimum_slide_count_failed: "
+            f"{manifest.get('minimum_slide_count_failed', False)}"
+        ),
+        (
+            "- representative_deck_compressed_to_empty: "
+            f"{manifest.get('representative_deck_compressed_to_empty', False)}"
+        ),
+        (
+            "- deck_has_no_renderable_slides: "
+            f"{manifest.get('deck_has_no_renderable_slides', False)}"
         ),
         f"- slide_count_delta_vs_adapter: {manifest.get('slide_count_delta_vs_adapter', 0)}",
         f"- section_count_delta_vs_adapter: {manifest.get('section_count_delta_vs_adapter', 0)}",
@@ -1194,6 +1401,35 @@ def _write_validation_report(
         ),
         f"- do_not_claim_delta_vs_adapter: {manifest.get('do_not_claim_delta_vs_adapter', 0)}",
         f"- diagram_nodes_with_arrow_count: {manifest.get('diagram_nodes_with_arrow_count', 0)}",
+        (
+            "- chart_table_body_too_long_count: "
+            f"{manifest.get('chart_table_body_too_long_count', 0)}"
+        ),
+        (
+            "- chart_table_body_too_long_slides: "
+            f"{manifest.get('chart_table_body_too_long_slides', [])}"
+        ),
+        (
+            "- article_quote_missing_quote_text_count: "
+            f"{manifest.get('article_quote_missing_quote_text_count', 0)}"
+        ),
+        (
+            "- article_quote_missing_quote_text_slides: "
+            f"{manifest.get('article_quote_missing_quote_text_slides', [])}"
+        ),
+        (
+            "- source_card_generic_title_count: "
+            f"{manifest.get('source_card_generic_title_count', 0)}"
+        ),
+        (
+            "- proof_object_renderer_contract_failed: "
+            f"{manifest.get('proof_object_renderer_contract_failed', False)}"
+        ),
+        f"- renderer_failure_reasons: {manifest.get('renderer_failure_reasons', [])}",
+        (
+            "- renderer_suggested_prompt_fix: "
+            f"{manifest.get('renderer_suggested_prompt_fix', 'none')}"
+        ),
         f"- visible_url_count: {manifest.get('visible_url_count', 0)}",
         (
             "- source_card_repeated_headline_count: "
@@ -1224,11 +1460,17 @@ def _write_validation_report(
     lines.extend(f"- {issue}" for issue in issues) if issues else lines.append("- none")
     lines.extend(["", "## Contract Diagnostics", ""])
     diagnostic_keys = [
+        "top_level_slides_empty",
         "sections_slides_missing",
+        "empty_sections",
         "invalid_layout_intent",
         "deck_too_compressed",
+        "minimum_slide_count_failed",
+        "representative_deck_compressed_to_empty",
+        "deck_has_no_renderable_slides",
         "safety_metadata_removed",
         "diagram_node_contains_arrow",
+        "proof_object_renderer_contract_failed",
     ]
     failure_modes = set(manifest.get("failure_modes", []))
     for key in diagnostic_keys:
@@ -1244,6 +1486,27 @@ def _write_validation_report(
             )
     else:
         lines.append("- none")
+    lines.extend(["", "## Renderer Failure Diagnostics", ""])
+    renderer_lines = [
+        (
+            "- chart_table_body_too_long: "
+            f"{manifest.get('chart_table_body_too_long_count', 0)} "
+            f"slides {manifest.get('chart_table_body_too_long_slides', [])}"
+        ),
+        (
+            "- article_quote_missing_quote_text: "
+            f"{manifest.get('article_quote_missing_quote_text_count', 0)} "
+            f"slides {manifest.get('article_quote_missing_quote_text_slides', [])}"
+        ),
+        (
+            "- source_card_generic_title: "
+            f"{manifest.get('source_card_generic_title_count', 0)} "
+            f"slides {manifest.get('source_card_generic_title_slides', [])}"
+        ),
+        f"- renderer_failure_reasons: {manifest.get('renderer_failure_reasons', [])}",
+        f"- suggested_prompt_fix: {manifest.get('renderer_suggested_prompt_fix', 'none')}",
+    ]
+    lines.extend(renderer_lines)
     lines.extend(["", "## Visual QA Flag Counts", ""])
     flag_counts = manifest.get("visual_qa_flag_counts", {})
     lines.extend(f"- {flag}: {count}" for flag, count in sorted(flag_counts.items()))
@@ -1307,8 +1570,12 @@ def _write_comparison_report(
         "do_not_claim_delta_vs_adapter",
         "diagram_nodes_with_arrow_count",
         "missing_sections_slides_count",
+        "empty_sections_count",
         "section_slide_ref_mismatch_count",
         "layout_intent_invalid_enum_count",
+        "chart_table_body_too_long_count",
+        "article_quote_missing_quote_text_count",
+        "source_card_generic_title_count",
     ]
     safety_regression_detected = _safety_regression_detected(
         manifest=direct_manifest,
@@ -1335,8 +1602,25 @@ def _write_comparison_report(
             "slide_count_too_compressed",
             False,
         ),
+        "top_level_slides_empty": direct_manifest.get("top_level_slides_empty", False),
+        "minimum_slide_count_failed": direct_manifest.get(
+            "minimum_slide_count_failed",
+            False,
+        ),
+        "representative_deck_compressed_to_empty": direct_manifest.get(
+            "representative_deck_compressed_to_empty",
+            False,
+        ),
+        "deck_has_no_renderable_slides": direct_manifest.get(
+            "deck_has_no_renderable_slides",
+            False,
+        ),
         "source_refs_removed_too_aggressively": direct_manifest.get(
             "source_refs_removed_too_aggressively",
+            False,
+        ),
+        "proof_object_renderer_contract_failed": direct_manifest.get(
+            "proof_object_renderer_contract_failed",
             False,
         ),
         "do_not_claim_removed_or_ignored": direct_manifest.get(
@@ -1369,11 +1653,26 @@ def _write_comparison_report(
         regressions.append("direct output has validation failure modes")
     failure_modes = set(direct_manifest.get("failure_modes", []))
     contract_failure_lines = [
+        f"- top_level_slides_empty: {'top_level_slides_empty' in failure_modes}",
         f"- sections_slides_missing: {'sections_slides_missing' in failure_modes}",
+        f"- empty_sections: {'empty_sections' in failure_modes}",
         f"- invalid_layout_intent: {'invalid_layout_intent' in failure_modes}",
         f"- deck_too_compressed: {'deck_too_compressed' in failure_modes}",
+        f"- minimum_slide_count_failed: {'minimum_slide_count_failed' in failure_modes}",
+        (
+            "- representative_deck_compressed_to_empty: "
+            f"{'representative_deck_compressed_to_empty' in failure_modes}"
+        ),
+        (
+            "- deck_has_no_renderable_slides: "
+            f"{'deck_has_no_renderable_slides' in failure_modes}"
+        ),
         f"- safety_metadata_removed: {'safety_metadata_removed' in failure_modes}",
         f"- diagram_node_contains_arrow: {'diagram_node_contains_arrow' in failure_modes}",
+        (
+            "- proof_object_renderer_contract_failed: "
+            f"{'proof_object_renderer_contract_failed' in failure_modes}"
+        ),
     ]
     remaining = [
         "Direct slide spec experiment is not a production Anny agent.",
@@ -1401,12 +1700,13 @@ def _write_comparison_report(
             "| Output | Slides | Sections | Proof Types | Text Only | Source Cards | "
             "Diagrams | Charts/Tables | Needs Fact Check | Required Before Broadcast | "
             "Source Refs | Do Not Claim | Visible URLs | Diagram Generic | "
-            "Diagram Node Arrows | Manual Insert Missing Instruction | Generic Source Title | "
-            "Overflow Notes Large | Severity Counts |"
+            "Diagram Node Arrows | Chart Body Too Long | Quote Missing Text | "
+            "Source Title Generic | Manual Insert Missing Instruction | "
+            "Generic Source Title | Overflow Notes Large | Severity Counts |"
         ),
         (
             "|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"
-            "---:|---:|---:|---:|---|"
+            "---:|---:|---:|---:|---:|---:|---:|---|"
         ),
         _comparison_row("adapter", adapter_metrics),
         _comparison_row("direct", direct_metrics),
@@ -1458,6 +1758,9 @@ def _write_comparison_report(
                 "supplies a clear reason."
             ),
             "- Forbid arrows inside diagram node text; relationships belong in diagram_edges.",
+            "- Forbid empty decks and empty section slide arrays.",
+            "- Keep chart/table screen_body to 0-1 lines with data_hint.",
+            "- Use article_quote only when quote_text is available.",
             "- Keep overflow_notes_too_large as INFO until human review says otherwise.",
         ]
     )
@@ -1472,10 +1775,8 @@ def _write_comparison_report(
 
 def _comparison_row(label: str, metrics: dict[str, Any]) -> str:
     if not metrics:
-        return (
-            f"| {label} | 0 | 0 | {{}} | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | "
-            "0 | 0 | 0 | 0 | {} |"
-        )
+        cells: list[Any] = [label, 0, 0, {}, *([0] * 17), {}]
+        return "| " + " | ".join(str(cell) for cell in cells) + " |"
     return (
         f"| {label} | {metrics.get('slide_count')} | {metrics.get('section_count')} | "
         f"{metrics.get('proof_object_type_counts')} | {metrics.get('text_only_slide_count')} | "
@@ -1486,6 +1787,9 @@ def _comparison_row(label: str, metrics: dict[str, Any]) -> str:
         f"{metrics.get('visible_url_count')} | "
         f"{metrics.get('diagram_nodes_too_generic')} | "
         f"{metrics.get('diagram_nodes_with_arrow_count')} | "
+        f"{metrics.get('chart_table_body_too_long_count')} | "
+        f"{metrics.get('article_quote_missing_quote_text_count')} | "
+        f"{metrics.get('source_card_generic_title_count')} | "
         f"{metrics.get('manual_insert_required_without_editor_instruction')} | "
         f"{metrics.get('source_card_display_title_too_generic')} | "
         f"{metrics.get('overflow_notes_too_large')} | {metrics.get('severity_counts')} |"
@@ -1584,13 +1888,16 @@ def _write_live_summary(
             "needs fact check | required before broadcast | source hallucinations | "
             "do_not_claim violations | unsupported claims | visible URLs | diagram generic | "
             "manual insert missing instruction | generic source title | overflow notes large | "
-            "slide delta | section slide missing | section ref mismatch | source refs delta | "
-            "fact-check delta | broadcast-required delta | diagram node arrows | review delta | "
+            "slide delta | top slides empty | section slide missing | empty sections | "
+            "minimum slide failed | section ref mismatch | source refs delta | "
+            "fact-check delta | broadcast-required delta | diagram node arrows | "
+            "chart body too long | quote missing text | renderer failure reasons | review delta | "
             "info delta | safety regression | diagram improved |"
         ),
         (
             "|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|"
-            "---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|"
+            "---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|"
+            "---:|---|---|"
         ),
     ]
     for manifest in manifests:
@@ -1616,12 +1923,18 @@ def _write_live_summary(
             f"{direct_flags.get('source_card_display_title_too_generic', 0)} | "
             f"{direct_flags.get('overflow_notes_too_large', 0)} | "
             f"{manifest.get('slide_count_delta_vs_adapter', 0)} | "
+            f"{manifest.get('top_level_slides_empty', False)} | "
             f"{manifest.get('missing_sections_slides_count', 0)} | "
+            f"{manifest.get('empty_sections_count', 0)} | "
+            f"{manifest.get('minimum_slide_count_failed', False)} | "
             f"{manifest.get('section_slide_ref_mismatch_count', 0)} | "
             f"{manifest.get('source_refs_delta_vs_adapter', 0)} | "
             f"{manifest.get('needs_fact_check_delta_vs_adapter', 0)} | "
             f"{manifest.get('required_before_broadcast_delta_vs_adapter', 0)} | "
             f"{manifest.get('diagram_nodes_with_arrow_count', 0)} | "
+            f"{manifest.get('chart_table_body_too_long_count', 0)} | "
+            f"{manifest.get('article_quote_missing_quote_text_count', 0)} | "
+            f"{_markdown_cell(manifest.get('renderer_failure_reasons', []))} | "
             f"{deltas.get('visual_qa_review_delta', 0)} | "
             f"{deltas.get('visual_qa_info_delta', 0)} | "
             f"{deltas.get('safety_regression_detected', False)} | "

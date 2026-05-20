@@ -27,11 +27,17 @@ Core contract:
 Schema shape contract:
 
 - Preserve all top-level required fields from the schema.
+- Never output an empty deck.
+- Top-level `slides[]` must be non-empty.
 - Every `sections[]` object must include a `slides` array.
 - `sections[].slides` must be a non-empty array of slide objects that correspond
   to the top-level `slides[]` array.
+- Every section must contain at least one slide.
+- Every slide must belong to exactly one section.
 - Every slide listed inside a section must also exist in top-level `slides[]`.
 - Every top-level slide must be represented in its section's `slides` array.
+- Do not satisfy schema by outputting empty arrays.
+- Empty schema-valid output is a failure.
 - Do not write nullable array fields as `null`.
 - Array fields must always be arrays, even when empty: `screen_body`,
   `overflow_notes`, `source_refs`, `risk_flags`, `do_not_claim`,
@@ -55,6 +61,7 @@ Slide coverage contract:
 - Use the adapter/manual storyline as the slide coverage baseline.
 - Preserve approximate slide count unless explicitly instructed otherwise.
 - Do not compress a 24-26 slide representative deck into fewer than 20 slides.
+- If the adapter/manual storyline has 24-26 slides, output at least 20 slides.
 - If a slide seems redundant, keep the slide and simplify the proof object,
   screen copy, or notes instead of deleting it.
 - Preserve section count.
@@ -64,6 +71,8 @@ Slide coverage contract:
   requirements.
 - Slide reduction is not the goal. Short screen copy plus richer notes is the
   intended compression method.
+- The final output should preserve the representative deck structure, not
+  summarize it away.
 
 Safety metadata contract:
 
@@ -88,6 +97,21 @@ Proof object contract:
 - `source_card` display titles should be human-readable article/report titles
   or institution-specific evidence labels.
 - `chart` and `table` proof objects need a concise `data_hint`.
+- `chart` and `table` slides must keep `screen_body` very short, preferably 0-1
+  lines.
+- For chart/table slides, move explanation into `overflow_notes` or
+  `speaker_notes_expanded`.
+- The chart/table visual area should be driven by short title/source/data hint,
+  not explanatory body text.
+- Long chart/table body text can cause renderer failure.
+- `article_quote` must include non-empty `quote_text`.
+- If there is no actual quote text, do not use `article_quote`; use
+  `source_card` or `diagram` instead.
+- `quote_translation` is optional, but `quote_text` must not be empty.
+- `article_quote` with empty `quote_text` is a renderer contract failure.
+- Source-card titles must not be generic. Use the actual article/report title or
+  an institution-specific evidence label.
+- Keep source URLs out of visible screen copy.
 
 Diagram contract:
 
@@ -131,10 +155,16 @@ Better diagram object pattern:
 
 Preflight checklist before final JSON:
 
+- Did I output a non-empty top-level `slides[]` array?
+- Did I output at least 20 slides when the baseline has 24-26 slides?
 - Did every section include a `slides` array?
+- Did I leave any section with an empty `slides` array?
 - Did every section slide object exist in top-level `slides[]`?
 - Did I use only schema-valid `layout_intent` values?
 - Did I preserve approximate slide count?
+- Did I preserve all major beats rather than summarizing the deck?
+- Did every chart/table slide keep screen body short and provide `data_hint`?
+- Did every `article_quote` include non-empty `quote_text`?
 - Did I preserve `needs_fact_check` conservatively?
 - Did I preserve `required_before_broadcast` conservatively?
 - Did I preserve `source_refs` and `do_not_claim` guardrails?

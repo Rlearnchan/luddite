@@ -6,6 +6,7 @@ from typing import Any
 from luddite.agents.anny.slide_spec_experiment import (
     EXPERIMENT_CASES,
     _contract_diagnostics,
+    _renderer_contract_diagnostics,
     _synthetic_fixture_output,
     build_slide_spec_experiment_prompt,
     run_experiment,
@@ -211,6 +212,10 @@ def test_slide_spec_experiment_prompt_states_direct_contract() -> None:
     assert "fewer than 20" in prompt
     assert "Never remove needs_fact_check=true" in prompt
     assert "No diagram_nodes[] string contains ->" in prompt
+    assert "Never output an empty deck" in prompt
+    assert "Top-level slides[] must be non-empty" in prompt
+    assert "article_quote requires non-empty quote_text" in prompt
+    assert "Chart/table proof objects need data_hint" in prompt
 
 
 def test_slide_spec_contract_diagnostics_catches_live_regression_patterns() -> None:
@@ -248,6 +253,77 @@ def test_slide_spec_contract_diagnostics_catches_live_regression_patterns() -> N
     assert diagnostics["layout_intent_invalid_enum_count"] == 1
     assert diagnostics["source_refs_removed_too_aggressively"] is True
     assert diagnostics["do_not_claim_removed_or_ignored"] is True
+    assert diagnostics["top_level_slides_empty"] is False
+    assert diagnostics["minimum_slide_count_failed"] is True
     assert diagnostics["needs_fact_check_delta_vs_adapter"] < 0
     assert diagnostics["required_before_broadcast_delta_vs_adapter"] <= 0
     assert diagnostics["diagram_nodes_with_arrow_count"] == 1
+
+
+def test_slide_spec_empty_deck_is_live_failure(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    case = EXPERIMENT_CASES[0]
+    empty_deck = deepcopy(_synthetic_fixture_output(case))
+    empty_deck["slides"] = []
+    for section in empty_deck["sections"]:
+        section["slides"] = []
+
+    def empty_deck_api(**_kwargs):
+        return json.dumps(empty_deck, ensure_ascii=False), {"id": "fake-response"}
+
+    manifests = run_experiment(
+        case_id=case.case_id,
+        output_root=tmp_path / "live",
+        run_id="empty_deck",
+        live_api=True,
+        model="gpt-test",
+        api_caller=empty_deck_api,
+    )
+
+    manifest = manifests[0]
+    assert manifest["experiment_outcome"] == "failure"
+    assert manifest["top_level_slides_empty"] is True
+    assert manifest["empty_sections_count"] == len(empty_deck["sections"])
+    assert "top_level_slides_empty" in manifest["failure_modes"]
+    assert "empty_sections" in manifest["failure_modes"]
+    assert "minimum_slide_count_failed" in manifest["failure_modes"]
+    assert "deck_has_no_renderable_slides" in manifest["failure_modes"]
+
+
+def test_renderer_contract_diagnostics_catches_proof_failures() -> None:
+    spec = {
+        "slides": [
+            {
+                "slide_no": 1,
+                "screen_headline": "차트 슬라이드",
+                "screen_body": ["긴 설명 1", "긴 설명 2"],
+                "proof_object": {"type": "chart", "display_title": "차트"},
+            },
+            {
+                "slide_no": 2,
+                "screen_headline": "인용 슬라이드",
+                "screen_body": [],
+                "proof_object": {"type": "article_quote", "quote_text": ""},
+            },
+            {
+                "slide_no": 3,
+                "screen_headline": "출처 슬라이드",
+                "screen_body": [],
+                "proof_object": {
+                    "type": "source_card",
+                    "display_title": "Reference material",
+                },
+            },
+        ]
+    }
+
+    diagnostics = _renderer_contract_diagnostics(spec)
+
+    assert diagnostics["chart_table_body_too_long_count"] == 1
+    assert diagnostics["chart_table_body_too_long_slides"] == [1]
+    assert diagnostics["article_quote_missing_quote_text_count"] == 1
+    assert diagnostics["article_quote_missing_quote_text_slides"] == [2]
+    assert diagnostics["source_card_generic_title_count"] == 1
+    assert diagnostics["source_card_generic_title_slides"] == [3]
+    assert diagnostics["proof_object_renderer_contract_failed"] is True
+    assert diagnostics["renderer_failure_reasons"]
