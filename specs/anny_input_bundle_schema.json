@@ -102,6 +102,43 @@
     "opening_hook": { "type": "string" },
     "audience_question": { "type": "string" },
     "slide_count_target": { "type": "string" },
+    "visual_planning_hint": {
+      "type": "object",
+      "required": [
+        "slideability_score",
+        "visualizability",
+        "first_slide_idea",
+        "likely_proof_object_types",
+        "visual_risks",
+        "reason",
+        "planning_note"
+      ],
+      "properties": {
+        "slideability_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "visualizability": { "type": "string", "enum": ["low", "medium", "high"] },
+        "first_slide_idea": { "type": "string" },
+        "likely_proof_object_types": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["diagram", "chart", "source_card"] }
+        },
+        "visual_risks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "too_abstract",
+              "single_source",
+              "needs_official_data",
+              "policy_claim_risk",
+              "market_claim_risk",
+              "no_clear_visual"
+            ]
+          }
+        },
+        "reason": { "type": "string" },
+        "planning_note": { "type": "string" }
+      }
+    },
     "tone_notes": { "type": "array", "items": { "type": "string" } },
     "must_include": { "type": "array", "items": { "type": "string" } },
     "avoid": { "type": "array", "items": { "type": "string" } },

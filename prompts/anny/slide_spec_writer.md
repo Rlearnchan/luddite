@@ -23,6 +23,15 @@ Core contract:
 - Do not expose URLs as visible screen copy.
 - Do not make unsupported claims as screen copy.
 - Include counterpoint or opposing questions when the topic needs them.
+- If the input bundle contains `visual_planning_hint`, treat it as planning
+  context only, not evidence.
+- Use `likely_proof_object_types` and `first_slide_idea` to choose an early
+  proof-object direction, but never claim anything based only on slideability.
+- Use `visual_risks` to keep `needs_source`, `needs_fact_check`, and
+  `required_before_broadcast` conservative.
+- If slideability suggests chart/table but no data is supplied, keep the
+  conservative source/fact-check flags and do not invent data.
+- Source/fact-check guardrails always override slideability hints.
 
 Schema shape contract:
 

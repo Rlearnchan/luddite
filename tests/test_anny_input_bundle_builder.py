@@ -30,6 +30,22 @@ def _handoff_seed() -> dict:
         "syuka_ops_query_terms": ["생산적 금융", "국민성장펀드"],
         "llm_enrichment_needed": True,
         "next_action": "공식자료 보강",
+        "slideability": {
+            "score": 1.0,
+            "visualizability": "high",
+            "chartability": "strong",
+            "diagramability": "strong",
+            "screenshotability": "weak",
+            "source_card_fit": "strong",
+            "first_slide_idea": "구조 diagram으로 시작하고 핵심 숫자는 보조 chart로 확인",
+            "likely_proof_object_types": ["diagram", "chart", "source_card"],
+            "risks": ["single_source", "needs_official_data", "policy_claim_risk"],
+            "reason": "chart=strong; diagram=strong; source_card=strong",
+        },
+        "slideability_score": 1.0,
+        "first_slide_idea": "구조 diagram으로 시작하고 핵심 숫자는 보조 chart로 확인",
+        "likely_proof_object_types": ["diagram", "chart", "source_card"],
+        "visual_risks": ["single_source", "needs_official_data", "policy_claim_risk"],
     }
 
 
@@ -96,6 +112,19 @@ def test_handoff_seed_becomes_input_bundle_with_candidate_article(tmp_path) -> N
     assert "숫자/통계 원자료 확인" in bundle["required_evidence"]
     assert bundle["opening_hook"].startswith("이억원")
     assert bundle["slide_count_target"].startswith("standard")
+    hint = bundle["visual_planning_hint"]
+    assert hint["slideability_score"] == 1.0
+    assert hint["visualizability"] == "high"
+    assert hint["first_slide_idea"] == "구조 diagram으로 시작하고 핵심 숫자는 보조 chart로 확인"
+    assert hint["likely_proof_object_types"] == ["diagram", "chart", "source_card"]
+    assert hint["visual_risks"] == [
+        "single_source",
+        "needs_official_data",
+        "policy_claim_risk",
+    ]
+    assert "planning hint only" in hint["planning_note"]
+    assert "구조 diagram으로 시작" not in bundle["required_evidence"]
+    assert "구조 diagram으로 시작" not in bundle["fact_check_tasks"]
     assert "정책 효과를 단정하지 말 것" in bundle["do_not_claim"]
     assert "투자 조언처럼 쓰지 말 것" in bundle["do_not_claim"]
     assert "가격/수익률/주가 전망을 단정하지 말 것" in bundle["do_not_claim"]
@@ -107,7 +136,38 @@ def test_handoff_seed_becomes_input_bundle_with_candidate_article(tmp_path) -> N
     assert bundle["needs_fact_check"] is True
     assert validate_with_schema(bundle, "anny_input_bundle_schema.json") == []
     assert read_jsonl(output_path)[0]["bundle_id"] == bundle["bundle_id"]
-    assert "생산적 금융과 정책자금 전환" in report_path.read_text(encoding="utf-8")
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "생산적 금융과 정책자금 전환" in report_text
+    assert "Visual planning hint: high / diagram+chart+source_card" in report_text
+    assert "Visual risks: single_source, needs_official_data, policy_claim_risk" in report_text
+
+
+def test_bundle_builds_without_slideability_hint(tmp_path) -> None:
+    seed = _handoff_seed()
+    for key in (
+        "slideability",
+        "slideability_score",
+        "first_slide_idea",
+        "likely_proof_object_types",
+        "visual_risks",
+    ):
+        seed.pop(key, None)
+    handoff_path = tmp_path / "handoff.jsonl"
+    candidates_path = tmp_path / "scored.jsonl"
+    write_jsonl(handoff_path, [seed])
+    write_jsonl(candidates_path, [_candidate()])
+
+    bundles = build_anny_input_bundles(
+        handoff_path=handoff_path,
+        candidates_path=candidates_path,
+        output_path=tmp_path / "bundles.jsonl",
+        report_path=tmp_path / "bundles.md",
+        now=datetime(2026, 5, 18, tzinfo=UTC),
+    )
+
+    assert "visual_planning_hint" not in bundles[0]
+    assert bundles[0]["needs_fact_check"] is True
+    assert validate_with_schema(bundles[0], "anny_input_bundle_schema.json") == []
 
 
 def test_do_not_claim_includes_risk_specific_rules(tmp_path) -> None:

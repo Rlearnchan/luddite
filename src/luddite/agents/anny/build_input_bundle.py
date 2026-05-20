@@ -95,6 +95,16 @@ RISK_DO_NOT_CLAIM = {
         "국내 정치 프레임으로 단정하지 말 것",
     ],
 }
+VISUALIZABILITY_LEVELS = {"low", "medium", "high"}
+LIKELY_PROOF_OBJECT_TYPES = {"diagram", "chart", "source_card"}
+VISUAL_RISK_TYPES = {
+    "too_abstract",
+    "single_source",
+    "needs_official_data",
+    "policy_claim_risk",
+    "market_claim_risk",
+    "no_clear_visual",
+}
 
 CATEGORY_DO_NOT_CLAIM = {
     "productive_finance_policy": [
@@ -186,7 +196,7 @@ def build_bundle(
         missing_evidence=missing_evidence,
     )
     bundle_id = _bundle_id(str(seed["cluster_id"]))
-    return {
+    bundle = {
         "bundle_id": bundle_id,
         "story_seed_id": str(seed["cluster_id"]),
         "story_seed_title": str(seed["story_seed_title"]),
@@ -220,6 +230,58 @@ def build_bundle(
         "llm_enrichment_needed": bool(seed.get("llm_enrichment_needed", True)),
         "created_at": created_at,
     }
+    visual_planning_hint = _visual_planning_hint(seed)
+    if visual_planning_hint:
+        bundle["visual_planning_hint"] = visual_planning_hint
+    return bundle
+
+
+def _visual_planning_hint(seed: dict[str, Any]) -> dict[str, Any]:
+    slideability = seed.get("slideability")
+    slideability = slideability if isinstance(slideability, dict) else {}
+    score = _bounded_score(slideability.get("score", seed.get("slideability_score", 0.0)))
+    visualizability = str(slideability.get("visualizability") or "low")
+    if visualizability not in VISUALIZABILITY_LEVELS:
+        visualizability = "low"
+    first_slide_idea = str(
+        slideability.get("first_slide_idea") or seed.get("first_slide_idea") or ""
+    ).strip()
+    proof_types = _unique(
+        item
+        for item in [
+            *slideability.get("likely_proof_object_types", []),
+            *seed.get("likely_proof_object_types", []),
+        ]
+        if str(item) in LIKELY_PROOF_OBJECT_TYPES
+    )
+    visual_risks = _unique(
+        item
+        for item in [*slideability.get("risks", []), *seed.get("visual_risks", [])]
+        if str(item) in VISUAL_RISK_TYPES
+    )
+    reason = str(slideability.get("reason") or "").strip()
+    if not first_slide_idea and not proof_types and not visual_risks and score == 0.0:
+        return {}
+    return {
+        "slideability_score": score,
+        "visualizability": visualizability,
+        "first_slide_idea": first_slide_idea,
+        "likely_proof_object_types": proof_types,
+        "visual_risks": visual_risks,
+        "reason": reason,
+        "planning_note": (
+            "Jibi slideability is a planning hint only; it is not evidence and "
+            "must not override source/fact-check guardrails."
+        ),
+    }
+
+
+def _bounded_score(value: Any) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return round(max(0.0, min(1.0, score)), 2)
 
 
 def _candidate_article(candidate: dict[str, Any]) -> dict[str, Any]:
@@ -496,6 +558,9 @@ def _bundle_lines(bundle: dict[str, Any]) -> list[str]:
         f"- opening_hook: {bundle['opening_hook']}",
         f"- audience_question: {bundle['audience_question']}",
         f"- slide_count_target: {bundle['slide_count_target']}",
+        f"- Visual planning hint: {_visual_planning_label(bundle)}",
+        f"- First slide idea: {_visual_first_slide_idea(bundle)}",
+        f"- Visual risks: {_visual_risks(bundle)}",
         "",
         "Why story:",
         f"- {bundle['why_story']}",
@@ -534,6 +599,29 @@ def _bundle_lines(bundle: dict[str, Any]) -> list[str]:
         ]
     )
     return lines
+
+
+def _visual_planning_label(bundle: dict[str, Any]) -> str:
+    hint = bundle.get("visual_planning_hint")
+    if not isinstance(hint, dict):
+        return "-"
+    proof_types = "+".join(str(item) for item in hint.get("likely_proof_object_types", []))
+    proof_types = proof_types or "-"
+    return f"{hint.get('visualizability', 'low')} / {proof_types}"
+
+
+def _visual_first_slide_idea(bundle: dict[str, Any]) -> str:
+    hint = bundle.get("visual_planning_hint")
+    if not isinstance(hint, dict):
+        return "-"
+    return str(hint.get("first_slide_idea") or "-")
+
+
+def _visual_risks(bundle: dict[str, Any]) -> str:
+    hint = bundle.get("visual_planning_hint")
+    if not isinstance(hint, dict):
+        return "-"
+    return ", ".join(str(item) for item in hint.get("visual_risks", [])) or "-"
 
 
 @app.callback(invoke_without_command=True)

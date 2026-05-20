@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.33
+# Current Product Direction after Milestone 1.34
 
 Status date: 2026-05-20
 
@@ -57,6 +57,12 @@ path:
 - `slideability` is a review/report signal only. It does not hard reject
   candidates, does not change `recommended_action`, and does not make
   production/broadcast readiness true.
+- Milestone 1.34 passes Jibi slideability into Anny input bundles as
+  top-level `visual_planning_hint`, separate from evidence and fact-check
+  tasks.
+- `visual_planning_hint` is planning context only. It is not evidence, cannot
+  justify claims, and must not override `do_not_claim`, `needs_source`, or
+  `needs_fact_check` guardrails.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -118,6 +124,8 @@ make normalize-candidates
 make score-candidates
 make cluster-jibi-candidates
 make render-daily-digest
+make build-anny-input-bundles
+make prepare-anny-input-bundles
 ```
 
 Current fixture inputs:
@@ -446,13 +454,44 @@ GitHub-visible implementation note:
 
 ```text
 docs/reviews/jibi_slideability_v0.md
+docs/reviews/anny_input_bundle_slideability_v0.md
+```
+
+## Current Anny Input Bundle Visual Planning Status
+
+Anny input bundles may now include:
+
+```text
+visual_planning_hint:
+  slideability_score: 0.0-1.0
+  visualizability: low|medium|high
+  first_slide_idea: tentative opening visual idea
+  likely_proof_object_types: diagram/chart/source_card
+  visual_risks: single_source, needs_official_data, policy_claim_risk, market_claim_risk, ...
+  reason: deterministic Jibi slideability explanation
+  planning_note: reminder that the hint is not evidence
+```
+
+Current representative examples:
+
+```text
+생산적 금융과 정책자금 전환:
+  high / diagram+chart+source_card
+  risks: single_source, needs_official_data, policy_claim_risk
+  guardrails: needs_fact_check=true; official/numeric/source checks remain
+
+AI 즉답 시대의 지식기관 역할:
+  high / diagram+source_card
+  risks: single_source
+  guardrails: needs_fact_check=true; source/fact-check caution remains
 ```
 
 ## Next Work Order
 
-1. Decide whether to pass Jibi `slideability` into the Anny input bundle as
-   context, still without hard-gating candidates.
-2. Connect Jibi slideability observations to downstream Piti visual QA results.
+1. Connect Jibi slideability and Anny `visual_planning_hint` observations to
+   downstream Piti visual QA results.
+2. Check whether `likely_proof_object_types` predicts actual proof objects and
+   visual QA flags.
 3. Consider a PPT contact-sheet QA surface for rendered draft decks.
 4. Optionally run one more live Anny direct confirmation pass before widening
    the case set.

@@ -83,6 +83,7 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
 - `suggested_story_structure`
 - `opening_hook`
 - `audience_question`
+- `visual_planning_hint`
 - `must_include`
 - `avoid`
 - `do_not_claim`
@@ -91,6 +92,17 @@ RTF의 긴 자료 묶음을 그대로 PPT화하지 마라.
 `do_not_claim`과 `avoid`는 절대 어기지 않는다.
 근거가 비어 있는 부분은 상상으로 채우지 말고 `needs_fact_check: true` 또는
 `needs_source: true`로 남긴다.
+
+`visual_planning_hint`가 있으면 PPT 구조를 잡는 참고 정보로만 사용한다.
+
+- Slideability is a planning hint, not evidence.
+- Do not claim anything based only on slideability.
+- Use `likely_proof_object_types` to choose early proof object direction.
+- Use `first_slide_idea` as a tentative opening visual idea.
+- Use `visual_risks` to keep caution and fact-check flags conservative.
+- If slideability conflicts with source/fact-check guardrails, guardrails win.
+- If slideability suggests chart but data is missing, keep `needs_source` or
+  `needs_fact_check`.
 
 ## Evidence-Bound Rule
 

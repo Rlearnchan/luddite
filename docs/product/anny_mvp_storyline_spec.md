@@ -127,6 +127,7 @@ official_source_tasks
 suggested_story_structure
 opening_hook
 audience_question
+visual_planning_hint
 must_include
 avoid
 do_not_claim
@@ -137,6 +138,13 @@ needs_fact_check
 
 - `do_not_claim`은 생성기가 절대 넘으면 안 되는 guardrail이다.
 - `candidate_articles`에는 원문 전문을 넣지 않는다.
+- `visual_planning_hint`는 PPT 방향을 잡는 planning hint일 뿐 evidence가
+  아니다.
+- `likely_proof_object_types`와 `first_slide_idea`는 초반 proof object 방향을
+  정하는 데만 쓰고, claim의 근거로 쓰지 않는다.
+- `visual_risks`는 `needs_source` / `needs_fact_check`를 보수적으로 유지하기
+  위한 신호다.
+- slideability가 source/fact-check guardrail과 충돌하면 guardrail이 이긴다.
 - evidence가 부족하면 내용을 발명하지 않고 `needs_fact_check` /
   `needs_source`를 남긴다.
 - 1.4.1에서는 dry-run case만 준비하고 full storyline generation은 하지 않는다.

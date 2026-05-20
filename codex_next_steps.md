@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.33
+# Codex Next Steps after Milestone 1.34
 
 ## 상태
 
@@ -500,9 +500,10 @@ productive_finance_policy:
 - 이것은 controlled live experiment success이지 production/broadcast readiness가
   아니다.
 
-## 다음 구현/평가 목표
+## Milestone 1.34 완료 상태
 
-Milestone 1.33에서 Jibi slideability scoring v0가 추가됐다.
+Milestone 1.33에서 Jibi slideability scoring v0가 추가됐고, Milestone 1.34에서
+이 정보를 Anny input bundle로 넘긴다.
 
 구현된 상태:
 
@@ -512,6 +513,10 @@ Milestone 1.33에서 Jibi slideability scoring v0가 추가됐다.
   `likely_proof_object_types`, `visual_risks`가 추가된다.
 - daily digest, Jibi quality report, cluster report, story seed handoff digest에
   slideability summary가 표시된다.
+- `build-anny-input-bundles`가 story seed의 slideability를
+  `visual_planning_hint`로 옮긴다.
+- `visual_planning_hint`는 bundle top-level에 있고, `candidate_articles`,
+  `required_evidence`, `fact_check_tasks`와 분리된다.
 - 구현은 rule-based deterministic v0이며 LLM/API 호출이 없다.
 - slideability는 review signal이다. `recommended_action`, 기존 scoring, handoff
   gate를 hard 변경하지 않는다.
@@ -531,23 +536,51 @@ risks: too_abstract, single_source, needs_official_data, policy_claim_risk, mark
 reason: compact deterministic explanation
 ```
 
+현재 `visual_planning_hint` shape:
+
+```text
+slideability_score: 0.0-1.0
+visualizability: low|medium|high
+first_slide_idea: tentative opening visual idea
+likely_proof_object_types: diagram/chart/source_card
+visual_risks: single_source, needs_official_data, policy_claim_risk, market_claim_risk, ...
+reason: deterministic slideability explanation
+planning_note: slideability is planning context only, not evidence
+```
+
+대표 bundle 확인:
+
+```text
+생산적 금융과 정책자금 전환:
+  visual planning: high / diagram+chart+source_card
+  visual risks: single_source, needs_official_data, policy_claim_risk
+  guardrails: needs_fact_check=true; official/numeric/source checks remain
+
+AI 즉답 시대의 지식기관 역할:
+  visual planning: high / diagram+source_card
+  visual risks: single_source
+  guardrails: needs_fact_check=true
+```
+
 GitHub-visible review note:
 
 ```text
 docs/reviews/jibi_slideability_v0.md
+docs/reviews/anny_input_bundle_slideability_v0.md
 ```
 
-다음 후보:
+## 다음 구현/평가 목표
 
-1. Jibi slideability를 Anny input bundle에 context로 넘길지 결정한다.
-2. slideability와 downstream Piti visual QA 결과를 연결해, Jibi 단계의 예측력이
-   실제 slide spec QA와 맞는지 본다.
-3. PPT contact sheet QA surface를 검토한다.
-4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+1. slideability/visual planning hint와 downstream Piti visual QA 결과를 연결해,
+   Jibi 단계의 예측력이 실제 slide spec QA와 맞는지 본다.
+2. `likely_proof_object_types`가 실제 proof object 선택과 맞는지 비교한다.
+3. `visual_risks`가 source/fact-check caution 보존에 도움이 되는지 본다.
+4. PPT contact sheet QA surface를 검토한다.
+5. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
    넓힌다.
-5. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+6. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
    유지한다.
-6. 그 이후 production agent/scheduler/Slack/Slides 검토
+7. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -573,6 +606,8 @@ docs/reviews/jibi_slideability_v0.md
 - `make normalize-candidates` 통과
 - `make score-candidates` 통과
 - `make cluster-jibi-candidates` 통과
+- `make build-anny-input-bundles` 통과
+- `make prepare-anny-input-bundles` 통과
 - 가능하면 `make render-daily-digest` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
 - `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.
