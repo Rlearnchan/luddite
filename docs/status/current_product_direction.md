@@ -1,6 +1,6 @@
-# Current Product Direction after Milestone 1.35
+# Current Product Direction after Milestone 1.36
 
-Status date: 2026-05-20
+Status date: 2026-05-21
 
 ## Current Checkpoint
 
@@ -65,6 +65,8 @@ path:
   `needs_fact_check` guardrails.
 - Milestone 1.35 adds a review-only comparison between Jibi/Anny
   slideability hints and downstream Piti slide specs / visual QA.
+- Milestone 1.36 extends that comparison to include Anny direct live slide
+  specs from `live_m132_20260520_all`, alongside adapter-built Piti specs.
 - The comparison is calibration only. It does not change Jibi scoring,
   `recommended_action`, handoff gates, Anny prompts, or Piti rendering.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
@@ -497,53 +499,67 @@ AI 즉답 시대의 지식기관 역할:
 Current report outputs:
 
 ```text
-outputs/reports/slideability_visual_qa_comparison_2026-05-20.md
+outputs/reports/slideability_visual_qa_comparison_2026-05-21.md
 docs/reviews/slideability_visual_qa_comparison.md
 ```
 
-Current comparison result:
+Current comparison result with Anny direct live run:
 
 ```text
+direct_run_id: live_m132_20260520_all
+
 AI 즉답 시대의 지식기관 역할:
-  proof_type_match: strong
-  chartability_alignment: underprediction
-  diagramability_alignment: low_quality_hit
-  source_card_alignment: hit
-  risk_alignment: good
-  slideability_prediction_quality: mixed
+  adapter:
+    chartability_alignment: underprediction
+    diagramability_alignment: low_quality_hit
+    risk_alignment: good
+    slideability_prediction_quality: mixed
+  direct:
+    chartability_alignment: underprediction
+    diagramability_alignment: hit
+    risk_alignment: good
+    slideability_prediction_quality: good
+    diagram_nodes_too_generic_delta: -18
 
 생산적 금융과 정책자금 전환:
-  proof_type_match: strong
-  chartability_alignment: hit
-  diagramability_alignment: low_quality_hit
-  source_card_alignment: hit
-  risk_alignment: good
-  slideability_prediction_quality: mixed
+  adapter:
+    chartability_alignment: hit
+    diagramability_alignment: low_quality_hit
+    risk_alignment: good
+    slideability_prediction_quality: mixed
+  direct:
+    chartability_alignment: hit
+    diagramability_alignment: hit
+    risk_alignment: good
+    slideability_prediction_quality: good
+    diagram_nodes_too_generic_delta: -12
 ```
 
 Interpretation:
 
 - Jibi correctly predicted that both current cases need diagram/source-card
   proof objects, and finance also needs chart support.
-- The downstream specs do use those proof object types.
+- Adapter-built and direct Anny specs both preserve the predicted proof object
+  families.
 - Risk hints align with retained source/fact-check caution.
-- The weak spot is diagram quality: diagrams are used, but adapter-built Piti
-  specs still trigger `diagram_nodes_too_generic`.
-- This supports keeping slideability as Anny input context, while calibrating it
-  against direct Anny slide specs and visual QA before using it as a scoring
-  weight.
+- The adapter-built specs still trigger `diagram_nodes_too_generic`, but the
+  direct Anny live specs reduce those warnings to zero and move diagramability
+  from `low_quality_hit` to `hit`.
+- AI still has chart underprediction: Jibi did not predict chart, but both
+  adapter and direct specs contain one chart slide.
+- This supports keeping slideability as Anny input context, while calibrating
+  chartability and diagram-quality heuristics before using slideability as a
+  scoring weight.
 
 ## Next Work Order
 
-1. Compare slideability alignment against Anny direct slide spec outputs, not
-   only adapter-built slide specs.
-2. Calibrate the rule-based heuristic around chart underprediction and diagram
-   quality, while keeping it review-only.
-3. Consider a PPT contact-sheet QA surface for rendered draft decks.
-4. Optionally run one more live Anny direct confirmation pass before widening
+1. Calibrate the rule-based slideability heuristic around chart
+   underprediction and diagram-quality prediction, while keeping it review-only.
+2. Consider a PPT contact-sheet QA surface for rendered draft decks.
+3. Optionally run one more live Anny direct confirmation pass before widening
    the case set.
-5. Keep using visual QA and comparison reports as warning-only review surfaces.
-6. Later: production agent/scheduler/Slack/Slides work after contracts and
+4. Keep using visual QA and comparison reports as warning-only review surfaces.
+5. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.35
+# Codex Next Steps after Milestone 1.36
 
 ## 상태
 
@@ -621,18 +621,81 @@ AI 즉답 시대의 지식기관 역할:
 - 따라서 slideability는 Anny input context로 유지할 가치가 있지만, scoring
   weight나 hard gate로 쓰기 전에는 direct Anny output과 더 비교해야 한다.
 
+## Milestone 1.36 완료 상태
+
+`luddite compare-slideability-visual-qa`가 Anny direct slide spec output도
+비교할 수 있게 확장됐다.
+
+새 옵션:
+
+```text
+--include-direct
+--direct-run-id live_m132_20260520_all
+--direct-output-root outputs/model_dry_runs/anny_slide_spec_experiments_live
+```
+
+기본 CLI 동작은 adapter-only comparison으로 유지된다. `make
+compare-slideability-visual-qa`는 현재 calibration target인
+`live_m132_20260520_all`을 포함해 GitHub-visible review note를 갱신한다.
+
+출력:
+
+```text
+outputs/reports/slideability_visual_qa_comparison_2026-05-21.md
+docs/reviews/slideability_visual_qa_comparison.md
+```
+
+현재 adapter vs direct 결과:
+
+```text
+AI 즉답 시대의 지식기관 역할:
+  adapter:
+    chartability_alignment: underprediction
+    diagramability_alignment: low_quality_hit
+    risk_alignment: good
+    slideability_prediction_quality: mixed
+  direct:
+    chartability_alignment: underprediction
+    diagramability_alignment: hit
+    risk_alignment: good
+    slideability_prediction_quality: good
+    diagram_nodes_too_generic_delta: -18
+
+생산적 금융과 정책자금 전환:
+  adapter:
+    chartability_alignment: hit
+    diagramability_alignment: low_quality_hit
+    risk_alignment: good
+    slideability_prediction_quality: mixed
+  direct:
+    chartability_alignment: hit
+    diagramability_alignment: hit
+    risk_alignment: good
+    slideability_prediction_quality: good
+    diagram_nodes_too_generic_delta: -12
+```
+
+해석:
+
+- direct Anny live output에서는 두 case 모두 `diagramability_alignment=hit`로
+  개선됐다.
+- `diagram_nodes_too_generic`는 AI -18, 금융 -12로 감소했다.
+- predicted proof object types는 direct output에서도 유지됐다.
+- visual risk alignment는 두 case 모두 `good`으로 유지됐다.
+- AI case의 chart underprediction은 direct output에서도 남아 있다.
+- 따라서 다음 calibration은 chartability underprediction과 diagram quality
+  prediction을 중심으로 한다.
+
 ## 다음 구현/평가 목표
 
-1. Anny direct slide spec output에도 slideability alignment comparison을
-   적용한다.
-2. chart underprediction과 diagram low-quality-hit를 중심으로 heuristic을
+1. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
    calibration한다.
-3. PPT contact sheet QA surface를 검토한다.
-4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+2. PPT contact sheet QA surface를 검토한다.
+3. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
    넓힌다.
-5. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+4. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
    유지한다.
-6. 그 이후 production agent/scheduler/Slack/Slides 검토
+5. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
