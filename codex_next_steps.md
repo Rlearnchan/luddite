@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.28
+# Codex Next Steps after Milestone 1.29
 
 ## 상태
 
@@ -211,14 +211,81 @@ live summary 판정:
 - live success도 broadcast readiness를 의미하지 않는다.
 - production readiness flags remain false.
 
+## Milestone 1.29 완료 상태
+
+live API opt-in으로 실제 Anny direct `piti_slide_spec` 생성을 실행했다.
+
+실행 명령:
+
+```text
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id all --live-api --run-id live_m129_20260520_all --timeout 600
+```
+
+생성 위치:
+
+```text
+outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m129_20260520_all/
+docs/reviews/anny_slide_spec_experiments_live/live_m129_20260520_all_summary_review.md
+```
+
+실행 결과:
+
+```text
+run_id: live_m129_20260520_all
+model: gpt-5-mini-2025-08-07
+overall outcome: failure
+case outcomes: ai_knowledge_institution=failure, productive_finance_policy=failure
+```
+
+case별 비교:
+
+```text
+ai_knowledge_institution:
+  adapter diagram_nodes_too_generic: 18
+  live diagram_nodes_too_generic: 0
+  schema_valid: false
+  render_passed: false
+  safety_regression_detected: true
+  diagram_quality_improved: false
+
+productive_finance_policy:
+  adapter diagram_nodes_too_generic: 12
+  live diagram_nodes_too_generic: 0
+  schema_valid: false
+  render_passed: false
+  safety_regression_detected: true
+  diagram_quality_improved: false
+```
+
+해석:
+
+- live model은 strengthened diagram contract를 어느 정도 따랐다.
+- 두 case 모두 `diagram_nodes_too_generic`가 `0`으로 줄었다.
+- 하지만 두 case 모두 schema/render validation에 실패했다.
+- fact-check/required-before-broadcast metadata 보존도 너무 공격적으로
+  줄어 safety regression으로 판정됐다.
+- 따라서 live run은 성공이 아니라 유용한 failure diagnostic이다.
+- production Anny/Piti/broadcast readiness는 계속 false다.
+
+주요 실패 원인:
+
+- AI case: `sections[].slides` 배열이 누락됐다.
+- Finance case: `layout_intent=hook`처럼 schema enum 밖 값을 사용했다.
+- 두 case 모두 adapter 대비 slide count를 너무 줄였다.
+- 두 case 모두 `needs_fact_check` 또는 `required_before_broadcast`를 너무
+  많이 제거했다.
+
 ## 다음 구현/평가 목표
 
-1. live API opt-in으로 두 case를 실행하고 `summary.md`를 확인한다.
-2. live 결과가 stable success인지, partial_success인지, failure인지 평가한다.
-3. live 결과가 안정적이면 fixture logic이 아니라 prompt/contract 자체의
-   diagram 지침을 더 다듬는다.
-4. Jibi slideability scoring으로 넘어간다.
-5. 그 이후 production agent/scheduler/Slack/Slides 검토
+1. Anny direct prompt/contract를 schema shape 중심으로 더 엄격하게 만든다.
+2. `sections[].slides`, nullable array 금지, layout enum-only, slide coverage
+   유지, conservative safety flag preservation을 명시한다.
+3. diagram node는 계속 concrete하게 만들되, node 내부에는 `->`를 넣지
+   않도록 한다.
+4. contract 보강 후 live opt-in을 다시 실행해 `live_m129_20260520_all`과
+   비교한다.
+5. live schema/safety가 안정화되면 Jibi slideability scoring으로 넘어간다.
+6. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 

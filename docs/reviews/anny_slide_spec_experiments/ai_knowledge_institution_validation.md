@@ -1,6 +1,6 @@
 # Anny Direct Piti Slide Spec Validation: ai_knowledge_institution
 
-- generated_at: 2026-05-20T02:04:36.949379+00:00
+- generated_at: 2026-05-20T02:29:31.126901+00:00
 - mode: fixture
 - raw_model_output: outputs/model_dry_runs/anny_slide_spec_experiments/ai_knowledge_institution/raw_model_output.txt
 - parsed_piti_slide_spec: outputs/model_dry_runs/anny_slide_spec_experiments/ai_knowledge_institution/parsed_piti_slide_spec.json

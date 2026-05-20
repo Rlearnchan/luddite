@@ -1,6 +1,6 @@
 # Anny Direct Piti Slide Spec Comparison: ai_knowledge_institution
 
-- generated_at: 2026-05-20T02:04:36.951582+00:00
+- generated_at: 2026-05-20T02:29:31.129263+00:00
 - adapter_slide_spec: data/candidates/piti_slide_specs/ai_knowledge_institution_slide_spec.json
 - direct_schema_valid: True
 - direct_failure_modes: []

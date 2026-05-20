@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.28
+# Current Product Direction after Milestone 1.29
 
 Status date: 2026-05-20
 
@@ -28,6 +28,9 @@ path:
 - Live opt-in runs are separated under
   `outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/` and write
   a run-level `summary.md`.
+- Milestone 1.29 ran the live opt-in experiment for both current cases. The
+  run produced useful diagnostics, but both live cases were classified as
+  `failure`.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -203,6 +206,48 @@ copy when Anny provides it explicitly. It is still not evidence that production
 Anny is ready, because fixture mode is deterministic and does not prove live
 model behavior.
 
+Current live run:
+
+```text
+run_id: live_m129_20260520_all
+mode: live
+model: gpt-5-mini-2025-08-07
+outcome: failure for both cases
+output_root: outputs/model_dry_runs/anny_slide_spec_experiments_live/live_m129_20260520_all/
+review_note: docs/reviews/anny_slide_spec_experiments_live/live_m129_20260520_all_summary_review.md
+```
+
+Live comparison:
+
+```text
+ai_knowledge_institution:
+  adapter diagram_nodes_too_generic: 18
+  live diagram_nodes_too_generic: 0
+  schema_valid: false
+  render_passed: false
+  safety_regression_detected: true
+  diagram_quality_improved: false
+
+productive_finance_policy:
+  adapter diagram_nodes_too_generic: 12
+  live diagram_nodes_too_generic: 0
+  schema_valid: false
+  render_passed: false
+  safety_regression_detected: true
+  diagram_quality_improved: false
+```
+
+Interpretation:
+
+- The strengthened diagram prompt direction is promising: live output reduced
+  `diagram_nodes_too_generic` to `0` in both cases.
+- The live run is still a failure because schema/render validation failed and
+  source/fact-check metadata was removed too aggressively.
+- The direct Anny prompt/contract must next enforce schema shape, slide coverage,
+  enum-only `layout_intent`, and conservative safety flag preservation.
+- This live run does not make production Anny, production Piti, or broadcast
+  readiness true.
+
 Live experiment outcomes are classified as:
 
 - `success`: schema/render pass, no safety regression, and
@@ -214,9 +259,12 @@ Live experiment outcomes are classified as:
 
 ## Next Work Order
 
-1. Run live opt-in experiments for both cases and inspect `summary.md`.
-2. Jibi slideability scoring
-3. Later: production agent/scheduler/Slack/Slides work after contracts and
+1. Tighten Anny direct slide-spec prompt/contract for schema shape, slide
+   coverage, layout enum compliance, and safety metadata preservation.
+2. Re-run live opt-in after the contract fix and compare against
+   `live_m129_20260520_all`.
+3. Jibi slideability scoring
+4. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

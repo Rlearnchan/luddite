@@ -1,6 +1,6 @@
 # Anny Direct Piti Slide Spec Comparison: productive_finance_policy
 
-- generated_at: 2026-05-20T02:04:37.123834+00:00
+- generated_at: 2026-05-20T02:29:31.299964+00:00
 - adapter_slide_spec: data/candidates/piti_slide_specs/productive_finance_policy_slide_spec.json
 - direct_schema_valid: True
 - direct_failure_modes: []
