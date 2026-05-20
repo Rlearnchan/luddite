@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.34
+# Codex Next Steps after Milestone 1.35
 
 ## 상태
 
@@ -567,20 +567,72 @@ GitHub-visible review note:
 ```text
 docs/reviews/jibi_slideability_v0.md
 docs/reviews/anny_input_bundle_slideability_v0.md
+docs/reviews/slideability_visual_qa_comparison.md
 ```
+
+## Milestone 1.35 완료 상태
+
+`luddite compare-slideability-visual-qa`와
+`make compare-slideability-visual-qa`가 추가됐다.
+
+목적:
+
+- Jibi `slideability` / Anny `visual_planning_hint`가 downstream Piti slide spec
+  및 visual QA와 얼마나 맞는지 calibration한다.
+- candidate hard reject, `recommended_action`, handoff gate, Anny prompt, Piti
+  renderer는 변경하지 않는다.
+- LLM/API 호출은 없다.
+
+출력:
+
+```text
+outputs/reports/slideability_visual_qa_comparison_2026-05-20.md
+docs/reviews/slideability_visual_qa_comparison.md
+```
+
+현재 두 대표 case 결과:
+
+```text
+AI 즉답 시대의 지식기관 역할:
+  proof_type_match: strong
+  chartability_alignment: underprediction
+  diagramability_alignment: low_quality_hit
+  source_card_alignment: hit
+  risk_alignment: good
+  slideability_prediction_quality: mixed
+
+생산적 금융과 정책자금 전환:
+  proof_type_match: strong
+  chartability_alignment: hit
+  diagramability_alignment: low_quality_hit
+  source_card_alignment: hit
+  risk_alignment: good
+  slideability_prediction_quality: mixed
+```
+
+해석:
+
+- proof object type 예측은 두 case 모두 잘 맞았다.
+- visual risk는 downstream source/fact-check caution 유지와 잘 연결됐다.
+- AI case는 Jibi가 chart를 예측하지 않았지만 adapter slide spec에는 chart 1장이
+  있어 chartability underprediction이다.
+- 두 case 모두 diagram을 많이 쓰지만 adapter-built slide spec은 여전히
+  `diagram_nodes_too_generic` warning이 많아 `low_quality_hit`이다.
+- 따라서 slideability는 Anny input context로 유지할 가치가 있지만, scoring
+  weight나 hard gate로 쓰기 전에는 direct Anny output과 더 비교해야 한다.
 
 ## 다음 구현/평가 목표
 
-1. slideability/visual planning hint와 downstream Piti visual QA 결과를 연결해,
-   Jibi 단계의 예측력이 실제 slide spec QA와 맞는지 본다.
-2. `likely_proof_object_types`가 실제 proof object 선택과 맞는지 비교한다.
-3. `visual_risks`가 source/fact-check caution 보존에 도움이 되는지 본다.
-4. PPT contact sheet QA surface를 검토한다.
-5. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+1. Anny direct slide spec output에도 slideability alignment comparison을
+   적용한다.
+2. chart underprediction과 diagram low-quality-hit를 중심으로 heuristic을
+   calibration한다.
+3. PPT contact sheet QA surface를 검토한다.
+4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
    넓힌다.
-6. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+5. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
    유지한다.
-7. 그 이후 production agent/scheduler/Slack/Slides 검토
+6. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -608,6 +660,7 @@ docs/reviews/anny_input_bundle_slideability_v0.md
 - `make cluster-jibi-candidates` 통과
 - `make build-anny-input-bundles` 통과
 - `make prepare-anny-input-bundles` 통과
+- `make compare-slideability-visual-qa` 통과
 - 가능하면 `make render-daily-digest` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.
 - `docs/reviews/piti_visual_qa/*.md`가 계속 생성된다.

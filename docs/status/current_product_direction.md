@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.34
+# Current Product Direction after Milestone 1.35
 
 Status date: 2026-05-20
 
@@ -63,6 +63,10 @@ path:
 - `visual_planning_hint` is planning context only. It is not evidence, cannot
   justify claims, and must not override `do_not_claim`, `needs_source`, or
   `needs_fact_check` guardrails.
+- Milestone 1.35 adds a review-only comparison between Jibi/Anny
+  slideability hints and downstream Piti slide specs / visual QA.
+- The comparison is calibration only. It does not change Jibi scoring,
+  `recommended_action`, handoff gates, Anny prompts, or Piti rendering.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -126,6 +130,7 @@ make cluster-jibi-candidates
 make render-daily-digest
 make build-anny-input-bundles
 make prepare-anny-input-bundles
+make compare-slideability-visual-qa
 ```
 
 Current fixture inputs:
@@ -455,6 +460,7 @@ GitHub-visible implementation note:
 ```text
 docs/reviews/jibi_slideability_v0.md
 docs/reviews/anny_input_bundle_slideability_v0.md
+docs/reviews/slideability_visual_qa_comparison.md
 ```
 
 ## Current Anny Input Bundle Visual Planning Status
@@ -486,12 +492,53 @@ AI 즉답 시대의 지식기관 역할:
   guardrails: needs_fact_check=true; source/fact-check caution remains
 ```
 
+## Current Slideability vs Visual QA Comparison
+
+Current report outputs:
+
+```text
+outputs/reports/slideability_visual_qa_comparison_2026-05-20.md
+docs/reviews/slideability_visual_qa_comparison.md
+```
+
+Current comparison result:
+
+```text
+AI 즉답 시대의 지식기관 역할:
+  proof_type_match: strong
+  chartability_alignment: underprediction
+  diagramability_alignment: low_quality_hit
+  source_card_alignment: hit
+  risk_alignment: good
+  slideability_prediction_quality: mixed
+
+생산적 금융과 정책자금 전환:
+  proof_type_match: strong
+  chartability_alignment: hit
+  diagramability_alignment: low_quality_hit
+  source_card_alignment: hit
+  risk_alignment: good
+  slideability_prediction_quality: mixed
+```
+
+Interpretation:
+
+- Jibi correctly predicted that both current cases need diagram/source-card
+  proof objects, and finance also needs chart support.
+- The downstream specs do use those proof object types.
+- Risk hints align with retained source/fact-check caution.
+- The weak spot is diagram quality: diagrams are used, but adapter-built Piti
+  specs still trigger `diagram_nodes_too_generic`.
+- This supports keeping slideability as Anny input context, while calibrating it
+  against direct Anny slide specs and visual QA before using it as a scoring
+  weight.
+
 ## Next Work Order
 
-1. Connect Jibi slideability and Anny `visual_planning_hint` observations to
-   downstream Piti visual QA results.
-2. Check whether `likely_proof_object_types` predicts actual proof objects and
-   visual QA flags.
+1. Compare slideability alignment against Anny direct slide spec outputs, not
+   only adapter-built slide specs.
+2. Calibrate the rule-based heuristic around chart underprediction and diagram
+   quality, while keeping it review-only.
 3. Consider a PPT contact-sheet QA surface for rendered draft decks.
 4. Optionally run one more live Anny direct confirmation pass before widening
    the case set.
