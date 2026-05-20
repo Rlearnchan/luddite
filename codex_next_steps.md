@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.27
+# Codex Next Steps after Milestone 1.28
 
 ## 상태
 
@@ -163,14 +163,62 @@ comparison report에는 아래 delta가 명시된다.
 - `safety_regression_detected`
 - `diagram_quality_improved`
 
+## Milestone 1.28 완료 상태
+
+live API opt-in 실행 경로가 fixture 결과와 분리됐다.
+
+기본 경로:
+
+- `make run-anny-slide-spec-experiment`는 여전히 fixture/synthetic mode다.
+- 기본 테스트/CI는 API key나 model availability를 요구하지 않는다.
+- live API는 `--live-api`를 붙였을 때만 호출한다.
+
+live output:
+
+```text
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/raw_model_output.txt
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/parsed_piti_slide_spec.json
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/validation_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/visual_qa_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/comparison_against_adapter.md
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/summary.md
+```
+
+live review mirror는 기본 생성하지 않는다. 필요할 때만
+`--mirror-live-review`를 붙인다.
+
+live 실행 예시:
+
+```text
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id ai_knowledge_institution --live-api
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id productive_finance_policy --live-api
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id all --live-api
+```
+
+live summary 판정:
+
+- `success`: schema/render 통과, safety regression 없음, adapter 대비
+  `diagram_nodes_too_generic` 감소
+- `partial_success`: schema/render 통과, safety regression 없음, 하지만
+  `diagram_nodes_too_generic`가 감소하지 않음
+- `failure`: parse/schema/render 실패 또는 source/fact-check safety regression
+
+문서와 report 해석:
+
+- fixture mode는 harness와 deterministic expected behavior를 검증한다.
+- live mode는 실제 model behavior를 관찰한다.
+- fixture improvement는 production readiness를 의미하지 않는다.
+- live success도 broadcast readiness를 의미하지 않는다.
+- production readiness flags remain false.
+
 ## 다음 구현/평가 목표
 
-1. live API opt-in으로 direct slide spec prompt가 실제 모델에서도 concrete
-   diagram node를 만드는지 확인한다.
-2. live 결과가 안정적이면 fixture logic이 아니라 prompt/contract 자체의
+1. live API opt-in으로 두 case를 실행하고 `summary.md`를 확인한다.
+2. live 결과가 stable success인지, partial_success인지, failure인지 평가한다.
+3. live 결과가 안정적이면 fixture logic이 아니라 prompt/contract 자체의
    diagram 지침을 더 다듬는다.
-3. Jibi slideability scoring으로 넘어간다.
-4. 그 이후 production agent/scheduler/Slack/Slides 검토
+4. Jibi slideability scoring으로 넘어간다.
+5. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 

@@ -32,7 +32,11 @@ app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 DEFAULT_OUTPUT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_slide_spec_experiments"
+DEFAULT_LIVE_OUTPUT_ROOT = paths.MODEL_DRY_RUNS_DIR / "anny_slide_spec_experiments_live"
 DEFAULT_REVIEW_OUTPUT_DIR = paths.DOCS_DIR / "reviews" / "anny_slide_spec_experiments"
+DEFAULT_LIVE_REVIEW_OUTPUT_DIR = (
+    paths.DOCS_DIR / "reviews" / "anny_slide_spec_experiments_live"
+)
 DEFAULT_PROMPT_PATH = paths.PROMPTS_DIR / "anny" / "slide_spec_writer.md"
 DEFAULT_STYLE_PROFILE_PATH = paths.STYLE_PROFILES_DIR / "syukaworld_ppt_style_profile.json"
 
@@ -208,6 +212,15 @@ def _write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def _default_live_run_id() -> str:
+    return f"live_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
+
+
+def _safe_run_id(run_id: str) -> str:
+    cleaned = "".join(char if char.isalnum() or char in {"-", "_"} else "_" for char in run_id)
+    return cleaned.strip("_") or _default_live_run_id()
+
+
 def _display_path(path: Path) -> str:
     try:
         return str(path.resolve().relative_to(paths.REPO_ROOT))
@@ -227,6 +240,24 @@ def _selected_cases(case_id: str) -> list[SlideSpecExperimentCase]:
     if case_id == "all":
         return EXPERIMENT_CASES
     return [_case_by_id(case_id)]
+
+
+def _resolve_run_paths(
+    *,
+    live_api: bool,
+    output_root: Path | None,
+    review_output_dir: Path | None,
+    run_id: str | None,
+    mirror_live_review: bool,
+) -> tuple[Path, Path | None, str | None]:
+    if live_api:
+        resolved_run_id = _safe_run_id(run_id or _default_live_run_id())
+        run_root = (output_root or DEFAULT_LIVE_OUTPUT_ROOT) / resolved_run_id
+        if mirror_live_review:
+            review_root = review_output_dir or DEFAULT_LIVE_REVIEW_OUTPUT_DIR
+            return run_root, review_root / resolved_run_id, resolved_run_id
+        return run_root, None, resolved_run_id
+    return output_root or DEFAULT_OUTPUT_ROOT, review_output_dir or DEFAULT_REVIEW_OUTPUT_DIR, None
 
 
 def _as_list(value: Any) -> list[Any]:
@@ -419,6 +450,44 @@ def _severity_delta(
     )
 
 
+def _response_usage(response_payload: dict[str, Any]) -> dict[str, Any]:
+    usage = response_payload.get("usage")
+    return usage if isinstance(usage, dict) else {}
+
+
+def _safety_regression_detected(
+    *,
+    manifest: dict[str, Any],
+    visible_url_delta: int,
+) -> bool:
+    return bool(
+        manifest.get("source_hallucination_count", 0)
+        or manifest.get("do_not_claim_violation_count", 0)
+        or manifest.get("unsupported_claim_count", 0)
+        or manifest.get("needs_fact_check_removed_too_aggressively", False)
+        or manifest.get("required_before_broadcast_removed_too_aggressively", False)
+        or manifest.get("visible_url_count", 0)
+        or visible_url_delta > 0
+    )
+
+
+def _experiment_outcome(
+    *,
+    manifest: dict[str, Any],
+    deltas: dict[str, Any],
+) -> str:
+    if (
+        manifest.get("parse_status") != "parsed"
+        or not manifest.get("schema_valid")
+        or not manifest.get("render_passed")
+        or deltas.get("safety_regression_detected")
+    ):
+        return "failure"
+    if deltas.get("diagram_quality_improved"):
+        return "success"
+    return "partial_success"
+
+
 def build_slide_spec_experiment_prompt(
     *,
     input_bundle: dict[str, Any],
@@ -579,6 +648,7 @@ def _validate_raw_slide_spec(
             "parse_status": f"invalid_json:{exc.msg}",
             "schema_valid": False,
             "validation_passed": False,
+            "render_passed": False,
             "failure_modes": ["invalid_json"],
             "ready_for_production_anny_agent": False,
             "ready_for_production_piti_agent": False,
@@ -590,6 +660,7 @@ def _validate_raw_slide_spec(
             "parse_status": "invalid_json:not_object",
             "schema_valid": False,
             "validation_passed": False,
+            "render_passed": False,
             "failure_modes": ["invalid_json"],
             "ready_for_production_anny_agent": False,
             "ready_for_production_piti_agent": False,
@@ -640,6 +711,7 @@ def _validate_raw_slide_spec(
         "parse_status": "parsed",
         "schema_valid": validation.get("schema_valid"),
         "validation_passed": validation.get("passed"),
+        "render_passed": render_result.get("passed", False),
         "schema_errors": validation.get("schema_errors", []),
         "slide_spec_issues": validation.get("issues", []),
         "slide_spec_warnings": validation.get("warnings", []),
@@ -694,6 +766,7 @@ def _write_validation_report(
         f"- parse_status: {manifest.get('parse_status')}",
         f"- schema_valid: {manifest.get('schema_valid')}",
         f"- validation_passed: {manifest.get('validation_passed')}",
+        f"- render_passed: {manifest.get('render_passed', False)}",
         f"- failure_modes: {manifest.get('failure_modes', [])}",
         f"- source_hallucination_count: {manifest.get('source_hallucination_count', 0)}",
         f"- do_not_claim_violation_count: {manifest.get('do_not_claim_violation_count', 0)}",
@@ -761,33 +834,45 @@ def _write_comparison_report(
     )
     direct_flags = direct_metrics.get("visual_qa_flag_counts", {})
     adapter_flags = adapter_metrics.get("visual_qa_flag_counts", {})
-    diagram_delta = direct_flags.get("diagram_nodes_too_generic", 0) - adapter_flags.get(
-        "diagram_nodes_too_generic",
-        0,
+    if direct_metrics:
+        diagram_delta = direct_flags.get("diagram_nodes_too_generic", 0) - adapter_flags.get(
+            "diagram_nodes_too_generic",
+            0,
+        )
+        manual_delta = direct_flags.get(
+            "manual_insert_required_without_editor_instruction",
+            0,
+        ) - adapter_flags.get("manual_insert_required_without_editor_instruction", 0)
+        source_title_delta = direct_flags.get("source_card_display_title_too_generic", 0) - (
+            adapter_flags.get("source_card_display_title_too_generic", 0)
+        )
+        overflow_delta = direct_flags.get("overflow_notes_too_large", 0) - adapter_flags.get(
+            "overflow_notes_too_large",
+            0,
+        )
+        review_delta = _severity_delta(direct_metrics, adapter_metrics, "REVIEW")
+        info_delta = _severity_delta(direct_metrics, adapter_metrics, "INFO")
+        visible_url_delta = _metric_delta(direct_metrics, adapter_metrics, "visible_url_count")
+    else:
+        diagram_delta = 0
+        manual_delta = 0
+        source_title_delta = 0
+        overflow_delta = 0
+        review_delta = 0
+        info_delta = 0
+        visible_url_delta = 0
+    safety_regression_detected = _safety_regression_detected(
+        manifest=direct_manifest,
+        visible_url_delta=visible_url_delta,
     )
-    manual_delta = direct_flags.get(
-        "manual_insert_required_without_editor_instruction",
-        0,
-    ) - adapter_flags.get("manual_insert_required_without_editor_instruction", 0)
-    source_title_delta = direct_flags.get("source_card_display_title_too_generic", 0) - (
-        adapter_flags.get("source_card_display_title_too_generic", 0)
+    schema_render_ok = bool(
+        direct_spec
+        and direct_manifest.get("schema_valid")
+        and direct_manifest.get("render_passed")
     )
-    overflow_delta = direct_flags.get("overflow_notes_too_large", 0) - adapter_flags.get(
-        "overflow_notes_too_large",
-        0,
+    diagram_quality_improved = bool(
+        schema_render_ok and diagram_delta < 0 and not safety_regression_detected
     )
-    review_delta = _severity_delta(direct_metrics, adapter_metrics, "REVIEW")
-    info_delta = _severity_delta(direct_metrics, adapter_metrics, "INFO")
-    visible_url_delta = _metric_delta(direct_metrics, adapter_metrics, "visible_url_count")
-    safety_regression_detected = bool(
-        direct_manifest.get("source_hallucination_count", 0)
-        or direct_manifest.get("do_not_claim_violation_count", 0)
-        or direct_manifest.get("unsupported_claim_count", 0)
-        or direct_manifest.get("needs_fact_check_removed_too_aggressively", False)
-        or direct_manifest.get("required_before_broadcast_removed_too_aggressively", False)
-        or visible_url_delta > 0
-    )
-    diagram_quality_improved = bool(diagram_delta < 0 and not safety_regression_detected)
     deltas = {
         "diagram_nodes_too_generic_delta": diagram_delta,
         "manual_insert_required_without_editor_instruction_delta": manual_delta,
@@ -799,6 +884,7 @@ def _write_comparison_report(
         "safety_regression_detected": safety_regression_detected,
         "diagram_quality_improved": diagram_quality_improved,
     }
+    outcome = _experiment_outcome(manifest=direct_manifest, deltas=deltas)
     improvements: list[str] = []
     regressions: list[str] = []
     if diagram_delta < 0:
@@ -834,6 +920,7 @@ def _write_comparison_report(
         "- QA flags are warning-only.",
         f"- diagram_quality_improved: {str(diagram_quality_improved).lower()}",
         f"- safety_regression_detected: {str(safety_regression_detected).lower()}",
+        f"- experiment_outcome: {outcome}",
         "",
         "## Metrics",
         "",
@@ -861,6 +948,7 @@ def _write_comparison_report(
             "",
             f"- diagram quality improved: {str(diagram_quality_improved).lower()}",
             f"- safety regression detected: {str(safety_regression_detected).lower()}",
+            f"- experiment outcome: {outcome}",
             "",
             "### Better",
             "",
@@ -887,6 +975,7 @@ def _write_comparison_report(
         "adapter": adapter_metrics,
         "direct": direct_metrics,
         "deltas": deltas,
+        "outcome": outcome,
     }
 
 
@@ -920,6 +1009,111 @@ def _copy_review_reports(
     shutil.copyfile(comparison_report_path, review_output_dir / f"{case_id}_comparison.md")
 
 
+def _markdown_cell(value: Any) -> str:
+    text = str(value if value is not None else "")
+    return text.replace("\n", "<br>").replace("|", "\\|")
+
+
+def _token_usage_summary(manifests: list[dict[str, Any]]) -> dict[str, Any]:
+    total: Counter[str] = Counter()
+    has_usage = False
+    for manifest in manifests:
+        usage = manifest.get("response_usage")
+        if not isinstance(usage, dict) or not usage:
+            continue
+        has_usage = True
+        for key, value in usage.items():
+            if isinstance(value, (int, float)):
+                total[key] += value
+    return dict(total) if has_usage else {"usage": "not_collected"}
+
+
+def _write_live_summary(
+    *,
+    path: Path,
+    run_id: str,
+    manifests: list[dict[str, Any]],
+    output_root: Path,
+    model: str | None,
+) -> None:
+    case_ids = [str(manifest.get("case_id")) for manifest in manifests]
+    outcomes = Counter(
+        str(manifest.get("experiment_outcome") or "failure") for manifest in manifests
+    )
+    lines = [
+        f"# Anny Direct Piti Slide Spec Live Summary: {run_id}",
+        "",
+        f"- run_id: {run_id}",
+        f"- generated_at: {datetime.now(UTC).isoformat()}",
+        "- mode: live",
+        f"- model: {model or 'env:LUDDITE_ANNY_API_MODEL'}",
+        f"- case_ids: {case_ids}",
+        f"- output_root: {_display_path(output_root)}",
+        f"- outcomes: {dict(outcomes)}",
+        f"- token_usage: {_token_usage_summary(manifests)}",
+        "- total_cost: not_collected",
+        "- QA flags are warning-only.",
+        "- fixture mode validates deterministic expected behavior.",
+        "- live mode observes actual model behavior.",
+        "- fixture improvement does not mean production readiness.",
+        "- live success does not mean broadcast readiness.",
+        "- ready_for_production_anny_agent: false",
+        "- ready_for_production_piti_agent: false",
+        "- ready_for_broadcast: false",
+        "",
+        "## Success Criteria",
+        "",
+        "- success: schema/render pass, no safety regression, and diagram warnings decrease.",
+        (
+            "- partial_success: schema/render pass and no safety regression, "
+            "but diagram warnings do not decrease."
+        ),
+        "- failure: parse/schema/render failure or any source/fact-check safety regression.",
+        "",
+        "## Case Results",
+        "",
+        (
+            "| case | outcome | parse | schema | render | slides | sections | proof types | "
+            "needs fact check | required before broadcast | source hallucinations | "
+            "do_not_claim violations | unsupported claims | visible URLs | diagram generic | "
+            "manual insert missing instruction | generic source title | overflow notes large | "
+            "review delta | info delta | safety regression | diagram improved |"
+        ),
+        (
+            "|---|---|---|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|"
+            "---:|---:|---:|---:|---|---|"
+        ),
+    ]
+    for manifest in manifests:
+        metrics = manifest.get("comparison_metrics", {})
+        direct = metrics.get("direct", {}) if isinstance(metrics, dict) else {}
+        deltas = manifest.get("comparison_deltas", {})
+        direct_flags = direct.get("visual_qa_flag_counts", {}) if isinstance(direct, dict) else {}
+        lines.append(
+            f"| {_markdown_cell(manifest.get('case_id'))} | "
+            f"{_markdown_cell(manifest.get('experiment_outcome'))} | "
+            f"{_markdown_cell(manifest.get('parse_status'))} | "
+            f"{manifest.get('schema_valid')} | {manifest.get('render_passed')} | "
+            f"{direct.get('slide_count', 0)} | {direct.get('section_count', 0)} | "
+            f"{_markdown_cell(direct.get('proof_object_type_counts', {}))} | "
+            f"{direct.get('needs_fact_check_count', 0)} | "
+            f"{direct.get('required_before_broadcast_count', 0)} | "
+            f"{manifest.get('source_hallucination_count', 0)} | "
+            f"{manifest.get('do_not_claim_violation_count', 0)} | "
+            f"{manifest.get('unsupported_claim_count', 0)} | "
+            f"{manifest.get('visible_url_count', 0)} | "
+            f"{direct_flags.get('diagram_nodes_too_generic', 0)} | "
+            f"{direct_flags.get('manual_insert_required_without_editor_instruction', 0)} | "
+            f"{direct_flags.get('source_card_display_title_too_generic', 0)} | "
+            f"{direct_flags.get('overflow_notes_too_large', 0)} | "
+            f"{deltas.get('visual_qa_review_delta', 0)} | "
+            f"{deltas.get('visual_qa_info_delta', 0)} | "
+            f"{deltas.get('safety_regression_detected', False)} | "
+            f"{deltas.get('diagram_quality_improved', False)} |"
+        )
+    _write_text(path, "\n".join(lines) + "\n")
+
+
 def _write_failure_outputs(
     *,
     case: SlideSpecExperimentCase,
@@ -939,6 +1133,7 @@ def _write_failure_outputs(
         "parse_status": "no_model_output",
         "schema_valid": False,
         "validation_passed": False,
+        "render_passed": False,
         "failure_modes": ["api_request_failed"],
         "api_error": error,
         "raw_model_output_retained": True,
@@ -947,7 +1142,6 @@ def _write_failure_outputs(
         "ready_for_broadcast": False,
         "created_at": datetime.now(UTC).isoformat(),
     }
-    _write_json(experiment_dir / "manifest.json", manifest)
     _write_validation_report(
         path=validation_report_path,
         case=case,
@@ -958,13 +1152,24 @@ def _write_failure_outputs(
         mode=mode,
     )
     adapter_spec = _load_json(case.adapter_slide_spec_path)
-    _write_comparison_report(
+    comparison = _write_comparison_report(
         path=comparison_report_path,
         case=case,
         adapter_spec=adapter_spec,
         direct_spec=None,
         direct_manifest=manifest,
     )
+    manifest.update(
+        {
+            "comparison_metrics": {
+                "adapter": comparison["adapter"],
+                "direct": comparison["direct"],
+            },
+            "comparison_deltas": comparison["deltas"],
+            "experiment_outcome": comparison["outcome"],
+        }
+    )
+    _write_json(experiment_dir / "manifest.json", manifest)
     return manifest
 
 
@@ -1013,6 +1218,7 @@ def run_case(
     shutil.copyfile(case.evidence_pack_path, experiment_dir / "evidence_pack.json")
     shutil.copyfile(case.manual_storyline_path, experiment_dir / "manual_storyline.json")
     shutil.copyfile(case.adapter_slide_spec_path, experiment_dir / "adapter_piti_slide_spec.json")
+    response_usage: dict[str, Any] = {}
     if live_api:
         try:
             raw_text, response_payload, resolved_model, resolved_temperature = _call_live_api(
@@ -1040,6 +1246,7 @@ def run_case(
             return manifest
         _write_text(raw_path, raw_text)
         _write_json(experiment_dir / "response_metadata.json", response_payload)
+        response_usage = _response_usage(response_payload)
         mode = "live_api"
         model_source = resolved_model
         temp = resolved_temperature
@@ -1066,6 +1273,7 @@ def run_case(
             "mode": mode,
             "model": model_source,
             "temperature": temp,
+            "response_usage": response_usage,
             "raw_model_output_path": _display_path(raw_path),
             "parsed_piti_slide_spec_path": _display_path(parsed_path)
             if parsed_path.exists()
@@ -1076,7 +1284,6 @@ def run_case(
             "created_at": datetime.now(UTC).isoformat(),
         }
     )
-    _write_json(experiment_dir / "manifest.json", manifest)
     _write_validation_report(
         path=validation_report_path,
         case=case,
@@ -1099,13 +1306,24 @@ def run_case(
             slides=visual_deck.slides,
         )
         render_visual_qa.write_deck_report(visual_deck)
-    _write_comparison_report(
+    comparison = _write_comparison_report(
         path=comparison_report_path,
         case=case,
         adapter_spec=adapter_spec,
         direct_spec=parsed_spec,
         direct_manifest=manifest,
     )
+    manifest.update(
+        {
+            "comparison_metrics": {
+                "adapter": comparison["adapter"],
+                "direct": comparison["direct"],
+            },
+            "comparison_deltas": comparison["deltas"],
+            "experiment_outcome": comparison["outcome"],
+        }
+    )
+    _write_json(experiment_dir / "manifest.json", manifest)
     _copy_review_reports(
         review_output_dir=review_output_dir,
         case_id=case.case_id,
@@ -1118,19 +1336,28 @@ def run_case(
 def run_experiment(
     *,
     case_id: str = "all",
-    output_root: Path = DEFAULT_OUTPUT_ROOT,
-    review_output_dir: Path | None = DEFAULT_REVIEW_OUTPUT_DIR,
+    output_root: Path | None = None,
+    review_output_dir: Path | None = None,
+    run_id: str | None = None,
     live_api: bool = False,
+    mirror_live_review: bool = False,
     model: str | None = None,
     temperature: float | None = None,
     timeout_seconds: int = 120,
     api_caller: Any | None = None,
 ) -> list[dict[str, Any]]:
-    return [
+    resolved_output_root, resolved_review_output_dir, resolved_run_id = _resolve_run_paths(
+        live_api=live_api,
+        output_root=output_root,
+        review_output_dir=review_output_dir,
+        run_id=run_id,
+        mirror_live_review=mirror_live_review,
+    )
+    manifests = [
         run_case(
             case=case,
-            output_root=output_root,
-            review_output_dir=review_output_dir,
+            output_root=resolved_output_root,
+            review_output_dir=resolved_review_output_dir,
             live_api=live_api,
             model=model,
             temperature=temperature,
@@ -1139,6 +1366,18 @@ def run_experiment(
         )
         for case in _selected_cases(case_id)
     ]
+    if live_api and resolved_run_id:
+        summary_path = resolved_output_root / "summary.md"
+        _write_live_summary(
+            path=summary_path,
+            run_id=resolved_run_id,
+            manifests=manifests,
+            output_root=resolved_output_root,
+            model=model,
+        )
+        if mirror_live_review and resolved_review_output_dir:
+            shutil.copyfile(summary_path, resolved_review_output_dir / "summary.md")
+    return manifests
 
 
 @app.callback(invoke_without_command=True)
@@ -1148,16 +1387,40 @@ def main(
         typer.Option("--case-id", help="Case id to run, or 'all'."),
     ] = "all",
     output_root: Annotated[
-        Path,
-        typer.Option("--output-root", help="Experiment output root."),
-    ] = DEFAULT_OUTPUT_ROOT,
+        Path | None,
+        typer.Option(
+            "--output-root",
+            help=(
+                "Experiment output root. Fixture defaults to outputs/model_dry_runs/"
+                "anny_slide_spec_experiments; live defaults to "
+                "outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}."
+            ),
+        ),
+    ] = None,
     review_output_dir: Annotated[
         Path | None,
-        typer.Option("--review-output-dir", help="GitHub-visible review mirror directory."),
-    ] = DEFAULT_REVIEW_OUTPUT_DIR,
+        typer.Option(
+            "--review-output-dir",
+            help=(
+                "Review mirror directory. Fixture mirrors by default; live mirrors only "
+                "with --mirror-live-review."
+            ),
+        ),
+    ] = None,
+    run_id: Annotated[
+        str | None,
+        typer.Option("--run-id", help="Live run id. Defaults to live_YYYYMMDDTHHMMSSZ."),
+    ] = None,
     live_api: Annotated[
         bool,
         typer.Option("--live-api", help="Opt in to a live OpenAI API call."),
+    ] = False,
+    mirror_live_review: Annotated[
+        bool,
+        typer.Option(
+            "--mirror-live-review",
+            help="Mirror live validation/comparison/summary reports under docs/reviews.",
+        ),
     ] = False,
     model: Annotated[
         str | None,
@@ -1178,7 +1441,9 @@ def main(
             case_id=case_id,
             output_root=output_root,
             review_output_dir=review_output_dir,
+            run_id=run_id,
             live_api=live_api,
+            mirror_live_review=mirror_live_review,
             model=model,
             temperature=temperature,
             timeout_seconds=timeout_seconds,

@@ -1,12 +1,13 @@
 # Anny Direct Piti Slide Spec Comparison: productive_finance_policy
 
-- generated_at: 2026-05-20T01:52:34.980761+00:00
+- generated_at: 2026-05-20T02:04:37.123834+00:00
 - adapter_slide_spec: data/candidates/piti_slide_specs/productive_finance_policy_slide_spec.json
 - direct_schema_valid: True
 - direct_failure_modes: []
 - QA flags are warning-only.
 - diagram_quality_improved: true
 - safety_regression_detected: false
+- experiment_outcome: success
 
 ## Metrics
 
@@ -31,6 +32,7 @@
 
 - diagram quality improved: true
 - safety regression detected: false
+- experiment outcome: success
 
 ### Better
 

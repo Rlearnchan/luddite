@@ -1,6 +1,6 @@
 # Piti Visual QA: piti_slide_spec_ai_knowledge_institution
 
-- Generated at: 2026-05-20T01:52:31.776158+00:00
+- Generated at: 2026-05-20T02:04:29.588899+00:00
 - Input: data/candidates/piti_slide_specs/ai_knowledge_institution_slide_spec.json
 - Slides: 26
 - Flagged slides: 21

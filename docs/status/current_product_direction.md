@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.27
+# Current Product Direction after Milestone 1.28
 
 Status date: 2026-05-20
 
@@ -25,6 +25,9 @@ path:
 - In fixture mode, direct slide-spec output now applies deterministic concrete
   diagram fixtures at the Anny/direct-output stage. This reduces generic
   diagram-node warnings without changing Piti renderer behavior.
+- Live opt-in runs are separated under
+  `outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/` and write
+  a run-level `summary.md`.
 - The Piti renderer contract is now explicit: Piti does not infer, enrich, or
   rewrite meaning. Piti renders the provided `piti_slide_spec` only.
 - The current PPTX output is a review draft, not a broadcast-ready deck.
@@ -137,7 +140,8 @@ Default mode is deterministic fixture/synthetic validation:
 - no changes to the Piti renderer's non-rewriting contract
 - deterministic concrete diagram-node fixtures for the two current cases
 
-Live API mode is opt-in only via `--live-api`.
+Live API mode is opt-in only via `--live-api`. Default Make and test paths do
+not call the API.
 
 Primary outputs:
 
@@ -154,6 +158,28 @@ GitHub-visible review mirrors:
 ```text
 docs/reviews/anny_slide_spec_experiments/{case_id}_validation.md
 docs/reviews/anny_slide_spec_experiments/{case_id}_comparison.md
+```
+
+Live outputs are deliberately separated from fixture outputs:
+
+```text
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/raw_model_output.txt
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/parsed_piti_slide_spec.json
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/validation_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/visual_qa_report.md
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/{case_id}/comparison_against_adapter.md
+outputs/model_dry_runs/anny_slide_spec_experiments_live/{run_id}/summary.md
+```
+
+Live review mirrors are off by default. Use `--mirror-live-review` only when a
+live run should be copied under `docs/reviews/anny_slide_spec_experiments_live/`.
+
+Live command examples:
+
+```text
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id ai_knowledge_institution --live-api
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id productive_finance_policy --live-api
+PYTHONPATH=src .venv/bin/python -m luddite run-anny-slide-spec-experiment --case-id all --live-api
 ```
 
 Current fixture comparison:
@@ -177,10 +203,18 @@ copy when Anny provides it explicitly. It is still not evidence that production
 Anny is ready, because fixture mode is deterministic and does not prove live
 model behavior.
 
+Live experiment outcomes are classified as:
+
+- `success`: schema/render pass, no safety regression, and
+  `diagram_nodes_too_generic` decreases versus adapter baseline.
+- `partial_success`: schema/render pass and no safety regression, but diagram
+  warnings do not decrease.
+- `failure`: parse/schema/render failure or any source/fact-check safety
+  regression.
+
 ## Next Work Order
 
-1. Run a live opt-in Anny direct slide-spec experiment and compare whether the
-   model follows the strengthened diagram contract.
+1. Run live opt-in experiments for both cases and inspect `summary.md`.
 2. Jibi slideability scoring
 3. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature

@@ -4,6 +4,7 @@ from typing import Any
 
 from luddite.agents.anny.slide_spec_experiment import (
     EXPERIMENT_CASES,
+    _synthetic_fixture_output,
     build_slide_spec_experiment_prompt,
     run_experiment,
 )
@@ -76,6 +77,46 @@ def test_slide_spec_experiment_default_mode_does_not_call_api(tmp_path: Path) ->
     assert manifests[0]["model"] == "synthetic_fixture"
 
 
+def test_slide_spec_experiment_live_api_writes_separate_run_summary(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    case = EXPERIMENT_CASES[0]
+
+    def fixture_api(**_kwargs):
+        return (
+            json.dumps(_synthetic_fixture_output(case), ensure_ascii=False, indent=2),
+            {"id": "fake-response", "usage": {"input_tokens": 10, "output_tokens": 20}},
+        )
+
+    output_root = tmp_path / "live"
+    manifests = run_experiment(
+        case_id=case.case_id,
+        output_root=output_root,
+        run_id="live_success",
+        live_api=True,
+        model="gpt-test",
+        api_caller=fixture_api,
+    )
+
+    case_dir = output_root / "live_success" / case.case_id
+    summary = output_root / "live_success" / "summary.md"
+    assert len(manifests) == 1
+    assert manifests[0]["mode"] == "live_api"
+    assert manifests[0]["experiment_outcome"] == "success"
+    assert manifests[0]["comparison_deltas"]["diagram_quality_improved"] is True
+    assert (case_dir / "raw_model_output.txt").exists()
+    assert (case_dir / "parsed_piti_slide_spec.json").exists()
+    assert summary.exists()
+    summary_text = summary.read_text(encoding="utf-8")
+    assert "- mode: live" in summary_text
+    assert "live_success" in summary_text
+    assert "success" in summary_text
+    assert "production readiness" in summary_text.lower()
+    assert not (output_root / case.case_id).exists()
+
+
 def test_slide_spec_experiment_live_api_failure_writes_error_artifacts(
     tmp_path: Path,
     monkeypatch: Any,
@@ -91,21 +132,23 @@ def test_slide_spec_experiment_live_api_failure_writes_error_artifacts(
         case_id="ai_knowledge_institution",
         output_root=output_root,
         review_output_dir=review_output_dir,
+        run_id="failure_run",
         live_api=True,
         model="gpt-test",
         api_caller=fail_api,
     )
 
     manifest = manifests[0]
-    case_dir = output_root / "ai_knowledge_institution"
+    case_dir = output_root / "failure_run" / "ai_knowledge_institution"
     assert manifest["failure_modes"] == ["api_request_failed"]
+    assert manifest["experiment_outcome"] == "failure"
     assert (case_dir / "raw_model_output.txt").exists()
     assert "simulated API outage" in (case_dir / "api_error.txt").read_text(
         encoding="utf-8"
     )
     assert not (case_dir / "parsed_piti_slide_spec.json").exists()
-    assert (review_output_dir / "ai_knowledge_institution_validation.md").exists()
-    assert (review_output_dir / "ai_knowledge_institution_comparison.md").exists()
+    assert (output_root / "failure_run" / "summary.md").exists()
+    assert not (review_output_dir / "failure_run").exists()
 
 
 def test_slide_spec_experiment_live_api_invalid_json_preserves_raw_output(
@@ -122,18 +165,21 @@ def test_slide_spec_experiment_live_api_invalid_json_preserves_raw_output(
         case_id="ai_knowledge_institution",
         output_root=output_root,
         review_output_dir=tmp_path / "reviews",
+        run_id="invalid_json_run",
         live_api=True,
         model="gpt-test",
         api_caller=invalid_json_api,
     )
 
     manifest = manifests[0]
-    case_dir = output_root / "ai_knowledge_institution"
+    case_dir = output_root / "invalid_json_run" / "ai_knowledge_institution"
     assert manifest["failure_modes"] == ["invalid_json"]
+    assert manifest["experiment_outcome"] == "failure"
     assert manifest["parse_status"].startswith("invalid_json")
     assert (case_dir / "raw_model_output.txt").read_text(encoding="utf-8") == "not json"
     assert (case_dir / "response_metadata.json").exists()
     assert not (case_dir / "parsed_piti_slide_spec.json").exists()
+    assert (output_root / "invalid_json_run" / "summary.md").exists()
     assert "parse_status: invalid_json" in (
         case_dir / "validation_report.md"
     ).read_text(encoding="utf-8")

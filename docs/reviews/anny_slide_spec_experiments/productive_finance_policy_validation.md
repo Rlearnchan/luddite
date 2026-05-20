@@ -1,12 +1,13 @@
 # Anny Direct Piti Slide Spec Validation: productive_finance_policy
 
-- generated_at: 2026-05-20T01:52:34.979016+00:00
+- generated_at: 2026-05-20T02:04:37.121859+00:00
 - mode: fixture
 - raw_model_output: outputs/model_dry_runs/anny_slide_spec_experiments/productive_finance_policy/raw_model_output.txt
 - parsed_piti_slide_spec: outputs/model_dry_runs/anny_slide_spec_experiments/productive_finance_policy/parsed_piti_slide_spec.json
 - parse_status: parsed
 - schema_valid: True
 - validation_passed: True
+- render_passed: True
 - failure_modes: []
 - source_hallucination_count: 0
 - do_not_claim_violation_count: 0
