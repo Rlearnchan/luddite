@@ -1,79 +1,120 @@
-# Codex Next Steps after Corpus Insight v0.2
+# Codex Next Steps after Milestone 1.22
 
 ## 상태
 
-parser smoke는 통과했고, GPT Pro가 parsed corpus 기반 appendix 문서 3개를 보강했다.
+현재 Luddite는 `jibi -> anny -> piti` scaffold와
+`piti_slide_spec -> styled PPTX draft` 렌더링이 동작하는 상태다.
 
-보강된 문서:
+중요한 방향은 다음과 같다.
 
-- `docs/appendix/latest_ppt_pattern_report.md`
-- `docs/appendix/storyline_pattern_catalog.md`
-- `docs/appendix/google_sheet_insights.md`
+- Piti는 의미를 재작성하지 않는다.
+- Piti는 proof object를 새로 추론하지 않는다.
+- Piti는 명시적인 `piti_slide_spec`을 렌더링만 한다.
+- 현재 결과물은 검수 가능한 PPTX draft이며 방송 투입본이 아니다.
 
-보조 테이블:
-
-- `outputs/tables/ppt_deck_metrics.csv`
-- `outputs/tables/storyline_catalog_metrics.csv`
-- `outputs/tables/topic_finding_examples.csv`
-- `outputs/tables/channel_titles_metrics.csv`
-
-## 다음 구현 목표: Golden Reconstruction
-
-아직 jibi/anny/piti LLM agent 본구현으로 가지 말 것. 다음은 deterministic fixture 작업이다.
-
-### 1. anny_storyline fixture 만들기
-
-아래 두 PPT를 기준으로 사람이 검토 가능한 `anny_storyline` JSON fixture를 만든다.
-
-- `전당포 주식회사_배형찬.pptx`
-- `코카콜라를 이기는 방법_김성원.pptx`
-
-위치는:
+현재 readiness:
 
 ```text
-eval/golden_cases/anny_storylines/golden_pawnshop_f88_storyline.json
-eval/golden_cases/anny_storylines/golden_coca_cola_ambani_storyline.json
+ready_for_piti_renderer_contract=true
+ready_for_api_experiment=true
+ready_for_production_anny_agent=false
+ready_for_production_piti_agent=false
+ready_for_broadcast=false
 ```
 
-조건:
+## 다음 구현 목표: Milestone 1.24 Piti Visual QA
 
-- `specs/anny_storyline_schema.json` 통과
-- section 3개 이상
-- 각 slide는 headline/body/source_urls/image_urls/notes 포함
-- source_urls와 image_urls overlap 없음
-- needs_fact_check/needs_source를 표시할 수 있게 함
+목표는 PPT를 더 예쁘게 만드는 것이 아니다. 사람이 눈으로 검수해야 할
+슬라이드를 자동으로 드러내는 Markdown QA 리포트를 만든다.
 
-### 2. piti_deck_plan fixture 만들기
-
-위 anny_storyline을 `piti_slide_schema` 또는 `deck_schema`에 맞춰 deck plan으로 변환한다.
+추가할 CLI:
 
 ```text
-eval/golden_cases/deck_plans/golden_pawnshop_f88_deck_plan.json
-eval/golden_cases/deck_plans/golden_coca_cola_ambani_deck_plan.json
+luddite render-piti-visual-qa
 ```
 
-### 3. prompt 보정
+추가할 Make target:
 
-아래 prompt 문서를 corpus insight v0.2 기준으로 수정한다.
+```text
+make render-piti-visual-qa
+```
 
-- `prompts/jibi/seed_scorer.md`
-- `prompts/anny/storyline_writer.md`
-- `prompts/piti/deck_planner.md`
+입력:
 
-특히 jibi prompt에는 `주제 찾기` positive/negative examples를 넣는다.
+```text
+data/candidates/piti_slide_specs/*.json
+```
 
-### 4. 아직 하지 말 것
+출력:
 
-- RSS 24/7 collector
-- Google Sheets API direct fetch
-- full PPT generator
-- image auto collection
-- production-grade agent orchestration
+```text
+outputs/qa/piti_visual_qa/{deck_id}.md
+outputs/qa/piti_visual_qa/piti_visual_qa_summary.md
+```
+
+GitHub에서 GPT가 검색할 수 있도록 같은 리포트를 아래 위치에도 mirror한다.
+
+```text
+docs/reviews/piti_visual_qa/{deck_id}.md
+docs/reviews/piti_visual_qa/piti_visual_qa_summary.md
+```
+
+각 슬라이드별 리포트에는 다음 항목을 포함한다.
+
+- `slide_no`
+- `screen_headline`
+- `layout_intent`
+- `proof_object.type`
+- `screen_body` 줄 수
+- `overflow_notes` 개수
+- `needs_source`
+- `needs_fact_check`
+- `required_before_broadcast`
+- `manual_insert_required`
+- `visual_qa_flags`
+
+Soft QA flags:
+
+- `proof_object_missing_for_claim_slide`
+- `too_many_source_cards_in_sequence`
+- `diagram_nodes_too_generic`
+- `chart_without_data_hint`
+- `source_card_display_title_too_generic`
+- `screen_body_empty_but_no_proof_object`
+- `overflow_notes_too_large`
+- `manual_insert_required_without_editor_instruction`
+
+이 flag들은 실패 조건이 아니라 review warning이다. 특히
+`overflow_notes`는 설명문을 화면 밖으로 잘 뺐다는 신호일 수 있으므로
+바로 실패 처리하지 않는다.
+
+## 이후 순서
+
+1. Piti visual QA
+2. Anny direct Piti slide spec experiment
+3. Jibi slideability scoring
+
+## 아직 하지 말 것
+
+- production Anny agent
+- production Piti agent
+- scheduler
+- Slack bot
+- 이미지 자동 삽입
+- 차트 자동 생성
+- Google Slides 연동
+- 방송 투입 가능 상태 선언
+- 신규 LLM/API 호출 추가
 
 ## 완료 기준
 
-- golden_pawnshop_f88_storyline.json schema 통과
-- golden_coca_cola_ambani_storyline.json schema 통과
-- deck_plan fixture schema 통과
-- prompt에 실제 corpus examples 반영
+- `make lint` 통과
 - `make test` 통과
+- `make build-piti-slide-specs` 통과
+- `make validate-piti-slide-spec` 통과
+- `make render-piti-slide-spec-pptx` 통과
+- `make render-piti-visual-qa` 통과
+- 기존 slide spec 렌더링 동작을 깨지 않는다.
+- QA 리포트가 두 샘플 deck 모두에 대해 생성된다.
+- 리포트만 보고도 사람이 어떤 슬라이드를 눈으로 검수해야 하는지
+  파악할 수 있다.
