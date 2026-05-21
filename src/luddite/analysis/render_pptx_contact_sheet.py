@@ -57,7 +57,15 @@ class ContactSheetSlide:
     proof_object_type: str
     visual_qa_flags: list[str]
     contact_sheet_review_status: str = "unchecked"
-    reviewer_note: str = ""
+    readability_status: str = "unchecked"
+    layout_status: str = "unchecked"
+    broadcast_fit_status: str = "unchecked"
+    style_fit_status: str = "unchecked"
+    readability_note: str = ""
+    layout_note: str = ""
+    broadcast_note: str = ""
+    style_note: str = ""
+    fix_request: str = ""
 
 
 @dataclass(frozen=True)
@@ -286,7 +294,13 @@ def _compose_contact_sheet(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(output_path)
     pdf_path = output_path.with_suffix(".pdf")
-    sheet.save(pdf_path)
+    try:
+        from PIL import JpegImagePlugin  # noqa: F401
+
+        Image.init()
+        sheet.save(pdf_path, "PDF")
+    except Exception as exc:
+        return output_path, None, f"contact_sheet_pdf_failed: {exc}"
     return output_path, pdf_path, None
 
 
@@ -452,8 +466,18 @@ def _build_slide_rows(
     return rows
 
 
+def _review_status_counts(results: list[ContactSheetResult]) -> Counter[str]:
+    counter: Counter[str] = Counter({"unchecked": 0, "ok": 0, "review": 0, "fail": 0})
+    for result in results:
+        for slide in result.slides:
+            status = slide.contact_sheet_review_status
+            counter.update([status if status in counter else "review"])
+    return counter
+
+
 def _write_deck_report(result: ContactSheetResult) -> None:
     result.report_path.parent.mkdir(parents=True, exist_ok=True)
+    review_counts = _review_status_counts([result])
     lines = [
         f"# PPTX Contact Sheet QA: {result.target.deck_id}",
         "",
@@ -472,6 +496,11 @@ def _write_deck_report(result: ContactSheetResult) -> None:
         f"- contact_sheet: {_display_path(result.contact_sheet_path)}",
         f"- contact_sheet_pdf: {_display_path(result.contact_sheet_pdf_path)}",
         f"- pdf: {_display_path(result.pdf_path)}",
+        f"- manual_review_total_slides: {sum(review_counts.values())}",
+        f"- manual_review_unchecked_slides: {review_counts['unchecked']}",
+        f"- manual_review_ok_slides: {review_counts['ok']}",
+        f"- manual_review_review_slides: {review_counts['review']}",
+        f"- manual_review_fail_slides: {review_counts['fail']}",
         "- This is visual review surface only.",
         "- No PPT content was modified.",
         "- No LLM/API calls.",
@@ -492,9 +521,11 @@ def _write_deck_report(result: ContactSheetResult) -> None:
             (
                 "| slide_no | thumbnail | screen_headline | layout_intent | "
                 "proof_object.type | visual QA flags | contact_sheet_review_status | "
-                "reviewer_note |"
+                "readability_status | layout_status | broadcast_fit_status | "
+                "style_fit_status | readability_note | layout_note | broadcast_note | "
+                "style_note | fix_request |"
             ),
-            "|---:|---|---|---|---|---|---|---|",
+            "|---:|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
         ]
     )
     for slide in result.slides:
@@ -502,7 +533,9 @@ def _write_deck_report(result: ContactSheetResult) -> None:
         flags = ", ".join(slide.visual_qa_flags) if slide.visual_qa_flags else "-"
         lines.append(
             "| {slide_no} | {thumbnail} | {headline} | {layout} | {proof} | "
-            "{flags} | {status} | {note} |".format(
+            "{flags} | {status} | {readability} | {layout_status} | "
+            "{broadcast} | {style} | {readability_note} | {layout_note} | "
+            "{broadcast_note} | {style_note} | {fix_request} |".format(
                 slide_no=slide.slide_no,
                 thumbnail=thumbnail,
                 headline=str(slide.screen_headline).replace("|", "\\|"),
@@ -510,7 +543,15 @@ def _write_deck_report(result: ContactSheetResult) -> None:
                 proof=str(slide.proof_object_type).replace("|", "\\|"),
                 flags=flags.replace("|", "\\|"),
                 status=slide.contact_sheet_review_status,
-                note=slide.reviewer_note,
+                readability=slide.readability_status,
+                layout_status=slide.layout_status,
+                broadcast=slide.broadcast_fit_status,
+                style=slide.style_fit_status,
+                readability_note=slide.readability_note,
+                layout_note=slide.layout_note,
+                broadcast_note=slide.broadcast_note,
+                style_note=slide.style_note,
+                fix_request=slide.fix_request,
             )
         )
     result.report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -616,6 +657,9 @@ def _write_summary(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     backend = backend_check or check_contact_sheet_backend()
     status_counts = Counter(result.status for result in results)
+    review_counts = _review_status_counts(results)
+    has_thumbnails = any(result.thumbnail_count for result in results)
+    visual_review_blocked = not backend.thumbnail_backend_ready or not has_thumbnails
     failed = [
         result
         for result in results
@@ -637,6 +681,12 @@ def _write_summary(
         f"- Pillow error: {backend.pillow_error or '-'}",
         f"- thumbnail_backend_ready: {str(backend.thumbnail_backend_ready).lower()}",
         f"- failed_decks: {len(failed)}",
+        f"- total_slides: {sum(review_counts.values())}",
+        f"- unchecked_slides: {review_counts['unchecked']}",
+        f"- ok_slides: {review_counts['ok']}",
+        f"- review_slides: {review_counts['review']}",
+        f"- fail_slides: {review_counts['fail']}",
+        f"- visual_review_blocked: {str(visual_review_blocked).lower()}",
         "- This is visual review surface only.",
         "- No PPT content was modified.",
         "- No LLM/API calls.",
@@ -673,7 +723,11 @@ def _write_summary(
             "## Review Notes",
             "",
             "- Each deck report has slide-level `contact_sheet_review_status: unchecked`.",
-            "- `reviewer_note` is intentionally blank for human review.",
+            (
+                "- Slide rows include manual checklist fields for readability, "
+                "layout, broadcast fit, style fit, notes, and fix requests."
+            ),
+            "- Initial manual review status is `unchecked` for every slide.",
             "- Lightweight heuristic flags are limited to missing/render/count issues.",
             (
                 "- No OCR, AI layout judgment, style scoring, image insertion, "
@@ -681,6 +735,18 @@ def _write_summary(
             ),
         ]
     )
+    if visual_review_blocked:
+        lines.extend(
+            [
+                "",
+                "## Backend Warning",
+                "",
+                (
+                    "- visual review cannot begin until thumbnails/contact sheets "
+                    "are generated."
+                ),
+            ]
+        )
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

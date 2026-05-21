@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.38
+# Codex Next Steps after Milestone 1.39
 
 ## 상태
 
@@ -718,7 +718,7 @@ outputs/qa/pptx_contact_sheet/pptx_contact_sheet_summary.md
 docs/reviews/pptx_contact_sheet_summary.md
 ```
 
-현재 local 실행 결과:
+Milestone 1.37 당시 local 실행 결과:
 
 ```text
 deck_count: 4
@@ -729,7 +729,7 @@ failed_decks: 0
 thumbnail backend: LibreOffice/soffice not found locally
 ```
 
-해석:
+당시 해석:
 
 - per-deck Markdown report는 생성됐다.
 - 각 slide row는 `slide_no`, thumbnail path, `screen_headline`,
@@ -765,7 +765,7 @@ Pillow
 thumbnail_backend_ready
 ```
 
-현재 local 상태:
+Milestone 1.38 당시 local 상태:
 
 ```text
 LibreOffice: missing
@@ -787,7 +787,7 @@ docs/reviews/pptx_contact_sheet_summary.md
 outputs/qa/pptx_contact_sheet/pptx_contact_sheet_summary.md
 ```
 
-해석:
+당시 해석:
 
 - 현재 로컬에서는 LibreOffice/soffice만 빠져 있다.
 - LibreOffice가 PATH에 잡히면 `make render-pptx-contact-sheet`가 PPTX -> PDF
@@ -796,12 +796,105 @@ outputs/qa/pptx_contact_sheet/pptx_contact_sheet_summary.md
   생성된다.
 - PPTX 내용 자동 수정, Piti 의미 재작성, LLM/API 호출은 없다.
 
+## Milestone 1.39 완료 상태
+
+Contact sheet Markdown에 사람이 직접 리뷰할 수 있는 checklist/template을
+추가했다.
+
+Per-deck report의 slide row에는 이제 아래 필드가 포함된다.
+
+```text
+contact_sheet_review_status
+readability_status
+layout_status
+broadcast_fit_status
+style_fit_status
+readability_note
+layout_note
+broadcast_note
+style_note
+fix_request
+```
+
+초기값:
+
+```text
+contact_sheet_review_status: unchecked
+readability_status: unchecked
+layout_status: unchecked
+broadcast_fit_status: unchecked
+style_fit_status: unchecked
+note/fix fields: blank
+```
+
+Summary에는 manual review 상태 집계가 추가됐다.
+
+```text
+total_slides: 100
+unchecked_slides: 100
+ok_slides: 0
+review_slides: 0
+fail_slides: 0
+```
+
+현재 local backend 상태:
+
+```text
+LibreOffice: found (/opt/homebrew/bin/soffice)
+pdftoppm: found (/opt/homebrew/bin/pdftoppm)
+Pillow: found
+thumbnail_backend_ready: true
+```
+
+현재 contact sheet 생성 결과:
+
+```text
+deck_count: 4
+slide_count: 100
+generated_contact_sheets: 4
+thumbnail_generation_status: {'contact_sheet_generated': 4}
+failed_decks: 0
+visual_review_blocked: false
+```
+
+생성 위치:
+
+```text
+outputs/qa/pptx_contact_sheet/
+docs/reviews/pptx_contact_sheet_summary.md
+docs/reviews/pptx_contact_sheet_review_guide.md
+```
+
+Manual review guide:
+
+```text
+docs/reviews/pptx_contact_sheet_review_guide.md
+```
+
+가이드의 기준:
+
+- 한 장에 글자가 너무 많지 않은가
+- 빨간 headline이 thumbnail에서도 보이는가
+- 본문은 1~2줄 중심인가
+- diagram box 문구가 화면에 들어가는가
+- chart/table slide에 설명문이 과도하게 들어가지 않았는가
+- source card가 headline을 반복하지 않는가
+- URL이 화면에 노출되지 않는가
+- 발표자가 이 슬라이드만 보고 말문을 열 수 있는가
+- 슈카월드식 "그림 반 / 말 반" 리듬에 가까운가
+
+중요:
+
+- 이 checklist는 human review surface다.
+- 자동으로 `ok/review/fail`을 판단하지 않는다.
+- PPTX 내용을 자동 수정하지 않는다.
+- OCR, AI layout judgment, style scoring, LLM/API 호출은 없다.
+- production/broadcast readiness는 계속 false다.
+
 ## 다음 구현/평가 목표
 
-1. LibreOffice/soffice를 설치하거나 PATH에 연결한 뒤 contact sheet PNG/PDF를
-   재생성한다.
-2. 사람이 contact sheet를 보고 manual review할 수 있는 체크리스트/template을
-   추가한다.
+1. 사람이 contact sheet를 보고 checklist status와 fix request를 직접 채운다.
+2. 실제 리뷰 결과를 바탕으로 슈카월드식 화면 QA rubric을 더 구체화한다.
 3. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
    calibration한다.
 4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을

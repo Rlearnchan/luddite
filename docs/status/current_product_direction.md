@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.38
+# Current Product Direction after Milestone 1.39
 
 Status date: 2026-05-21
 
@@ -71,6 +71,12 @@ path:
   Anny direct live draft decks.
 - Milestone 1.38 adds a structured contact sheet backend check, a
   `--check-backend-only` CLI path, and a backend setup runbook.
+- Milestone 1.39 adds slide-level human review checklist fields to contact
+  sheet Markdown, a 슈카월드-style manual review guide, and manual review
+  status counts in the contact sheet summary.
+- The local contact sheet backend is now ready with LibreOffice/soffice,
+  `pdftoppm`, and Pillow. The current run generated thumbnail PNGs and
+  contact sheet PNG/PDF files for all four target decks.
 - Contact sheet QA is review-only. It does not modify PPTX content, infer
   meaning, insert images, generate charts, call an LLM/API, or change
   readiness flags.
@@ -576,13 +582,18 @@ Current local summary:
 ```text
 deck_count: 4
 slide_count: 100
-generated_contact_sheets: 0
-thumbnail_generation_status: {'metadata_only_with_warning': 4}
-LibreOffice: missing
+generated_contact_sheets: 4
+thumbnail_generation_status: {'contact_sheet_generated': 4}
+LibreOffice: found (/opt/homebrew/bin/soffice)
 pdftoppm: found (/opt/homebrew/bin/pdftoppm)
 Pillow: found
-thumbnail_backend_ready: false
+thumbnail_backend_ready: true
 failed_decks: 0
+unchecked_slides: 100
+ok_slides: 0
+review_slides: 0
+fail_slides: 0
+visual_review_blocked: false
 ```
 
 Decks covered:
@@ -596,28 +607,33 @@ live_m132_20260520_all_productive_finance_policy
 
 Interpretation:
 
-- The CLI successfully builds per-deck Markdown review surfaces with slide
-  counts, slide-spec metadata, visual QA flags, `contact_sheet_review_status:
-  unchecked`, and blank `reviewer_note` placeholders.
-- The current local machine does not have LibreOffice/soffice available, so
-  thumbnail/PDF contact sheet generation is reported as a graceful warning
-  instead of failing the command.
-- `pdftoppm` and Pillow are available locally. Installing/configuring
-  LibreOffice/soffice should be enough to enable actual thumbnail and contact
-  sheet PNG/PDF generation.
+- The CLI builds per-deck Markdown review surfaces with slide counts,
+  slide-spec metadata, visual QA flags, generated thumbnail paths, and manual
+  checklist fields.
+- Each slide starts as `contact_sheet_review_status: unchecked` with
+  `readability_status`, `layout_status`, `broadcast_fit_status`, and
+  `style_fit_status` also set to `unchecked`.
+- Per-slide note fields are left blank for human review:
+  `readability_note`, `layout_note`, `broadcast_note`, `style_note`, and
+  `fix_request`.
+- The current local machine can generate actual thumbnail PNGs and contact
+  sheet PNG/PDF files through LibreOffice/soffice, `pdftoppm`, and Pillow.
 - Backend setup guidance now lives in
   `docs/runbooks/pptx_contact_sheet_backend.md`.
+- Manual review guidance now lives in
+  `docs/reviews/pptx_contact_sheet_review_guide.md`.
 - No PPTX content is modified.
 - No LLM/API calls are made.
 - Broadcast readiness remains false.
 
 ## Next Work Order
 
-1. Calibrate the rule-based slideability heuristic around chart
+1. Manually review the generated contact sheets and fill checklist statuses
+   for slides that need readability/layout/broadcast/style attention.
+2. Calibrate the rule-based slideability heuristic around chart
    underprediction and diagram-quality prediction, while keeping it review-only.
-2. Install or configure LibreOffice/soffice locally, then regenerate actual
-   thumbnail contact sheets.
-3. Add a human contact-sheet review template/checklist after thumbnails exist.
+3. Optionally add a more formal 슈카월드-style screen QA rubric after the first
+   human contact sheet pass.
 4. Optionally run one more live Anny direct confirmation pass before widening
    the case set.
 5. Keep using visual QA and comparison reports as warning-only review surfaces.

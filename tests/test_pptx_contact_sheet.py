@@ -133,9 +133,20 @@ def test_contact_sheet_reports_backend_warning_without_crashing(tmp_path: Path) 
     assert (tmp_path / "review_summary.md").exists()
     report = (output_dir / "fixture_deck_contact_sheet.md").read_text(encoding="utf-8")
     assert "contact_sheet_review_status" in report
+    assert "readability_status" in report
+    assert "layout_status" in report
+    assert "broadcast_fit_status" in report
+    assert "style_fit_status" in report
+    assert "fix_request" in report
     assert "unchecked" in report
     assert "No LLM/API calls" in report
     assert "thumbnail_missing" in report
+    summary = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "unchecked_slides: 2" in summary
+    assert "ok_slides: 0" in summary
+    assert "review_slides: 0" in summary
+    assert "fail_slides: 0" in summary
+    assert "visual review cannot begin until thumbnails/contact sheets are generated" in summary
 
 
 def test_backend_check_reports_missing_and_found_commands(monkeypatch) -> None:
@@ -206,6 +217,7 @@ def test_contact_sheet_reports_missing_pptx_gracefully(tmp_path: Path) -> None:
     summary = (output_dir / "summary.md").read_text(encoding="utf-8")
     assert "missing_pptx" in summary
     assert "Broadcast readiness remains false" in summary
+    assert "unchecked_slides: 0" in summary
 
 
 def test_contact_sheet_uses_mock_thumbnail_generator(tmp_path: Path) -> None:
