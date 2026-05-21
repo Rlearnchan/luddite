@@ -1,4 +1,4 @@
-# Current Product Direction after Milestone 1.39
+# Current Product Direction after Milestone 1.40
 
 Status date: 2026-05-21
 
@@ -77,6 +77,13 @@ path:
 - The local contact sheet backend is now ready with LibreOffice/soffice,
   `pdftoppm`, and Pillow. The current run generated thumbnail PNGs and
   contact sheet PNG/PDF files for all four target decks.
+- Milestone 1.40 adds `luddite summarize-pptx-contact-sheet-review` and
+  `make summarize-pptx-contact-sheet-review` to aggregate human-entered
+  contact sheet statuses, notes, fix requests, issue categories, and suggested
+  next owners.
+- Current manual review summary shows that human review has not started yet:
+  all 100 slides remain `unchecked`, with zero `ok`, `review`, `fail`, and
+  `fix_request` entries.
 - Contact sheet QA is review-only. It does not modify PPTX content, infer
   meaning, insert images, generate charts, call an LLM/API, or change
   readiness flags.
@@ -148,6 +155,7 @@ make prepare-anny-input-bundles
 make compare-slideability-visual-qa
 make render-pptx-contact-sheet
 make check-pptx-contact-sheet-backend
+make summarize-pptx-contact-sheet-review
 ```
 
 Current fixture inputs:
@@ -575,6 +583,9 @@ Current contact sheet outputs:
 ```text
 outputs/qa/pptx_contact_sheet/
 docs/reviews/pptx_contact_sheet_summary.md
+outputs/qa/pptx_contact_sheet/pptx_contact_sheet_review_summary.md
+outputs/qa/pptx_contact_sheet/pptx_contact_sheet_review_pack.md
+docs/reviews/pptx_contact_sheet_review_summary.md
 ```
 
 Current local summary:
@@ -594,6 +605,7 @@ ok_slides: 0
 review_slides: 0
 fail_slides: 0
 visual_review_blocked: false
+manual_review_status: manual review not started
 ```
 
 Decks covered:
@@ -622,6 +634,15 @@ Interpretation:
   `docs/runbooks/pptx_contact_sheet_backend.md`.
 - Manual review guidance now lives in
   `docs/reviews/pptx_contact_sheet_review_guide.md`.
+- Human review aggregation now lives in
+  `docs/reviews/pptx_contact_sheet_review_summary.md`, with the detailed
+  review/fail slide pack under
+  `outputs/qa/pptx_contact_sheet/pptx_contact_sheet_review_pack.md`.
+- Issue categories are assigned only from human-entered note/fix_request text,
+  not from automated OCR or visual judgment.
+- Suggested owners map review issues to `Piti layout`, `Anny slide spec`,
+  `Anny diagram generation`, `Anny storyline`, `source/evidence`,
+  `style/profile`, human editor follow-up, or manual review as appropriate.
 - No PPTX content is modified.
 - No LLM/API calls are made.
 - Broadcast readiness remains false.
@@ -630,14 +651,16 @@ Interpretation:
 
 1. Manually review the generated contact sheets and fill checklist statuses
    for slides that need readability/layout/broadcast/style attention.
-2. Calibrate the rule-based slideability heuristic around chart
+2. Re-run `make summarize-pptx-contact-sheet-review` after manual notes are
+   entered to collect review/fail slides and suggested next owners.
+3. Calibrate the rule-based slideability heuristic around chart
    underprediction and diagram-quality prediction, while keeping it review-only.
-3. Optionally add a more formal 슈카월드-style screen QA rubric after the first
+4. Optionally add a more formal 슈카월드-style screen QA rubric after the first
    human contact sheet pass.
-4. Optionally run one more live Anny direct confirmation pass before widening
+5. Optionally run one more live Anny direct confirmation pass before widening
    the case set.
-5. Keep using visual QA and comparison reports as warning-only review surfaces.
-6. Later: production agent/scheduler/Slack/Slides work after contracts and
+6. Keep using visual QA and comparison reports as warning-only review surfaces.
+7. Later: production agent/scheduler/Slack/Slides work after contracts and
    review workflow mature
 
 ## Out Of Scope For The Next Milestone

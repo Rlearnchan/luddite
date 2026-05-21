@@ -1,4 +1,4 @@
-# Codex Next Steps after Milestone 1.39
+# Codex Next Steps after Milestone 1.40
 
 ## 상태
 
@@ -891,17 +891,101 @@ docs/reviews/pptx_contact_sheet_review_guide.md
 - OCR, AI layout judgment, style scoring, LLM/API 호출은 없다.
 - production/broadcast readiness는 계속 false다.
 
+## Milestone 1.40 완료 상태
+
+Contact sheet manual review 결과를 모으는 요약 명령이 추가됐다.
+
+새 CLI:
+
+```text
+luddite summarize-pptx-contact-sheet-review
+```
+
+새 Make target:
+
+```text
+make summarize-pptx-contact-sheet-review
+```
+
+입력:
+
+```text
+outputs/qa/pptx_contact_sheet/*_contact_sheet.md
+```
+
+출력:
+
+```text
+outputs/qa/pptx_contact_sheet/pptx_contact_sheet_review_summary.md
+outputs/qa/pptx_contact_sheet/pptx_contact_sheet_review_pack.md
+docs/reviews/pptx_contact_sheet_review_summary.md
+```
+
+집계 항목:
+
+- total / unchecked / ok / review / fail slides
+- readability/layout/broadcast_fit/style_fit status count
+- fix_request count
+- deck별 status count
+- human note/fix_request 기반 issue category
+- issue category별 suggested owner
+
+Issue category -> owner mapping:
+
+```text
+copy_too_long -> Anny slide spec / screen copy
+layout_cluttered -> Piti layout
+diagram_too_generic -> Anny diagram generation
+chart_table_overloaded -> Piti chart/table template or Anny proof_object
+source_card_weak -> Anny source metadata / evidence title
+speaker_beat_unclear -> Anny storyline
+style_not_syukaworld -> style profile / Piti rendering
+needs_manual_asset -> human editor
+other -> manual review
+```
+
+현재 요약:
+
+```text
+report_count: 4
+total_slides: 100
+unchecked_slides: 100
+ok_slides: 0
+review_slides: 0
+fail_slides: 0
+fix_request_count: 0
+manual_review_status: manual review not started
+```
+
+Review pack:
+
+```text
+review_or_fail_slides: 0
+```
+
+해석:
+
+- 아직 사람이 contact sheet 상태/노트/fix_request를 채우지 않았다.
+- 모든 slide가 `unchecked`이므로 summary에 `manual review not started`가
+  명시된다.
+- note/fix_request가 비어 있으면 issue category를 자동으로 만들지 않는다.
+- 이 요약기는 human-entered review note를 정리할 뿐, OCR/AI 판단을 하지 않는다.
+- PPTX 내용 자동 수정, Piti 의미 재작성, LLM/API 호출은 없다.
+- production/broadcast readiness는 계속 false다.
+
 ## 다음 구현/평가 목표
 
 1. 사람이 contact sheet를 보고 checklist status와 fix request를 직접 채운다.
-2. 실제 리뷰 결과를 바탕으로 슈카월드식 화면 QA rubric을 더 구체화한다.
-3. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
+2. `make summarize-pptx-contact-sheet-review`를 다시 실행해 review/fail
+   slide와 suggested owner를 수집한다.
+3. 실제 리뷰 결과를 바탕으로 슈카월드식 화면 QA rubric을 더 구체화한다.
+4. chart underprediction과 diagram quality prediction을 중심으로 heuristic을
    calibration한다.
-4. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
+5. 필요하면 현재 prompt로 live confirmation pass를 한 번 더 돌린 뒤 case set을
    넓힌다.
-5. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
+6. visual QA와 Anny direct comparison report는 계속 warning-only review surface로
    유지한다.
-6. 그 이후 production agent/scheduler/Slack/Slides 검토
+7. 그 이후 production agent/scheduler/Slack/Slides 검토
 
 ## 아직 하지 말 것
 
@@ -931,6 +1015,7 @@ docs/reviews/pptx_contact_sheet_review_guide.md
 - `make prepare-anny-input-bundles` 통과
 - `make compare-slideability-visual-qa` 통과
 - `make render-pptx-contact-sheet` 통과
+- `make summarize-pptx-contact-sheet-review` 통과
 - `make check-pptx-contact-sheet-backend` 통과
 - 가능하면 `make render-daily-digest` 통과
 - 기존 slide spec 렌더링 동작을 깨지 않는다.

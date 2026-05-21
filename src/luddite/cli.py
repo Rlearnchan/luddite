@@ -49,6 +49,9 @@ from luddite.analysis.compare_slideability_visual_qa import (
 )
 from luddite.analysis.extract_pptx_style import app as extract_pptx_style_app
 from luddite.analysis.render_pptx_contact_sheet import app as render_pptx_contact_sheet_app
+from luddite.analysis.summarize_pptx_contact_sheet_review import (
+    app as summarize_pptx_contact_sheet_review_app,
+)
 from luddite.collectors.manual_article_importer import app as import_articles_app
 from luddite.collectors.rss_item_fetcher import app as fetch_rss_articles_app
 from luddite.collectors.rss_probe import app as probe_rss_sources_app
@@ -100,6 +103,10 @@ app.add_typer(render_piti_slide_spec_pptx_app, name="render-piti-slide-spec-pptx
 app.add_typer(render_piti_visual_qa_app, name="render-piti-visual-qa")
 app.add_typer(compare_slideability_visual_qa_app, name="compare-slideability-visual-qa")
 app.add_typer(render_pptx_contact_sheet_app, name="render-pptx-contact-sheet")
+app.add_typer(
+    summarize_pptx_contact_sheet_review_app,
+    name="summarize-pptx-contact-sheet-review",
+)
 app.add_typer(extract_pptx_style_app, name="extract-pptx-style")
 app.add_typer(render_daily_digest_app, name="render-daily-digest")
 app.add_typer(jibi_digest_app, name="jibi-digest")

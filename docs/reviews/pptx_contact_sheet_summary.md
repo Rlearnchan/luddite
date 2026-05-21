@@ -1,6 +1,6 @@
 # PPTX Contact Sheet QA Summary
 
-- generated_at: 2026-05-21T00:13:01.826627+00:00
+- generated_at: 2026-05-21T00:21:12.926334+00:00
 - deck_count: 4
 - slide_count: 100
 - generated_contact_sheets: 4
