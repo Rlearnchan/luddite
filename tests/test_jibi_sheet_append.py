@@ -9,6 +9,15 @@ from luddite.agents.jibi.append_to_sheet import (
 )
 from luddite.integrations.google_sheets import AppendResult
 
+SLIDEABILITY_COLUMNS = {
+    "slideability_score",
+    "slideability",
+    "first_slide_idea",
+    "likely_proof_object_types",
+    "visual_risks",
+}
+OLD_SHEET_COLUMNS = [column for column in SHEET_COLUMNS if column not in SLIDEABILITY_COLUMNS]
+
 
 class FakeGoogleSheetsClient:
     def __init__(self, *, sheet_id=None, values=None):
@@ -38,7 +47,7 @@ class FakeGoogleSheetsClient:
         values: list[list[str]],
     ) -> None:
         self.header_updates.append((start_cell, values))
-        self.values = [values[0], *self.values]
+        self.values = [values[0], *self.values[1:]] if self.values else [values[0]]
 
     def append_rows(
         self,
@@ -69,6 +78,14 @@ def _write_preview(path, rows):
             payload = {column: "" for column in SHEET_COLUMNS}
             payload.update(row)
             writer.writerow(payload)
+
+
+def _sheet_values(row, columns=None):
+    output_columns = columns or SHEET_COLUMNS
+    return [
+        {**{column: "" for column in output_columns}, **row}.get(column, "")
+        for column in output_columns
+    ]
 
 
 def _row(title, duplicate_key, source_url):
@@ -120,6 +137,87 @@ def test_append_creates_sheet_header_and_appends_rows(tmp_path) -> None:
     assert "Rows appended: 1" in report_path.read_text(encoding="utf-8")
 
 
+def test_real_append_upgrades_old_header(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
+    existing_row = _row("기존", "old-key", "https://example.com/old")
+    client = FakeGoogleSheetsClient(
+        sheet_id=99,
+        values=[OLD_SHEET_COLUMNS, _sheet_values(existing_row, OLD_SHEET_COLUMNS)],
+    )
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    assert client.header_updates == [("A1", [SHEET_COLUMNS])]
+    assert client.values[0] == SHEET_COLUMNS
+    assert len(client.appended) == 1
+    assert report.header_created is True
+    assert report.rows_appended == 1
+
+
+def test_dry_run_reports_old_header_without_updating(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[OLD_SHEET_COLUMNS])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=True,
+        ),
+        client=client,
+    )
+
+    assert client.header_updates == []
+    assert client.values[0] == OLD_SHEET_COLUMNS
+    assert client.appended == []
+    assert report.header_created is True
+    assert report.rows_appended == 1
+
+
+def test_slideability_columns_survive_append(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(
+        preview,
+        [
+            {
+                **_row("슬라이드 좋은 후보", "visual", "https://example.com/visual"),
+                "slideability_score": "4",
+                "slideability": "high / chart+map",
+                "first_slide_idea": "지도 위에 비용 역전 한 장",
+                "likely_proof_object_types": "chart | map",
+                "visual_risks": "source image rights | overclaim",
+            }
+        ],
+    )
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[SHEET_COLUMNS])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    appended = client.appended[0]
+    assert appended[SHEET_COLUMNS.index("slideability_score")] == "4"
+    assert appended[SHEET_COLUMNS.index("slideability")] == "high / chart+map"
+    assert appended[SHEET_COLUMNS.index("first_slide_idea")] == "지도 위에 비용 역전 한 장"
+    assert appended[SHEET_COLUMNS.index("likely_proof_object_types")] == "chart | map"
+    assert appended[SHEET_COLUMNS.index("visual_risks")] == "source image rights | overclaim"
+    assert report.rows_appended == 1
+
+
 def test_append_skips_duplicate_key_and_source_url(tmp_path) -> None:
     preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
     _write_preview(
@@ -132,8 +230,8 @@ def test_append_skips_duplicate_key_and_source_url(tmp_path) -> None:
     )
     existing = [
         SHEET_COLUMNS,
-        _row("기존", "dupe-key", "https://example.com/old").values(),
-        _row("기존 URL", "old-key", "https://example.com/dupe-url").values(),
+        _sheet_values(_row("기존", "dupe-key", "https://example.com/old")),
+        _sheet_values(_row("기존 URL", "old-key", "https://example.com/dupe-url")),
     ]
     client = FakeGoogleSheetsClient(sheet_id=99, values=[list(row) for row in existing])
 

@@ -1,7 +1,8 @@
 # Google Sheet `jibi 후보` Schema
 
 작성일: 2026-05-17  
-상태: v0.9.3 draft
+업데이트: 2026-05-22  
+상태: Jibi MVP staging schema
 
 ## 1. 설계 변경
 
@@ -65,6 +66,11 @@ Luddite 후보
 | `why_interesting` | text | 2~3줄 설명 |
 | `possible_expansions` | text | bullet 또는 `;` 구분 |
 | `evidence_needed` | text | 추가 자료 |
+| `slideability_score` | number/string | 첫 화면/증거물로 보여주기 쉬운 정도 |
+| `slideability` | string | visualizability와 대표 proof object 요약 |
+| `first_slide_idea` | text | 첫 장면 아이디어 |
+| `likely_proof_object_types` | text | diagram/chart/source_card 등 |
+| `visual_risks` | text | 시각화 또는 출처 리스크 |
 | `중복후보` | string | duplicate_of candidate id |
 | `reviewer` | string | 검토자 |
 | `review_result` | string | blank/keep/promote/etc |

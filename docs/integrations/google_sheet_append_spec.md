@@ -179,6 +179,11 @@ risk_flags
 why_interesting
 possible_expansions
 evidence_needed
+slideability_score
+slideability
+first_slide_idea
+likely_proof_object_types
+visual_risks
 중복후보
 reviewer
 review_result

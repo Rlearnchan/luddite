@@ -188,7 +188,7 @@ class GoogleSheetsApiClient:
 
 
 def _parse_updated_range(value: str) -> AppendResult:
-    # Example: "'jibi 후보'!A2:Y9"
+    # Example: "'jibi 후보'!A2:AD9"
     if "!" not in value:
         return AppendResult(start_row=None, end_row=None)
     cell_range = value.split("!", 1)[1]

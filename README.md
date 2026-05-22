@@ -11,6 +11,10 @@ corpus files are kept local and ignored by git by default.
 The first usable product target is not automatic PPT production. It is a
 research topic selection assistant.
 
+As of 2026-05-22, the next implementation focus is the Jibi MVP sheet-staging
+workflow and daily operator runbook. Production Anny/Piti agents and broadcast
+readiness remain out of scope.
+
 Short-term priorities:
 
 1. `jibi` Daily Digest MVP
@@ -101,6 +105,7 @@ make normalize-candidates
 make score-candidates
 make render-daily-digest
 make jibi-digest
+make jibi-mvp-rss-dry-run
 make append-jibi-sheet
 make probe-rss-sources
 ```
@@ -118,8 +123,9 @@ outputs/reports/parser_smoke_report.md
 
 ## jibi Daily Digest MVP
 
-Milestone 0.9 starts with local/manual article input only. It does not call an
-LLM, fetch RSS continuously, append to Google Sheets, or post to Slack.
+The current MVP starts with local/manual article input and safe one-shot RSS
+dry-runs. It does not call an LLM, fetch RSS continuously, perform real sheet
+append by default, or post to Slack.
 
 Sample input:
 
@@ -141,6 +147,12 @@ Run the sample pipeline:
 
 ```bash
 make jibi-digest
+```
+
+Run one-shot RSS ingest through sheet dry-run:
+
+```bash
+make jibi-mvp-rss-dry-run
 ```
 
 Dry-run the Google Sheet `jibi 후보` append from the latest preview CSV:

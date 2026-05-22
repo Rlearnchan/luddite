@@ -43,6 +43,11 @@ SHEET_COLUMNS = [
     "why_interesting",
     "possible_expansions",
     "evidence_needed",
+    "slideability_score",
+    "slideability",
+    "first_slide_idea",
+    "likely_proof_object_types",
+    "visual_risks",
     "중복후보",
     "reviewer",
     "review_result",
@@ -302,7 +307,7 @@ def append_jibi_sheet(
                 "A1",
                 [SHEET_COLUMNS],
             )
-            existing_values = [SHEET_COLUMNS, *existing_values]
+            existing_values = [SHEET_COLUMNS, *existing_values[1:]]
 
     duplicate_keys, source_urls = _existing_duplicate_values(existing_values)
     rows_to_append: list[list[str]] = []
