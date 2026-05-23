@@ -302,6 +302,9 @@ def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) 
     )
 
     report = report_path.read_text(encoding="utf-8")
+    assert "## Operator Summary" in report
+    assert "- run_health:" in report
+    assert "- do_not_change_thresholds_yet: true" in report
     assert "## Candidate Funnel" in report
     assert "- raw_candidates: 37" in report
     assert "- stale_candidates: 30" in report
@@ -313,6 +316,8 @@ def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) 
     assert "## Top Gate Reason Distribution" in report
     assert "excluded_quality_flags=stale_item: 30" in report
     assert "generic_why_for_unspecific_seed_type" in report
+    assert "## What-if Gate Simulation" in report
+    assert "allow_high_specificity_generic_why" in report
     assert "## Source Survival Table" in report
     assert "source_all_stale" in report
     assert "source_zero_survivors" in report
@@ -320,12 +325,173 @@ def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) 
     assert "| NPR | keep | has rendered top candidates |" in report
     assert "| BBC News | review | source_all_stale" in report
     assert "| Empty Source | manual_only | many empty summaries" in report
+    assert "## Source Allowlist Review Queue" in report
+    assert "review_feed_freshness" in report
     assert "## Near Miss Review Queue" in report
     assert "Stale but high scoring infrastructure story" in report
     assert "reason=excluded_quality_flags=stale_item" in report
     assert "## Generic Why / Specificity Examples" in report
     assert "Google spends $2B" in report
     assert "suggested_action=improve_template" in report
+    assert "## Generic Why Template Improvement Queue" in report
+    assert "number_tension_bridge" in report
+
+
+def test_operator_summary_primary_bottlenecks(tmp_path) -> None:
+    stale_report = tmp_path / "stale.md"
+    stale_candidates = [
+        {
+            "candidate_id": f"stale_{index}",
+            "title": f"Stale editorial story {index}",
+            "source": "Old Feed",
+            "seed_type": "other",
+            "quality_flags": ["stale_item"],
+            "freshness_status": "stale",
+            "recommended_action": "keep_for_later",
+            "final_grade": "B",
+            "scores": {"total_score": 60 - index, "broadcast_potential_proxy": 3},
+        }
+        for index in range(6)
+    ]
+    write_quality_report(stale_report, stale_candidates, [])
+    assert "- primary_bottleneck: stale_sources" in stale_report.read_text(encoding="utf-8")
+
+    generic_report = tmp_path / "generic.md"
+    top = {
+        "candidate_id": "top",
+        "title": "Specific top",
+        "source": "Mixed Source",
+        "seed_type": "ai_knowledge_institution",
+        "quality_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 4},
+    }
+    generic_candidates = [
+        {
+            "candidate_id": f"generic_{index}",
+            "title": f"Generic why candidate {index}",
+            "source": "Mixed Source",
+            "seed_type": "other",
+            "quality_flags": [],
+            "why_interesting": "사건 자체보다 배경, 이해관계자 연결고리가 있는지 확인",
+            "story_specificity": {
+                "level": "high",
+                "score": 0.8,
+                "signals": ["has_number"],
+                "generic_why_detected": True,
+            },
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 70 - index, "broadcast_potential_proxy": 3},
+        }
+        for index in range(4)
+    ]
+    write_quality_report(generic_report, [top, *generic_candidates], [top])
+    assert "- primary_bottleneck: generic_why" in generic_report.read_text(encoding="utf-8")
+
+    weak_report = tmp_path / "weak.md"
+    weak_candidates = [
+        {
+            "candidate_id": f"weak_{index}",
+            "title": f"Weak item {index}",
+            "source": "Mixed Source",
+            "quality_flags": [],
+            "recommended_action": "reject",
+            "final_grade": "D",
+            "scores": {"total_score": 20 - index, "broadcast_potential_proxy": 1},
+        }
+        for index in range(8)
+    ]
+    write_quality_report(weak_report, [top, *weak_candidates], [top])
+    assert "- primary_bottleneck: low_raw_quality" in weak_report.read_text(encoding="utf-8")
+
+    ok_report = tmp_path / "ok.md"
+    ok_candidates = [
+        {
+            "candidate_id": f"ok_{index}",
+            "title": f"Good candidate {index}",
+            "source": f"Source {index}",
+            "quality_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 80 - index, "broadcast_potential_proxy": 4},
+        }
+        for index in range(6)
+    ]
+    write_quality_report(ok_report, ok_candidates, ok_candidates)
+    ok_text = ok_report.read_text(encoding="utf-8")
+    assert "- run_health: ok" in ok_text
+    assert "- recommended_operator_action: ok_to_append_if_digest_looks_good" in ok_text
+
+
+def test_what_if_gate_simulation_is_report_only(tmp_path) -> None:
+    report_path = tmp_path / "what_if.md"
+    current_top = {
+        "candidate_id": "current",
+        "title": "Current top",
+        "source": "BBC News",
+        "seed_type": "ai_knowledge_institution",
+        "quality_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+    high_specificity_generic = {
+        "candidate_id": "generic",
+        "title": "High specificity generic why story",
+        "source": "NPR",
+        "seed_type": "other",
+        "quality_flags": [],
+        "why_interesting": "사건 자체보다 배경, 이해관계자 연결고리가 있는지 확인",
+        "story_specificity": {
+            "score": 0.83,
+            "level": "high",
+            "signals": ["has_named_actor", "has_number", "has_mechanism"],
+            "generic_why_detected": True,
+        },
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 65, "broadcast_potential_proxy": 4},
+    }
+    stale_sport = {
+        "candidate_id": "stale_sport",
+        "title": "Stale sports editorial category",
+        "source": "Sports Feed",
+        "seed_type": "ai_knowledge_institution",
+        "quality_flags": ["stale_item", "sports_only"],
+        "freshness_status": "stale",
+        "story_specificity": {"score": 0.8, "level": "high", "signals": ["has_number"]},
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 64, "broadcast_potential_proxy": 4},
+    }
+    low_score = {
+        "candidate_id": "low_score",
+        "title": "Low score but viable",
+        "source": "BBC News",
+        "seed_type": "ai_knowledge_institution",
+        "quality_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "C",
+        "scores": {"total_score": 32, "broadcast_potential_proxy": 3},
+    }
+    candidates = [current_top, high_specificity_generic, stale_sport, low_score]
+
+    assert [item["candidate_id"] for item in top_candidates(candidates)] == ["current"]
+
+    write_quality_report(report_path, candidates, [current_top])
+    report = report_path.read_text(encoding="utf-8")
+    high_specificity_line = next(
+        line for line in report.splitlines() if line.startswith("| allow_high_specificity")
+    )
+    stale_line = next(
+        line for line in report.splitlines() if line.startswith("| allow_stale_editorial")
+    )
+    lower_line = next(line for line in report.splitlines() if line.startswith("| lower_min_score"))
+    assert "High specificity generic why story" in high_specificity_line
+    assert "Stale sports editorial category" not in stale_line
+    assert "Low score but viable" in lower_line
 
 
 def test_top_candidates_excludes_single_company_thin_evidence() -> None:

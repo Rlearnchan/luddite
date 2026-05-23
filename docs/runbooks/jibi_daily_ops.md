@@ -103,15 +103,22 @@ because their published date is missing.
 
 Read the calibration sections in this order:
 
-1. `Candidate Funnel`: find the biggest drop before Top Candidates.
-2. `Top Gate Reason Distribution`: compare all non-top candidates with the top
+1. `Operator Summary`: read the run health, primary bottleneck, and suggested
+   operator action first.
+2. `Candidate Funnel`: find the biggest drop before Top Candidates.
+3. `Top Gate Reason Distribution`: compare all non-top candidates with the top
    20 near misses by score.
-3. `Calibration Summary`: use the likely bottleneck labels as a starting
-   diagnosis, not an automatic threshold change.
-4. `Source Recommendations`: report-only hints for source allowlist review;
-   this command never edits `config/rss_collection_allowlist.yaml`.
-5. `Generic Why / Specificity Examples`: find candidates where the article is
-   concrete but the generated `why_interesting` is still too generic.
+4. `What-if Gate Simulation`: compare report-only scenarios; runtime gates are
+   unchanged.
+5. `Source Allowlist Review Queue`: review suggested source actions; this
+   command never edits `config/rss_collection_allowlist.yaml`.
+6. `Generic Why Template Improvement Queue`: find concrete stories blocked by
+   generic `why_interesting`.
+7. `Near Miss Review Queue`: inspect high-score candidates before any append.
+
+Do not change thresholds based on one run. A low Top count can still be
+acceptable when the near-miss queue shows weak, stale, duplicate, or noisy
+source material.
 
 ## Google Sheet Dry-run
 

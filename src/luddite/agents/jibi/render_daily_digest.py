@@ -69,6 +69,19 @@ def top_candidates(
     min_score: float = DEFAULT_TOP_MIN_SCORE,
 ) -> list[dict[str, Any]]:
     eligible = _top_eligible_candidates(candidates, min_score=min_score)
+    return _select_top_from_eligible(
+        eligible,
+        limit=limit,
+        max_per_source=max_per_source,
+    )
+
+
+def _select_top_from_eligible(
+    eligible: list[dict[str, Any]],
+    *,
+    limit: int = 10,
+    max_per_source: int = 3,
+) -> list[dict[str, Any]]:
     ranked = sorted(
         eligible,
         key=lambda item: (
@@ -94,11 +107,16 @@ def _passes_top_quality_gate(candidate: dict[str, Any]) -> bool:
     return not _top_quality_gate_failures(candidate)
 
 
-def _top_quality_gate_failures(candidate: dict[str, Any]) -> list[str]:
+def _top_quality_gate_failures(
+    candidate: dict[str, Any],
+    *,
+    ignore_excluded_quality_flags: set[str] | None = None,
+) -> list[str]:
     failures: list[str] = []
     flags = set(candidate.get("quality_flags", []))
     failure_modes = set(candidate.get("failure_modes", []))
-    excluded_flags = sorted(TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags))
+    ignored_flags = ignore_excluded_quality_flags or set()
+    excluded_flags = sorted(TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags - ignored_flags))
     if excluded_flags:
         failures.append(f"excluded_quality_flags={','.join(excluded_flags)}")
     if candidate.get("near_duplicate_role") in {"duplicate", "supporting_source"}:
@@ -445,6 +463,13 @@ def write_quality_report(
         max_per_source=max_per_source,
         min_score=min_score,
     )
+    what_if_rows = _what_if_gate_simulation(
+        candidates,
+        top,
+        limit=limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
     gate_reason_distribution = _top_gate_reason_distribution(
         candidates,
         top_ids,
@@ -462,12 +487,22 @@ def write_quality_report(
         quality_flagged_count=len(quality_flagged),
         duplicate_grouped_count=len(duplicate_grouped),
     )
-    source_recommendation_rows = _source_recommendation_table(
+    source_recommendation_records = _source_recommendation_records(
         raw_source_counts=raw_source_counts,
         source_counts=source_counts,
         top_eligible_source_counts=top_eligible_source_counts,
         quality_flags_by_source=quality_flags_by_source,
         source_warning_codes=source_warning_codes,
+    )
+    source_recommendation_rows = _source_recommendation_table(
+        source_recommendation_records,
+    )
+    source_allowlist_review_rows = _source_allowlist_review_queue(
+        source_recommendation_records,
+        raw_source_counts=raw_source_counts,
+        source_counts=source_counts,
+        top_eligible_source_counts=top_eligible_source_counts,
+        quality_flags_by_source=quality_flags_by_source,
     )
     generic_specificity_examples = _generic_specificity_examples(
         candidates,
@@ -476,6 +511,23 @@ def write_quality_report(
         limit=limit,
         max_per_source=max_per_source,
         min_score=min_score,
+    )
+    generic_template_queue = _generic_template_improvement_queue(
+        candidates,
+        top_ids,
+        top,
+        limit=limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
+    operator_summary = _operator_summary(
+        candidates=candidates,
+        top=top,
+        top_eligible_count=len(top_eligible),
+        quality_flagged_count=len(quality_flagged),
+        duplicate_grouped_count=len(duplicate_grouped),
+        source_warning_codes=source_warning_codes,
+        gate_reason_distribution=gate_reason_distribution,
     )
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
@@ -506,6 +558,10 @@ def write_quality_report(
         f"- quality-gated candidates: {len(quality_gated)}",
         f"- single_company_frame count: {single_company_count}",
         f"- political_sensitivity count: {political_count}",
+        "",
+        "## Operator Summary",
+        "",
+        *operator_summary,
         "",
         "## Candidate Funnel",
         "",
@@ -543,6 +599,12 @@ def write_quality_report(
             _reason_distribution_lines(gate_reason_distribution["top20"])
             or ["- none"]
         ),
+        "",
+        "## What-if Gate Simulation",
+        "",
+        "| scenario | top_eligible_count | projected_top_count | added_candidate_examples |",
+        "| --- | ---: | ---: | --- |",
+        *what_if_rows,
         "",
         "## Slideability Summary",
         "",
@@ -594,6 +656,15 @@ def write_quality_report(
         "| source | recommendation | reason |",
         "| --- | --- | --- |",
         *source_recommendation_rows,
+        "",
+        "## Source Allowlist Review Queue",
+        "",
+        (
+            "| source | recommendation | reason | dominant_flags | raw_count | "
+            "top_eligible_count | top_count | suggested_manual_action |"
+        ),
+        "| --- | --- | --- | --- | ---: | ---: | ---: | --- |",
+        *source_allowlist_review_rows,
         "",
         "## Source Quality Flags",
         "",
@@ -671,6 +742,10 @@ def write_quality_report(
             )
             for item in removed_from_top
         ],
+        "",
+        "## Generic Why Template Improvement Queue",
+        "",
+        *generic_template_queue,
         "",
         "## Near Miss Review Queue",
         "",
@@ -898,15 +973,107 @@ def _calibration_summary(
     ]
 
 
-def _source_recommendation_table(
+def _operator_summary(
+    *,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    top_eligible_count: int,
+    quality_flagged_count: int,
+    duplicate_grouped_count: int,
+    source_warning_codes: dict[str, list[str]],
+    gate_reason_distribution: dict[str, Counter[str]],
+) -> list[str]:
+    raw_count = len(candidates)
+    top20 = gate_reason_distribution.get("top20", Counter())
+    all_reasons = gate_reason_distribution.get("all", Counter())
+    warning_values = [warning for warnings in source_warning_codes.values() for warning in warnings]
+    source_quality_pressure = bool(
+        raw_count
+        and (
+            quality_flagged_count / raw_count >= 0.5
+            or warning_values.count("source_zero_survivors")
+            >= max(1, len(source_warning_codes) // 2)
+        )
+    )
+    generic_pressure = top20.get("generic_why_for_unspecific_seed_type", 0) >= 3
+    stale_pressure = bool(
+        raw_count
+        and (
+            _freshness_count(candidates, "stale") / raw_count >= 0.4
+            or "source_all_stale" in warning_values
+        )
+    )
+    duplicate_pressure = bool(
+        sum(
+            count
+            for reason, count in all_reasons.items()
+            if reason.startswith("near_duplicate_role")
+        )
+        >= 3
+        or (raw_count and duplicate_grouped_count / raw_count >= 0.2)
+    )
+    weak_quality_reasons = sum(
+        count
+        for reason, count in top20.items()
+        if reason.startswith("action_not_top")
+        or reason.startswith("score_below")
+        or reason == "final_grade=D"
+    )
+    low_raw_quality = bool(top20 and weak_quality_reasons / sum(top20.values()) >= 0.4)
+    if len(top) >= 5 and top_eligible_count >= len(top):
+        primary_bottleneck = "no_clear_bottleneck"
+    elif stale_pressure:
+        primary_bottleneck = "stale_sources"
+    elif source_quality_pressure:
+        primary_bottleneck = "source_quality"
+    elif duplicate_pressure:
+        primary_bottleneck = "duplicate_collapse"
+    elif generic_pressure:
+        primary_bottleneck = "generic_why"
+    elif low_raw_quality:
+        primary_bottleneck = "low_raw_quality"
+    else:
+        primary_bottleneck = "no_clear_bottleneck"
+    run_health = {
+        "source_quality": "source_quality_issue",
+        "stale_sources": "review",
+        "duplicate_collapse": "gate_pressure",
+        "generic_why": "gate_pressure",
+        "low_raw_quality": "weak_pool",
+        "no_clear_bottleneck": "ok" if len(top) >= 5 else "review",
+    }[primary_bottleneck]
+    recommended_action = {
+        "source_quality": "review_source_allowlist_candidates",
+        "stale_sources": "review_source_allowlist_candidates",
+        "duplicate_collapse": "review_near_miss_queue_before_append",
+        "generic_why": "review_generic_why_template_queue",
+        "low_raw_quality": "manual_seed_input_needed",
+        "no_clear_bottleneck": (
+            "ok_to_append_if_digest_looks_good"
+            if run_health == "ok"
+            else "review_near_miss_queue_before_append"
+        ),
+    }[primary_bottleneck]
+    return [
+        f"- run_health: {run_health}",
+        f"- primary_bottleneck: {primary_bottleneck}",
+        f"- rendered_top_candidates: {len(top)}",
+        f"- top_eligible_candidates: {top_eligible_count}",
+        f"- raw_candidates: {raw_count}",
+        f"- recommended_operator_action: {recommended_action}",
+        "- do_not_change_thresholds_yet: true",
+    ]
+
+
+def _source_recommendation_records(
     *,
     raw_source_counts: Counter[str],
     source_counts: Counter[str],
     top_eligible_source_counts: Counter[str],
     quality_flags_by_source: dict[str, Counter[str]],
     source_warning_codes: dict[str, list[str]],
-) -> list[str]:
-    rows: list[str] = []
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
     for source, raw_count in raw_source_counts.most_common():
         recommendation, reason = _source_recommendation(
             raw_count=raw_count,
@@ -915,8 +1082,24 @@ def _source_recommendation_table(
             quality_flags=quality_flags_by_source.get(source, Counter()),
             warnings=source_warning_codes.get(source, []),
         )
+        records.append(
+            {
+                "source": source,
+                "recommendation": recommendation,
+                "reason": reason,
+            }
+        )
+    return records
+
+
+def _source_recommendation_table(records: list[dict[str, Any]]) -> list[str]:
+    rows: list[str] = []
+    for record in records:
         rows.append(
-            f"| {_table_cell(source)} | {recommendation} | {_table_cell(reason)} |"
+            "| "
+            f"{_table_cell(record['source'])} | "
+            f"{record['recommendation']} | "
+            f"{_table_cell(record['reason'])} |"
         )
     return rows or ["| none | review | no source candidates |"]
 
@@ -957,6 +1140,162 @@ def _source_recommendation(
     if raw_count >= 5 and "source_zero_survivors" in warnings:
         return "hold_daily_fetch", "source_zero_survivors"
     return "review", "insufficient survival signal"
+
+
+def _source_manual_action(recommendation: str, reason: str) -> str:
+    if recommendation == "keep":
+        return "keep_enabled"
+    if recommendation == "hold_daily_fetch":
+        return "consider_hold_daily_fetch"
+    if recommendation == "evidence_only":
+        return "use_as_manual_evidence_source"
+    if recommendation == "manual_only":
+        return "manual_curation_only"
+    if "stale" in reason or "freshness" in reason:
+        return "review_feed_freshness"
+    return "consider_hold_daily_fetch"
+
+
+def _source_allowlist_review_queue(
+    records: list[dict[str, Any]],
+    *,
+    raw_source_counts: Counter[str],
+    source_counts: Counter[str],
+    top_eligible_source_counts: Counter[str],
+    quality_flags_by_source: dict[str, Counter[str]],
+) -> list[str]:
+    rows: list[str] = []
+    for record in records:
+        source = str(record["source"])
+        dominant_flags = ", ".join(
+            f"{flag}={count}"
+            for flag, count in quality_flags_by_source.get(source, Counter()).most_common(3)
+        ) or "none"
+        recommendation = str(record["recommendation"])
+        reason = str(record["reason"])
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(source),
+                    recommendation,
+                    _table_cell(reason),
+                    _table_cell(dominant_flags),
+                    str(raw_source_counts.get(source, 0)),
+                    str(top_eligible_source_counts.get(source, 0)),
+                    str(source_counts.get(source, 0)),
+                    _source_manual_action(recommendation, reason),
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | review | no source candidates | none | 0 | 0 | 0 | keep_enabled |"]
+
+
+def _passes_top_gate_for_scenario(candidate: dict[str, Any], scenario: str) -> bool:
+    if scenario == "allow_high_specificity_generic_why":
+        failures = _top_quality_gate_failures(candidate)
+        specificity = _story_specificity(candidate)
+        flags = set(candidate.get("quality_flags") or [])
+        return (
+            failures == ["generic_why_for_unspecific_seed_type"]
+            and specificity.get("level") == "high"
+            and not TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags)
+        ) or not failures
+    if scenario == "allow_stale_editorial_categories":
+        specificity = _story_specificity(candidate)
+        seed_type = str(candidate.get("seed_type") or candidate.get("editorial_category") or "")
+        can_ignore_stale = (
+            "stale_item" in set(candidate.get("quality_flags") or [])
+            and seed_type in SPECIFIC_TOP_SEED_TYPES
+            and specificity.get("level") in {"medium", "high"}
+        )
+        ignored = {"stale_item"} if can_ignore_stale else set()
+        return not _top_quality_gate_failures(
+            candidate,
+            ignore_excluded_quality_flags=ignored,
+        )
+    return _passes_top_quality_gate(candidate)
+
+
+def _scenario_top_eligible_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    scenario: str,
+    min_score: float,
+) -> list[dict[str, Any]]:
+    scenario_min_score = 30 if scenario == "lower_min_score_30" else min_score
+    return [
+        candidate
+        for candidate in candidates
+        if candidate.get("recommended_action", "keep_for_later") in TOP_ACTIONS
+        and candidate.get("final_grade") != "D"
+        and _total_score(candidate) >= scenario_min_score
+        and _passes_top_gate_for_scenario(candidate, scenario)
+    ]
+
+
+def _format_candidate_examples(candidates: list[dict[str, Any]], limit: int = 3) -> str:
+    examples = []
+    for item in candidates[:limit]:
+        examples.append(
+            f"{item.get('title')} ({item.get('source', 'unknown')}, {_total_score(item):g})"
+        )
+    return "; ".join(examples) if examples else "none"
+
+
+def _what_if_gate_simulation(
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    *,
+    limit: int,
+    max_per_source: int,
+    min_score: float,
+) -> list[str]:
+    scenarios = [
+        "current",
+        "allow_high_specificity_generic_why",
+        "allow_stale_editorial_categories",
+        "lower_min_score_30",
+    ]
+    current_eligible = _scenario_top_eligible_candidates(
+        candidates,
+        scenario="current",
+        min_score=min_score,
+    )
+    current_ids = {str(item.get("candidate_id")) for item in current_eligible}
+    rows: list[str] = []
+    for scenario in scenarios:
+        eligible = _scenario_top_eligible_candidates(
+            candidates,
+            scenario=scenario,
+            min_score=min_score,
+        )
+        projected_top = _select_top_from_eligible(
+            eligible,
+            limit=limit,
+            max_per_source=max_per_source,
+        )
+        added = sorted(
+            [item for item in eligible if str(item.get("candidate_id")) not in current_ids],
+            key=_total_score,
+            reverse=True,
+        )
+        if scenario == "current":
+            added = []
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    scenario,
+                    str(len(eligible)),
+                    str(len(projected_top)),
+                    _table_cell(_format_candidate_examples(added)),
+                ]
+            )
+            + " |"
+        )
+    return rows
 
 
 def _story_specificity(candidate: dict[str, Any]) -> dict[str, Any]:
@@ -1024,6 +1363,84 @@ def _generic_specificity_examples(
             f"reason={_format_list(item.get('_top_exclusion_reasons') or [])}"
         )
     return lines
+
+
+def _template_direction(candidate: dict[str, Any]) -> str:
+    specificity = _story_specificity(candidate)
+    signals = set(specificity.get("signals") or [])
+    if specificity.get("level") == "low":
+        return "not_enough_specificity_keep_gate"
+    if "has_number" in signals and ("has_tension" in signals or "has_mechanism" in signals):
+        return "number_tension_bridge"
+    if "has_named_actor" in signals and "has_mechanism" in signals:
+        return "actor_mechanism_result"
+    if "has_korea_bridge" in signals:
+        return "korea_bridge_needed"
+    if "has_visual_hook" in signals:
+        return "visual_hook_first"
+    return "actor_mechanism_result" if "has_named_actor" in signals else "manual_review"
+
+
+def _generic_template_improvement_queue(
+    candidates: list[dict[str, Any]],
+    top_ids: set[str],
+    top: list[dict[str, Any]],
+    *,
+    limit: int,
+    max_per_source: int,
+    min_score: float,
+) -> list[str]:
+    rows = [
+        (
+            "| title | source | score | story_specificity | why_interesting | "
+            "suggested_template_direction |"
+        ),
+        "| --- | --- | ---: | --- | --- | --- |",
+    ]
+    top_source_counts = Counter(str(item.get("source") or "unknown") for item in top)
+    queued: list[dict[str, Any]] = []
+    for item in sorted(candidates, key=_total_score, reverse=True):
+        if str(item.get("candidate_id")) in top_ids:
+            continue
+        reasons = _top_exclusion_reasons(
+            item,
+            top_ids,
+            top_source_counts,
+            rendered_top_count=len(top),
+            limit=limit,
+            max_per_source=max_per_source,
+            min_score=min_score,
+        )
+        specificity = _story_specificity(item)
+        if (
+            "generic_why_for_unspecific_seed_type" in reasons
+            and specificity.get("level") in {"medium", "high"}
+        ):
+            queued.append(item)
+        if len(queued) >= 10:
+            break
+    for item in queued:
+        specificity = _story_specificity(item)
+        specificity_text = (
+            f"{specificity.get('level')}:{_format_list(specificity.get('signals') or [])}"
+        )
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(item.get("title", "")),
+                    _table_cell(item.get("source", "unknown")),
+                    f"{_total_score(item):g}",
+                    _table_cell(specificity_text),
+                    _table_cell(item.get("why_interesting", "")),
+                    _template_direction(item),
+                ]
+            )
+            + " |"
+        )
+    if len(rows) == 2:
+        rows.append("| none | unknown | 0 | low:none | none | not_enough_specificity_keep_gate |")
+    return rows
 
 
 def _top_exclusion_reasons(
