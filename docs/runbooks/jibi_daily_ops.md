@@ -94,10 +94,19 @@ Dry-run reports:
 
 - planned appended row count;
 - duplicate skips using `duplicate_key` and `source_url_canonical`;
-- missing or old header/schema state through `header_status`;
+- header state through `header_status`, `header_safe_to_update`, and
+  `header_reason`;
 - sheet/header creation plan for a missing tab.
 
 Dry-run never creates a sheet, updates row 1, or appends candidate rows.
+
+Safe dry-run header states:
+
+- `ok`: current 30-column header is already present.
+- `missing`: the tab is new or empty; safe only with zero errors.
+- `legacy_25_upgrade_planned`: known legacy 25-column header; safe only with
+  zero errors.
+- `unsafe_mismatch`: do not real append. Inspect row 1 manually.
 
 ## Real Append
 
@@ -108,8 +117,13 @@ PYTHONPATH=src .venv/bin/python -m luddite append-jibi-sheet --no-dry-run
 ```
 
 Real append targets only `jibi 후보`, may update row 1 when the header is
-missing or old, and appends only new candidate rows. It must never append
-directly to `주제 찾기`.
+missing or the known legacy 25-column header, and appends only new candidate
+rows. It must never append directly to `주제 찾기`.
+
+Run real append only when the dry-run has zero errors and reports one of:
+`ok`, `missing`, or `legacy_25_upgrade_planned`. If dry-run reports
+`unsafe_mismatch`, real append is blocked and row 1 should be inspected
+manually.
 
 ## Troubleshooting
 
@@ -131,8 +145,10 @@ Schema mismatch:
 - The expected header includes slideability fields:
   `slideability_score`, `slideability`, `first_slide_idea`,
   `likely_proof_object_types`, and `visual_risks`.
-- Dry-run reports the mismatch but does not update the sheet.
-- Real append may update row 1 before appending rows.
+- `legacy_25_upgrade_planned` means a known old 25-column header can be upgraded
+  safely if the dry-run has zero errors.
+- `unsafe_mismatch` means the header is not recognized. Dry-run reports an
+  error, and real append will not update row 1 or append rows.
 - The first 25 columns preserve the old sheet order. Slideability fields are
   appended after `notes` so existing `reviewer`, `review_result`,
   `promoted_to_topic_finding`, and `notes` cells keep their meaning.

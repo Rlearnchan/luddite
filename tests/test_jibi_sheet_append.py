@@ -168,6 +168,28 @@ def test_append_creates_sheet_header_and_appends_rows(tmp_path) -> None:
     assert "Rows appended: 1" in report_path.read_text(encoding="utf-8")
 
 
+def test_current_header_status_ok_does_not_update_header(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[SHEET_COLUMNS])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    assert client.header_updates == []
+    assert len(client.appended) == 1
+    assert report.header_status == "ok"
+    assert report.header_reason == "ok"
+    assert report.header_safe_to_update is True
+    assert report.header_updated is False
+
+
 def test_real_append_upgrades_old_header(tmp_path) -> None:
     preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
     _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
@@ -190,7 +212,10 @@ def test_real_append_upgrades_old_header(tmp_path) -> None:
     assert client.values[0] == SHEET_COLUMNS
     assert len(client.appended) == 1
     assert report.header_created is True
-    assert report.header_status == "upgraded"
+    assert report.header_status == "legacy_25_upgraded"
+    assert report.header_reason == "legacy_25_known_schema"
+    assert report.header_safe_to_update is True
+    assert report.header_updated is True
     assert report.rows_appended == 1
 
 
@@ -226,7 +251,7 @@ def test_real_append_preserves_old_review_columns_when_header_upgrades(tmp_path)
     assert preserved_row[upgraded_header.index("review_result")] == "keep"
     assert preserved_row[upgraded_header.index("promoted_to_topic_finding")] == "FALSE"
     assert preserved_row[upgraded_header.index("notes")] == "기존 사람이 남긴 메모"
-    assert report.header_status == "upgraded"
+    assert report.header_status == "legacy_25_upgraded"
 
 
 def test_dry_run_reports_old_header_without_updating(tmp_path) -> None:
@@ -249,12 +274,78 @@ def test_dry_run_reports_old_header_without_updating(tmp_path) -> None:
     assert client.values[0] == OLD_SHEET_COLUMNS
     assert client.appended == []
     assert report.header_created is True
-    assert report.header_status == "upgrade_planned"
+    assert report.header_status == "legacy_25_upgrade_planned"
+    assert report.header_reason == "legacy_25_known_schema"
+    assert report.header_safe_to_update is True
+    assert report.header_update_planned is True
     assert report.rows_appended == 1
     report_text = report_path.read_text(encoding="utf-8")
-    assert "Header status: `upgrade_planned`" in report_text
+    assert "Header status: `legacy_25_upgrade_planned`" in report_text
+    assert "Header safe to update: True" in report_text
+    assert "Header reason: `legacy_25_known_schema`" in report_text
     assert "Header update planned: True" in report_text
     assert "Header updated: False" in report_text
+
+
+def test_dry_run_unsafe_swapped_header_reports_error_without_writes(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    report_path = tmp_path / "report.md"
+    _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
+    swapped_header = list(OLD_SHEET_COLUMNS)
+    reviewer_index = swapped_header.index("reviewer")
+    review_result_index = swapped_header.index("review_result")
+    swapped_header[reviewer_index], swapped_header[review_result_index] = (
+        swapped_header[review_result_index],
+        swapped_header[reviewer_index],
+    )
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[swapped_header])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=True,
+        ),
+        client=client,
+        report_path=report_path,
+    )
+
+    assert client.header_updates == []
+    assert client.appended == []
+    assert report.header_status == "unsafe_mismatch"
+    assert report.header_reason == "unknown_header_shape"
+    assert report.header_safe_to_update is False
+    assert report.rows_appended == 0
+    assert len(report.errors) == 1
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "Header status: `unsafe_mismatch`" in report_text
+    assert "Header safe to update: False" in report_text
+    assert "Header reason: `unknown_header_shape`" in report_text
+
+
+def test_real_append_blocks_unsafe_missing_core_column(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
+    unsafe_header = [
+        "dedupe_key" if column == "duplicate_key" else column for column in OLD_SHEET_COLUMNS
+    ]
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[unsafe_header])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    assert client.header_updates == []
+    assert client.appended == []
+    assert report.header_status == "unsafe_mismatch"
+    assert report.header_safe_to_update is False
+    assert report.rows_appended == 0
+    assert len(report.errors) == 1
 
 
 def test_slideability_columns_survive_append(tmp_path) -> None:
@@ -287,7 +378,8 @@ def test_slideability_columns_survive_append(tmp_path) -> None:
     assert SHEET_COLUMNS.index("slideability_score") == 25
     assert appended[SHEET_COLUMNS.index("slideability_score")] == "4"
     assert appended[SHEET_COLUMNS.index("slideability")] == "high / chart+map"
-    assert appended[SHEET_COLUMNS.index("first_slide_idea")] == "지도 위에 비용 역전 한 장"
+    first_slide_index = SHEET_COLUMNS.index("first_slide_idea")
+    assert appended[first_slide_index] == "지도 위에 비용 역전 한 장"
     assert appended[SHEET_COLUMNS.index("likely_proof_object_types")] == "chart | map"
     assert appended[SHEET_COLUMNS.index("visual_risks")] == "source image rights | overclaim"
     assert report.rows_appended == 1
@@ -320,6 +412,42 @@ def test_append_skips_duplicate_key_and_source_url(tmp_path) -> None:
     )
 
     assert len(client.appended) == 1
+    assert report.rows_appended == 1
+    assert report.duplicates_skipped == 2
+
+
+def test_legacy_header_upgrade_still_skips_duplicates(tmp_path) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(
+        preview,
+        [
+            _row("기존 후보", "dupe-key", "https://example.com/new"),
+            _row("기존 URL 후보", "fresh-key", "https://example.com/dupe-url"),
+            _row("새 후보", "fresh-key-2", "https://example.com/fresh"),
+        ],
+    )
+    existing = [
+        OLD_SHEET_COLUMNS,
+        _sheet_values(_row("기존", "dupe-key", "https://example.com/old"), OLD_SHEET_COLUMNS),
+        _sheet_values(
+            _row("기존 URL", "old-key", "https://example.com/dupe-url"),
+            OLD_SHEET_COLUMNS,
+        ),
+    ]
+    client = FakeGoogleSheetsClient(sheet_id=99, values=existing)
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    assert client.header_updates == [("A1", [SHEET_COLUMNS])]
+    assert len(client.appended) == 1
+    assert report.header_status == "legacy_25_upgraded"
     assert report.rows_appended == 1
     assert report.duplicates_skipped == 2
 

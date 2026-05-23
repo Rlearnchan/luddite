@@ -22,7 +22,7 @@ from luddite.integrations.google_sheets import (
 app = typer.Typer(no_args_is_help=False)
 console = Console()
 
-SHEET_COLUMNS = [
+LEGACY_25_SHEET_COLUMNS = [
     "digest_date",
     "collected_at",
     "last_seen_at",
@@ -48,12 +48,15 @@ SHEET_COLUMNS = [
     "review_result",
     "promoted_to_topic_finding",
     "notes",
+]
+SLIDEABILITY_SHEET_COLUMNS = [
     "slideability_score",
     "slideability",
     "first_slide_idea",
     "likely_proof_object_types",
     "visual_risks",
 ]
+SHEET_COLUMNS = [*LEGACY_25_SHEET_COLUMNS, *SLIDEABILITY_SHEET_COLUMNS]
 REVIEW_RESULT_VALUES = {
     "",
     "keep",
@@ -94,6 +97,10 @@ class SheetAppendReport:
     sheet_created: bool = False
     header_created: bool = False
     header_status: str = "not_checked"
+    header_safe_to_update: bool = False
+    header_reason: str = "not_checked"
+    header_update_planned: bool = False
+    header_updated: bool = False
     duplicate_keys: list[str] = field(default_factory=list)
     appended_range: AppendResult | None = None
 
@@ -215,12 +222,31 @@ def _header_status(existing_values: list[list[str]]) -> str:
     if not existing_values:
         return "missing"
     header = existing_values[0]
-    if any(
-        index >= len(header) or header[index] != column
-        for index, column in enumerate(SHEET_COLUMNS)
-    ):
-        return "mismatch"
-    return "ok"
+    if header == SHEET_COLUMNS:
+        return "ok"
+    if header == LEGACY_25_SHEET_COLUMNS:
+        return "legacy_25"
+    return "unsafe_mismatch"
+
+
+def _header_reason(status: str) -> str:
+    return {
+        "ok": "ok",
+        "missing": "missing_empty_sheet",
+        "legacy_25": "legacy_25_known_schema",
+        "unsafe_mismatch": "unknown_header_shape",
+    }.get(status, "unknown")
+
+
+def _header_safe_to_update(status: str) -> bool:
+    return status in {"missing", "legacy_25", "ok"}
+
+
+def _unsafe_header_error() -> str:
+    return (
+        "Target sheet header does not match the canonical schema or the known "
+        "legacy 25-column schema; refusing to update header or append rows."
+    )
 
 
 def _existing_duplicate_values(existing_values: list[list[str]]) -> tuple[set[str], set[str]]:
@@ -299,14 +325,24 @@ def append_jibi_sheet(
 
     header_status = _header_status(existing_values)
     report.header_status = header_status
+    report.header_reason = _header_reason(header_status)
+    report.header_safe_to_update = _header_safe_to_update(header_status)
+    if header_status == "unsafe_mismatch":
+        report.errors.append(_unsafe_header_error())
+        write_append_report(report_path or default_report_path(preview_csv), report)
+        return report
     if header_status != "ok":
         report.header_created = True
         if not config.create_header_if_missing:
             report.errors.append(
                 "Target sheet header is missing or does not match expected columns."
             )
+            write_append_report(report_path or default_report_path(preview_csv), report)
+            return report
         elif config.dry_run:
-            report.header_status = "upgrade_planned"
+            report.header_update_planned = True
+            if header_status == "legacy_25":
+                report.header_status = "legacy_25_upgrade_planned"
         elif client and config.spreadsheet_id and not config.dry_run:
             client.update_values(
                 config.spreadsheet_id,
@@ -315,7 +351,9 @@ def append_jibi_sheet(
                 [SHEET_COLUMNS],
             )
             existing_values = [SHEET_COLUMNS, *existing_values[1:]]
-            report.header_status = "upgraded"
+            report.header_updated = True
+            if header_status == "legacy_25":
+                report.header_status = "legacy_25_upgraded"
 
     duplicate_keys, source_urls = _existing_duplicate_values(existing_values)
     rows_to_append: list[list[str]] = []
@@ -384,8 +422,10 @@ def write_append_report(path: Path, report: SheetAppendReport) -> None:
         f"- Styling applied: {report.styling_applied}",
         f"- Sheet created: {report.sheet_created}",
         f"- Header status: `{report.header_status}`",
-        f"- Header update planned: {report.header_status == 'upgrade_planned'}",
-        f"- Header updated: {report.header_status == 'upgraded'}",
+        f"- Header safe to update: {report.header_safe_to_update}",
+        f"- Header reason: `{report.header_reason}`",
+        f"- Header update planned: {report.header_update_planned}",
+        f"- Header updated: {report.header_updated}",
         f"- Header created: {report.header_created}",
         f"- Errors: {len(report.errors)}",
         "",
