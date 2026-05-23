@@ -1,0 +1,496 @@
+[
+  {
+    "sample_id": "bbc_top_heat_papers",
+    "source": "BBC News",
+    "url": "https://www.bbc.com/news/articles/cj6pddx64jko?at_medium=RSS&at_campaign=rss",
+    "file": "/tmp/jibi_probe_bbc_top.html",
+    "http_code": 200,
+    "bytes": 229136,
+    "html_title": "Newspaper headlines: 'Heat leaves Africa and Med in shade' and 'Can't cope without Catherine'",
+    "meta_description_chars": 95,
+    "body_chars": 4538,
+    "paragraph_count": 25,
+    "status": "good",
+    "method": "bbc_next_data_text",
+    "paywall_signals": [],
+    "rss_title": "The Papers: 'Heat leaves Africa and Med in shade' and 'Can't cope without Catherine'",
+    "rss_summary_chars": 95,
+    "original_candidate_found": true,
+    "original_score": 50.0,
+    "enriched_score": 70.8,
+    "original_action": "gather_more_evidence",
+    "enriched_action": "gather_more_evidence",
+    "original_grade": "C",
+    "enriched_grade": "B",
+    "original_flags": [],
+    "enriched_flags": [],
+    "original_failures": [],
+    "enriched_failures": [],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence"
+    ],
+    "original_specificity": {
+      "generic_why_detected": false,
+      "level": "low",
+      "score": 0.33,
+      "signals": [
+        "has_named_actor",
+        "has_visual_hook"
+      ]
+    },
+    "enriched_specificity": {
+      "score": 0.67,
+      "level": "high",
+      "signals": [
+        "has_named_actor",
+        "has_number",
+        "has_mechanism",
+        "has_visual_hook"
+      ],
+      "generic_why_detected": false
+    },
+    "original_evidence_depth": 1,
+    "enriched_evidence_depth": 3,
+    "original_numbers_strength": 2,
+    "enriched_numbers_strength": 3,
+    "top_eligible_after_enrichment": true
+  },
+  {
+    "sample_id": "bbc_single_market_goods",
+    "source": "BBC News",
+    "url": "https://www.bbc.com/news/articles/cr5plpm3g2ro?at_medium=RSS&at_campaign=rss",
+    "file": "/tmp/jibi_probe_bbc_single_market.html",
+    "http_code": 200,
+    "bytes": 230437,
+    "html_title": "UK officials suggested single market for goods with Europe",
+    "meta_description_chars": 113,
+    "body_chars": 2744,
+    "paragraph_count": 18,
+    "status": "good",
+    "method": "bbc_next_data_text",
+    "paywall_signals": [],
+    "rss_title": "UK officials suggested single market for goods with Europe",
+    "rss_summary_chars": 113,
+    "original_candidate_found": true,
+    "original_score": 61.0,
+    "enriched_score": 55.0,
+    "original_action": "gather_more_evidence",
+    "enriched_action": "editorial_review",
+    "original_grade": "B",
+    "enriched_grade": "B",
+    "original_flags": [],
+    "enriched_flags": [],
+    "original_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "enriched_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence"
+    ],
+    "original_specificity": {
+      "generic_why_detected": true,
+      "level": "low",
+      "score": 0.33,
+      "signals": [
+        "has_named_actor",
+        "has_mechanism"
+      ]
+    },
+    "enriched_specificity": {
+      "score": 0.33,
+      "level": "low",
+      "signals": [
+        "has_named_actor",
+        "has_mechanism"
+      ],
+      "generic_why_detected": true
+    },
+    "original_evidence_depth": 3,
+    "enriched_evidence_depth": 3,
+    "original_numbers_strength": 3,
+    "enriched_numbers_strength": 3,
+    "top_eligible_after_enrichment": false
+  },
+  {
+    "sample_id": "npr_google_ai_search",
+    "source": "NPR",
+    "url": "https://www.npr.org/2026/05/22/nx-s1-5829915/google-search-box-ai",
+    "file": "/tmp/jibi_probe_npr_ai.html",
+    "http_code": 200,
+    "bytes": 94244,
+    "html_title": "Ask AI or just Google it? Google makes a big change to a little search box : NPR",
+    "meta_description_chars": 123,
+    "body_chars": 5058,
+    "paragraph_count": 22,
+    "status": "good",
+    "method": "npr_storytext_p",
+    "paywall_signals": [
+      "subscribe"
+    ],
+    "rss_title": "Ask AI or just Google it? Google makes a big change to a little search box",
+    "rss_summary_chars": 123,
+    "original_candidate_found": true,
+    "original_score": 61.0,
+    "enriched_score": 64.0,
+    "original_action": "gather_more_evidence",
+    "enriched_action": "gather_more_evidence",
+    "original_grade": "B",
+    "enriched_grade": "B",
+    "original_flags": [],
+    "enriched_flags": [],
+    "original_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "enriched_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence"
+    ],
+    "original_specificity": {
+      "generic_why_detected": true,
+      "level": "low",
+      "score": 0.17,
+      "signals": [
+        "has_named_actor"
+      ]
+    },
+    "enriched_specificity": {
+      "score": 0.33,
+      "level": "low",
+      "signals": [
+        "has_named_actor",
+        "has_number"
+      ],
+      "generic_why_detected": true
+    },
+    "original_evidence_depth": 3,
+    "enriched_evidence_depth": 3,
+    "original_numbers_strength": 3,
+    "enriched_numbers_strength": 4,
+    "top_eligible_after_enrichment": false
+  },
+  {
+    "sample_id": "npr_shipyard_blast",
+    "source": "NPR",
+    "url": "https://www.npr.org/2026/05/22/g-s1-124080/new-york-city-shipyard-explosion",
+    "file": "/tmp/jibi_probe_npr_blast.html",
+    "http_code": 200,
+    "bytes": 72388,
+    "html_title": "1 person died, 36 injured after blast at New York City shipyard, officials say : NPR",
+    "meta_description_chars": 172,
+    "body_chars": 2757,
+    "paragraph_count": 17,
+    "status": "good",
+    "method": "npr_storytext_p",
+    "paywall_signals": [
+      "subscribe"
+    ],
+    "rss_title": "1 person died, 36 injured after blast at New York City shipyard, officials say",
+    "rss_summary_chars": 172,
+    "original_candidate_found": true,
+    "original_score": 34.4,
+    "enriched_score": 34.4,
+    "original_action": "reject",
+    "enriched_action": "reject",
+    "original_grade": "D",
+    "enriched_grade": "D",
+    "original_flags": [],
+    "enriched_flags": [],
+    "original_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "enriched_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence"
+    ],
+    "original_specificity": {
+      "generic_why_detected": true,
+      "level": "low",
+      "score": 0.33,
+      "signals": [
+        "has_named_actor",
+        "has_number"
+      ]
+    },
+    "enriched_specificity": {
+      "score": 0.33,
+      "level": "low",
+      "signals": [
+        "has_named_actor",
+        "has_number"
+      ],
+      "generic_why_detected": true
+    },
+    "original_evidence_depth": 3,
+    "enriched_evidence_depth": 3,
+    "original_numbers_strength": 4,
+    "enriched_numbers_strength": 4,
+    "top_eligible_after_enrichment": false
+  },
+  {
+    "sample_id": "infomax_calendar",
+    "source": "연합인포맥스",
+    "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4416458",
+    "file": "/tmp/jibi_probe_infomax_calendar.html",
+    "http_code": 200,
+    "bytes": 132075,
+    "html_title": "[다음주 재정경제부 등 경제부처 일정] < 정책/금융 < 기사본문 - 연합인포맥스",
+    "meta_description_chars": 299,
+    "body_chars": 2715,
+    "paragraph_count": 83,
+    "status": "good",
+    "method": "infomax_article_view_content",
+    "paywall_signals": [],
+    "rss_title": "[다음주 재정경제부 등 경제부처 일정]",
+    "rss_summary_chars": 299,
+    "original_candidate_found": true,
+    "original_score": 64.0,
+    "enriched_score": 35,
+    "original_action": "gather_more_evidence",
+    "enriched_action": "editorial_review",
+    "original_grade": "B",
+    "enriched_grade": "C",
+    "original_flags": [],
+    "enriched_flags": [
+      "single_stock_or_asset_frame",
+      "single_company_frame"
+    ],
+    "original_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "enriched_failures": [
+      "single_company_without_broader_bridge"
+    ],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence",
+      "single_company_frame",
+      "single_stock_investment_frame"
+    ],
+    "original_specificity": {
+      "generic_why_detected": true,
+      "level": "medium",
+      "score": 0.5,
+      "signals": [
+        "has_named_actor",
+        "has_number",
+        "has_korea_bridge"
+      ]
+    },
+    "enriched_specificity": {
+      "score": 0.67,
+      "level": "high",
+      "signals": [
+        "has_named_actor",
+        "has_number",
+        "has_mechanism",
+        "has_korea_bridge"
+      ],
+      "generic_why_detected": false
+    },
+    "original_evidence_depth": 3,
+    "enriched_evidence_depth": 1,
+    "original_numbers_strength": 4,
+    "enriched_numbers_strength": 4,
+    "top_eligible_after_enrichment": false
+  },
+  {
+    "sample_id": "infomax_starbucks",
+    "source": "연합인포맥스",
+    "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4416453",
+    "file": "/tmp/jibi_probe_infomax_starbucks.html",
+    "http_code": 200,
+    "bytes": 129711,
+    "html_title": "'한국 진출 27주년'…스타벅스코리아 주인 바뀔 수도 있나 < 소비자 < IB/기업 < 기사본문 - 연합인포맥스",
+    "meta_description_chars": 299,
+    "body_chars": 1278,
+    "paragraph_count": 20,
+    "status": "good",
+    "method": "infomax_article_view_content",
+    "paywall_signals": [],
+    "rss_title": "'한국 진출 27주년'…스타벅스코리아 주인 바뀔 수도 있나",
+    "rss_summary_chars": 299,
+    "original_candidate_found": true,
+    "original_score": 37.4,
+    "enriched_score": 5.4,
+    "original_action": "keep_for_later",
+    "enriched_action": "editorial_review",
+    "original_grade": "C",
+    "enriched_grade": "D",
+    "original_flags": [],
+    "enriched_flags": [
+      "single_stock_or_asset_frame"
+    ],
+    "original_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "enriched_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence",
+      "single_stock_investment_frame"
+    ],
+    "original_specificity": {
+      "generic_why_detected": true,
+      "level": "medium",
+      "score": 0.5,
+      "signals": [
+        "has_named_actor",
+        "has_number",
+        "has_korea_bridge"
+      ]
+    },
+    "enriched_specificity": {
+      "score": 0.5,
+      "level": "medium",
+      "signals": [
+        "has_named_actor",
+        "has_number",
+        "has_korea_bridge"
+      ],
+      "generic_why_detected": true
+    },
+    "original_evidence_depth": 3,
+    "enriched_evidence_depth": 1,
+    "original_numbers_strength": 5,
+    "enriched_numbers_strength": 5,
+    "top_eligible_after_enrichment": false
+  },
+  {
+    "sample_id": "hankyung_kiw_space",
+    "source": "한국경제",
+    "url": "https://www.hankyung.com/article/202605224947i",
+    "file": "/tmp/jibi_probe_hankyung_kiw.html",
+    "http_code": 200,
+    "bytes": 68066,
+    "html_title": "최동수 반도체 넘어 우주산업 넘본다 | 한국경제",
+    "meta_description_chars": 23,
+    "body_chars": 217,
+    "paragraph_count": 1,
+    "status": "paywalled_or_teaser",
+    "method": "hankyung_articletxt",
+    "paywall_signals": [
+      "프리미엄9",
+      "구독하고 무제한",
+      "paywall",
+      "subscribe"
+    ],
+    "rss_title": "[KIW2026 다시보기 영상] 최동수 \"반도체 넘어 우주산업 넘본다\"",
+    "rss_summary_chars": 0,
+    "original_candidate_found": true,
+    "simulation_skipped": "paywalled_or_teaser"
+  },
+  {
+    "sample_id": "hankyung_senior_reit",
+    "source": "한국경제",
+    "url": "https://www.hankyung.com/article/202604283122i",
+    "file": "/tmp/jibi_probe_hankyung_senior.html",
+    "http_code": 200,
+    "bytes": 72452,
+    "html_title": "리츠로 확장하는 시니어 주거 시장…새로운 먹거리로 부상 | 한국경제",
+    "meta_description_chars": 73,
+    "body_chars": 290,
+    "paragraph_count": 3,
+    "status": "paywalled_or_teaser",
+    "method": "hankyung_articletxt",
+    "paywall_signals": [
+      "프리미엄9",
+      "구독하고 무제한",
+      "paywall",
+      "subscribe"
+    ],
+    "rss_title": "리츠로 확장하는 '시니어 주거' 시장…새로운 먹거리로 부상",
+    "rss_summary_chars": 0,
+    "original_candidate_found": true,
+    "simulation_skipped": "paywalled_or_teaser"
+  },
+  {
+    "sample_id": "hankyung_bus_lane",
+    "source": "한국경제",
+    "url": "https://www.hankyung.com/article/2026052353707",
+    "file": "/tmp/jibi_probe_hankyung_bus.html",
+    "http_code": 200,
+    "bytes": 93014,
+    "html_title": "버스전용차로 위반 류승범 전 소속사 사과…과태료 납부 | 한국경제",
+    "meta_description_chars": 41,
+    "body_chars": 879,
+    "paragraph_count": 9,
+    "status": "usable",
+    "method": "hankyung_articletxt",
+    "paywall_signals": [
+      "프리미엄9",
+      "subscribe"
+    ],
+    "rss_title": "'버스전용차로 위반' 류승범 전 소속사 사과…\"과태료 납부\"",
+    "rss_summary_chars": 0,
+    "original_candidate_found": true,
+    "original_score": 0,
+    "enriched_score": 41.8,
+    "original_action": "keep_for_later",
+    "enriched_action": "keep_for_later",
+    "original_grade": "D",
+    "enriched_grade": "C",
+    "original_flags": [
+      "empty_summary",
+      "empty_summary_domestic_business"
+    ],
+    "enriched_flags": [],
+    "original_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "enriched_failures": [
+      "generic_why_for_unspecific_seed_type"
+    ],
+    "original_failure_modes": [
+      "thin_evidence"
+    ],
+    "enriched_failure_modes": [
+      "thin_evidence"
+    ],
+    "original_specificity": {
+      "generic_why_detected": true,
+      "level": "low",
+      "score": 0.0,
+      "signals": []
+    },
+    "enriched_specificity": {
+      "score": 0.67,
+      "level": "high",
+      "signals": [
+        "has_named_actor",
+        "has_number",
+        "has_korea_bridge",
+        "has_visual_hook"
+      ],
+      "generic_why_detected": true
+    },
+    "original_evidence_depth": 1,
+    "enriched_evidence_depth": 3,
+    "original_numbers_strength": 3,
+    "enriched_numbers_strength": 4,
+    "top_eligible_after_enrichment": false
+  }
+]
