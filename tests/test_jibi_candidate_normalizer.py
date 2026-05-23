@@ -148,9 +148,132 @@ def test_bok_issue_note_uses_low_frequency_research_freshness_window() -> None:
 
     assert candidate["source_freshness_policy"] == "low_frequency_research"
     assert candidate["source_freshness_window_days"] == 90
+    assert candidate["source_role_class"] == "research_note"
     assert candidate["freshness_status"] == "recent"
     assert candidate["research_publication_age_days"] == 8.9
+    assert candidate["seed_type"] == "policy_research_note"
+    assert "연구노트" in candidate["why_interesting"]
     assert "stale_item" not in candidate["quality_flags"]
+    assert candidate["story_specificity"]["generic_why_detected"] is False
+
+
+def test_conversation_spacex_explainer_is_not_single_company_financing() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_conversation_spacex",
+            "title": (
+                "SpaceX is poised to go public and test Starship amid criticism "
+                "about its environmental impact"
+            ),
+            "url": "https://theconversation.com/spacex-starship-environment-example",
+            "source": "The Conversation",
+            "source_id": "the_conversation",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": (
+                "University researchers explain rocket launches, coastal ecology, "
+                "public scrutiny, and environmental policy risk."
+            ),
+            "collector": "rss",
+            "tags": ["rss", "weird_hook"],
+        }
+    )
+
+    assert candidate["source_role_class"] == "academic_explainer"
+    assert candidate["seed_type"] == "academic_explainer"
+    assert candidate["seed_type"] != "single_company_financing"
+    assert "single_company_frame" not in candidate["quality_flags"]
+
+
+def test_conversation_rare_earth_explainer_is_not_single_company_financing() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_conversation_rare_earth",
+            "title": "Why rare earth export controls are reshaping geopolitics",
+            "url": "https://theconversation.com/rare-earth-controls-example",
+            "source": "The Conversation",
+            "source_id": "the_conversation",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": (
+                "Researchers explain China policy, supply chains, magnets, and "
+                "industrial risk without focusing on a single company."
+            ),
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    assert candidate["source_role_class"] == "academic_explainer"
+    assert candidate["seed_type"] in {"academic_explainer", "geopolitical_prequel"}
+    assert candidate["seed_type"] != "single_company_financing"
+
+
+def test_yonhap_trade_minister_title_does_not_match_listing_substring() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_rare_earth",
+            "title": '日경제산업상, 中 겨냥 "희토류 수출규제 시정해야"',
+            "url": "https://www.yna.co.kr/view/AKR20260523037800073",
+            "source": "연합뉴스 세계",
+            "source_id": "yonhap_international_rss_candidate",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": (
+                "일본 경제산업상이 중국에서 열린 APEC 통상장관회의에서 "
+                "희토류 수출규제 시정을 요구했다."
+            ),
+            "collector": "rss",
+            "tags": ["rss", "domestic_bridge"],
+        }
+    )
+
+    assert candidate["source_role_class"] == "public_wire"
+    assert candidate["seed_type"] != "single_company_financing"
+    assert "investment_advice_risk" not in candidate["risk_flags"]
+
+
+def test_policy_briefing_without_seed_signals_defaults_to_evidence() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_plain",
+            "title": "[문화체육관광부] 국제문화교류 활성화 방안 논의",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=example",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "관계기관 회의에서 향후 협력 방향을 논의했다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["source_role_class"] == "policy_release"
+    assert candidate["seed_type"] == "policy_release_evidence"
+    assert "policy_release_evidence_default" in candidate["quality_flags"]
+
+
+def test_policy_briefing_with_unusual_industry_signal_can_be_seed() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_goat",
+            "title": "[농림축산식품부] 염소 산업 육성으로 농가 소득과 식품 시장 확대",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=goat",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "농가 소득, 식품 시장, 유통 구조를 함께 다룬 보도자료.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["source_role_class"] == "policy_release"
+    assert candidate["seed_type"] == "policy_release_seed"
+    assert "policy_release_evidence_default" not in candidate["quality_flags"]
+    assert "공식 보도자료" in candidate["why_interesting"]
 
 
 def test_story_specificity_generic_fallback_is_low() -> None:
@@ -208,6 +331,7 @@ def test_normalize_skc_like_single_company_financing_risk() -> None:
 
     candidate = normalize_article(article)
 
+    assert candidate["source_role_class"] == "market_wire"
     assert candidate["seed_type"] == "single_company_financing"
     assert "corporate_promo_risk" in candidate["risk_flags"]
     assert "investment_advice_risk" in candidate["risk_flags"]

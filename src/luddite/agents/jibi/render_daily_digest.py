@@ -35,6 +35,7 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
     "pure_place_listing",
     "generic_local_incident",
     "stale_item",
+    "policy_release_evidence_default",
 }
 DEFAULT_TOP_MIN_SCORE = 35
 GENERIC_WHY_PATTERNS = {
@@ -51,6 +52,10 @@ SPECIFIC_TOP_SEED_TYPES = {
     "infrastructure_project_failure",
     "climate_policy_conflict",
     "cost_asymmetry",
+    "macro_research_note",
+    "policy_research_note",
+    "academic_explainer",
+    "policy_release_seed",
 }
 
 

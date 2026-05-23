@@ -503,15 +503,21 @@ outputs/reports/rss_ingest_YYYY-MM-DD.md
 - report에는 source별 fetched/written/duplicate/failure/sample title을 남긴다.
 - Top Candidates는 동일 source가 과도하게 쏠리지 않도록 기본 최대 3개로 제한한다.
 
-1.2.1 smoke allowlist:
+Current manual MVP allowlist:
 
 ```text
-enabled: BBC, NPR, Atlas Obscura, 연합인포맥스, 한국경제
-disabled: Guardian, Le Monde, 매일경제, 한국은행, 정책브리핑, 연합뉴스
+enabled: BBC, NPR, 연합뉴스, 연합뉴스 세계, 연합인포맥스, 한국경제,
+         한국은행, 정책브리핑, The Conversation
+disabled/hold: Guardian broad international, Guardian section feeds, Le Monde,
+               매일경제, Atlas Obscura
 ```
 
-한국은행/정책브리핑은 evidence source라 계속 `collection_enabled=false`를 유지한다.
-연합뉴스는 `retry_later` 상태로 남기고 manual input을 허용한다.
+한국은행은 low-frequency research-note source로 취급해 일반 stale RSS와 분리한다.
+정책브리핑/부처 보도자료는 evidence-default이며, 숫자·생활 영향·규제 갈등·
+산업 메커니즘·시각화 가능한 proof object가 있을 때만 seed 후보로 승격한다.
+The Conversation은 controlled academic-explainer experiment로 켜두되, source cap과
+manual review를 유지한다. Guardian은 broad international feed 대신 Business,
+Technology, Environment section feed를 우선 테스트한다.
 
 ## 13. Milestone 1.2.2 Candidate Quality Gate
 

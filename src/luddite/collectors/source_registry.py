@@ -17,6 +17,7 @@ class Source:
     status: str | None = None
     group: str | None = None
     role: str | None = None
+    role_class: str | None = None
     region: str | None = None
     category_hint: str | None = None
     homepage_url: str | None = None
@@ -106,6 +107,9 @@ def load_sources(path: Path = paths.SOURCE_REGISTRY_YAML) -> list[Source]:
             status=item.get("status") if isinstance(item.get("status"), str) else None,
             group=item.get("group") if isinstance(item.get("group"), str) else None,
             role=item.get("role") if isinstance(item.get("role"), str) else None,
+            role_class=(
+                item.get("role_class") if isinstance(item.get("role_class"), str) else None
+            ),
             region=item.get("region") if isinstance(item.get("region"), str) else None,
             category_hint=(
                 item.get("category_hint") if isinstance(item.get("category_hint"), str) else None

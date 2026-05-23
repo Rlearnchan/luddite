@@ -1,3 +1,4 @@
+from luddite.agents.jibi.normalize_candidates import normalize_article
 from luddite.agents.jibi.score_candidates import (
     annotate_near_duplicates,
     score_candidate,
@@ -165,6 +166,29 @@ def test_score_candidate_fills_empty_possible_expansions() -> None:
     scored = score_candidate(candidate)
 
     assert len(scored["possible_expansions"]) >= 3
+
+
+def test_policy_release_evidence_default_is_kept_for_later() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_plain_scoring",
+            "title": "[문화체육관광부] 국제문화교류 활성화 방안 논의",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=plain",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "관계기관 회의에서 향후 협력 방향을 논의했다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert "policy_release_evidence_default" in scored["quality_flags"]
+    assert scored["recommended_action"] == "keep_for_later"
+    assert "policy_release_evidence_default" in scored["failure_modes"]
 
 
 def test_score_candidates_sorts_by_total_score(tmp_path) -> None:

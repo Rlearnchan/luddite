@@ -18,6 +18,13 @@ def test_source_registry_v0_9_3_groups_and_fetch_policy() -> None:
     )
     assert sources["bok"].freshness_policy == "low_frequency_research"
     assert sources["bok"].freshness_window_days == 90
+    assert sources["bok"].role_class == "research_note"
+    assert sources["korea_policy_briefing"].role_class == "policy_release"
+    assert sources["the_conversation"].role_class == "academic_explainer"
+    assert sources["guardian_business"].role_class == "section_news"
+    assert sources["guardian_business"].verified_feed_url == (
+        "https://www.theguardian.com/business/rss"
+    )
     assert sources["yonhap_rss_candidate"].verified_feed_url == (
         "https://www.yna.co.kr/rss/news.xml"
     )

@@ -179,6 +179,10 @@ CATEGORY_PROOF_HINTS = {
     "market_rate_stress": ("chart", "diagram", "source_card"),
     "single_company_financing": ("chart", "source_card"),
     "cost_asymmetry": ("chart", "diagram"),
+    "macro_research_note": ("chart", "diagram", "source_card"),
+    "policy_research_note": ("chart", "diagram", "source_card"),
+    "academic_explainer": ("diagram", "source_card"),
+    "policy_release_seed": ("chart", "diagram", "source_card"),
 }
 
 

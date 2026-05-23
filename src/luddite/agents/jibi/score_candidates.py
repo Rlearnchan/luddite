@@ -115,6 +115,10 @@ EDITORIAL_SCORE_FLOOR_CATEGORIES = {
     "infrastructure_project_failure",
     "ai_knowledge_institution",
     "climate_policy_conflict",
+    "macro_research_note",
+    "policy_research_note",
+    "academic_explainer",
+    "policy_release_seed",
 }
 QUALITY_GATE_FAILURES = {
     "sports_only": ("rss_sports_only", 30, "reject"),
@@ -126,6 +130,7 @@ QUALITY_GATE_FAILURES = {
     "single_stock_or_asset_frame": ("single_stock_investment_frame", 18, "editorial_review"),
     "single_company_frame": ("single_company_frame", 24, "keep_for_later"),
     "market_rate_stress": ("single_stock_investment_frame", 16, "editorial_review"),
+    "policy_release_evidence_default": ("policy_release_evidence_default", 18, "keep_for_later"),
     "empty_summary": ("thin_evidence", 12, "keep_for_later"),
     "empty_summary_domestic_business": ("thin_evidence", 16, "keep_for_later"),
     "stale_item": ("stale_rss_item", 18, "keep_for_later"),
@@ -185,6 +190,26 @@ FALLBACK_EXPANSIONS = {
         "산불 예방 정책과 연방 행정의 충돌",
         "기후/재난 이슈가 문화전쟁으로 번지는 방식",
         "정치 프레임을 줄이고 제도 설계 중심으로 다루는 방법",
+    ],
+    "macro_research_note": [
+        "보고서가 제시한 핵심 숫자와 추세",
+        "그 숫자가 생긴 경제/산업 메커니즘",
+        "한국 정책·가계·기업 의사결정으로 이어지는 지점",
+    ],
+    "policy_research_note": [
+        "연구노트의 문제 진단과 핵심 통계",
+        "제도/정책 변화가 필요한 메커니즘",
+        "한국 시청자가 체감할 수 있는 비용·기회·리스크",
+    ],
+    "academic_explainer": [
+        "기사의 설명 대상이 되는 과학/사회 메커니즘",
+        "정책·시장·생활 리스크로 이어지는 연결고리",
+        "한국 사례와 비교할 수 있는 증거 카드",
+    ],
+    "policy_release_seed": [
+        "보도자료의 핵심 수치 또는 정책 변화",
+        "산업/가계/시장에 실제로 닿는 메커니즘",
+        "공식자료를 시각화할 수 있는 표·지도·전후 비교",
     ],
     "absurd_foreign": [
         "이상한 해외 뉴스가 나온 배경",

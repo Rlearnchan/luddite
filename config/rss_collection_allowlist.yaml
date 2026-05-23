@@ -30,7 +30,19 @@ sources:
 
   - source_id: guardian_rss_candidate
     collection_enabled: false
-    reason: verified_but_hold_until_next_source_mix_test
+    reason: broad_international_feed_hold_use_section_feeds
+
+  - source_id: guardian_business
+    collection_enabled: false
+    reason: verified_section_feed_hold_until_guardian_mix_test
+
+  - source_id: guardian_technology
+    collection_enabled: false
+    reason: verified_section_feed_hold_until_guardian_mix_test
+
+  - source_id: guardian_environment
+    collection_enabled: false
+    reason: verified_section_feed_hold_until_guardian_mix_test
 
   - source_id: npr_rss_candidate
     collection_enabled: true
@@ -49,8 +61,8 @@ sources:
     reason: official_policy_release_seed_and_evidence_test
 
   - source_id: the_conversation
-    collection_enabled: false
-    reason: verified_but_hold_until_next_source_mix_test
+    collection_enabled: true
+    reason: controlled_manual_mvp_academic_explainer_test
 
   - source_id: atlas_obscura
     collection_enabled: false

@@ -15,7 +15,19 @@ POLITICAL_TERMS = {
     "election",
     "party",
 }
-INVESTMENT_TERMS = {"주식", "증시", "상장", "코스피", "채권", "금리", "stock", "ipo", "bond"}
+INVESTMENT_TERMS = {
+    "주식",
+    "증시",
+    "상장 추진",
+    "상장사",
+    "기업공개",
+    "코스피",
+    "채권",
+    "금리",
+    "stock",
+    "ipo",
+    "bond",
+}
 MEDICAL_TERMS = {"치료", "백신", "의학", "medical", "vaccine", "drug", "therapy"}
 CRIME_TERMS = {"마약", "범죄", "교도소", "drug", "crime", "prison", "cocaine"}
 PROMO_TERMS = {"출시", "신제품", "프로모션", "launches", "unveils"}

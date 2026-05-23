@@ -168,6 +168,20 @@ thresholds. `stale` RSS items are downranked or kept out of Top Candidates
 conservatively; manual candidates with unknown freshness are not blocked only
 because their published date is missing.
 
+Source-role handling is intentionally conservative during the manual MVP:
+
+- The Conversation is enabled as a controlled academic-explainer experiment,
+  not as an always-pass source.
+- Guardian broad international/world feeds stay on hold. Prefer section feeds
+  such as Business, Technology, and Environment when running a Guardian mix
+  test.
+- BOK Issue Notes are low-frequency research-note seed/evidence hybrids, so
+  they use a longer freshness window and should be reviewed through the
+  research-template queue rather than treated as stale RSS.
+- Policy Briefing and ministry releases are evidence-default. They become seed
+  candidates only when they show a strong number, direct life impact, regulatory
+  conflict, industrial mechanism, odd hook, or visual proof object.
+
 Read the calibration sections in this order:
 
 1. `Operator Summary`: read the run health, primary bottleneck, and suggested

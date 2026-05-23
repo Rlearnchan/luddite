@@ -98,6 +98,7 @@ sources:
     status: rss_verified
     group: primary_wire
     role: seed_discovery
+    role_class: public_wire
     region: global
     category_hint: world
     homepage_url: https://www.bbc.com
@@ -116,10 +117,68 @@ sources:
     status: rss_verified
     group: primary_wire
     role: seed_discovery
+    role_class: section_news
     region: global
     category_hint: world_business_environment
     homepage_url: https://www.theguardian.com
     verified_feed_url: https://www.theguardian.com/international/rss
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: guardian_business
+    name: The Guardian Business
+    type: rss_candidate
+    status: rss_verified
+    group: primary_wire
+    role: seed_discovery
+    role_class: section_news
+    region: global
+    category_hint: business
+    homepage_url: https://www.theguardian.com/business
+    verified_feed_url: https://www.theguardian.com/business/rss
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: guardian_technology
+    name: The Guardian Technology
+    type: rss_candidate
+    status: rss_verified
+    group: primary_wire
+    role: seed_discovery
+    role_class: section_news
+    region: global
+    category_hint: technology
+    homepage_url: https://www.theguardian.com/technology
+    verified_feed_url: https://www.theguardian.com/technology/rss
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: guardian_environment
+    name: The Guardian Environment
+    type: rss_candidate
+    status: rss_verified
+    group: primary_wire
+    role: seed_discovery
+    role_class: section_news
+    region: global
+    category_hint: environment
+    homepage_url: https://www.theguardian.com/environment
+    verified_feed_url: https://www.theguardian.com/environment/rss
     terms_check_required: true
     collection_enabled: false
     last_probe_status: parsed
@@ -134,6 +193,7 @@ sources:
     status: rss_verified
     group: primary_wire
     role: seed_discovery
+    role_class: public_wire
     region: global
     category_hint: social_culture
     homepage_url: https://www.npr.org
@@ -236,6 +296,7 @@ sources:
     status: rss_verified
     group: korea_business
     role: domestic_bridge
+    role_class: public_wire
     region: kr
     category_hint: business_policy
     homepage_url: https://www.yna.co.kr
@@ -260,6 +321,7 @@ sources:
     status: rss_verified
     group: korea_business
     role: domestic_bridge
+    role_class: public_wire
     region: kr
     category_hint: international_policy
     homepage_url: https://www.yna.co.kr
@@ -283,6 +345,7 @@ sources:
     status: rss_verified
     group: korea_business
     role: numbers_bridge
+    role_class: market_wire
     region: kr
     category_hint: markets
     rss_index_url: https://news.einfomax.co.kr/rssIndex.html
@@ -301,6 +364,7 @@ sources:
     status: rss_verified
     group: korea_business
     role: domestic_bridge
+    role_class: section_news
     region: kr
     category_hint: business
     rss_index_url: https://www.hankyung.com/feed
@@ -392,6 +456,7 @@ sources:
     status: official_release
     group: official_evidence
     role: seed_and_numbers_evidence
+    role_class: research_note
     region: kr
     category_hint: macro
     rss_index_url: https://www.bok.or.kr/static/view/popup/rss_popup.html
@@ -426,6 +491,7 @@ sources:
     status: official_release
     group: official_evidence
     role: policy_seed_and_evidence
+    role_class: policy_release
     region: kr
     category_hint: policy_release
     rss_index_url: https://www.korea.kr/etc/rss.do
@@ -502,6 +568,7 @@ sources:
     status: rss_verified
     group: weird_culture_science
     role: weird_hook
+    role_class: academic_explainer
     region: global
     category_hint: science_society
     homepage_url: https://theconversation.com

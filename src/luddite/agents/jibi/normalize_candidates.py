@@ -95,7 +95,9 @@ SINGLE_COMPANY_FINANCING_TERMS = {
     "유상증자",
     "증자",
     "청약",
-    "상장",
+    "상장 추진",
+    "상장사",
+    "기업공개",
     "ipo",
     "실적",
     "공매도",
@@ -135,9 +137,19 @@ EDITORIAL_CATEGORY_TYPES = {
     "ai_knowledge_institution",
     "infrastructure_project_failure",
     "climate_policy_conflict",
+    "macro_research_note",
+    "policy_research_note",
+    "academic_explainer",
+    "policy_release_seed",
 }
 FRESHNESS_RECENT_HOURS = 24 * 7
 LOW_FREQUENCY_RESEARCH_POLICY = "low_frequency_research"
+SOURCE_ROLE_RESEARCH_NOTE = "research_note"
+SOURCE_ROLE_POLICY_RELEASE = "policy_release"
+SOURCE_ROLE_ACADEMIC_EXPLAINER = "academic_explainer"
+SOURCE_ROLE_PUBLIC_WIRE = "public_wire"
+SOURCE_ROLE_MARKET_WIRE = "market_wire"
+SOURCE_ROLE_SECTION_NEWS = "section_news"
 GENERIC_SPECIFICITY_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
     "공급망, 인프라, 규제, 산업 전환 중 어느 축",
@@ -165,6 +177,50 @@ MECHANISM_TERMS = {
     "보험",
     "투자",
     "자금",
+}
+POLICY_TERMS = {
+    "policy",
+    "regulation",
+    "rules",
+    "law",
+    "government",
+    "public",
+    "정책",
+    "규제",
+    "제도",
+    "법",
+    "정부",
+    "공공",
+    "과제",
+}
+ACADEMIC_EXPLAINER_TERMS = {
+    "research",
+    "study",
+    "science",
+    "scientists",
+    "climate",
+    "environment",
+    "university",
+    "analysis",
+    "explains",
+    "연구",
+    "분석",
+    "과학",
+    "기후",
+    "환경",
+    "대학",
+}
+FINANCING_DOMINANT_TERMS = SINGLE_COMPANY_FINANCING_TERMS | {
+    "funding",
+    "valuation",
+    "investor",
+    "investors",
+    "public listing",
+    "go public",
+    "ipo",
+    "자금조달",
+    "기업공개",
+    "투자자",
 }
 TENSION_TERMS = {
     "vs",
@@ -330,6 +386,61 @@ def _template_insights(seed_type: str) -> tuple[str, list[str]]:
                 "정치 프레임을 줄이고 제도 설계 중심으로 다루는 방법",
             ],
         ),
+        "macro_research_note": (
+            (
+                "한국은행 이슈노트형 연구자료라 단발 뉴스보다 숫자, 작동 메커니즘, "
+                "한국 경제/생활과 이어지는 정책 함의를 함께 볼 수 있음"
+            ),
+            [
+                "보고서가 제시한 핵심 숫자와 추세",
+                "그 숫자가 생긴 경제/산업 메커니즘",
+                "한국 정책·가계·기업 의사결정으로 이어지는 지점",
+            ],
+        ),
+        "policy_research_note": (
+            (
+                "연구노트가 현상 진단에서 정책 과제까지 이어지는 구조라, "
+                "숫자 근거와 제도 설계를 한 장의 설명 카드로 만들 수 있음"
+            ),
+            [
+                "연구노트의 문제 진단과 핵심 통계",
+                "제도/정책 변화가 필요한 메커니즘",
+                "한국 시청자가 체감할 수 있는 비용·기회·리스크",
+            ],
+        ),
+        "academic_explainer": (
+            (
+                "학술/해설형 기사라 단일 기업 뉴스로 소비하기보다 과학, 사회, 정책, "
+                "환경 리스크가 왜 생겼는지를 구조적으로 설명하는 seed로 볼 수 있음"
+            ),
+            [
+                "기사의 설명 대상이 되는 과학/사회 메커니즘",
+                "정책·시장·생활 리스크로 이어지는 연결고리",
+                "한국 사례와 비교할 수 있는 증거 카드",
+            ],
+        ),
+        "policy_release_seed": (
+            (
+                "공식 보도자료지만 숫자, 생활 영향, 산업 메커니즘, 규제 갈등 중 "
+                "하나 이상이 있어 evidence를 넘어 seed 후보로 검토할 가치가 있음"
+            ),
+            [
+                "보도자료의 핵심 수치 또는 정책 변화",
+                "산업/가계/시장에 실제로 닿는 메커니즘",
+                "공식자료를 시각화할 수 있는 표·지도·전후 비교",
+            ],
+        ),
+        "policy_release_evidence": (
+            (
+                "공식 보도자료로 근거 가치는 있지만 아직 방송 seed로 커질 숫자, "
+                "생활 영향, 갈등 구조가 약해 evidence/manual 후보로 두는 편이 안전함"
+            ),
+            [
+                "공식 근거로 붙일 수 있는 문장",
+                "추가 기사나 통계가 필요한 지점",
+                "seed로 승격하려면 필요한 생활/산업/숫자 hook",
+            ],
+        ),
         "cost_asymmetry": (
             (
                 "싼 공격수단과 비싼 방어수단의 비용 역전이 핵심이라 예산 고갈, "
@@ -395,13 +506,121 @@ def _template_insights(seed_type: str) -> tuple[str, list[str]]:
     )
 
 
-def _infer_editorial_category(title: str, summary: str, source_id: str | None) -> str | None:
+def _source_role_class(source: Any, source_id: str | None) -> str:
+    if source and source.role_class:
+        return source.role_class
+    if source and source.freshness_policy == LOW_FREQUENCY_RESEARCH_POLICY:
+        return SOURCE_ROLE_RESEARCH_NOTE
+    if source_id == "korea_policy_briefing" or (
+        source and source.category_hint == "policy_release"
+    ):
+        return SOURCE_ROLE_POLICY_RELEASE
+    if source_id == "the_conversation":
+        return SOURCE_ROLE_ACADEMIC_EXPLAINER
+    if source_id in {"yonhap_rss_candidate", "yonhap_international_rss_candidate"}:
+        return SOURCE_ROLE_PUBLIC_WIRE
+    if source_id == "infomax_manual":
+        return SOURCE_ROLE_MARKET_WIRE
+    if source_id and source_id.startswith("guardian_"):
+        return SOURCE_ROLE_SECTION_NEWS
+    return "unknown"
+
+
+def _research_note_seed_type(text: str) -> str:
+    if contains_any(text, POLICY_TERMS):
+        return "policy_research_note"
+    return "macro_research_note"
+
+
+def _has_research_note_signals(text: str) -> bool:
+    return contains_any(text, MECHANISM_TERMS | POLICY_TERMS) or contains_any(
+        text,
+        NUMBER_TERMS,
+    ) or any(char.isdigit() for char in text)
+
+
+def _academic_explainer_terms_dominate(text: str) -> bool:
+    explainer_hits = sum(
+        int(contains_any(text, {term}))
+        for term in ACADEMIC_EXPLAINER_TERMS | POLICY_TERMS | {"space", "rocket", "starship"}
+    )
+    finance_hits = sum(int(contains_any(text, {term})) for term in FINANCING_DOMINANT_TERMS)
+    return explainer_hits >= max(finance_hits, 1)
+
+
+def _policy_release_seed_signals(text: str) -> list[str]:
+    signals: list[str] = []
+    if contains_any(text, WEIRD_TERMS | {"염소", "goat"}):
+        signals.append("odd_hook")
+    if contains_any(text, NUMBER_TERMS) or any(char.isdigit() for char in text):
+        signals.append("strong_number")
+    if contains_any(
+        text,
+        {
+            "생활",
+            "가계",
+            "소비자",
+            "요금",
+            "임금",
+            "일자리",
+            "주거",
+            "부동산",
+            "식품",
+            "물가",
+            "household",
+            "consumer",
+            "jobs",
+            "housing",
+            "prices",
+        },
+    ):
+        signals.append("life_impact")
+    if contains_any(text, TENSION_TERMS | {"규제", "제재", "법안", "regulation"}):
+        signals.append("regulatory_conflict")
+    if contains_any(
+        text,
+        {
+            "산업 구조",
+            "산업 전환",
+            "산업 육성",
+            "공급망",
+            "생산",
+            "시장 구조",
+            "인프라",
+            "industrial",
+            "supply chain",
+            "production",
+            "market structure",
+            "infrastructure",
+        },
+    ):
+        signals.append("industry_mechanism")
+    if contains_any(text, VISUAL_HOOK_TERMS | {"도표", "통계", "지도", "map", "chart"}):
+        signals.append("visual_proof_object")
+    return list(dict.fromkeys(signals))
+
+
+def _infer_editorial_category(
+    title: str,
+    summary: str,
+    source_id: str | None,
+    source_role_class: str = "unknown",
+) -> str | None:
     text = text_blob(title, summary)
+    if source_role_class == SOURCE_ROLE_RESEARCH_NOTE and _has_research_note_signals(text):
+        return _research_note_seed_type(text)
+    if source_role_class == SOURCE_ROLE_POLICY_RELEASE:
+        return "policy_release_seed" if _policy_release_seed_signals(text) else None
     if contains_any(text, {"담보", "단기수익", "생산적", "정책금융", "국민성장펀드"}):
         return "productive_finance_policy"
     if contains_any(text, {"휴머노이드", "ai 로봇", "robotics r&d"}):
         return "industrial_policy_rnd"
     if contains_any(text, SINGLE_COMPANY_FINANCING_TERMS):
+        if (
+            source_role_class == SOURCE_ROLE_ACADEMIC_EXPLAINER
+            and _academic_explainer_terms_dominate(text)
+        ):
+            return "academic_explainer"
         return "single_company_financing"
     if contains_any(text, MARKET_RATE_STRESS_TERMS):
         return "market_rate_stress"
@@ -599,6 +818,7 @@ def _rss_quality_hints(
     title: str,
     summary: str,
     source_id: str | None,
+    source_role_class: str,
     source_url: str,
     seed_type: str,
     risk_flags: list[str],
@@ -614,19 +834,27 @@ def _rss_quality_hints(
         quality_flags.append("accident_single_event")
     if source_id == "atlas_obscura" and contains_any(text, PLACE_LISTING_TERMS):
         quality_flags.append("pure_place_listing")
+    if source_role_class == SOURCE_ROLE_POLICY_RELEASE and seed_type == "policy_release_evidence":
+        quality_flags.append("policy_release_evidence_default")
     if contains_any(text, POLITICAL_POLICY_TERMS):
         if "political_sensitivity" not in risk_flags:
             risk_flags.append("political_sensitivity")
     if source_id == "npr_rss_candidate" and contains_any(text, POLITICAL_POLICY_TERMS):
         quality_flags.append("live_politics_or_statement")
-    if source_id in {"infomax_manual", "hankyung_manual"} and (
+    market_wire_like = source_role_class == SOURCE_ROLE_MARKET_WIRE or source_id in {
+        "infomax_manual",
+        "hankyung_manual",
+    }
+    if market_wire_like and (
         "investment_advice_risk" in risk_flags
         or contains_any(text, SINGLE_COMPANY_FINANCING_TERMS | MARKET_RATE_STRESS_TERMS)
     ):
         quality_flags.append("single_stock_or_asset_frame")
+        if contains_any(text, {"거시", "경기", "산업", "정책", "macro", "industry", "policy"}):
+            quality_flags.append("broader_macro_angle")
         if "investment_advice_risk" not in risk_flags:
             risk_flags.append("investment_advice_risk")
-    if source_id in {"infomax_manual", "hankyung_manual"} and contains_any(
+    if market_wire_like and contains_any(
         text,
         SINGLE_COMPANY_FINANCING_TERMS,
     ):
@@ -652,6 +880,7 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     registry = source_by_id()
     source = registry.get(article.get("source_id") or "")
     source_type = source.type if source else article.get("collector", "manual")
+    source_role_class = _source_role_class(source, article.get("source_id"))
     if source and source.subscription and "subscription_source_only" not in risk_flags:
         risk_flags.append("subscription_source_only")
     text = text_blob(title, summary, " ".join(tags))
@@ -662,13 +891,43 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         seed_type = "other"
     if seed_type == "cost_asymmetry" and not contains_any(text, COST_ASYMMETRY_TERMS):
         seed_type = "other"
-    editorial_category = _infer_editorial_category(title, summary, article.get("source_id"))
+    editorial_category = _infer_editorial_category(
+        title,
+        summary,
+        article.get("source_id"),
+        source_role_class,
+    )
     if editorial_category:
         seed_type = editorial_category
+    if (
+        source_role_class == SOURCE_ROLE_ACADEMIC_EXPLAINER
+        and seed_type == "single_company_financing"
+        and _academic_explainer_terms_dominate(text)
+    ):
+        seed_type = "academic_explainer"
+        editorial_category = "academic_explainer"
+    if (
+        source_role_class == SOURCE_ROLE_ACADEMIC_EXPLAINER
+        and seed_type in {"other", "policy_market_shock", "science_technology"}
+        and _academic_explainer_terms_dominate(text)
+    ):
+        seed_type = "academic_explainer"
+        editorial_category = "academic_explainer"
+    if (
+        source_role_class == SOURCE_ROLE_RESEARCH_NOTE
+        and seed_type == "other"
+        and _has_research_note_signals(text)
+    ):
+        seed_type = _research_note_seed_type(text)
+        editorial_category = seed_type
+    if source_role_class == SOURCE_ROLE_POLICY_RELEASE and not _policy_release_seed_signals(text):
+        seed_type = "policy_release_evidence"
+        editorial_category = "policy_release_evidence"
     quality_hint, quality_flags, risk_flags = _rss_quality_hints(
         title=title,
         summary=summary,
         source_id=article.get("source_id"),
+        source_role_class=source_role_class,
         source_url=source_url_canonical,
         seed_type=seed_type,
         risk_flags=risk_flags,
@@ -734,6 +993,7 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "source": article["source"],
         "source_id": article.get("source_id"),
         "source_type": source_type,
+        "source_role_class": source_role_class,
         "source_freshness_policy": freshness_policy,
         "source_freshness_window_days": freshness_window_days,
         "published_at": article.get("published_at"),
