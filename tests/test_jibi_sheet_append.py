@@ -2,6 +2,7 @@ import csv
 
 from luddite import paths
 from luddite.agents.jibi.append_to_sheet import (
+    BUNDLE_REVIEW_SHEET_COLUMNS,
     SHEET_COLUMNS,
     GoogleSheetAppendConfig,
     append_jibi_sheet,
@@ -51,6 +52,7 @@ class FakeGoogleSheetsClient:
         self.values = values or []
         self.created = False
         self.header_updates = []
+        self.cleared = False
         self.appended = []
         self.formatted = []
 
@@ -73,7 +75,14 @@ class FakeGoogleSheetsClient:
         values: list[list[str]],
     ) -> None:
         self.header_updates.append((start_cell, values))
-        self.values = [values[0], *self.values[1:]] if self.values else [values[0]]
+        if len(values) > 1:
+            self.values = [list(row) for row in values]
+        else:
+            self.values = [values[0], *self.values[1:]] if self.values else [values[0]]
+
+    def clear_values(self, spreadsheet_id: str, sheet_name: str) -> None:
+        self.cleared = True
+        self.values = []
 
     def append_rows(
         self,
@@ -102,6 +111,16 @@ def _write_preview(path, rows):
         writer.writeheader()
         for row in rows:
             payload = {column: "" for column in SHEET_COLUMNS}
+            payload.update(row)
+            writer.writerow(payload)
+
+
+def _write_bundle_review_preview(path, rows):
+    with path.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=BUNDLE_REVIEW_SHEET_COLUMNS)
+        writer.writeheader()
+        for row in rows:
+            payload = {column: "" for column in BUNDLE_REVIEW_SHEET_COLUMNS}
             payload.update(row)
             writer.writerow(payload)
 
@@ -603,3 +622,93 @@ def test_report_does_not_expose_local_credential_path(tmp_path) -> None:
     )
 
     assert secret_path not in report_path.read_text(encoding="utf-8")
+
+
+def test_bundle_review_replace_dry_run_allows_existing_candidate_header(tmp_path) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    report_path = tmp_path / "report.md"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "digest_date": "2026-05-23",
+                "review_rank": "1",
+                "review_item_id": "2026-05-23:story_bundle_youth",
+                "story_bundle_id": "story_bundle_youth",
+                "bundle_type": "merged_seed",
+                "review_status": "new",
+                "검토대상": "청년 노동시장 이탈",
+                "대표후보": "쉬었음 청년층의 특징 및 평가",
+                "대표링크": "https://example.com/bok",
+                "대표출처": "BOK",
+                "candidate_count": "2",
+                "review_result": "",
+            }
+        ],
+    )
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[SHEET_COLUMNS])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle_review",
+            dry_run=True,
+            replace_existing=True,
+        ),
+        client=client,
+        report_path=report_path,
+    )
+
+    assert client.cleared is False
+    assert client.header_updates == []
+    assert report.header_status == "unsafe_mismatch_replace_planned"
+    assert report.header_safe_to_update is True
+    assert report.sheet_replace_planned is True
+    assert report.rows_appended == 1
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "Sheet schema: `bundle_review`" in report_text
+    assert "Sheet replace planned: True" in report_text
+
+
+def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "digest_date": "2026-05-23",
+                "review_rank": "1",
+                "review_item_id": "2026-05-23:story_bundle_youth",
+                "story_bundle_id": "story_bundle_youth",
+                "bundle_type": "merged_seed",
+                "review_status": "new",
+                "검토대상": "청년 노동시장 이탈",
+                "대표후보": "쉬었음 청년층의 특징 및 평가",
+                "대표링크": "https://example.com/bok",
+                "대표출처": "BOK",
+                "candidate_count": "2",
+                "review_result": "promote",
+            }
+        ],
+    )
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[SHEET_COLUMNS])
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle-review",
+            dry_run=False,
+            replace_existing=True,
+        ),
+        client=client,
+    )
+
+    assert client.cleared is True
+    assert client.values[0] == BUNDLE_REVIEW_SHEET_COLUMNS
+    assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("검토대상")] == "청년 노동시장 이탈"
+    assert client.appended == []
+    assert report.sheet_replaced is True
+    assert report.header_updated is True
+    assert report.rows_appended == 1

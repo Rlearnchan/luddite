@@ -156,6 +156,37 @@ source_url_canonical match -> skip
 last_seen_at update -> future work, not 1.0
 ```
 
+## Bundle review board mode
+
+For the MVP research-team evaluation phase, `jibi 후보` can be reused as a
+current-day bundle review board. This is intentionally sheet-native: reviewers
+write directly in the same shared tab instead of using a new tool.
+
+The renderer writes:
+
+```text
+outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
+```
+
+Dry-run a board replacement:
+
+```bash
+luddite append-jibi-sheet \
+  --preview-csv outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv \
+  --schema bundle_review \
+  --replace-existing \
+  --dry-run
+```
+
+Actual replacement is explicit and should be used only for `jibi 후보`:
+
+```bash
+JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
+```
+
+This clears and rewrites the target tab with the day's bundle rows. The old
+append-only candidate CSV remains available for audit and rollback.
+
 ## Suggested `jibi 후보` columns
 
 Keep the first 25 columns in this exact order for backward compatibility with

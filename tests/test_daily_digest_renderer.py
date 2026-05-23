@@ -96,6 +96,14 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert rows[0]["source_url_canonical"] == "https://example.com/f88"
     assert rows[0]["slideability_score"] == "0.78"
     assert rows[0]["first_slide_idea"] == "전당포 금융 구조 diagram"
+    bundle_csv_path = output_dir / "2026-05-17_bundle_review_sheet.csv"
+    with bundle_csv_path.open(encoding="utf-8-sig", newline="") as source:
+        bundle_rows = list(csv.DictReader(source))
+    assert len(bundle_rows) == 1
+    assert bundle_rows[0]["review_status"] == "new"
+    assert bundle_rows[0]["검토대상"] == "전당포 주식회사"
+    assert bundle_rows[0]["대표링크"] == "https://example.com/f88"
+    assert bundle_rows[0]["research_team_note"] == ""
 
 
 def test_top_candidates_excludes_rejects() -> None:

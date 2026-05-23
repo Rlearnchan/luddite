@@ -13,7 +13,10 @@ import typer
 from rich.console import Console
 
 from luddite import paths
-from luddite.agents.jibi.append_to_sheet import SHEET_COLUMNS
+from luddite.agents.jibi.append_to_sheet import (
+    BUNDLE_REVIEW_SHEET_COLUMNS,
+    SHEET_COLUMNS,
+)
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -504,6 +507,80 @@ def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_dat
             )
 
 
+def write_bundle_review_sheet_preview(
+    path: Path,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    digest_date: str,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
+    candidate_by_id = {
+        str(candidate.get("candidate_id")): candidate
+        for candidate in candidates
+        if candidate.get("candidate_id")
+    }
+    bundle_records = _story_bundle_records(candidates, top, near_miss_limit=0)
+    with path.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        for rank, record in enumerate(bundle_records, start=1):
+            primary_id = str(record.get("primary_candidate_id") or "")
+            representative_id = primary_id
+            if not representative_id:
+                representative_id = next(
+                    iter(
+                        [
+                            *record.get("supporting_candidate_ids", []),
+                            *record.get("evidence_candidate_ids", []),
+                        ]
+                    ),
+                    "",
+                )
+            representative = candidate_by_id.get(representative_id, {})
+            fit = ""
+            if representative:
+                fit, _reason, _action = _storyline_fit_classification(
+                    representative,
+                    candidates,
+                )
+            slideability = representative.get("slideability") or {}
+            primary_title = record.get("primary_title") or representative.get("title") or ""
+            writer.writerow(
+                {
+                    "digest_date": digest_date,
+                    "review_rank": rank,
+                    "review_item_id": f"{digest_date}:{record['story_bundle_id']}",
+                    "story_bundle_id": record["story_bundle_id"],
+                    "bundle_type": record["bundle_type"],
+                    "review_status": "new",
+                    "검토대상": record["bundle_title"],
+                    "대표후보": primary_title,
+                    "대표링크": representative.get("seed_url", ""),
+                    "대표출처": representative.get("source", ""),
+                    "묶인후보": " | ".join(record.get("supporting_titles", [])),
+                    "근거후보": " | ".join(record.get("evidence_titles", [])),
+                    "candidate_count": record.get("candidate_count", 0),
+                    "jibi_grade": _score_band(representative) if representative else "",
+                    "total_score": _total_score(representative) if representative else "",
+                    "recommended_action": representative.get("recommended_action", ""),
+                    "storyline_fit": fit,
+                    "why_bundle": record["why_bundle"],
+                    "suggested_operator_action": record["suggested_operator_action"],
+                    "evidence_needed": " | ".join(
+                        representative.get("evidence_needed", [])
+                    ),
+                    "first_slide_idea": slideability.get("first_slide_idea", ""),
+                    "risk_level": representative.get("risk_level", ""),
+                    "risk_flags": ",".join(representative.get("risk_flags", [])),
+                    "reviewer": "",
+                    "review_result": "",
+                    "research_team_note": "",
+                    "promoted_to_topic_finding": "",
+                }
+            )
+
+
 def render_daily_digest(
     input_path: Path = paths.JIBI_SCORED_CANDIDATES_JSONL,
     output_dir: Path = paths.DAILY_DIGEST_DIR,
@@ -518,12 +595,19 @@ def render_daily_digest(
     excluded_to_render = excluded if len(top) < limit else []
     md_path = output_dir / f"{date_value}.md"
     csv_path = output_dir / f"{date_value}_sheet_append_preview.csv"
+    bundle_review_csv_path = output_dir / f"{date_value}_bundle_review_sheet.csv"
     md_path.parent.mkdir(parents=True, exist_ok=True)
     md_path.write_text(
         render_markdown(top, date_value, excluded_to_render, all_candidates=candidates),
         encoding="utf-8",
     )
     write_sheet_preview(csv_path, top, date_value)
+    write_bundle_review_sheet_preview(
+        bundle_review_csv_path,
+        candidates,
+        top,
+        date_value,
+    )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
         candidates,
@@ -2368,8 +2452,11 @@ def main(
         limit=limit,
         max_per_source=max_per_source,
     )
+    bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(
-        f"[green]Rendered {len(top)} candidates to {md_path} and {csv_path}.[/green]"
+        "[green]Rendered "
+        f"{len(top)} candidates to {md_path}, {csv_path}, and "
+        f"{bundle_review_csv_path}.[/green]"
     )
 
 

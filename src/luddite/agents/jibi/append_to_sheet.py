@@ -57,15 +57,51 @@ SLIDEABILITY_SHEET_COLUMNS = [
     "visual_risks",
 ]
 SHEET_COLUMNS = [*LEGACY_25_SHEET_COLUMNS, *SLIDEABILITY_SHEET_COLUMNS]
+BUNDLE_REVIEW_SHEET_COLUMNS = [
+    "digest_date",
+    "review_rank",
+    "review_item_id",
+    "story_bundle_id",
+    "bundle_type",
+    "review_status",
+    "검토대상",
+    "대표후보",
+    "대표링크",
+    "대표출처",
+    "묶인후보",
+    "근거후보",
+    "candidate_count",
+    "jibi_grade",
+    "total_score",
+    "recommended_action",
+    "storyline_fit",
+    "why_bundle",
+    "suggested_operator_action",
+    "evidence_needed",
+    "first_slide_idea",
+    "risk_level",
+    "risk_flags",
+    "reviewer",
+    "review_result",
+    "research_team_note",
+    "promoted_to_topic_finding",
+]
+CANDIDATE_SHEET_SCHEMA = "candidate"
+BUNDLE_REVIEW_SHEET_SCHEMA = "bundle_review"
+VALID_SHEET_SCHEMAS = {CANDIDATE_SHEET_SCHEMA, BUNDLE_REVIEW_SHEET_SCHEMA}
 REVIEW_RESULT_VALUES = {
     "",
     "keep",
     "promote",
     "needs_more_evidence",
     "editorial_review",
+    "merge",
+    "evidence_only",
+    "needs_external_sources",
     "reject",
 }
 DAILY_PREVIEW_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_sheet_append_preview\.csv$")
+BUNDLE_REVIEW_PREVIEW_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_bundle_review_sheet\.csv$")
 
 
 @dataclass(frozen=True)
@@ -73,7 +109,9 @@ class GoogleSheetAppendConfig:
     spreadsheet_id: str | None = None
     target_sheet_name: str = "jibi 후보"
     source_preview_csv: Path | None = None
+    sheet_schema: str = CANDIDATE_SHEET_SCHEMA
     dry_run: bool = True
+    replace_existing: bool = False
     create_sheet_if_missing: bool = True
     create_header_if_missing: bool = True
     skip_duplicates: bool = True
@@ -93,6 +131,8 @@ class SheetAppendReport:
     duplicates_skipped: int = 0
     errors: list[str] = field(default_factory=list)
     dry_run: bool = True
+    sheet_schema: str = CANDIDATE_SHEET_SCHEMA
+    replace_existing: bool = False
     styling_applied: bool = False
     sheet_created: bool = False
     header_created: bool = False
@@ -101,6 +141,8 @@ class SheetAppendReport:
     header_reason: str = "not_checked"
     header_update_planned: bool = False
     header_updated: bool = False
+    sheet_replace_planned: bool = False
+    sheet_replaced: bool = False
     duplicate_keys: list[str] = field(default_factory=list)
     appended_range: AppendResult | None = None
 
@@ -145,13 +187,53 @@ def _env_bool(name: str) -> bool | None:
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-def _latest_preview_csv() -> Path | None:
+def _normalize_sheet_schema(value: str | None) -> str:
+    schema = (value or CANDIDATE_SHEET_SCHEMA).strip().replace("-", "_")
+    if schema not in VALID_SHEET_SCHEMAS:
+        raise ValueError(
+            "sheet schema must be one of: " + ", ".join(sorted(VALID_SHEET_SCHEMAS))
+        )
+    return schema
+
+
+def _schema_columns(sheet_schema: str) -> list[str]:
+    schema = _normalize_sheet_schema(sheet_schema)
+    if schema == BUNDLE_REVIEW_SHEET_SCHEMA:
+        return BUNDLE_REVIEW_SHEET_COLUMNS
+    return SHEET_COLUMNS
+
+
+def _schema_legacy_columns(sheet_schema: str) -> list[str] | None:
+    schema = _normalize_sheet_schema(sheet_schema)
+    if schema == CANDIDATE_SHEET_SCHEMA:
+        return LEGACY_25_SHEET_COLUMNS
+    return None
+
+
+def _schema_default_duplicate_keys(sheet_schema: str) -> tuple[str, ...]:
+    schema = _normalize_sheet_schema(sheet_schema)
+    if schema == BUNDLE_REVIEW_SHEET_SCHEMA:
+        return ("review_item_id", "story_bundle_id")
+    return ("duplicate_key", "source_url_canonical")
+
+
+def _latest_preview_csv(sheet_schema: str = CANDIDATE_SHEET_SCHEMA) -> Path | None:
     paths.DAILY_DIGEST_DIR.mkdir(parents=True, exist_ok=True)
+    pattern = (
+        BUNDLE_REVIEW_PREVIEW_RE
+        if _normalize_sheet_schema(sheet_schema) == BUNDLE_REVIEW_SHEET_SCHEMA
+        else DAILY_PREVIEW_RE
+    )
+    glob_pattern = (
+        "*_bundle_review_sheet.csv"
+        if _normalize_sheet_schema(sheet_schema) == BUNDLE_REVIEW_SHEET_SCHEMA
+        else "*_sheet_append_preview.csv"
+    )
     previews = sorted(
         [
             path
-            for path in paths.DAILY_DIGEST_DIR.glob("*_sheet_append_preview.csv")
-            if DAILY_PREVIEW_RE.match(path.name)
+            for path in paths.DAILY_DIGEST_DIR.glob(glob_pattern)
+            if pattern.match(path.name)
         ],
         reverse=True,
     )
@@ -179,6 +261,11 @@ def load_append_config(
     preview_value = os.environ.get("LUDDITE_JIBI_PREVIEW_CSV") or raw.get("source_preview_csv")
     dry_run = _env_bool("LUDDITE_GOOGLE_SHEETS_DRY_RUN")
     styling_enabled = _env_bool("LUDDITE_GOOGLE_SHEETS_STYLING")
+    sheet_schema = _normalize_sheet_schema(
+        os.environ.get("LUDDITE_JIBI_SHEET_SCHEMA")
+        or _as_optional_str(raw.get("sheet_schema"))
+    )
+    replace_existing = _env_bool("LUDDITE_JIBI_REPLACE_EXISTING")
     return GoogleSheetAppendConfig(
         spreadsheet_id=os.environ.get("LUDDITE_GOOGLE_SPREADSHEET_ID")
         or _as_optional_str(raw.get("spreadsheet_id")),
@@ -186,10 +273,17 @@ def load_append_config(
         or _as_optional_str(raw.get("target_sheet_name"))
         or "jibi 후보",
         source_preview_csv=Path(str(preview_value)) if preview_value else None,
+        sheet_schema=sheet_schema,
         dry_run=bool(raw.get("dry_run_default", True)) if dry_run is None else dry_run,
+        replace_existing=(
+            bool(raw.get("replace_existing", False))
+            if replace_existing is None
+            else replace_existing
+        ),
         create_sheet_if_missing=bool(raw.get("create_sheet_if_missing", True)),
         create_header_if_missing=bool(raw.get("create_header_if_missing", True)),
         skip_duplicates=bool(raw.get("skip_duplicates", True)),
+        duplicate_keys=_schema_default_duplicate_keys(sheet_schema),
         styling_enabled=(
             bool(raw.get("styling.enabled", False)) if styling_enabled is None else styling_enabled
         ),
@@ -209,22 +303,32 @@ def _as_optional_str(value: object) -> str | None:
     return text or None
 
 
-def read_preview_rows(preview_csv: Path) -> list[dict[str, str]]:
+def read_preview_rows(
+    preview_csv: Path,
+    *,
+    sheet_schema: str = CANDIDATE_SHEET_SCHEMA,
+) -> list[dict[str, str]]:
     with preview_csv.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
-    missing = [column for column in SHEET_COLUMNS if column not in (rows[0].keys() if rows else [])]
+    columns = _schema_columns(sheet_schema)
+    missing = [column for column in columns if column not in (rows[0].keys() if rows else [])]
     if rows and missing:
         raise ValueError(f"Preview CSV missing required columns: {', '.join(missing)}")
     return rows
 
 
-def _header_status(existing_values: list[list[str]]) -> str:
+def _header_status(
+    existing_values: list[list[str]],
+    *,
+    expected_columns: list[str],
+    legacy_columns: list[str] | None,
+) -> str:
     if not existing_values:
         return "missing"
     header = existing_values[0]
-    if header == SHEET_COLUMNS:
+    if header == expected_columns:
         return "ok"
-    if header == LEGACY_25_SHEET_COLUMNS:
+    if legacy_columns and header == legacy_columns:
         return "legacy_25"
     return "unsafe_mismatch"
 
@@ -249,24 +353,23 @@ def _unsafe_header_error() -> str:
     )
 
 
-def _existing_duplicate_values(existing_values: list[list[str]]) -> tuple[set[str], set[str]]:
+def _existing_duplicate_values(
+    existing_values: list[list[str]],
+    duplicate_columns: tuple[str, ...],
+) -> dict[str, set[str]]:
+    values = {column: set() for column in duplicate_columns}
     if not existing_values:
-        return set(), set()
+        return values
     header = existing_values[0]
-    duplicate_key_index = _column_index(header, "duplicate_key")
-    source_url_index = _column_index(header, "source_url_canonical")
-    duplicate_keys: set[str] = set()
-    source_urls: set[str] = set()
+    column_indexes = {
+        column: _column_index(header, column)
+        for column in duplicate_columns
+    }
     for row in existing_values[1:]:
-        if (
-            duplicate_key_index is not None
-            and duplicate_key_index < len(row)
-            and row[duplicate_key_index]
-        ):
-            duplicate_keys.add(row[duplicate_key_index])
-        if source_url_index is not None and source_url_index < len(row) and row[source_url_index]:
-            source_urls.add(row[source_url_index])
-    return duplicate_keys, source_urls
+        for column, column_index in column_indexes.items():
+            if column_index is not None and column_index < len(row) and row[column_index]:
+                values[column].add(row[column_index])
+    return values
 
 
 def _column_index(header: list[str], column: str) -> int | None:
@@ -276,14 +379,15 @@ def _column_index(header: list[str], column: str) -> int | None:
         return None
 
 
-def _sheet_row(row: dict[str, str]) -> list[str]:
+def _sheet_row(row: dict[str, str], *, columns: list[str]) -> list[str]:
     prepared = dict(row)
     prepared["status"] = prepared.get("status") or "new"
+    prepared["review_status"] = prepared.get("review_status") or "new"
     prepared["출처"] = prepared.get("출처") or "jibi"
     review_result = prepared.get("review_result", "")
     if review_result not in REVIEW_RESULT_VALUES:
         prepared["review_result"] = ""
-    return [prepared.get(column, "") for column in SHEET_COLUMNS]
+    return [prepared.get(column, "") for column in columns]
 
 
 def append_jibi_sheet(
@@ -292,17 +396,21 @@ def append_jibi_sheet(
     client: GoogleSheetsClient | None = None,
     report_path: Path | None = None,
 ) -> SheetAppendReport:
-    preview_csv = config.source_preview_csv or _latest_preview_csv()
+    sheet_schema = _normalize_sheet_schema(config.sheet_schema)
+    columns = _schema_columns(sheet_schema)
+    preview_csv = config.source_preview_csv or _latest_preview_csv(sheet_schema)
     if preview_csv is None:
         raise FileNotFoundError("No jibi sheet preview CSV found.")
     preview_csv = preview_csv.resolve()
-    rows = read_preview_rows(preview_csv)
+    rows = read_preview_rows(preview_csv, sheet_schema=sheet_schema)
     report = SheetAppendReport(
         spreadsheet_id=config.spreadsheet_id,
         sheet_name=config.target_sheet_name,
         preview_csv=preview_csv,
         rows_read=len(rows),
         dry_run=config.dry_run,
+        sheet_schema=sheet_schema,
+        replace_existing=config.replace_existing,
     )
 
     if not config.spreadsheet_id and not config.dry_run:
@@ -323,12 +431,54 @@ def append_jibi_sheet(
         if sheet_id is not None:
             existing_values = client.get_values(config.spreadsheet_id, config.target_sheet_name)
 
-    header_status = _header_status(existing_values)
+    header_status = _header_status(
+        existing_values,
+        expected_columns=columns,
+        legacy_columns=_schema_legacy_columns(sheet_schema),
+    )
     report.header_status = header_status
     report.header_reason = _header_reason(header_status)
-    report.header_safe_to_update = _header_safe_to_update(header_status)
-    if header_status == "unsafe_mismatch":
+    report.header_safe_to_update = _header_safe_to_update(header_status) or config.replace_existing
+    if header_status == "unsafe_mismatch" and not config.replace_existing:
         report.errors.append(_unsafe_header_error())
+        write_append_report(report_path or default_report_path(preview_csv), report)
+        return report
+    if config.replace_existing:
+        rows_to_write = [_sheet_row(row, columns=columns) for row in rows]
+        report.rows_appended = len(rows_to_write)
+        report.sheet_replace_planned = True
+        report.header_update_planned = config.dry_run
+        report.header_created = header_status != "ok"
+        if header_status == "unsafe_mismatch":
+            report.header_status = "unsafe_mismatch_replace_planned"
+            report.header_reason = "replace_existing_explicit"
+        if client and config.spreadsheet_id and not config.dry_run:
+            client.clear_values(config.spreadsheet_id, config.target_sheet_name)
+            client.update_values(
+                config.spreadsheet_id,
+                config.target_sheet_name,
+                "A1",
+                [columns, *rows_to_write],
+            )
+            report.sheet_replaced = True
+            report.header_updated = True
+            report.header_update_planned = False
+            report.appended_range = AppendResult(
+                start_row=2 if rows_to_write else None,
+                end_row=(len(rows_to_write) + 1) if rows_to_write else None,
+            )
+            if (
+                config.styling_enabled
+                and sheet_id is not None
+                and rows_to_write
+            ):
+                client.format_rows(
+                    config.spreadsheet_id,
+                    sheet_id,
+                    2,
+                    len(rows_to_write) + 1,
+                )
+                report.styling_applied = True
         write_append_report(report_path or default_report_path(preview_csv), report)
         return report
     if header_status != "ok":
@@ -348,37 +498,39 @@ def append_jibi_sheet(
                 config.spreadsheet_id,
                 config.target_sheet_name,
                 "A1",
-                [SHEET_COLUMNS],
+                [columns],
             )
-            existing_values = [SHEET_COLUMNS, *existing_values[1:]]
+            existing_values = [columns, *existing_values[1:]]
             report.header_updated = True
             if header_status == "legacy_25":
                 report.header_status = "legacy_25_upgraded"
 
-    duplicate_keys, source_urls = _existing_duplicate_values(existing_values)
+    existing_duplicate_values = _existing_duplicate_values(
+        existing_values,
+        config.duplicate_keys,
+    )
     rows_to_append: list[list[str]] = []
-    seen_in_input: set[str] = set()
-    seen_urls_in_input: set[str] = set()
+    seen_in_input = {column: set() for column in config.duplicate_keys}
     for row in rows:
-        duplicate_key = row.get("duplicate_key", "")
-        source_url = row.get("source_url_canonical", "")
-        duplicate_key_enabled = "duplicate_key" in config.duplicate_keys
-        source_url_enabled = "source_url_canonical" in config.duplicate_keys
-        is_duplicate = config.skip_duplicates and (
-            (duplicate_key_enabled and duplicate_key and duplicate_key in duplicate_keys)
-            or (source_url_enabled and source_url and source_url in source_urls)
-            or (duplicate_key_enabled and duplicate_key and duplicate_key in seen_in_input)
-            or (source_url_enabled and source_url and source_url in seen_urls_in_input)
+        duplicate_values = [
+            (column, row.get(column, ""))
+            for column in config.duplicate_keys
+            if row.get(column, "")
+        ]
+        is_duplicate = config.skip_duplicates and any(
+            value in existing_duplicate_values.get(column, set())
+            or value in seen_in_input.get(column, set())
+            for column, value in duplicate_values
         )
         if is_duplicate:
             report.duplicates_skipped += 1
-            report.duplicate_keys.append(duplicate_key or source_url)
+            report.duplicate_keys.append(
+                next((value for _column, value in duplicate_values if value), "")
+            )
             continue
-        rows_to_append.append(_sheet_row(row))
-        if duplicate_key:
-            seen_in_input.add(duplicate_key)
-        if source_url:
-            seen_urls_in_input.add(source_url)
+        rows_to_append.append(_sheet_row(row, columns=columns))
+        for column, value in duplicate_values:
+            seen_in_input.setdefault(column, set()).add(value)
 
     report.rows_appended = len(rows_to_append)
     if client and config.spreadsheet_id and rows_to_append and not config.dry_run:
@@ -415,10 +567,14 @@ def write_append_report(path: Path, report: SheetAppendReport) -> None:
         f"- Target spreadsheet id: `{report.spreadsheet_id or ''}`",
         f"- Target sheet name: `{report.sheet_name}`",
         f"- Input preview csv: `{report.preview_csv}`",
+        f"- Sheet schema: `{report.sheet_schema}`",
         f"- Rows read: {report.rows_read}",
         f"- Rows appended: {report.rows_appended}",
         f"- Duplicates skipped: {report.duplicates_skipped}",
         f"- Dry run: {report.dry_run}",
+        f"- Replace existing sheet values: {report.replace_existing}",
+        f"- Sheet replace planned: {report.sheet_replace_planned}",
+        f"- Sheet replaced: {report.sheet_replaced}",
         f"- Styling applied: {report.styling_applied}",
         f"- Sheet created: {report.sheet_created}",
         f"- Header status: `{report.header_status}`",
@@ -467,9 +623,20 @@ def main(
         str | None,
         typer.Option("--sheet-name", help="Target staging sheet name."),
     ] = None,
+    sheet_schema: Annotated[
+        str | None,
+        typer.Option("--schema", help="Sheet schema: candidate or bundle-review."),
+    ] = None,
     dry_run: Annotated[
         bool | None,
         typer.Option("--dry-run/--no-dry-run", help="Report planned changes without append."),
+    ] = None,
+    replace_existing: Annotated[
+        bool | None,
+        typer.Option(
+            "--replace-existing/--append-existing",
+            help="Clear the target tab and write the preview as the current review board.",
+        ),
     ] = None,
     styling: Annotated[
         bool | None,
@@ -481,11 +648,13 @@ def main(
         spreadsheet_id=spreadsheet_id or loaded.spreadsheet_id,
         target_sheet_name=sheet_name or loaded.target_sheet_name,
         source_preview_csv=preview_csv or loaded.source_preview_csv,
+        sheet_schema=_normalize_sheet_schema(sheet_schema or loaded.sheet_schema),
         dry_run=loaded.dry_run if dry_run is None else dry_run,
+        replace_existing=loaded.replace_existing if replace_existing is None else replace_existing,
         create_sheet_if_missing=loaded.create_sheet_if_missing,
         create_header_if_missing=loaded.create_header_if_missing,
         skip_duplicates=loaded.skip_duplicates,
-        duplicate_keys=loaded.duplicate_keys,
+        duplicate_keys=_schema_default_duplicate_keys(sheet_schema or loaded.sheet_schema),
         styling_enabled=loaded.styling_enabled if styling is None else styling,
         auth_mode=loaded.auth_mode,
         service_account_json_path=loaded.service_account_json_path,

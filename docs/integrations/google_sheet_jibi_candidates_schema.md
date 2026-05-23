@@ -2,7 +2,7 @@
 
 작성일: 2026-05-17  
 업데이트: 2026-05-22  
-상태: Jibi MVP staging schema
+상태: Jibi MVP staging schema + bundle review board
 
 ## 1. 설계 변경
 
@@ -194,3 +194,65 @@ jibi 후보 row
 
 Rejected item은 기본 preview에 넣지 않는다. 필요하면 나중에 별도
 `rejected_preview.csv`를 설계한다.
+
+## 11. Bundle Review Board Mode
+
+리서치팀 평가 단계에서는 같은 `jibi 후보` 탭을 후보 행 append 화면이 아니라
+그날의 스토리 번들 리뷰 보드로 쓸 수 있다. 새 도구나 새 공유 문서를 만들지
+않기 위한 운영 모드다.
+
+렌더러는 일반 후보 append CSV와 함께 아래 파일을 만든다.
+
+```text
+outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
+```
+
+이 CSV는 `bundle_review` 스키마를 사용한다.
+
+| column | 설명 |
+|---|---|
+| `digest_date` | run 기준일 |
+| `review_rank` | 리뷰 보드 순위 |
+| `review_item_id` | 날짜 + bundle id |
+| `story_bundle_id` | 안정적인 story bundle id |
+| `bundle_type` | standalone_seed / merged_seed / needs_external_sources / evidence_cluster |
+| `review_status` | 기본 `new` |
+| `검토대상` | 사람이 먼저 볼 bundle 제목 |
+| `대표후보` | 대표 기사/자료 제목 |
+| `대표링크` | 대표 링크 |
+| `대표출처` | 대표 출처 |
+| `묶인후보` | supporting 후보 제목 목록 |
+| `근거후보` | evidence-only 후보 제목 목록 |
+| `candidate_count` | 묶인 후보 수 |
+| `jibi_grade` | 대표 후보 점수 등급 |
+| `total_score` | 대표 후보 총점 |
+| `recommended_action` | 대표 후보 Jibi action |
+| `storyline_fit` | standalone/evidence/merge/demote 등 rule-based 판정 |
+| `why_bundle` | 왜 묶었는지 |
+| `suggested_operator_action` | 운영자 권장 행동 |
+| `evidence_needed` | 추가 확인할 자료 |
+| `first_slide_idea` | 첫 화면 아이디어 |
+| `risk_level` | 대표 후보 리스크 |
+| `risk_flags` | 대표 후보 리스크 플래그 |
+| `reviewer` | 검토자 |
+| `review_result` | 사람이 남기는 결론 |
+| `research_team_note` | 한 줄 평가 |
+| `promoted_to_topic_finding` | 수동 승격 여부 |
+
+실제 공유 시트에 반영할 때는 append가 아니라 replace를 권장한다. 기존
+`jibi 후보` 내용은 운영 실험 중 중요하지 않다고 보고, 매 run마다 최신 리뷰
+보드만 보이게 하는 방식이다.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m luddite append-jibi-sheet \
+  --preview-csv outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv \
+  --schema bundle_review \
+  --replace-existing \
+  --dry-run
+```
+
+실제 반영:
+
+```bash
+JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
+```

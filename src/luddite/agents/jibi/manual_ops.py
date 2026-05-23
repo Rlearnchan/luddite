@@ -23,6 +23,7 @@ class JibiManualRunPaths:
     run_date: str
     rss_inbox_path: Path
     preview_csv_path: Path
+    bundle_review_csv_path: Path
     daily_digest_path: Path
     quality_report_path: Path
     content_enrichment_report_path: Path
@@ -37,7 +38,9 @@ class JibiManualRunManifest:
     run_date: str
     append_mode: str
     target_sheet_name: str
+    sheet_schema: str
     append_dry_run: bool
+    replace_existing: bool
     rss_inbox_path: str
     preview_csv_path: str
     daily_digest_path: str
@@ -66,6 +69,8 @@ def manual_run_paths(
         or paths.ARTICLE_INBOX_DIR / f"rss_{run_date}.jsonl",
         preview_csv_path=paths.DAILY_DIGEST_DIR
         / f"{run_date}_sheet_append_preview.csv",
+        bundle_review_csv_path=paths.DAILY_DIGEST_DIR
+        / f"{run_date}_bundle_review_sheet.csv",
         daily_digest_path=paths.DAILY_DIGEST_DIR / f"{run_date}.md",
         quality_report_path=paths.REPORTS_DIR / f"jibi_quality_{run_date}.md",
         content_enrichment_report_path=paths.REPORTS_DIR
@@ -87,20 +92,31 @@ def append_jibi_sheet_args(
     append_mode: str | None = None,
     target_sheet_name: str | None = None,
     preview_csv_path: Path | None = None,
+    sheet_schema: str = "candidate",
 ) -> list[str]:
     config = validate_ops_safety(
         append_mode=append_mode,
         target_sheet_name=target_sheet_name,
     )
-    preview_csv = preview_csv_path or manual_run_paths(run_date).preview_csv_path
-    return [
+    normalized_schema = sheet_schema.strip().replace("-", "_")
+    paths = manual_run_paths(run_date)
+    if preview_csv_path is None and normalized_schema == "bundle_review":
+        preview_csv = paths.bundle_review_csv_path
+    else:
+        preview_csv = preview_csv_path or paths.preview_csv_path
+    args = [
         "append-jibi-sheet",
         "--preview-csv",
         str(preview_csv),
+        "--schema",
+        normalized_schema,
         "--dry-run" if config.dry_run else "--no-dry-run",
         "--sheet-name",
         config.target_sheet_name,
     ]
+    if config.replace_existing or (config.dry_run and normalized_schema == "bundle_review"):
+        args.append("--replace-existing")
+    return args
 
 
 def write_manual_run_manifest(
@@ -108,6 +124,7 @@ def write_manual_run_manifest(
     run_date: str,
     append_mode: str,
     target_sheet_name: str,
+    sheet_schema: str,
     rss_inbox_path: Path,
     preview_csv_path: Path,
     daily_digest_path: Path,
@@ -132,7 +149,9 @@ def write_manual_run_manifest(
         run_date=run_date,
         append_mode=config.append_mode,
         target_sheet_name=config.target_sheet_name,
+        sheet_schema=sheet_schema,
         append_dry_run=config.dry_run,
+        replace_existing=config.replace_existing,
         rss_inbox_path=str(rss_inbox_path),
         preview_csv_path=str(preview_csv_path),
         daily_digest_path=str(daily_digest_path),
@@ -167,7 +186,9 @@ def _manifest_markdown(manifest: JibiManualRunManifest) -> str:
         f"- Run date: {manifest.run_date}",
         f"- Append mode: `{manifest.append_mode}`",
         f"- Target sheet: `{manifest.target_sheet_name}`",
+        f"- Sheet schema: `{manifest.sheet_schema}`",
         f"- Append dry-run: {manifest.append_dry_run}",
+        f"- Replace existing: {manifest.replace_existing}",
         f"- Content enrichment status: `{manifest.content_enrichment_status}`",
         f"- Append status: `{manifest.append_status}`",
         f"- Command status: `{manifest.command_status}`",
@@ -204,6 +225,10 @@ def main(
         str,
         typer.Option("--target-sheet", help="Target Google Sheet tab."),
     ],
+    sheet_schema: Annotated[
+        str,
+        typer.Option("--sheet-schema", help="candidate or bundle_review."),
+    ],
     rss_inbox_path: Annotated[Path, typer.Option("--rss-inbox")],
     preview_csv_path: Annotated[Path, typer.Option("--preview-csv")],
     daily_digest_path: Annotated[Path, typer.Option("--daily-digest")],
@@ -232,6 +257,7 @@ def main(
         run_date=run_date,
         append_mode=append_mode,
         target_sheet_name=target_sheet_name,
+        sheet_schema=sheet_schema,
         rss_inbox_path=rss_inbox_path,
         preview_csv_path=preview_csv_path,
         daily_digest_path=daily_digest_path,

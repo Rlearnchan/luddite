@@ -18,6 +18,9 @@ def test_manual_run_paths_pin_preview_csv_to_run_date() -> None:
     assert paths.preview_csv_path.relative_to(repo_paths.REPO_ROOT) == Path(
         "outputs/daily_digest/2026-05-23_sheet_append_preview.csv"
     )
+    assert paths.bundle_review_csv_path.relative_to(repo_paths.REPO_ROOT) == Path(
+        "outputs/daily_digest/2026-05-23_bundle_review_sheet.csv"
+    )
     assert paths.daily_digest_path.relative_to(repo_paths.REPO_ROOT) == Path(
         "outputs/daily_digest/2026-05-23.md"
     )
@@ -40,6 +43,8 @@ def test_append_args_include_date_specific_preview_csv() -> None:
         "append-jibi-sheet",
         "--preview-csv",
         "outputs/daily_digest/2026-05-23_sheet_append_preview.csv",
+        "--schema",
+        "candidate",
         "--dry-run",
         "--sheet-name",
         "jibi 후보",
@@ -61,6 +66,35 @@ def test_append_args_for_staging_append_are_pinned() -> None:
     assert "--no-dry-run" in args
 
 
+def test_append_args_for_bundle_review_dry_run_plan_replace() -> None:
+    args = append_jibi_sheet_args(
+        run_date="2026-05-23",
+        append_mode="dry_run",
+        target_sheet_name="jibi 후보",
+        sheet_schema="bundle_review",
+    )
+
+    assert any(
+        item.endswith("outputs/daily_digest/2026-05-23_bundle_review_sheet.csv")
+        for item in args
+    )
+    assert "--schema" in args
+    assert "bundle_review" in args
+    assert "--replace-existing" in args
+
+
+def test_append_args_for_bundle_review_staging_replace() -> None:
+    args = append_jibi_sheet_args(
+        run_date="2026-05-23",
+        append_mode="staging_replace",
+        target_sheet_name="jibi 후보",
+        sheet_schema="bundle_review",
+    )
+
+    assert "--no-dry-run" in args
+    assert "--replace-existing" in args
+
+
 def test_write_manual_run_manifest_has_no_credentials(tmp_path) -> None:
     md_path = tmp_path / "jibi_manual_update_2026-05-23.md"
     json_path = tmp_path / "jibi_manual_update_2026-05-23.json"
@@ -69,6 +103,7 @@ def test_write_manual_run_manifest_has_no_credentials(tmp_path) -> None:
         run_date="2026-05-23",
         append_mode="dry_run",
         target_sheet_name="jibi 후보",
+        sheet_schema="candidate",
         rss_inbox_path=Path("data/inbox/articles/rss_2026-05-23.jsonl"),
         preview_csv_path=Path(
             "outputs/daily_digest/2026-05-23_sheet_append_preview.csv"
@@ -97,6 +132,8 @@ def test_write_manual_run_manifest_has_no_credentials(tmp_path) -> None:
     )
 
     assert manifest.append_dry_run is True
+    assert manifest.replace_existing is False
+    assert manifest.sheet_schema == "candidate"
     md_text = md_path.read_text(encoding="utf-8")
     json_payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert "Preview CSV" in md_text

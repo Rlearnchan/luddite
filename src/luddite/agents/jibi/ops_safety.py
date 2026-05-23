@@ -13,7 +13,8 @@ console = Console()
 
 DEFAULT_APPEND_MODE = "dry_run"
 STAGING_APPEND_MODE = "staging_append"
-VALID_APPEND_MODES = {DEFAULT_APPEND_MODE, STAGING_APPEND_MODE}
+STAGING_REPLACE_MODE = "staging_replace"
+VALID_APPEND_MODES = {DEFAULT_APPEND_MODE, STAGING_APPEND_MODE, STAGING_REPLACE_MODE}
 JIBI_STAGING_SHEET = "jibi 후보"
 FORBIDDEN_TOPIC_SHEET = "주제 찾기"
 
@@ -26,6 +27,10 @@ class JibiOpsSafetyConfig:
     @property
     def dry_run(self) -> bool:
         return self.append_mode == DEFAULT_APPEND_MODE
+
+    @property
+    def replace_existing(self) -> bool:
+        return self.append_mode == STAGING_REPLACE_MODE
 
 
 def normalize_append_mode(value: str | None) -> str:
@@ -47,9 +52,9 @@ def validate_ops_safety(
     sheet = (target_sheet_name or JIBI_STAGING_SHEET).strip()
     if sheet == FORBIDDEN_TOPIC_SHEET:
         raise ValueError("Jibi manual ops must never append to `주제 찾기`.")
-    if mode == STAGING_APPEND_MODE and sheet != JIBI_STAGING_SHEET:
+    if mode in {STAGING_APPEND_MODE, STAGING_REPLACE_MODE} and sheet != JIBI_STAGING_SHEET:
         raise ValueError(
-            "staging_append may only target the exact `jibi 후보` sheet."
+            "real Jibi sheet writes may only target the exact `jibi 후보` sheet."
         )
     return JibiOpsSafetyConfig(append_mode=mode, target_sheet_name=sheet)
 

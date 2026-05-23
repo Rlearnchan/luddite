@@ -224,9 +224,34 @@ source material.
 
 ## Research-team Bundle Review
 
-The daily digest and quality report show report-only story bundles. The Google
-Sheet preview still appends separate candidate rows by default; bundle grouping
-does not change the sheet schema and does not collapse rows yet.
+The daily digest and quality report show report-only story bundles. The renderer
+also writes a sheet-native bundle review CSV:
+
+```text
+outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
+```
+
+For team evaluation, the preferred visible sheet is the existing shared
+`jibi 후보` tab reused as a current-day review board. This avoids making a new
+tool for reviewers. The normal candidate append CSV is still generated for
+audit/backward compatibility, but reviewers should usually see the bundle review
+board instead of separate candidate rows.
+
+Dry-run the board replacement:
+
+```bash
+JIBI_SHEET_SCHEMA=bundle_review make jibi-manual-update
+```
+
+When the dry-run report is clean and the team is ready to review in the shared
+sheet, replace the current contents of `jibi 후보` with the day's bundle board:
+
+```bash
+JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
+```
+
+`staging_replace` is explicit because it clears and rewrites the target tab. It
+is allowed only for `jibi 후보`; the runner still refuses to write to `주제 찾기`.
 
 Reviewers should read the bundle primary as the row to judge first:
 
@@ -245,6 +270,16 @@ Good one-line feedback examples:
 - `promote — 청년 쉬었음 + 남성 경제활동참가율 묶으면 가능`
 - `needs_more_evidence — 양파는 가격 데이터/산지 기사 필요`
 - `reject — 고유가 지원금 현황만으로는 보도자료 느낌`
+
+Suggested review columns in the shared sheet:
+
+- `review_result`: `promote`, `keep`, `needs_more_evidence`, `merge`,
+  `evidence_only`, or `reject`.
+- `research_team_note`: one sentence on whether this can become a 슈카월드식
+  storyline.
+- `reviewer`: reviewer name or initials.
+- `promoted_to_topic_finding`: mark only after someone manually promotes the
+  item.
 
 ## Google Sheet Dry-run
 

@@ -35,6 +35,8 @@ class GoogleSheetsClient(Protocol):
         values: list[list[str]],
     ) -> None: ...
 
+    def clear_values(self, spreadsheet_id: str, sheet_name: str) -> None: ...
+
     def append_rows(
         self,
         spreadsheet_id: str,
@@ -131,6 +133,18 @@ class GoogleSheetsApiClient:
                 range=f"'{sheet_name}'!{start_cell}",
                 valueInputOption="RAW",
                 body={"values": values},
+            )
+            .execute()
+        )
+
+    def clear_values(self, spreadsheet_id: str, sheet_name: str) -> None:
+        (
+            self.service.spreadsheets()
+            .values()
+            .clear(
+                spreadsheetId=spreadsheet_id,
+                range=f"'{sheet_name}'",
+                body={},
             )
             .execute()
         )
