@@ -1,0 +1,851 @@
+"""Report-only article content enrichment review for Jibi candidates."""
+
+from __future__ import annotations
+
+import json
+import re
+from collections import Counter
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Annotated, Any, Protocol
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+import typer
+from rich.console import Console
+
+from luddite import paths
+from luddite.agents.jibi.normalize_candidates import normalize_article
+from luddite.agents.jibi.render_daily_digest import (
+    _top_exclusion_reasons,
+    _top_quality_gate_failures,
+    top_candidates,
+)
+from luddite.agents.jibi.score_candidates import score_candidate
+from luddite.collectors.rss_probe import HttpResponse
+from luddite.utils.jsonl import read_jsonl
+from luddite.utils.urls import canonicalize_url
+
+app = typer.Typer(no_args_is_help=False)
+console = Console()
+
+ENRICHMENT_STATUSES = {
+    "not_attempted",
+    "ok",
+    "blocked",
+    "paywalled_or_teaser",
+    "empty",
+    "error",
+}
+ENRICHED_SCORING_TEXT_LIMIT = 1600
+DISQUALIFYING_ENRICHED_FLAGS = {
+    "single_company_frame",
+    "single_stock_or_asset_frame",
+    "market_rate_stress",
+}
+BOILERPLATE_MARKERS = {
+    "ADVERTISEMENT",
+    "All rights reserved",
+    "Copyright",
+    "Internet Explorer",
+    "Related Internet Links",
+    "Sign up for our morning newsletter",
+    "구독하고 무제한",
+    "기사제보",
+    "무단 전재",
+    "무단전재",
+    "본문 바로가기",
+    "저작권",
+    "투자 권유",
+}
+PAYWALL_MARKERS = {
+    "paywall",
+    "subscribe",
+    "구독하고 무제한",
+    "프리미엄9",
+}
+META_DESCRIPTION_KEYS = {
+    "description",
+    "og:description",
+    "twitter:description",
+}
+
+
+class ArticleHttpClient(Protocol):
+    def fetch(self, url: str, *, timeout: float) -> HttpResponse:
+        """Fetch one article URL."""
+
+
+class UrlLibArticleHttpClient:
+    def fetch(self, url: str, *, timeout: float) -> HttpResponse:
+        request = Request(
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (compatible; LudditeContentEnrichment/1.0; "
+                    "+https://github.com/Rlearnchan/luddite)"
+                )
+            },
+        )
+        try:
+            with urlopen(request, timeout=timeout) as response:  # noqa: S310
+                return HttpResponse(
+                    url=response.geturl(),
+                    status=response.status,
+                    content_type=response.headers.get("content-type"),
+                    body=response.read(2_000_000),
+                )
+        except HTTPError as exc:
+            return HttpResponse(
+                url=exc.url,
+                status=exc.code,
+                content_type=exc.headers.get("content-type") if exc.headers else None,
+                body=exc.read(256_000),
+            )
+        except URLError as exc:
+            raise RuntimeError(str(exc.reason)) from exc
+
+
+@dataclass(frozen=True)
+class SelectedCandidate:
+    candidate: dict[str, Any]
+    selection_role: str
+
+
+@dataclass
+class EnrichmentResult:
+    candidate_id: str
+    title: str
+    source: str
+    url: str
+    selection_role: str
+    content_enrichment_status: str = "not_attempted"
+    content_enrichment_method: str = ""
+    body_chars: int = 0
+    paragraph_count: int = 0
+    meta_description_chars: int = 0
+    paywall_or_blocked_reason: str = ""
+    fetched_at: str = ""
+    http_status: int | None = None
+    body_text: str = ""
+    meta_description: str = ""
+
+    def to_report_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload.pop("body_text", None)
+        payload.pop("meta_description", None)
+        return payload
+
+
+class _ArticleTextParser(HTMLParser):
+    def __init__(self, *, target_id: str | None = None) -> None:
+        super().__init__(convert_charrefs=True)
+        self.target_id = target_id
+        self.title_chunks: list[str] = []
+        self.meta_descriptions: list[str] = []
+        self.next_data_chunks: list[str] = []
+        self.paragraphs: list[str] = []
+        self._tag_stack: list[str] = []
+        self._title_depth = 0
+        self._script_depth = 0
+        self._target_depth = 0
+        self._paragraph_depth = 0
+        self._current_paragraph: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        attr_map = {key.lower(): value or "" for key, value in attrs}
+        self._tag_stack.append(tag)
+        if tag == "title":
+            self._title_depth += 1
+        if tag == "meta":
+            key = (
+                attr_map.get("name")
+                or attr_map.get("property")
+                or attr_map.get("itemprop")
+                or ""
+            ).lower()
+            if key in META_DESCRIPTION_KEYS and attr_map.get("content"):
+                self.meta_descriptions.append(_clean_text(attr_map["content"]))
+        if tag == "script" and attr_map.get("id") == "__NEXT_DATA__":
+            self._script_depth += 1
+        if self.target_id and attr_map.get("id") == self.target_id:
+            self._target_depth += 1
+        elif self._target_depth:
+            self._target_depth += 1
+        if tag == "p" and (self._target_depth or self.target_id is None):
+            self._paragraph_depth += 1
+            self._current_paragraph = []
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag == "p" and self._paragraph_depth:
+            paragraph = _clean_text(" ".join(self._current_paragraph))
+            if paragraph and not _is_boilerplate(paragraph):
+                self.paragraphs.append(paragraph)
+            self._current_paragraph = []
+            self._paragraph_depth = max(0, self._paragraph_depth - 1)
+        if tag == "title":
+            self._title_depth = max(0, self._title_depth - 1)
+        if tag == "script" and self._script_depth:
+            self._script_depth = max(0, self._script_depth - 1)
+        if self._target_depth:
+            self._target_depth = max(0, self._target_depth - 1)
+        if self._tag_stack:
+            self._tag_stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        if self._title_depth:
+            self.title_chunks.append(data)
+        if self._script_depth:
+            self.next_data_chunks.append(data)
+        if self._paragraph_depth:
+            self._current_paragraph.append(data)
+
+    @property
+    def title(self) -> str:
+        return _clean_text(" ".join(self.title_chunks))
+
+    @property
+    def meta_description(self) -> str:
+        return next((item for item in self.meta_descriptions if item), "")
+
+    @property
+    def next_data(self) -> str:
+        return "".join(self.next_data_chunks).strip()
+
+
+def _clean_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+def _is_boilerplate(value: str) -> bool:
+    text = _clean_text(value)
+    if len(text) < 20:
+        return True
+    lowered = text.lower()
+    return any(marker.lower() in lowered for marker in BOILERPLATE_MARKERS)
+
+
+def _dedupe_paragraphs(paragraphs: list[str]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for paragraph in paragraphs:
+        key = paragraph[:120]
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(paragraph)
+    return deduped
+
+
+def _parse_target_paragraphs(
+    html_text: str,
+    *,
+    target_id: str | None,
+) -> tuple[str, str, list[str]]:
+    parser = _ArticleTextParser(target_id=target_id)
+    parser.feed(html_text)
+    return parser.title, parser.meta_description, _dedupe_paragraphs(parser.paragraphs)
+
+
+def _next_data_texts(payload_text: str) -> list[str]:
+    if not payload_text:
+        return []
+    try:
+        payload = json.loads(payload_text)
+    except json.JSONDecodeError:
+        return []
+    texts: list[str] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == "text" and isinstance(child, str):
+                    text = _clean_text(child)
+                    if len(text) >= 35 and not _is_boilerplate(text):
+                        texts.append(text)
+                else:
+                    walk(child)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item)
+
+    walk(payload)
+    return _dedupe_paragraphs(texts)
+
+
+def _decode_html(response: HttpResponse) -> str:
+    content_type = response.content_type or ""
+    charset_match = re.search(r"charset=([^;]+)", content_type, flags=re.I)
+    charset = charset_match.group(1).strip() if charset_match else "utf-8"
+    try:
+        return response.body.decode(charset, errors="ignore")
+    except LookupError:
+        return response.body.decode("utf-8", errors="ignore")
+
+
+def _source_key(candidate: dict[str, Any]) -> str:
+    return " ".join(
+        [
+            str(candidate.get("source_id") or ""),
+            str(candidate.get("source") or ""),
+            str(candidate.get("seed_url") or candidate.get("source_url_canonical") or ""),
+        ]
+    ).lower()
+
+
+def _method_for_candidate(candidate: dict[str, Any]) -> tuple[str, str | None]:
+    source_key = _source_key(candidate)
+    if "atlas_obscura" in source_key or "atlasobscura.com" in source_key:
+        return "atlas_blocked_manual_only", None
+    if "bbc" in source_key:
+        return "bbc_next_data_text", None
+    if "npr" in source_key:
+        return "npr_storytext_p", "storytext"
+    if "infomax" in source_key or "연합인포맥스" in source_key:
+        return "infomax_article_view_content", "article-view-content-div"
+    if "hankyung" in source_key or "한국경제" in source_key:
+        return "hankyung_articletxt", "articletxt"
+    return "generic_article_p", None
+
+
+def _status_for_extracted_text(
+    *,
+    source_key: str,
+    html_text: str,
+    body_text: str,
+    paragraphs: list[str],
+    meta_description: str,
+) -> tuple[str, str]:
+    html_lower = html_text.lower()
+    body_lower = body_text.lower()
+    paywall_hits = [
+        marker
+        for marker in PAYWALL_MARKERS
+        if marker.lower() in html_lower or marker.lower() in body_lower
+    ]
+    if "hankyung" in source_key and paywall_hits and len(body_text) < 700:
+        return "paywalled_or_teaser", ",".join(paywall_hits)
+    if len(body_text) >= 450 and len(paragraphs) >= 2:
+        return "ok", ""
+    if len(body_text) >= 250 and len(paragraphs) >= 1 and meta_description:
+        return "ok", ""
+    return "empty", "no_extractable_article_body"
+
+
+def enrich_candidate(
+    candidate: dict[str, Any],
+    *,
+    selection_role: str,
+    http_client: ArticleHttpClient | None = None,
+    timeout: float = 12,
+    fetched_at: str | None = None,
+) -> EnrichmentResult:
+    url = canonicalize_url(
+        str(candidate.get("seed_url") or candidate.get("source_url_canonical") or "")
+    )
+    result = EnrichmentResult(
+        candidate_id=str(candidate.get("candidate_id") or ""),
+        title=str(candidate.get("title") or ""),
+        source=str(candidate.get("source") or candidate.get("source_id") or "unknown"),
+        url=url,
+        selection_role=selection_role,
+        fetched_at=fetched_at or datetime.now(UTC).isoformat(),
+    )
+    method, target_id = _method_for_candidate(candidate)
+    result.content_enrichment_method = method
+    if not url:
+        result.content_enrichment_status = "error"
+        result.paywall_or_blocked_reason = "missing_url"
+        return result
+    if method == "atlas_blocked_manual_only":
+        result.content_enrichment_status = "blocked"
+        result.paywall_or_blocked_reason = "atlas_cloudflare_manual_only"
+        return result
+    client = http_client or UrlLibArticleHttpClient()
+    try:
+        response = client.fetch(url, timeout=timeout)
+    except Exception as exc:
+        result.content_enrichment_status = "error"
+        result.paywall_or_blocked_reason = type(exc).__name__
+        return result
+    result.http_status = response.status
+    if response.status in {401, 403}:
+        result.content_enrichment_status = "blocked"
+        result.paywall_or_blocked_reason = f"http_{response.status}"
+        return result
+    if response.status is not None and response.status >= 400:
+        result.content_enrichment_status = "error"
+        result.paywall_or_blocked_reason = f"http_{response.status}"
+        return result
+
+    html_text = _decode_html(response)
+    title, meta_description, paragraphs = _parse_target_paragraphs(html_text, target_id=target_id)
+    if method == "bbc_next_data_text":
+        parser = _ArticleTextParser()
+        parser.feed(html_text)
+        paragraphs = _next_data_texts(parser.next_data) or paragraphs
+        title = parser.title or title
+        meta_description = parser.meta_description or meta_description
+    elif method == "generic_article_p":
+        title, meta_description, paragraphs = _parse_target_paragraphs(html_text, target_id=None)
+    body_text = _clean_text("\n".join(paragraphs))
+    result.body_text = body_text
+    result.meta_description = meta_description
+    result.body_chars = len(body_text)
+    result.paragraph_count = len(paragraphs)
+    result.meta_description_chars = len(meta_description)
+    status, reason = _status_for_extracted_text(
+        source_key=_source_key(candidate),
+        html_text=html_text,
+        body_text=body_text,
+        paragraphs=paragraphs,
+        meta_description=meta_description,
+    )
+    result.content_enrichment_status = status
+    result.paywall_or_blocked_reason = reason
+    return result
+
+
+def _total_score(candidate: dict[str, Any]) -> float:
+    return float(candidate.get("scores", {}).get("total_score", 0) or 0)
+
+
+def select_candidates_for_enrichment(
+    candidates: list[dict[str, Any]],
+    *,
+    near_miss_limit: int = 10,
+    top_limit: int = 10,
+    max_per_source: int = 3,
+    min_score: float = 35,
+) -> list[SelectedCandidate]:
+    top = top_candidates(
+        candidates,
+        limit=top_limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
+    top_ids = {str(item.get("candidate_id")) for item in top}
+    selected: list[SelectedCandidate] = [
+        SelectedCandidate(candidate=item, selection_role="top") for item in top
+    ]
+    near_misses = sorted(
+        [item for item in candidates if str(item.get("candidate_id")) not in top_ids],
+        key=_total_score,
+        reverse=True,
+    )[:near_miss_limit]
+    selected.extend(
+        SelectedCandidate(candidate=item, selection_role="near_miss") for item in near_misses
+    )
+    deduped: list[SelectedCandidate] = []
+    seen_urls: set[str] = set()
+    for item in selected:
+        url = canonicalize_url(
+            str(
+                item.candidate.get("seed_url")
+                or item.candidate.get("source_url_canonical")
+                or ""
+            )
+        )
+        key = url or str(item.candidate.get("candidate_id"))
+        if key in seen_urls:
+            continue
+        seen_urls.add(key)
+        deduped.append(item)
+    return deduped
+
+
+def enriched_what_if(
+    candidate: dict[str, Any],
+    enrichment: EnrichmentResult,
+) -> dict[str, Any] | None:
+    if enrichment.content_enrichment_status != "ok":
+        return None
+    original_gate_reasons = _top_quality_gate_failures(candidate)
+    original_flags = list(candidate.get("quality_flags") or [])
+    original_failure_modes = list(candidate.get("failure_modes") or [])
+    enriched_summary = _clean_text(
+        "\n".join(
+            item
+            for item in [
+                str(candidate.get("summary") or ""),
+                enrichment.meta_description,
+                enrichment.body_text[:ENRICHED_SCORING_TEXT_LIMIT],
+            ]
+            if item
+        )
+    )
+    article = {
+        "article_id": candidate.get("article_id"),
+        "title": candidate.get("title"),
+        "url": candidate.get("seed_url") or candidate.get("source_url_canonical"),
+        "source": candidate.get("source"),
+        "source_id": candidate.get("source_id"),
+        "source_url_canonical": candidate.get("source_url_canonical")
+        or candidate.get("seed_url"),
+        "duplicate_key": candidate.get("duplicate_key"),
+        "published_at": candidate.get("published_at"),
+        "collected_at": candidate.get("collected_at"),
+        "language": candidate.get("language"),
+        "region": candidate.get("region"),
+        "raw_summary": enriched_summary,
+        "collector": candidate.get("source_type") or "rss",
+        "tags": [],
+    }
+    enriched = score_candidate(normalize_article(article))
+    enriched["near_duplicate_role"] = "none"
+    enriched_gate_reasons = _top_quality_gate_failures(enriched)
+    enriched_flags = list(enriched.get("quality_flags") or [])
+    enriched_failure_modes = list(enriched.get("failure_modes") or [])
+    original_score = _total_score(candidate)
+    enriched_score = _total_score(enriched)
+    return {
+        "original_score": original_score,
+        "enriched_score": enriched_score,
+        "score_delta": round(enriched_score - original_score, 1),
+        "original_action": candidate.get("recommended_action"),
+        "enriched_action": enriched.get("recommended_action"),
+        "original_grade": candidate.get("final_grade"),
+        "enriched_grade": enriched.get("final_grade"),
+        "original_quality_flags": original_flags,
+        "enriched_quality_flags": enriched_flags,
+        "original_failure_modes": original_failure_modes,
+        "enriched_failure_modes": enriched_failure_modes,
+        "original_top_gate_reasons": original_gate_reasons,
+        "enriched_top_gate_reasons": enriched_gate_reasons,
+        "empty_summary_resolved": bool(
+            {"empty_summary", "empty_summary_domestic_business"}.intersection(original_flags)
+        )
+        and not {"empty_summary", "empty_summary_domestic_business"}.intersection(
+            enriched_flags
+        ),
+        "thin_evidence_resolved": "thin_evidence" in original_failure_modes
+        and "thin_evidence" not in enriched_failure_modes,
+        "generic_why_persisted": "generic_why_for_unspecific_seed_type"
+        in enriched_gate_reasons,
+        "disqualifying_details_found": bool(
+            DISQUALIFYING_ENRICHED_FLAGS.intersection(enriched_flags)
+            - DISQUALIFYING_ENRICHED_FLAGS.intersection(original_flags)
+        ),
+        "top_eligible_after_enrichment": (
+            enriched.get("recommended_action") in {"send_to_anny", "gather_more_evidence"}
+            and not enriched_gate_reasons
+            and enriched.get("final_grade") != "D"
+            and enriched_score >= 35
+        ),
+    }
+
+
+def _table_cell(value: object, *, limit: int = 120) -> str:
+    text = _clean_text(str(value or ""))
+    if len(text) > limit:
+        text = text[: limit - 3].rstrip() + "..."
+    return text.replace("|", "\\|")
+
+
+def _format_list(values: list[Any] | set[Any] | tuple[Any, ...] | None) -> str:
+    if not values:
+        return "none"
+    return ", ".join(str(value) for value in values)
+
+
+def _source_status_rows(records: list[dict[str, Any]]) -> list[str]:
+    by_source: dict[str, list[dict[str, Any]]] = {}
+    for record in records:
+        by_source.setdefault(str(record["source"]), []).append(record)
+    rows = [
+        "| source | selected | ok | blocked | paywalled_or_teaser | empty | error | "
+        "dominant_method |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for source, items in sorted(by_source.items()):
+        statuses = Counter(str(item["content_enrichment_status"]) for item in items)
+        methods = Counter(str(item["content_enrichment_method"]) for item in items)
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(source),
+                    str(len(items)),
+                    str(statuses.get("ok", 0)),
+                    str(statuses.get("blocked", 0)),
+                    str(statuses.get("paywalled_or_teaser", 0)),
+                    str(statuses.get("empty", 0)),
+                    str(statuses.get("error", 0)),
+                    _table_cell(methods.most_common(1)[0][0] if methods else "none"),
+                ]
+            )
+            + " |"
+        )
+    return rows
+
+
+def _candidate_table_rows(records: list[dict[str, Any]]) -> list[str]:
+    rows = [
+        "| role | title | source | status | method | body_chars | paragraphs | "
+        "meta_description_chars | reason |",
+        "| --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |",
+    ]
+    for record in records:
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(record["selection_role"]),
+                    _table_cell(record["title"]),
+                    _table_cell(record["source"]),
+                    _table_cell(record["content_enrichment_status"]),
+                    _table_cell(record["content_enrichment_method"]),
+                    str(record["body_chars"]),
+                    str(record["paragraph_count"]),
+                    str(record["meta_description_chars"]),
+                    _table_cell(record["paywall_or_blocked_reason"]),
+                ]
+            )
+            + " |"
+        )
+    return rows
+
+
+def _what_if_table_rows(records: list[dict[str, Any]]) -> list[str]:
+    rows = [
+        "| role | title | source | status | score_delta | action_delta | grade_delta | "
+        "resolved | remaining_gate_reasons |",
+        "| --- | --- | --- | --- | ---: | --- | --- | --- | --- |",
+    ]
+    any_rows = False
+    for record in records:
+        what_if = record.get("what_if")
+        if not isinstance(what_if, dict):
+            continue
+        resolved = []
+        if what_if.get("empty_summary_resolved"):
+            resolved.append("empty_summary")
+        if what_if.get("thin_evidence_resolved"):
+            resolved.append("thin_evidence")
+        if what_if.get("disqualifying_details_found"):
+            resolved.append("disqualifying_details_found")
+        action_delta = f"{what_if.get('original_action')} -> {what_if.get('enriched_action')}"
+        grade_delta = f"{what_if.get('original_grade')} -> {what_if.get('enriched_grade')}"
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(record["selection_role"]),
+                    _table_cell(record["title"]),
+                    _table_cell(record["source"]),
+                    _table_cell(record["content_enrichment_status"]),
+                    str(what_if.get("score_delta", 0)),
+                    _table_cell(action_delta),
+                    _table_cell(grade_delta),
+                    _table_cell(_format_list(resolved)),
+                    _table_cell(_format_list(what_if.get("enriched_top_gate_reasons"))),
+                ]
+            )
+            + " |"
+        )
+        any_rows = True
+    if not any_rows:
+        rows.append("| none | none | unknown | empty | 0 | none | none | none | none |")
+    return rows
+
+
+def write_enrichment_report(
+    md_path: Path,
+    json_path: Path,
+    records: list[dict[str, Any]],
+    *,
+    selected_count: int,
+    top_selected: int,
+    near_miss_selected: int,
+    review_date: str,
+) -> None:
+    status_counts = Counter(str(item["content_enrichment_status"]) for item in records)
+    lines = [
+        f"# Jibi Content Enrichment Review — {review_date}",
+        "",
+        "## Summary",
+        "",
+        f"- selected_candidates: {selected_count}",
+        f"- top_selected: {top_selected}",
+        f"- near_miss_selected: {near_miss_selected}",
+    ]
+    for status in ["ok", "blocked", "paywalled_or_teaser", "empty", "error"]:
+        lines.append(f"- enrichment_{status}: {status_counts.get(status, 0)}")
+    lines.extend(
+        [
+            "",
+            "## Source Status Summary",
+            "",
+            *_source_status_rows(records),
+            "",
+            "## Candidate Enrichment Table",
+            "",
+            *_candidate_table_rows(records),
+            "",
+            "## RSS-only vs Enriched What-if Scoring",
+            "",
+            *_what_if_table_rows(records),
+            "",
+            "## Copyright / Storage Note",
+            "",
+            (
+                "No full article bodies are printed or committed. Enrichment is used only "
+                "for derived diagnostics."
+            ),
+            "",
+        ]
+    )
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    json_path.write_text(
+        json.dumps(records, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def render_content_enrichment_review(
+    *,
+    input_path: Path = paths.JIBI_SCORED_CANDIDATES_JSONL,
+    output_md: Path | None = None,
+    output_json: Path | None = None,
+    review_date: str | None = None,
+    near_miss_limit: int = 10,
+    top_limit: int = 10,
+    max_per_source: int = 3,
+    min_score: float = 35,
+    http_client: ArticleHttpClient | None = None,
+    timeout: float = 12,
+) -> tuple[Path, Path, list[dict[str, Any]]]:
+    date_text = review_date or datetime.now(UTC).date().isoformat()
+    md_path = output_md or paths.REPORTS_DIR / f"jibi_content_enrichment_{date_text}.md"
+    json_path = output_json or paths.REPORTS_DIR / f"jibi_content_enrichment_{date_text}.json"
+    candidates = read_jsonl(input_path) if input_path.exists() else []
+    selected = select_candidates_for_enrichment(
+        candidates,
+        near_miss_limit=near_miss_limit,
+        top_limit=top_limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
+    top_ids = {
+        str(item.candidate.get("candidate_id"))
+        for item in selected
+        if item.selection_role == "top"
+    }
+    rendered_top = [item.candidate for item in selected if item.selection_role == "top"]
+    top_source_counts = Counter(str(item.get("source") or "unknown") for item in rendered_top)
+    fetched_at = datetime.now(UTC).isoformat()
+    records: list[dict[str, Any]] = []
+    for item in selected:
+        enrichment = enrich_candidate(
+            item.candidate,
+            selection_role=item.selection_role,
+            http_client=http_client,
+            timeout=timeout,
+            fetched_at=fetched_at,
+        )
+        record = enrichment.to_report_dict()
+        record["original_score"] = _total_score(item.candidate)
+        record["original_action"] = item.candidate.get("recommended_action")
+        record["original_grade"] = item.candidate.get("final_grade")
+        record["original_top_gate_reasons"] = _top_exclusion_reasons(
+            item.candidate,
+            top_ids,
+            top_source_counts,
+            rendered_top_count=len(rendered_top),
+            limit=top_limit,
+            max_per_source=max_per_source,
+            min_score=min_score,
+        )
+        what_if = enriched_what_if(item.candidate, enrichment)
+        if what_if is not None:
+            record["what_if"] = what_if
+        elif enrichment.content_enrichment_status in {
+            "blocked",
+            "paywalled_or_teaser",
+            "empty",
+        }:
+            record["what_if"] = {
+                "original_score": record["original_score"],
+                "enriched_score": None,
+                "score_delta": None,
+                "original_action": record["original_action"],
+                "enriched_action": None,
+                "original_grade": record["original_grade"],
+                "enriched_grade": None,
+                "original_quality_flags": item.candidate.get("quality_flags") or [],
+                "enriched_quality_flags": [],
+                "original_failure_modes": item.candidate.get("failure_modes") or [],
+                "enriched_failure_modes": [],
+                "original_top_gate_reasons": record["original_top_gate_reasons"],
+                "enriched_top_gate_reasons": [],
+                "empty_summary_resolved": False,
+                "thin_evidence_resolved": False,
+                "generic_why_persisted": False,
+                "disqualifying_details_found": enrichment.content_enrichment_status
+                in {"blocked", "paywalled_or_teaser", "empty"},
+                "top_eligible_after_enrichment": False,
+            }
+        records.append(record)
+    write_enrichment_report(
+        md_path,
+        json_path,
+        records,
+        selected_count=len(selected),
+        top_selected=sum(1 for item in selected if item.selection_role == "top"),
+        near_miss_selected=sum(1 for item in selected if item.selection_role == "near_miss"),
+        review_date=date_text,
+    )
+    return md_path, json_path, records
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    input_path: Annotated[
+        Path,
+        typer.Option("--input", help="Scored Jibi candidate JSONL input."),
+    ] = paths.JIBI_SCORED_CANDIDATES_JSONL,
+    date_text: Annotated[
+        str | None,
+        typer.Option("--date", help="Review date for output filenames."),
+    ] = None,
+    output_md: Annotated[
+        Path | None,
+        typer.Option("--output-md", help="Markdown report output path."),
+    ] = None,
+    output_json: Annotated[
+        Path | None,
+        typer.Option("--output-json", help="JSON report output path."),
+    ] = None,
+    near_miss_limit: Annotated[
+        int,
+        typer.Option("--near-miss-limit", help="Number of non-top candidates to enrich."),
+    ] = 10,
+    timeout: Annotated[
+        float,
+        typer.Option("--timeout", help="Per-article fetch timeout in seconds."),
+    ] = 12,
+) -> None:
+    md_path, json_path, records = render_content_enrichment_review(
+        input_path=input_path,
+        output_md=output_md,
+        output_json=output_json,
+        review_date=date_text,
+        near_miss_limit=near_miss_limit,
+        timeout=timeout,
+    )
+    status_counts = Counter(str(item["content_enrichment_status"]) for item in records)
+    console.print(
+        "[green]Wrote Jibi content enrichment review "
+        f"({len(records)} selected; {dict(status_counts)}) to {md_path} and {json_path}."
+        "[/green]"
+    )
+
+
+if __name__ == "__main__":
+    app()
