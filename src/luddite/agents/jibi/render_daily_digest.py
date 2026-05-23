@@ -22,6 +22,10 @@ from luddite.agents.jibi.append_to_sheet import (
     REVIEWER_COLUMNS,
     SHEET_COLUMNS,
 )
+from luddite.agents.jibi.review_board_copy import (
+    build_review_board_copy,
+    review_board_title,
+)
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -622,43 +626,7 @@ def _human_review_title(
     candidate: dict[str, Any],
     candidate_title: str,
 ) -> str:
-    raw_title = str(record.get("bundle_title") or candidate_title or candidate.get("title") or "")
-    text = " ".join(
-        [
-            raw_title,
-            str(candidate_title or ""),
-            str(candidate.get("title") or ""),
-            str(candidate.get("summary") or ""),
-            str(candidate.get("seed_type") or ""),
-        ]
-    ).lower()
-    if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
-        return "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
-    if "토큰화" in text or "tokenization" in text or "rwa" in text:
-        return "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
-    if any(
-        term in text
-        for term in (
-            "공공/현장 ai",
-            "ai 도입",
-            "ai 부적절",
-            "ai 드론",
-            "ai 노사",
-            "public_ai",
-        )
-    ):
-        return "AI가 현장 행정과 치안으로 들어올 때 생기는 문제"
-    if "양파" in text:
-        return "양파가 너무 많으면 정부는 무엇을 하나"
-    if any(term in text for term in ("무료배달", "배달비", "수수료", "플랫폼")):
-        return "무료배달은 누가 내나: 배달앱 수수료와 업주 부담"
-    if any(term in text for term in ("고유가", "유가", "피해지원금", "지원금")):
-        return "고유가 지원금 현황으로 보는 에너지 가격 충격"
-    if "spacex" in text or "starship" in text:
-        return "스페이스X 스타십: 상장 기대와 환경 논란"
-    if "taunting and degrading civilians" in text or "degrading civilians" in text:
-        return "전쟁 중 민간인 조롱과 모욕은 왜 국제법 문제가 되나"
-    return _clean_review_title(raw_title or candidate_title)
+    return review_board_title(record, candidate, candidate_title)
 
 
 def _human_bundle_type(value: str) -> str:
@@ -935,25 +903,14 @@ def _human_description(
     related_titles: str,
     history_status: str,
 ) -> str:
-    evidence = candidate.get("evidence_needed") or ""
-    if isinstance(evidence, list):
-        evidence_text = ", ".join(str(item) for item in evidence if str(item).strip())
-    else:
-        evidence_text = _compact_text(evidence)
-    source = _source_cue(candidate)
-    parts = [
-        _board_why_sentence(record, candidate, reason),
-        _board_growth_sentence(record, candidate),
-        _board_need_sentence(
-            record,
-            candidate,
-            evidence_text,
-            related_titles,
-            history_status,
-        ),
-        source,
-    ]
-    return " ".join(part for part in parts if part)
+    del jibi_judgment, reason
+    return build_review_board_copy(
+        record=record,
+        candidate=candidate,
+        candidate_title=str(record.get("primary_title") or candidate.get("title") or ""),
+        related_titles=related_titles,
+        history_status=history_status,
+    ).description
 
 
 def _join_distinct_reason(primary: str, secondary: str) -> str:
@@ -1263,6 +1220,11 @@ def write_quality_report(
         story_bundle_records,
         review_history_index,
     )
+    review_board_experiment_lines = _review_board_experiment_snapshot(
+        story_bundle_records[:limit],
+        candidates,
+        review_history_index,
+    )
     storyline_fit_rows = _storyline_fit_audit_rows(
         candidates,
         top,
@@ -1304,6 +1266,10 @@ def write_quality_report(
         "## Source Mix Experiment Review",
         "",
         *source_mix_review,
+        "",
+        "## Review Board Experiment Snapshot",
+        "",
+        *review_board_experiment_lines,
         "",
         "## Source Role Cap Status",
         "",
@@ -2264,6 +2230,105 @@ def _cross_run_story_review_rows(
             + " |"
         )
     return rows or ["| none | none | new | no cross-run matches |"]
+
+
+def _candidate_by_id(candidates: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {
+        str(candidate.get("candidate_id")): candidate
+        for candidate in candidates
+        if candidate.get("candidate_id")
+    }
+
+
+def _record_representative_candidate(
+    record: dict[str, Any],
+    candidate_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    for key in [
+        "primary_candidate_id",
+        "supporting_candidate_ids",
+        "evidence_candidate_ids",
+    ]:
+        value = record.get(key)
+        if isinstance(value, list):
+            for item in value:
+                candidate = candidate_by_id.get(str(item))
+                if candidate:
+                    return candidate
+        else:
+            candidate = candidate_by_id.get(str(value or ""))
+            if candidate:
+                return candidate
+    return None
+
+
+def _review_board_experiment_snapshot(
+    records: list[dict[str, Any]],
+    candidates: list[dict[str, Any]],
+    history_index: dict[str, list[dict[str, Any]]],
+) -> list[str]:
+    candidate_by_id = _candidate_by_id(candidates)
+    source_counts: Counter[str] = Counter()
+    sublink_counts: Counter[str] = Counter()
+    score_buckets: Counter[str] = Counter()
+    reappearance_counts: Counter[str] = Counter()
+    for record in records:
+        representative = _record_representative_candidate(record, candidate_by_id)
+        source_counts[str((representative or {}).get("source") or "unknown")] += 1
+        sublink_count = min(
+            3,
+            len(record.get("supporting_candidate_ids", []))
+            + len(record.get("evidence_candidate_ids", [])),
+        )
+        sublink_counts[str(sublink_count)] += 1
+        score = _total_score(representative or {})
+        if score >= 70:
+            score_buckets["70+"] += 1
+        elif score >= 50:
+            score_buckets["50-69"] += 1
+        elif score > 0:
+            score_buckets["1-49"] += 1
+        else:
+            score_buckets["unknown"] += 1
+        reappearance_counts[_record_history_status(record, history_index)] += 1
+    lines = [
+        f"- board_row_count: {len(records)}",
+        "- source_mix: "
+        + (
+            ", ".join(f"{source}={count}" for source, count in source_counts.most_common())
+            or "none"
+        ),
+        "- story_reappearance_status: "
+        + (
+            ", ".join(
+                f"{status}={count}" for status, count in reappearance_counts.most_common()
+            )
+            or "none"
+        ),
+        "- sublink_count_distribution: "
+        + (
+            ", ".join(
+                f"{count}_links={value}"
+                for count, value in sorted(sublink_counts.items(), key=lambda item: item[0])
+            )
+            or "none"
+        ),
+        "- score_distribution: "
+        + (
+            ", ".join(f"{bucket}={count}" for bucket, count in score_buckets.items())
+            or "none"
+        ),
+    ]
+    if records and source_counts:
+        source, count = source_counts.most_common(1)[0]
+        if len(records) >= 5 and count / len(records) >= 0.6:
+            lines.append(
+                f"- source_mix_warning: {source} is {count}/{len(records)} rows; "
+                "review source-role balance before enabling more of the same source"
+            )
+        else:
+            lines.append("- source_mix_warning: none")
+    return lines
 
 
 def _freshness_count(candidates: list[dict[str, Any]], status: str) -> int:

@@ -437,7 +437,7 @@ def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, str | int
         if not any(str(value).strip() for value in row):
             continue
         item: dict[str, str | int] = {"row": row_number}
-        for column in ["날짜", "제목", "점수", *REVIEWER_COLUMNS, "ID"]:
+        for column in BUNDLE_REVIEW_SHEET_COLUMNS:
             column_index = indexes.get(column)
             item[column] = (
                 row[column_index]

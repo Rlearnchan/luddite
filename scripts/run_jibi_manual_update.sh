@@ -121,7 +121,7 @@ echo "err_log=${ERR_FILE}"
 "${VENV_PYTHON}" -m luddite normalize-candidates
 "${VENV_PYTHON}" -m luddite score-candidates
 "${VENV_PYTHON}" -m luddite cluster-jibi-candidates
-"${VENV_PYTHON}" -m luddite render-daily-digest
+"${VENV_PYTHON}" -m luddite render-daily-digest --date "${JIBI_DATE}"
 
 if [[ ! -f "${PREVIEW_CSV}" ]]; then
   echo "Missing date-specific sheet preview CSV: ${PREVIEW_CSV}" >&2

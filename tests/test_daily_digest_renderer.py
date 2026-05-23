@@ -121,7 +121,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert bundle_rows[0]["리뷰-성원"] == ""
     assert "story_fit_uncertain" not in bundle_rows[0]["설명"]
     assert "manual_editorial_review" not in bundle_rows[0]["설명"]
-    assert "출처/원문:" in bundle_rows[0]["설명"]
+    assert "Manual Input의 '전당포 주식회사'" in bundle_rows[0]["설명"]
 
 
 def test_top_candidates_excludes_rejects() -> None:
@@ -430,7 +430,7 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert rows[0]["제목"] == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
     assert "merged_seed" not in rows[0]["설명"]
     assert "review_primary_and_bundle_supporting" not in rows[0]["설명"]
-    assert "한국은행 청년 노동시장 자료들이 같은 문제" in rows[0]["설명"]
+    assert "실업률만 보면 안 보이는 노동시장 밖 청년" in rows[0]["설명"]
     assert rows[0]["점수"] == "80점 · B · 자료 보강 필요"
 
 
@@ -523,7 +523,7 @@ def test_bundle_review_limit_and_near_miss_sublinks(tmp_path) -> None:
     with csv_path.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
     assert len(rows) == 1
-    assert rows[0]["제목"] == "AI가 현장 행정과 치안으로 들어올 때 생기는 문제"
+    assert rows[0]["제목"] == "AI가 공무원 보고서와 현장 치안에 들어올 때"
     assert rows[0]["서브 링크"].count("https://example.com/ai-support-") == 3
 
 
@@ -620,6 +620,10 @@ def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_pat
 
     report = report_path.read_text(encoding="utf-8")
     assert "## Source Freshness Summary" in report
+    assert "## Review Board Experiment Snapshot" in report
+    assert "- board_row_count:" in report
+    assert "- sublink_count_distribution:" in report
+    assert "- score_distribution:" in report
     assert "## Source Mix Experiment Review" in report
     assert "BBC News: raw=1, top=1, recent=1" in report
     assert "NPR: raw=1, top=0, recent=0, stale=1" in report

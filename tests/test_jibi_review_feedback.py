@@ -5,6 +5,7 @@ from luddite.agents.jibi.append_to_sheet import BUNDLE_REVIEW_SHEET_COLUMNS
 from luddite.agents.jibi.review_feedback import (
     parse_review_tag,
     render_review_feedback_summary,
+    render_review_history_calibration,
     summarize_review_feedback,
 )
 
@@ -119,3 +120,107 @@ def test_render_review_feedback_summary_accepts_old_nine_column_board(tmp_path) 
 
     assert summary["total_rows"] == 1
     assert summary["rows"][0]["score"] == ""
+
+
+def test_render_review_history_calibration_aggregates_multiday_feedback(tmp_path) -> None:
+    history_path = tmp_path / "jibi_review_board_history.jsonl"
+    candidates_path = tmp_path / "candidates.jsonl"
+    onion_url = "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156763248"
+    platform_url = "https://www.yna.co.kr/view/AKR20260522000100017"
+    payloads = [
+        {
+            "run_date": "2026-05-22",
+            "created_at": "2026-05-22T00:00:00+00:00",
+            "rows": [
+                {
+                    "날짜": "2026-05-22",
+                    "제목": "양파가 너무 많으면 정부는 무엇을 하나",
+                    "메인 링크": onion_url,
+                    "리뷰-성원": "reject — 보도자료 느낌",
+                    "ID": "2026-05-22:story_bundle_onion",
+                    "story_fingerprint": "onion_story",
+                }
+            ],
+        },
+        {
+            "run_date": "2026-05-23",
+            "created_at": "2026-05-23T00:00:00+00:00",
+            "rows": [
+                {
+                    "날짜": "2026-05-23",
+                    "제목": "양파가 너무 많으면 정부는 무엇을 하나",
+                    "메인 링크": onion_url,
+                    "리뷰-동찬": "needs — 가격 데이터 필요",
+                    "ID": "2026-05-23:story_bundle_onion",
+                    "story_fingerprint": "onion_story",
+                },
+                {
+                    "날짜": "2026-05-23",
+                    "제목": "무료배달은 누가 내나",
+                    "메인 링크": platform_url,
+                    "리뷰-성원": "seed — 업주 부담 구조 가능",
+                    "리뷰-형찬": "reject — 아직 단일 기사",
+                    "ID": "2026-05-23:story_bundle_platform",
+                    "story_fingerprint": "platform_story",
+                },
+            ],
+        },
+    ]
+    history_path.write_text(
+        "\n".join(json.dumps(item, ensure_ascii=False) for item in payloads) + "\n",
+        encoding="utf-8",
+    )
+    candidates_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "seed_url": onion_url,
+                        "source": "정책브리핑",
+                        "source_role_class": "policy_release",
+                        "seed_type": "policy_release_seed",
+                    },
+                    ensure_ascii=False,
+                ),
+                json.dumps(
+                    {
+                        "seed_url": platform_url,
+                        "source": "연합뉴스 산업",
+                        "source_role_class": "public_wire",
+                        "seed_type": "platform_labor_market",
+                    },
+                    ensure_ascii=False,
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    outputs, summary = render_review_history_calibration(
+        history_path=history_path,
+        candidates_path=candidates_path,
+        run_date="2026-05-23",
+        markdown_path=tmp_path / "calibration.md",
+        json_path=tmp_path / "calibration.json",
+    )
+
+    assert outputs.markdown_path.exists()
+    assert summary["total_rows"] == 3
+    assert summary["tag_counts"]["reject"] == 2
+    assert summary["tag_counts"]["needs"] == 1
+    assert summary["tag_counts"]["seed"] == 1
+    source_keys = {item["key"] for item in summary["source_feedback"]}
+    assert {"정책브리핑", "연합뉴스 산업"}.issubset(source_keys)
+    seed_type_keys = {item["key"] for item in summary["seed_type_feedback"]}
+    assert {"policy_release_seed", "platform_labor_market"}.issubset(seed_type_keys)
+    onion = next(
+        item
+        for item in summary["story_reappearance"]
+        if item["story_fingerprint"] == "onion_story"
+    )
+    assert onion["appearances"] == 2
+    assert summary["strong_disagreement_rows"][0]["reason"] == "seed_vs_reject"
+    report = outputs.markdown_path.read_text(encoding="utf-8")
+    assert "Source-Level Feedback Summary" in report
+    assert "Report-Only Recommendations" in report
