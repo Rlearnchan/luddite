@@ -31,6 +31,7 @@ from luddite.agents.jibi.manual_ops import app as jibi_manual_run_summary_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
 from luddite.agents.jibi.ops_safety import app as jibi_ops_guard_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
+from luddite.agents.jibi.review_feedback import app as jibi_review_feedback_app
 from luddite.agents.jibi.score_candidates import app as score_candidates_app
 from luddite.agents.piti.build_deck_plan_from_storyline import (
     app as build_piti_deck_plan_app,
@@ -120,6 +121,7 @@ app.add_typer(
 )
 app.add_typer(jibi_ops_guard_app, name="jibi-ops-guard")
 app.add_typer(jibi_manual_run_summary_app, name="jibi-manual-run-summary")
+app.add_typer(jibi_review_feedback_app, name="summarize-jibi-review-board")
 app.add_typer(probe_rss_sources_app, name="probe-rss-sources")
 
 

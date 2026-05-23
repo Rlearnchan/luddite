@@ -119,6 +119,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert "story_fit_uncertain" not in bundle_rows[0]["설명"]
     assert "manual_editorial_review" not in bundle_rows[0]["설명"]
     assert "선정 이유:" in bundle_rows[0]["설명"]
+    assert "출처/원문:" in bundle_rows[0]["설명"]
 
 
 def test_top_candidates_excludes_rejects() -> None:

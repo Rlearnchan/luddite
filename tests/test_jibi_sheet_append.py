@@ -1,4 +1,5 @@
 import csv
+import json
 
 from luddite import paths
 from luddite.agents.jibi.append_to_sheet import (
@@ -719,3 +720,178 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
     assert report.sheet_replaced is True
     assert report.header_updated is True
     assert report.rows_appended == 1
+
+
+def test_bundle_review_replace_dry_run_detects_existing_review_comments(
+    tmp_path,
+) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "날짜": "2026-05-23",
+                "제목": "새 후보",
+                "메인 링크": "https://example.com/new",
+                "ID": "2026-05-23:story_bundle_new",
+            }
+        ],
+    )
+    existing = {
+        "날짜": "2026-05-23",
+        "제목": "기존 후보",
+        "메인 링크": "https://example.com/old",
+        "리뷰-성원": "seed — 좋아 보임",
+        "ID": "2026-05-23:story_bundle_old",
+    }
+    client = FakeGoogleSheetsClient(
+        sheet_id=99,
+        values=[BUNDLE_REVIEW_SHEET_COLUMNS, _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS)],
+    )
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle_review",
+            dry_run=True,
+            replace_existing=True,
+            review_snapshot_dir=tmp_path,
+        ),
+        client=client,
+    )
+
+    assert report.errors == []
+    assert report.review_comments_found is True
+    assert report.review_comment_cells == 1
+    assert report.review_snapshot_path is None
+    assert client.cleared is False
+
+
+def test_bundle_review_replace_refuses_to_overwrite_existing_comments(
+    tmp_path,
+) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "날짜": "2026-05-23",
+                "제목": "새 후보",
+                "메인 링크": "https://example.com/new",
+                "ID": "2026-05-23:story_bundle_new",
+            }
+        ],
+    )
+    existing = {
+        "날짜": "2026-05-23",
+        "제목": "기존 후보",
+        "메인 링크": "https://example.com/old",
+        "리뷰-동찬": "reject — 단독으로 약함",
+        "ID": "2026-05-23:story_bundle_old",
+    }
+    client = FakeGoogleSheetsClient(
+        sheet_id=99,
+        values=[BUNDLE_REVIEW_SHEET_COLUMNS, _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS)],
+    )
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle_review",
+            dry_run=False,
+            replace_existing=True,
+            review_snapshot_dir=tmp_path,
+        ),
+        client=client,
+    )
+
+    assert report.errors
+    assert report.review_comments_found is True
+    assert report.review_comment_cells == 1
+    assert report.review_overwrite_allowed is False
+    assert report.review_snapshot_path == tmp_path / "jibi_review_board_snapshot_2026-05-23.json"
+    assert report.review_snapshot_path.exists()
+    snapshot = json.loads(report.review_snapshot_path.read_text(encoding="utf-8"))
+    assert snapshot["rows"][0]["리뷰-동찬"] == "reject — 단독으로 약함"
+    assert client.cleared is False
+    assert client.header_updates == []
+
+
+def test_bundle_review_replace_override_allows_existing_comments(
+    tmp_path,
+) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "날짜": "2026-05-23",
+                "제목": "새 후보",
+                "메인 링크": "https://example.com/new",
+                "ID": "2026-05-23:story_bundle_new",
+            }
+        ],
+    )
+    existing = {
+        "날짜": "2026-05-23",
+        "제목": "기존 후보",
+        "메인 링크": "https://example.com/old",
+        "리뷰-형찬": "needs — 숫자 보강",
+        "ID": "2026-05-23:story_bundle_old",
+    }
+    client = FakeGoogleSheetsClient(
+        sheet_id=99,
+        values=[BUNDLE_REVIEW_SHEET_COLUMNS, _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS)],
+    )
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle_review",
+            dry_run=False,
+            replace_existing=True,
+            allow_review_overwrite=True,
+            review_snapshot_dir=tmp_path,
+        ),
+        client=client,
+    )
+
+    assert report.errors == []
+    assert report.review_comments_found is True
+    assert report.review_overwrite_allowed is True
+    assert report.review_snapshot_path and report.review_snapshot_path.exists()
+    assert client.cleared is True
+    assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "새 후보"
+
+
+def test_candidate_schema_append_does_not_check_bundle_reviewer_columns(
+    tmp_path,
+) -> None:
+    preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
+    _write_preview(preview, [_row("신규 후보", "fresh", "https://example.com/fresh")])
+    existing_row = {
+        **_row("기존 검토 후보", "old-key", "https://example.com/old"),
+        "reviewer": "bae",
+        "review_result": "keep",
+    }
+    client = FakeGoogleSheetsClient(
+        sheet_id=99,
+        values=[SHEET_COLUMNS, _sheet_values(existing_row, SHEET_COLUMNS)],
+    )
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            dry_run=False,
+        ),
+        client=client,
+    )
+
+    assert report.review_comments_found is False
+    assert report.review_comment_cells == 0
+    assert report.errors == []
+    assert len(client.appended) == 1

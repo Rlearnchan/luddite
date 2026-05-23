@@ -186,6 +186,25 @@ JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manua
 
 This clears and rewrites the target tab with the day's bundle rows. The old
 append-only candidate CSV remains available for audit and rollback.
+Before a real bundle-board replacement, the appender checks `리뷰-성원`,
+`리뷰-동찬`, and `리뷰-형찬`. If any reviewer comment exists, replacement is
+blocked unless `JIBI_ALLOW_REVIEW_OVERWRITE=1` or `--allow-review-overwrite` is
+explicitly used. Existing board rows are snapshotted locally first:
+
+```text
+outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD.json
+```
+
+After reviewers add one-line notes, summarize the board without writing to
+Google Sheets:
+
+```bash
+luddite summarize-jibi-review-board
+```
+
+Reviewer notes should start with a light tag such as `seed`, `evidence`,
+`merge`, `needs`, `reject`, or `unclear`; the summary command also accepts
+simple Korean aliases such as `방송`, `근거`, `묶기`, `보강`, `별로`, and `애매`.
 
 ## Suggested `Jibi` columns
 

@@ -239,27 +239,46 @@ board instead of separate candidate rows.
 Dry-run the board replacement:
 
 ```bash
-JIBI_SHEET_SCHEMA=bundle_review make jibi-manual-update
+make jibi-review-board-dry-run
 ```
 
 When the dry-run report is clean and the team is ready to review in the shared
 sheet, replace the current contents of `Jibi` with the day's bundle board:
 
 ```bash
-JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
+make jibi-review-board-replace
 ```
 
 `staging_replace` is explicit because it clears and rewrites the target tab. It
 is allowed only for `Jibi`; the runner still refuses to write to `주제 찾기`.
+If existing reviewer comments are present in `리뷰-성원`, `리뷰-동찬`, or
+`리뷰-형찬`, a real replace stops by default and writes a local snapshot:
+
+```text
+outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD.json
+```
+
+Only overwrite a reviewed board intentionally:
+
+```bash
+JIBI_ALLOW_REVIEW_OVERWRITE=1 make jibi-review-board-replace
+```
 
 Reviewers should read each row as one story bundle. Supporting/evidence items
 are not shown as separate rows; they appear as `서브 링크` and in `설명`.
+The `설명` cell includes source/title cues so the reviewer can see what raw
+material the humanized title came from.
+
+Ask reviewers to start each review with one lightweight tag:
+`seed`, `evidence`, `merge`, `needs`, `reject`, or `unclear`.
 
 Good one-line feedback examples:
 
-- `promote — 청년 쉬었음 + 남성 경제활동참가율 묶으면 가능`
-- `needs_more_evidence — 양파는 가격 데이터/산지 기사 필요`
-- `reject — 고유가 지원금 현황만으로는 보도자료 느낌`
+- `seed — 청년 쉬었음 + 남성 경제활동참가율 묶으면 가능`
+- `needs — 양파는 가격 데이터/산지 기사 필요`
+- `evidence — 고유가 지원금 현황만으로는 보도자료 느낌`
+- `merge — AI 드론/공공 AI 보고서와 묶어 AI 행정 주제로 보기`
+- `reject — 단일기업 홍보/투자 이야기로 보임`
 
 Current review columns in the shared sheet:
 
@@ -270,6 +289,23 @@ Current review columns in the shared sheet:
 - `설명`: why Jibi selected this bundle and a concise source summary.
 - `리뷰-성원`, `리뷰-동찬`, `리뷰-형찬`: one-line reviewer notes.
 - `ID`: stable review item id for later feedback analysis.
+
+After reviewers write notes, summarize the current board without changing the
+sheet:
+
+```bash
+make jibi-review-feedback
+```
+
+This writes:
+
+```text
+outputs/reports/jibi_review_feedback_YYYY-MM-DD.md
+outputs/reports/jibi_review_feedback_YYYY-MM-DD.json
+```
+
+The summary reports reviewer completion counts, tag counts, raw one-line notes,
+and rows where reviewers strongly disagree, such as `seed` vs `reject`.
 
 ## Google Sheet Dry-run
 

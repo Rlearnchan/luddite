@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import csv
+import json
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -68,6 +70,7 @@ BUNDLE_REVIEW_SHEET_COLUMNS = [
     "리뷰-형찬",
     "ID",
 ]
+REVIEWER_COLUMNS = ["리뷰-성원", "리뷰-동찬", "리뷰-형찬"]
 CANDIDATE_SHEET_SCHEMA = "candidate"
 BUNDLE_REVIEW_SHEET_SCHEMA = "bundle_review"
 VALID_SHEET_SCHEMAS = {CANDIDATE_SHEET_SCHEMA, BUNDLE_REVIEW_SHEET_SCHEMA}
@@ -99,6 +102,8 @@ class GoogleSheetAppendConfig:
     skip_duplicates: bool = True
     duplicate_keys: tuple[str, ...] = ("duplicate_key", "source_url_canonical")
     styling_enabled: bool = False
+    allow_review_overwrite: bool = False
+    review_snapshot_dir: Path = paths.REPORTS_DIR
     auth_mode: str = "service_account"
     service_account_json_path: str | None = None
 
@@ -127,6 +132,10 @@ class SheetAppendReport:
     sheet_replaced: bool = False
     duplicate_keys: list[str] = field(default_factory=list)
     appended_range: AppendResult | None = None
+    review_comments_found: bool = False
+    review_comment_cells: int = 0
+    review_overwrite_allowed: bool = False
+    review_snapshot_path: Path | None = None
 
 
 def _parse_scalar(value: str) -> str | bool | None:
@@ -243,6 +252,7 @@ def load_append_config(
     preview_value = os.environ.get("LUDDITE_JIBI_PREVIEW_CSV") or raw.get("source_preview_csv")
     dry_run = _env_bool("LUDDITE_GOOGLE_SHEETS_DRY_RUN")
     styling_enabled = _env_bool("LUDDITE_GOOGLE_SHEETS_STYLING")
+    allow_review_overwrite = _env_bool("JIBI_ALLOW_REVIEW_OVERWRITE")
     sheet_schema = _normalize_sheet_schema(
         os.environ.get("LUDDITE_JIBI_SHEET_SCHEMA")
         or _as_optional_str(raw.get("sheet_schema"))
@@ -268,6 +278,11 @@ def load_append_config(
         duplicate_keys=_schema_default_duplicate_keys(sheet_schema),
         styling_enabled=(
             bool(raw.get("styling.enabled", False)) if styling_enabled is None else styling_enabled
+        ),
+        allow_review_overwrite=(
+            bool(raw.get("allow_review_overwrite", False))
+            if allow_review_overwrite is None
+            else allow_review_overwrite
         ),
         auth_mode=os.environ.get("LUDDITE_GOOGLE_AUTH_MODE")
         or _as_optional_str(raw.get("auth_mode"))
@@ -372,6 +387,88 @@ def _sheet_row(row: dict[str, str], *, columns: list[str]) -> list[str]:
     return [prepared.get(column, "") for column in columns]
 
 
+def _preview_date(preview_csv: Path) -> str:
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})", preview_csv.name)
+    if match:
+        return match.group(1)
+    return datetime.now(UTC).date().isoformat()
+
+
+def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, str | int]]:
+    if not existing_values:
+        return []
+    header = existing_values[0]
+    column_indexes = {
+        column: _column_index(header, column)
+        for column in REVIEWER_COLUMNS
+    }
+    title_index = _column_index(header, "제목")
+    id_index = _column_index(header, "ID")
+    cells: list[dict[str, str | int]] = []
+    for row_number, row in enumerate(existing_values[1:], start=2):
+        title = row[title_index] if title_index is not None and title_index < len(row) else ""
+        review_id = row[id_index] if id_index is not None and id_index < len(row) else ""
+        for column, column_index in column_indexes.items():
+            if column_index is None or column_index >= len(row):
+                continue
+            value = row[column_index].strip()
+            if value:
+                cells.append(
+                    {
+                        "row": row_number,
+                        "column": column,
+                        "title": title,
+                        "id": review_id,
+                        "value": value,
+                    }
+                )
+    return cells
+
+
+def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, str | int]]:
+    if not existing_values:
+        return []
+    header = existing_values[0]
+    indexes = {column: _column_index(header, column) for column in BUNDLE_REVIEW_SHEET_COLUMNS}
+    rows: list[dict[str, str | int]] = []
+    for row_number, row in enumerate(existing_values[1:], start=2):
+        if not any(str(value).strip() for value in row):
+            continue
+        item: dict[str, str | int] = {"row": row_number}
+        for column in ["날짜", "제목", *REVIEWER_COLUMNS, "ID"]:
+            column_index = indexes.get(column)
+            item[column] = (
+                row[column_index]
+                if column_index is not None and column_index < len(row)
+                else ""
+            )
+        rows.append(item)
+    return rows
+
+
+def _write_review_board_snapshot(
+    *,
+    preview_csv: Path,
+    sheet_name: str,
+    existing_values: list[list[str]],
+    output_dir: Path,
+) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_path = output_dir / f"jibi_review_board_snapshot_{_preview_date(preview_csv)}.json"
+    payload = {
+        "created_at": datetime.now(UTC).isoformat(),
+        "sheet_name": sheet_name,
+        "preview_csv": str(preview_csv),
+        "reviewer_columns": REVIEWER_COLUMNS,
+        "rows": _snapshot_rows(existing_values),
+    }
+    snapshot_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return snapshot_path
+
+
 def append_jibi_sheet(
     *,
     config: GoogleSheetAppendConfig,
@@ -393,6 +490,7 @@ def append_jibi_sheet(
         dry_run=config.dry_run,
         sheet_schema=sheet_schema,
         replace_existing=config.replace_existing,
+        review_overwrite_allowed=config.allow_review_overwrite,
     )
 
     if not config.spreadsheet_id and not config.dry_run:
@@ -431,6 +529,25 @@ def append_jibi_sheet(
         report.sheet_replace_planned = True
         report.header_update_planned = config.dry_run
         report.header_created = header_status != "ok"
+        if sheet_schema == BUNDLE_REVIEW_SHEET_SCHEMA:
+            comment_cells = _review_comment_cells(existing_values)
+            report.review_comment_cells = len(comment_cells)
+            report.review_comments_found = bool(comment_cells)
+            if existing_values and len(existing_values) > 1 and not config.dry_run:
+                report.review_snapshot_path = _write_review_board_snapshot(
+                    preview_csv=preview_csv,
+                    sheet_name=config.target_sheet_name,
+                    existing_values=existing_values,
+                    output_dir=config.review_snapshot_dir,
+                )
+            if comment_cells and not config.dry_run and not config.allow_review_overwrite:
+                report.errors.append(
+                    "Existing Jibi review comments found; refusing to replace the "
+                    "bundle review board. Set JIBI_ALLOW_REVIEW_OVERWRITE=1 or pass "
+                    "--allow-review-overwrite after snapshotting/reviewing the board."
+                )
+                write_append_report(report_path or default_report_path(preview_csv), report)
+                return report
         if header_status == "unsafe_mismatch":
             report.header_status = "unsafe_mismatch_replace_planned"
             report.header_reason = "replace_existing_explicit"
@@ -568,6 +685,10 @@ def write_append_report(path: Path, report: SheetAppendReport) -> None:
         f"- Sheet replaced: {report.sheet_replaced}",
         f"- Styling applied: {report.styling_applied}",
         f"- Sheet created: {report.sheet_created}",
+        f"- Review comments found: {report.review_comments_found}",
+        f"- Review comment cells: {report.review_comment_cells}",
+        f"- Review overwrite allowed: {report.review_overwrite_allowed}",
+        f"- Review snapshot path: `{report.review_snapshot_path or ''}`",
         f"- Header status: `{report.header_status}`",
         f"- Header safe to update: {report.header_safe_to_update}",
         f"- Header reason: `{report.header_reason}`",
@@ -633,6 +754,13 @@ def main(
         bool | None,
         typer.Option("--styling/--no-styling", help="Apply background styling to appended rows."),
     ] = None,
+    allow_review_overwrite: Annotated[
+        bool | None,
+        typer.Option(
+            "--allow-review-overwrite/--protect-review-overwrite",
+            help="Allow bundle review replace when reviewer comment cells already exist.",
+        ),
+    ] = None,
 ) -> None:
     loaded = load_append_config()
     config = GoogleSheetAppendConfig(
@@ -647,6 +775,12 @@ def main(
         skip_duplicates=loaded.skip_duplicates,
         duplicate_keys=_schema_default_duplicate_keys(sheet_schema or loaded.sheet_schema),
         styling_enabled=loaded.styling_enabled if styling is None else styling,
+        allow_review_overwrite=(
+            loaded.allow_review_overwrite
+            if allow_review_overwrite is None
+            else allow_review_overwrite
+        ),
+        review_snapshot_dir=loaded.review_snapshot_dir,
         auth_mode=loaded.auth_mode,
         service_account_json_path=loaded.service_account_json_path,
     )

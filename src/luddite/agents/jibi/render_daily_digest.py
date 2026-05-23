@@ -743,6 +743,18 @@ def _humanize_review_text(value: object) -> str:
     return text
 
 
+def _source_cue(candidate: dict[str, Any]) -> str:
+    source = _compact_text(candidate.get("source"))
+    title = _clean_review_title(candidate.get("title"))
+    if source and title:
+        return f"출처/원문: {source} — {title}"
+    if source:
+        return f"출처: {source}"
+    if title:
+        return f"원문 제목: {title}"
+    return ""
+
+
 def _human_description(
     *,
     candidate: dict[str, Any],
@@ -759,6 +771,7 @@ def _human_description(
     parts = [
         f"성격: {jibi_judgment}." if jibi_judgment else "",
         f"선정 이유: {_human_reason(reason)}" if reason else "",
+        _source_cue(candidate),
         f"볼 포인트: {why}" if why else "",
         f"확인할 자료: {evidence_text}" if evidence_text else "",
         f"함께 볼 후보: {related_titles}" if related_titles else "",
