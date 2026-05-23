@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -70,6 +71,31 @@ SPECIFIC_TOP_SEED_TYPES = {
     "healthcare_operations_ai",
     "platform_labor_market",
     "industrial_labor_conflict",
+}
+PUBLIC_AI_SEED_TYPES = {
+    "public_ai_governance",
+    "public_ai_enforcement",
+    "workplace_ai_transition",
+    "healthcare_operations_ai",
+}
+PLATFORM_FEE_TERMS = {
+    "쿠팡이츠",
+    "무료배달",
+    "무료 배달",
+    "배달비",
+    "수수료",
+    "업주",
+    "가맹점",
+    "플랫폼",
+}
+PLATFORM_FEE_STRONG_TERMS = PLATFORM_FEE_TERMS - {"플랫폼"}
+POLICY_STATUS_EVIDENCE_TERMS = {
+    "현황",
+    "신청·지급",
+    "신청 지급",
+    "지급 현황",
+    "보도참고자료",
+    "기준",
 }
 
 
@@ -293,6 +319,35 @@ def _slideability_risks(candidate: dict[str, Any]) -> str:
     return ", ".join(slideability.get("risks", [])) or "-"
 
 
+def _bundle_title_list(
+    records: list[dict[str, Any]],
+    *,
+    max_titles: int = 4,
+) -> list[str]:
+    lines: list[str] = []
+    for index, record in enumerate(records, start=1):
+        primary = record.get("primary_title") or "primary 없음"
+        supporting_titles = record.get("supporting_titles") or []
+        evidence_titles = record.get("evidence_titles") or []
+        extras = [*supporting_titles, *evidence_titles]
+        extra_text = "; ".join(str(title) for title in extras[:max_titles]) or "-"
+        lines.extend(
+            [
+                f"### Bundle {index}. {record['bundle_title']}",
+                "",
+                (
+                    f"- type: {record['bundle_type']} / "
+                    f"action: {record['suggested_operator_action']}"
+                ),
+                f"- primary: {primary}",
+                f"- supporting/evidence: {extra_text}",
+                f"- why: {record['why_bundle']}",
+                "",
+            ]
+        )
+    return lines
+
+
 def render_markdown(
     candidates: list[dict[str, Any]],
     digest_date: str,
@@ -318,6 +373,16 @@ def render_markdown(
         f"- 사람 검토 후보: {counts.get('editorial_review', 0)}개",
         f"- 킵 후보: {counts.get('keep_for_later', 0)}개",
         f"- 제외/거절: {excluded_count}개",
+        "",
+        "## Story Bundles",
+        "",
+        *_bundle_title_list(
+            _story_bundle_records(
+                all_candidates or candidates,
+                candidates,
+                near_miss_limit=0,
+            )
+        ),
         "",
         "## Top Candidates",
         "",
@@ -643,6 +708,8 @@ def write_quality_report(
         raw_source_counts=raw_source_counts,
         source_counts=source_counts,
     )
+    story_bundle_records = _story_bundle_records(candidates, top)
+    story_bundle_rows = _story_bundle_review_rows(story_bundle_records)
     storyline_fit_rows = _storyline_fit_audit_rows(
         candidates,
         top,
@@ -696,6 +763,12 @@ def write_quality_report(
         ),
         "| --- | --- | --- | ---: | --- |",
         *cap_blocked_rows,
+        "",
+        "## Story Bundle Review",
+        "",
+        "| bundle | primary | supporting/evidence | bundle_type | suggested_action |",
+        "| --- | --- | --- | --- | --- |",
+        *story_bundle_rows,
         "",
         "## Storyline Fit Audit",
         "",
@@ -1081,6 +1154,13 @@ def _audit_text(candidate: dict[str, Any]) -> str:
     ).lower()
 
 
+def _source_text(candidate: dict[str, Any]) -> str:
+    return " ".join(
+        str(candidate.get(key) or "")
+        for key in ("title", "summary", "source", "source_id")
+    ).lower()
+
+
 def _youth_labor_merge_target(
     candidate: dict[str, Any],
     candidates: list[dict[str, Any]],
@@ -1133,7 +1213,11 @@ def _storyline_fit_classification(
             "policy_release_meeting_only",
             "policy_release_procedural_number_only",
         }
-        if seed_type != "policy_release_seed" or evidence_flags.intersection(flags):
+        if (
+            seed_type != "policy_release_seed"
+            or evidence_flags.intersection(flags)
+            or _policy_status_or_meeting_release(candidate)
+        ):
             return (
                 "evidence_only",
                 "official_release_meeting_or_evidence_default",
@@ -1236,6 +1320,235 @@ def _storyline_fit_audit_rows(
             + " |"
         )
     return rows or ["| none | none | unknown | unknown | demote_or_reject | none | none |"]
+
+
+def _story_bundle_hash(text: str) -> str:
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
+
+
+def _policy_status_or_meeting_release(candidate: dict[str, Any]) -> bool:
+    if _candidate_role(candidate) != "policy_release":
+        return False
+    flags = set(candidate.get("quality_flags") or [])
+    text = _source_text(candidate)
+    if flags.intersection(
+        {
+            "policy_release_evidence_default",
+            "policy_release_announcement_only",
+            "policy_release_meeting_only",
+            "policy_release_procedural_number_only",
+        }
+    ):
+        return True
+    return any(term in text for term in POLICY_STATUS_EVIDENCE_TERMS)
+
+
+def _story_bundle_rule(candidate: dict[str, Any]) -> dict[str, str]:
+    text = _source_text(candidate)
+    seed_type = str(candidate.get("seed_type") or "other")
+    if "청년" in text and any(
+        term in text for term in ("쉬었음", "경제활동참가율", "노동시장")
+    ):
+        return {
+            "key": "youth_labor_exit",
+            "title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+            "type": "merged_seed",
+            "why": "BOK 청년 노동시장 후보들이 같은 큰 질문을 공유함",
+            "action": "review_primary_and_bundle_supporting",
+        }
+    has_platform_fee_signal = any(term in text for term in PLATFORM_FEE_STRONG_TERMS)
+    if has_platform_fee_signal:
+        return {
+            "key": "platform_fee_allocation",
+            "title": "플랫폼 무료배달 / 수수료 비용 배분",
+            "type": "needs_external_sources",
+            "why": "무료배달, 수수료, 업주 부담이 같은 플랫폼 비용 배분 이야기로 묶임",
+            "action": "collect_second_source_and_numbers",
+        }
+    if seed_type in PUBLIC_AI_SEED_TYPES:
+        return {
+            "key": "public_ai_adoption",
+            "title": "공공/현장 AI 도입과 책임",
+            "type": "needs_external_sources",
+            "why": "공공 AI 활용, 치안, 행정 보고서, 직무 전환 후보를 함께 검토",
+            "action": "split_or_bundle_after_human_review",
+        }
+    if _policy_status_or_meeting_release(candidate):
+        if any(term in text for term in ("고유가", "유가", "피해지원금", "지원금")):
+            key = "policy_oil_support_evidence"
+            title = "고유가 지원금 / 에너지 가격 충격 evidence"
+        elif any(term in text for term in ("중동", "공관", "원유", "수급선")):
+            key = "policy_middle_east_evidence"
+            title = "중동 리스크 / 대체 수급선 official evidence"
+        else:
+            key = "policy_release_evidence_" + _story_bundle_hash(
+                str(candidate.get("candidate_id") or candidate.get("title") or "")
+            )
+            title = "정책브리핑 evidence-only 후보"
+        return {
+            "key": key,
+            "title": title,
+            "type": "evidence_cluster",
+            "why": "회의/현황/절차성 보도자료는 단독 seed보다 큰 이야기의 근거로 검토",
+            "action": "attach_to_larger_story",
+        }
+    fit, reason, action = _storyline_fit_classification(candidate, [candidate])
+    if fit == "standalone_seed":
+        bundle_type = "standalone_seed"
+    elif fit == "evidence_only":
+        bundle_type = "evidence_cluster"
+    elif fit == "merge_with_other_candidate":
+        bundle_type = "merged_seed"
+    else:
+        bundle_type = "needs_external_sources"
+    candidate_id = str(candidate.get("candidate_id") or _story_bundle_hash(text))
+    return {
+        "key": "candidate_" + candidate_id,
+        "title": str(candidate.get("title") or candidate_id),
+        "type": bundle_type,
+        "why": reason,
+        "action": action,
+    }
+
+
+def _bundle_candidate_pool(
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    *,
+    near_miss_limit: int,
+) -> list[dict[str, Any]]:
+    top_ids = {str(item.get("candidate_id")) for item in top}
+    near_misses = sorted(
+        [
+            item
+            for item in candidates
+            if str(item.get("candidate_id")) not in top_ids
+            and item.get("recommended_action", "keep_for_later") in TOP_ACTIONS
+        ],
+        key=_total_score,
+        reverse=True,
+    )[:near_miss_limit]
+    seen: set[str] = set()
+    pool: list[dict[str, Any]] = []
+    for item in [*top, *near_misses]:
+        candidate_id = str(item.get("candidate_id"))
+        if candidate_id in seen:
+            continue
+        seen.add(candidate_id)
+        pool.append(item)
+    return pool
+
+
+def _bundle_primary(
+    items: list[dict[str, Any]],
+    *,
+    bundle_type: str,
+) -> dict[str, Any] | None:
+    if bundle_type == "evidence_cluster":
+        return None
+    return sorted(
+        items,
+        key=lambda item: (
+            _total_score(item),
+            item.get("scores", {}).get("broadcast_potential_proxy", 0),
+        ),
+        reverse=True,
+    )[0]
+
+
+def _story_bundle_records(
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    *,
+    near_miss_limit: int = 10,
+) -> list[dict[str, Any]]:
+    pool = _bundle_candidate_pool(candidates, top, near_miss_limit=near_miss_limit)
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    metadata: dict[str, dict[str, str]] = {}
+    for candidate in pool:
+        rule = _story_bundle_rule(candidate)
+        key = rule["key"]
+        grouped.setdefault(key, []).append(candidate)
+        metadata.setdefault(key, rule)
+    records: list[dict[str, Any]] = []
+    for key, items in grouped.items():
+        rule = metadata[key]
+        bundle_type = rule["type"]
+        if len(items) > 1 and bundle_type == "standalone_seed":
+            bundle_type = "merged_seed"
+        primary = _bundle_primary(items, bundle_type=bundle_type)
+        primary_id = str(primary.get("candidate_id")) if primary else ""
+        primary_title = str(primary.get("title")) if primary else ""
+        evidence_ids: list[str] = []
+        supporting_ids: list[str] = []
+        evidence_titles: list[str] = []
+        supporting_titles: list[str] = []
+        for item in sorted(items, key=_total_score, reverse=True):
+            item_id = str(item.get("candidate_id") or "")
+            if item_id == primary_id:
+                continue
+            fit, _reason, _action = _storyline_fit_classification(item, candidates)
+            if bundle_type == "evidence_cluster" or fit == "evidence_only":
+                target_ids = evidence_ids
+                target_titles = evidence_titles
+            else:
+                target_ids = supporting_ids
+                target_titles = supporting_titles
+            target_ids.append(item_id)
+            target_titles.append(str(item.get("title") or item_id))
+        records.append(
+            {
+                "story_bundle_id": "story_bundle_" + _story_bundle_hash(key),
+                "bundle_title": rule["title"],
+                "primary_candidate_id": primary_id,
+                "primary_title": primary_title,
+                "supporting_candidate_ids": supporting_ids,
+                "supporting_titles": supporting_titles,
+                "evidence_candidate_ids": evidence_ids,
+                "evidence_titles": evidence_titles,
+                "bundle_type": bundle_type,
+                "why_bundle": rule["why"],
+                "suggested_operator_action": rule["action"],
+                "candidate_count": len(items),
+            }
+        )
+    records.sort(
+        key=lambda item: (
+            {"merged_seed": 0, "standalone_seed": 1, "needs_external_sources": 2}.get(
+                str(item["bundle_type"]),
+                3,
+            ),
+            -int(item["candidate_count"]),
+            str(item["bundle_title"]),
+        )
+    )
+    return records
+
+
+def _story_bundle_review_rows(records: list[dict[str, Any]]) -> list[str]:
+    rows: list[str] = []
+    for record in records:
+        primary = record.get("primary_title") or "none"
+        supporting = [
+            *[f"supporting: {title}" for title in record.get("supporting_titles", [])],
+            *[f"evidence: {title}" for title in record.get("evidence_titles", [])],
+        ]
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(
+                        f"{record['story_bundle_id']} — {record['bundle_title']}"
+                    ),
+                    _table_cell(primary),
+                    _table_cell("; ".join(supporting) or "none"),
+                    str(record["bundle_type"]),
+                    str(record["suggested_operator_action"]),
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | none | none | needs_external_sources | none |"]
 
 
 def _freshness_count(candidates: list[dict[str, Any]], status: str) -> int:

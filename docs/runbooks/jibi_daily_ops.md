@@ -209,17 +209,42 @@ Read the calibration sections in this order:
    command never edits `config/rss_collection_allowlist.yaml`.
 6. `Source Mix Experiment Review`: check source-role distribution, cap warnings,
    and the human-review focus list before judging the day's source mix.
-7. `Source Role Cap Status` and `Storyline Fit Audit`: check whether official
-   sources are overrepresented, whether candidates should be bundled before
-   sheet review, and whether Top items look like standalone seeds, evidence, or
-   demote/reject cases.
-8. `Generic Why Template Improvement Queue`: find concrete stories blocked by
+7. `Source Role Cap Status`: check whether official sources are overrepresented.
+8. `Story Bundle Review`: review the suggested story bundle primary and
+   supporting/evidence items before treating each row as a separate story.
+9. `Storyline Fit Audit`: check whether Top items look like standalone seeds,
+   evidence, or demote/reject cases.
+10. `Generic Why Template Improvement Queue`: find concrete stories blocked by
    generic `why_interesting`.
-9. `Near Miss Review Queue`: inspect high-score candidates before any append.
+11. `Near Miss Review Queue`: inspect high-score candidates before any append.
 
 Do not change thresholds based on one run. A low Top count can still be
 acceptable when the near-miss queue shows weak, stale, duplicate, or noisy
 source material.
+
+## Research-team Bundle Review
+
+The daily digest and quality report show report-only story bundles. The Google
+Sheet preview still appends separate candidate rows by default; bundle grouping
+does not change the sheet schema and does not collapse rows yet.
+
+Reviewers should read the bundle primary as the row to judge first:
+
+- Treat the bundle primary as the candidate to review.
+- Supporting/evidence rows can be mentioned in `notes` instead of judged as
+  standalone stories.
+- If two rows are clearly the same story, mark the strongest row with
+  `promote` or `keep` and write `same bundle as ...` on the supporting row.
+- Evidence-only rows should not be rejected just because they are weak as
+  standalone stories; judge whether they help the bundle.
+- Do not ask reviewers to evaluate every evidence-only row as an independent
+  broadcast seed.
+
+Good one-line feedback examples:
+
+- `promote — 청년 쉬었음 + 남성 경제활동참가율 묶으면 가능`
+- `needs_more_evidence — 양파는 가격 데이터/산지 기사 필요`
+- `reject — 고유가 지원금 현황만으로는 보도자료 느낌`
 
 ## Google Sheet Dry-run
 

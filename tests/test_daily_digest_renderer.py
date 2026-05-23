@@ -74,6 +74,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     markdown = md_path.read_text(encoding="utf-8")
     assert "Luddite Daily Digest" in markdown
     assert "오늘의 추천" in markdown
+    assert "## Story Bundles" in markdown
     assert "- Top Candidates: 1개" in markdown
     assert "- 즉시 스토리라인 후보: 1개" in markdown
     assert "바로 볼 만한 후보" not in markdown
@@ -351,6 +352,97 @@ def test_quality_report_includes_source_role_cap_and_storyline_audit(tmp_path) -
     assert "merge_with_other_candidate" in report
     assert "evidence_only" in report
     assert "demote_or_reject" in report
+
+
+def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
+    report_path = tmp_path / "bundles.md"
+    youth_rest = {
+        "candidate_id": "bok_youth_rest",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+    youth_male = {
+        "candidate_id": "bok_youth_male",
+        "title": "BOK 남성 청년층 경제활동참가율 하락",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 이탈을 다른 지표로 설명",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 75, "broadcast_potential_proxy": 5},
+    }
+
+    write_quality_report(report_path, [youth_rest, youth_male], [youth_rest, youth_male])
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "## Story Bundle Review" in report
+    assert "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율" in report
+    assert "merged_seed" in report
+    assert "BOK '쉬었음' 청년층의 특징 및 평가" in report
+    assert "supporting: BOK 남성 청년층 경제활동참가율 하락" in report
+
+
+def test_story_bundle_review_marks_policy_status_as_evidence(tmp_path) -> None:
+    report_path = tmp_path / "policy_status_bundle.md"
+    status_release = {
+        "candidate_id": "policy_oil_status",
+        "title": "[행정안전부](보도참고자료) 고유가 피해지원금 신청·지급 현황",
+        "source": "정책브리핑",
+        "source_role_class": "policy_release",
+        "seed_type": "policy_release_seed",
+        "quality_flags": ["policy_release_seed_signals=material_number,life_impact"],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+
+    write_quality_report(report_path, [status_release], [status_release])
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "고유가 지원금 / 에너지 가격 충격 evidence" in report
+    assert "evidence_cluster" in report
+    assert "| none | evidence: [행정안전부](보도참고자료) 고유가 피해지원금" in report
+    assert "official_release_meeting_or_evidence_default" in report
+
+
+def test_story_bundle_review_keeps_platform_fee_as_needs_external_sources(
+    tmp_path,
+) -> None:
+    report_path = tmp_path / "platform_bundle.md"
+    platform = {
+        "candidate_id": "platform_fee",
+        "title": "쿠팡이츠, 무료 배달비 업주 전가 논란",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "platform_labor_market",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 67, "broadcast_potential_proxy": 5},
+    }
+
+    before = [item["candidate_id"] for item in top_candidates([platform])]
+    write_quality_report(report_path, [platform], [platform])
+    after = [item["candidate_id"] for item in top_candidates([platform])]
+
+    report = report_path.read_text(encoding="utf-8")
+    assert before == after == ["platform_fee"]
+    assert "플랫폼 무료배달 / 수수료 비용 배분" in report
+    assert "needs_external_sources" in report
+    assert "collect_second_source_and_numbers" in report
 
 
 def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_path) -> None:
