@@ -119,6 +119,12 @@ EDITORIAL_SCORE_FLOOR_CATEGORIES = {
     "policy_research_note",
     "academic_explainer",
     "policy_release_seed",
+    "public_ai_governance",
+    "public_ai_enforcement",
+    "workplace_ai_transition",
+    "healthcare_operations_ai",
+    "platform_labor_market",
+    "industrial_labor_conflict",
 }
 QUALITY_GATE_FAILURES = {
     "sports_only": ("rss_sports_only", 30, "reject"),
@@ -210,6 +216,36 @@ FALLBACK_EXPANSIONS = {
         "보도자료의 핵심 수치 또는 정책 변화",
         "산업/가계/시장에 실제로 닿는 메커니즘",
         "공식자료를 시각화할 수 있는 표·지도·전후 비교",
+    ],
+    "public_ai_governance": [
+        "공공기관 AI 활용 실태와 부적절 사용 사례",
+        "AI 행정 효율과 책임 소재",
+        "교육·감사·가이드라인 필요성",
+    ],
+    "public_ai_enforcement": [
+        "AI/드론이 치안·단속 현장에 들어온 장면",
+        "공공안전 효율과 감시/오판 리스크",
+        "한국 지자체·경찰의 기술 도입 기준",
+    ],
+    "workplace_ai_transition": [
+        "AI 도입과 직무 재설계",
+        "노사 협상에서 AI가 새 의제가 되는 이유",
+        "생산성 향상과 일자리 불안의 균형",
+    ],
+    "healthcare_operations_ai": [
+        "병원 연락·배정·예약 workflow 자동화",
+        "의료 인력 부족과 운영 병목",
+        "의학적 효능 주장을 피하는 운영 개선 프레임",
+    ],
+    "platform_labor_market": [
+        "플랫폼 무료/할인 경쟁의 비용 전가 구조",
+        "가맹점·노동자·소비자 사이의 부담 배분",
+        "한국 배달/플랫폼 시장의 수수료 논쟁",
+    ],
+    "industrial_labor_conflict": [
+        "성과급·임금·직무를 둘러싼 기업 내부 갈등",
+        "산업 전환기 노동시장과 조직 내부 세대/직군 차이",
+        "단일 기업 투자 조언으로 보이지 않게 산업 구조로 확장",
     ],
     "absurd_foreign": [
         "이상한 해외 뉴스가 나온 배경",

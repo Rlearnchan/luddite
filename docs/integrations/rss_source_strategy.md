@@ -505,6 +505,10 @@ outputs/reports/rss_ingest_YYYY-MM-DD.md
 - report에는 raw feed items, unique URLs written, duplicate URL appearances,
   source별 fetched/written/duplicate/failure/sample title을 남긴다.
 - Top Candidates는 동일 source가 과도하게 쏠리지 않도록 기본 최대 3개로 제한한다.
+- Top Candidates는 scoring 이후 source-role soft cap도 적용한다. 초기 cap은
+  research_note 3, policy_release 2, public_wire 3, academic_explainer 2,
+  market_wire 1, section_news 3이다. 이 cap은 threshold나 점수를 바꾸지 않는
+  최종 노출 균형 장치이며, Top을 못 채우면 backfill하고 report에 남긴다.
 
 Current manual MVP allowlist:
 
@@ -517,16 +521,18 @@ disabled/hold: 연합뉴스 최신기사, 연합뉴스 마켓+, 연합뉴스 건
 ```
 
 한국은행은 low-frequency research-note source로 취급해 일반 stale RSS와 분리한다.
-정책브리핑/부처 보도자료는 evidence-default이며, 날짜/절차용 숫자만으로는
-seed로 승격하지 않는다. 생활 영향·규제 갈등·산업 메커니즘·odd hook·
-시각화 가능한 proof object 같은 non-number signal이나 material number와
-구조 signal이 있을 때만 seed 후보로 승격한다.
+정책브리핑/부처 보도자료는 evidence-default이며, 날짜/절차용 숫자, 회의,
+공관 담당관회의, 협력방안 논의, 행사/공모 안내만으로는 seed로 승격하지
+않는다. 생활 영향, 규제 갈등, 산업 메커니즘, odd hook, 시각화 가능한 proof
+object가 실제 물질적 결과와 연결될 때만 seed 후보로 승격한다.
 The Conversation은 controlled academic-explainer experiment로 켜두되, source cap과
 manual review를 유지한다. Guardian은 broad international feed 대신 Business,
 Technology, Environment section feed를 우선 테스트한다.
 연합뉴스는 최신기사 feed보다 섹션 feed를 우선한다. 초기 enable은 economy,
 industry, international이며, market은 market_wire/evidence context로 보류하고
-health는 medical-risk guard가 생길 때까지 보류한다.
+health는 medical-risk guard가 생길 때까지 보류한다. economy/industry near-miss는
+public AI governance/enforcement, workplace AI transition, platform labor market,
+industrial labor conflict template로 살아날 수 있는지 먼저 확인한다.
 
 ## 13. Milestone 1.2.2 Candidate Quality Gate
 
@@ -576,6 +582,12 @@ market_rate_stress
 ai_knowledge_institution
 infrastructure_project_failure
 climate_policy_conflict
+public_ai_governance
+public_ai_enforcement
+workplace_ai_transition
+healthcare_operations_ai
+platform_labor_market
+industrial_labor_conflict
 ```
 
 보정 원칙:
@@ -589,6 +601,10 @@ climate_policy_conflict
 - visible `why_interesting`은 scoring/debug reason이 아니라 후보별 editorial
   판단 문장이어야 한다.
 - generic rationale만 가진 `other` 후보는 Top Candidates에서 제외한다.
+- Storyline Fit Audit은 Top Candidates와 high-score near-miss를
+  `standalone_seed`, `merge_with_other_candidate`, `evidence_only`,
+  `needs_external_sources`, `demote_or_reject`로 report-only 라벨링한다.
+  BOK 청년 노동시장처럼 같은 큰 이야기는 sheet review 전에 bundle 후보로 본다.
 
 ## 15. Milestone 1.3 Evidence Cluster / Story Seed
 

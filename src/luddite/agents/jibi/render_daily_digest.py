@@ -38,6 +38,14 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
     "policy_release_evidence_default",
 }
 DEFAULT_TOP_MIN_SCORE = 35
+DEFAULT_SOURCE_ROLE_TOP_CAPS = {
+    "research_note": 3,
+    "policy_release": 2,
+    "public_wire": 3,
+    "academic_explainer": 2,
+    "market_wire": 1,
+    "section_news": 3,
+}
 GENERIC_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
     "공급망, 인프라, 규제, 산업 전환 중 어느 축",
@@ -56,6 +64,12 @@ SPECIFIC_TOP_SEED_TYPES = {
     "policy_research_note",
     "academic_explainer",
     "policy_release_seed",
+    "public_ai_governance",
+    "public_ai_enforcement",
+    "workplace_ai_transition",
+    "healthcare_operations_ai",
+    "platform_labor_market",
+    "industrial_labor_conflict",
 }
 
 
@@ -72,22 +86,20 @@ def top_candidates(
     limit: int = 10,
     max_per_source: int = 3,
     min_score: float = DEFAULT_TOP_MIN_SCORE,
+    source_role_caps: dict[str, int] | None = DEFAULT_SOURCE_ROLE_TOP_CAPS,
 ) -> list[dict[str, Any]]:
     eligible = _top_eligible_candidates(candidates, min_score=min_score)
-    return _select_top_from_eligible(
+    details = _select_top_with_role_cap_details(
         eligible,
         limit=limit,
         max_per_source=max_per_source,
+        source_role_caps=source_role_caps,
     )
+    return details["selected"]
 
 
-def _select_top_from_eligible(
-    eligible: list[dict[str, Any]],
-    *,
-    limit: int = 10,
-    max_per_source: int = 3,
-) -> list[dict[str, Any]]:
-    ranked = sorted(
+def _ranked_eligible(eligible: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
         eligible,
         key=lambda item: (
             item.get("scores", {}).get("total_score", 0),
@@ -95,17 +107,91 @@ def _select_top_from_eligible(
         ),
         reverse=True,
     )
+
+
+def _candidate_source(candidate: dict[str, Any]) -> str:
+    return str(candidate.get("source") or candidate.get("source_id") or "unknown")
+
+
+def _candidate_role(candidate: dict[str, Any]) -> str:
+    return str(candidate.get("source_role_class") or "unknown")
+
+
+def _select_top_with_role_cap_details(
+    eligible: list[dict[str, Any]],
+    *,
+    limit: int = 10,
+    max_per_source: int = 3,
+    source_role_caps: dict[str, int] | None = DEFAULT_SOURCE_ROLE_TOP_CAPS,
+) -> dict[str, Any]:
+    ranked = _ranked_eligible(eligible)
     selected: list[dict[str, Any]] = []
+    selected_ids: set[str] = set()
     source_counts: dict[str, int] = {}
+    role_counts: dict[str, int] = {}
+    role_cap_blocked: list[tuple[dict[str, Any], str]] = []
+    backfilled: list[dict[str, Any]] = []
     for candidate in ranked:
-        source = str(candidate.get("source") or candidate.get("source_id") or "unknown")
+        candidate_id = str(candidate.get("candidate_id"))
+        source = _candidate_source(candidate)
         if max_per_source > 0 and source_counts.get(source, 0) >= max_per_source:
             continue
+        role = _candidate_role(candidate)
+        cap = source_role_caps.get(role) if source_role_caps else None
+        if cap is not None and cap > 0 and role_counts.get(role, 0) >= cap:
+            role_cap_blocked.append(
+                (candidate, f"source_role_cap_reached={role}:{cap}")
+            )
+            continue
         selected.append(candidate)
+        selected_ids.add(candidate_id)
         source_counts[source] = source_counts.get(source, 0) + 1
+        role_counts[role] = role_counts.get(role, 0) + 1
         if len(selected) >= limit:
             break
-    return selected
+    if len(selected) < limit and role_cap_blocked:
+        for candidate, _reason in role_cap_blocked:
+            candidate_id = str(candidate.get("candidate_id"))
+            if candidate_id in selected_ids:
+                continue
+            source = _candidate_source(candidate)
+            if max_per_source > 0 and source_counts.get(source, 0) >= max_per_source:
+                continue
+            role = _candidate_role(candidate)
+            selected.append(candidate)
+            selected_ids.add(candidate_id)
+            source_counts[source] = source_counts.get(source, 0) + 1
+            role_counts[role] = role_counts.get(role, 0) + 1
+            backfilled.append(candidate)
+            if len(selected) >= limit:
+                break
+    return {
+        "selected": selected,
+        "role_cap_blocked": [
+            (candidate, reason)
+            for candidate, reason in role_cap_blocked
+            if str(candidate.get("candidate_id")) not in selected_ids
+        ],
+        "backfilled": backfilled,
+        "cap_backfill_used": bool(backfilled),
+        "source_role_caps": source_role_caps or {},
+    }
+
+
+def _select_top_from_eligible(
+    eligible: list[dict[str, Any]],
+    *,
+    limit: int = 10,
+    max_per_source: int = 3,
+    source_role_caps: dict[str, int] | None = DEFAULT_SOURCE_ROLE_TOP_CAPS,
+) -> list[dict[str, Any]]:
+    details = _select_top_with_role_cap_details(
+        eligible,
+        limit=limit,
+        max_per_source=max_per_source,
+        source_role_caps=source_role_caps,
+    )
+    return details["selected"]
 
 
 def _passes_top_quality_gate(candidate: dict[str, Any]) -> bool:
@@ -405,6 +491,13 @@ def write_quality_report(
         str(item.get("source") or "unknown") for item in quality_gate_pass
     )
     top_eligible = _top_eligible_candidates(candidates, min_score=min_score)
+    selection_details = _select_top_with_role_cap_details(
+        top_eligible,
+        limit=limit,
+        max_per_source=max_per_source,
+    )
+    source_role_cap_rows = _source_role_cap_status_rows(selection_details)
+    cap_blocked_rows = _source_role_cap_blocked_rows(selection_details)
     top_eligible_source_counts = Counter(
         str(item.get("source") or "unknown") for item in top_eligible
     )
@@ -550,6 +643,10 @@ def write_quality_report(
         raw_source_counts=raw_source_counts,
         source_counts=source_counts,
     )
+    storyline_fit_rows = _storyline_fit_audit_rows(
+        candidates,
+        top,
+    )
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
@@ -587,6 +684,27 @@ def write_quality_report(
         "## Source Mix Experiment Review",
         "",
         *source_mix_review,
+        "",
+        "## Source Role Cap Status",
+        "",
+        *source_role_cap_rows,
+        "",
+        "## Source Role Cap-blocked Candidates",
+        "",
+        (
+            "| title | source | source_role_class | score | reason |"
+        ),
+        "| --- | --- | --- | ---: | --- |",
+        *cap_blocked_rows,
+        "",
+        "## Storyline Fit Audit",
+        "",
+        (
+            "| role | title | source | seed_type | storyline_fit | merge_or_reason | "
+            "suggested_operator_action |"
+        ),
+        "| --- | --- | --- | --- | --- | --- | --- |",
+        *storyline_fit_rows,
         "",
         "## Candidate Funnel",
         "",
@@ -814,20 +932,53 @@ def _counter_lines(counter: Counter[str]) -> list[str]:
 
 
 def _source_role_cap_warnings(top_role_counts: Counter[str]) -> list[str]:
-    caps = {
-        "research_note": 3,
-        "policy_release": 2,
-        "academic_explainer": 3,
-        "market_wire": 2,
-        "public_wire": 3,
-        "section_news": 3,
-    }
     warnings = [
         f"- source_role_cap_warning: {role} has {count} top candidates (suggested <= {cap})"
-        for role, cap in caps.items()
+        for role, cap in DEFAULT_SOURCE_ROLE_TOP_CAPS.items()
         if (count := top_role_counts.get(role, 0)) > cap
     ]
     return warnings or ["- none"]
+
+
+def _source_role_cap_status_rows(selection_details: dict[str, Any]) -> list[str]:
+    caps: dict[str, int] = selection_details.get("source_role_caps") or {}
+    selected: list[dict[str, Any]] = selection_details.get("selected") or []
+    selected_counts = Counter(_candidate_role(item) for item in selected)
+    backfill_used = str(bool(selection_details.get("cap_backfill_used"))).lower()
+    lines = [f"- cap_backfill_used: {backfill_used}"]
+    for role, cap in caps.items():
+        lines.append(f"- {role}: selected={selected_counts.get(role, 0)} cap={cap}")
+    backfilled = selection_details.get("backfilled") or []
+    if backfilled:
+        lines.append(
+            "- cap_backfill_candidates: "
+            + "; ".join(
+                f"{item.get('title')} ({_candidate_role(item)})"
+                for item in backfilled[:5]
+            )
+        )
+    else:
+        lines.append("- cap_backfill_candidates: none")
+    return lines
+
+
+def _source_role_cap_blocked_rows(selection_details: dict[str, Any]) -> list[str]:
+    rows: list[str] = []
+    for candidate, reason in selection_details.get("role_cap_blocked") or []:
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(candidate.get("title", "")),
+                    _table_cell(candidate.get("source", "unknown")),
+                    _candidate_role(candidate),
+                    f"{_total_score(candidate):g}",
+                    reason,
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | unknown | unknown | 0 | none |"]
 
 
 def _source_mix_focus_line(
@@ -921,6 +1072,170 @@ def _source_mix_experiment_review(
         ),
     ]
     return lines
+
+
+def _audit_text(candidate: dict[str, Any]) -> str:
+    return " ".join(
+        str(candidate.get(key) or "")
+        for key in ("title", "summary", "why_interesting", "seed_type")
+    ).lower()
+
+
+def _youth_labor_merge_target(
+    candidate: dict[str, Any],
+    candidates: list[dict[str, Any]],
+) -> str | None:
+    text = _audit_text(candidate)
+    if "청년" not in text or not any(
+        term in text for term in ("쉬었음", "경제활동참가율", "노동시장")
+    ):
+        return None
+    candidate_id = str(candidate.get("candidate_id"))
+    for other in candidates:
+        if str(other.get("candidate_id")) == candidate_id:
+            continue
+        other_text = _audit_text(other)
+        if "청년" in other_text and any(
+            term in other_text for term in ("쉬었음", "경제활동참가율", "노동시장")
+        ):
+            return str(
+                other.get("title") or other.get("candidate_id") or "related_candidate"
+            )
+    return None
+
+
+def _storyline_fit_classification(
+    candidate: dict[str, Any],
+    candidates: list[dict[str, Any]],
+) -> tuple[str, str, str]:
+    seed_type = str(candidate.get("seed_type") or "other")
+    role = _candidate_role(candidate)
+    flags = set(candidate.get("quality_flags") or [])
+    risk_flags = set(candidate.get("risk_flags") or [])
+    text = _audit_text(candidate)
+    merge_target = _youth_labor_merge_target(candidate, candidates)
+    if merge_target:
+        return (
+            "merge_with_other_candidate",
+            f"merge_target={merge_target}",
+            "bundle_before_sheet_review",
+        )
+    if role == "research_note":
+        return (
+            "standalone_seed",
+            "research_note_has_structural_numbers",
+            "review_as_core_seed",
+        )
+    if role == "policy_release":
+        evidence_flags = {
+            "policy_release_evidence_default",
+            "policy_release_announcement_only",
+            "policy_release_meeting_only",
+            "policy_release_procedural_number_only",
+        }
+        if seed_type != "policy_release_seed" or evidence_flags.intersection(flags):
+            return (
+                "evidence_only",
+                "official_release_meeting_or_evidence_default",
+                "attach_to_larger_story",
+            )
+        return (
+            "needs_external_sources",
+            "official_release_seed_needs_independent_context",
+            "collect_price_life_or_industry_data",
+        )
+    if seed_type in {"single_company_financing", "market_rate_stress"}:
+        if "ipo" in text or "청약" in text or "수요예측" in text:
+            return (
+                "evidence_only",
+                "market_schedule_or_ipo_context",
+                "use_only_inside_market_structure_story",
+            )
+        if "유상증자" in text or "주주배정" in text or risk_flags.intersection(
+            {"investment_advice_risk", "corporate_promo_risk"}
+        ):
+            return (
+                "demote_or_reject",
+                "single_company_or_investment_frame",
+                "reject_as_standalone_seed",
+            )
+        return (
+            "needs_external_sources",
+            "finance_story_needs_non_investment_frame",
+            "find_brand_or_market_structure_angle",
+        )
+    if seed_type in {
+        "public_ai_governance",
+        "public_ai_enforcement",
+        "workplace_ai_transition",
+        "healthcare_operations_ai",
+        "platform_labor_market",
+        "industrial_labor_conflict",
+    }:
+        return (
+            "needs_external_sources",
+            "public_wire_story_has_concrete_broadcast_hook",
+            "collect_second_source_and_numbers",
+        )
+    if role == "academic_explainer":
+        return (
+            "standalone_seed",
+            "academic_explainer_has_mechanism",
+            "review_as_explainer_seed",
+        )
+    if seed_type == "life_change" and risk_flags.intersection({"corporate_promo_risk"}):
+        return (
+            "needs_external_sources",
+            "lifestyle_hook_but_source_is_promotional",
+            "bundle_with_climate_labor_or_power_data",
+        )
+    if _has_generic_why(candidate):
+        return (
+            "demote_or_reject",
+            "generic_why_without_specific_template",
+            "review_template_queue",
+        )
+    return (
+        "needs_external_sources",
+        "story_fit_uncertain",
+        "manual_editorial_review",
+    )
+
+
+def _storyline_fit_audit_rows(
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    *,
+    near_miss_limit: int = 10,
+) -> list[str]:
+    top_ids = {str(item.get("candidate_id")) for item in top}
+    near_misses = sorted(
+        [item for item in candidates if str(item.get("candidate_id")) not in top_ids],
+        key=_total_score,
+        reverse=True,
+    )[:near_miss_limit]
+    rows: list[str] = []
+    for role, item in [
+        *[("top", candidate) for candidate in top],
+        *[("near_miss", candidate) for candidate in near_misses],
+    ]:
+        fit, reason, action = _storyline_fit_classification(item, candidates)
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    role,
+                    _table_cell(item.get("title", "")),
+                    _table_cell(item.get("source", "unknown")),
+                    _table_cell(item.get("seed_type", "unknown")),
+                    fit,
+                    _table_cell(reason),
+                    action,
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | none | unknown | unknown | demote_or_reject | none | none |"]
 
 
 def _freshness_count(candidates: list[dict[str, Any]], status: str) -> int:

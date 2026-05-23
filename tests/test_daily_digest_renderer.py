@@ -166,6 +166,193 @@ def test_top_candidates_limits_same_source() -> None:
     ]
 
 
+def test_top_candidates_applies_source_role_caps_before_backfill() -> None:
+    candidates = [
+        {
+            "candidate_id": f"policy_{index}",
+            "source": f"Policy {index}",
+            "source_role_class": "policy_release",
+            "seed_type": "policy_release_seed",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [],
+            "scores": {"total_score": 100 - index, "broadcast_potential_proxy": 5},
+        }
+        for index in range(3)
+    ]
+    candidates.extend(
+        [
+            {
+                "candidate_id": f"research_{index}",
+                "source": f"BOK {index}",
+                "source_role_class": "research_note",
+                "seed_type": "policy_research_note",
+                "final_grade": "B",
+                "recommended_action": "gather_more_evidence",
+                "quality_flags": [],
+                "scores": {"total_score": 90 - index, "broadcast_potential_proxy": 5},
+            }
+            for index in range(2)
+        ]
+    )
+    candidates.extend(
+        [
+            {
+                "candidate_id": f"public_{index}",
+                "source": f"Yonhap {index}",
+                "source_role_class": "public_wire",
+                "seed_type": "public_ai_governance",
+                "final_grade": "B",
+                "recommended_action": "gather_more_evidence",
+                "quality_flags": [],
+                "scores": {"total_score": 80 - index, "broadcast_potential_proxy": 5},
+            }
+            for index in range(2)
+        ]
+    )
+
+    selected = top_candidates(candidates, limit=6, max_per_source=10)
+
+    selected_ids = [candidate["candidate_id"] for candidate in selected]
+    assert selected_ids == [
+        "policy_0",
+        "policy_1",
+        "research_0",
+        "research_1",
+        "public_0",
+        "public_1",
+    ]
+    assert "policy_2" not in selected_ids
+
+
+def test_top_candidates_backfills_when_role_caps_underfill() -> None:
+    candidates = [
+        {
+            "candidate_id": f"policy_{index}",
+            "source": f"Policy {index}",
+            "source_role_class": "policy_release",
+            "seed_type": "policy_release_seed",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [],
+            "scores": {"total_score": 100 - index, "broadcast_potential_proxy": 5},
+        }
+        for index in range(5)
+    ]
+
+    selected = top_candidates(candidates, limit=5, max_per_source=10)
+
+    assert [candidate["candidate_id"] for candidate in selected] == [
+        "policy_0",
+        "policy_1",
+        "policy_2",
+        "policy_3",
+        "policy_4",
+    ]
+
+
+def test_quality_report_includes_source_role_cap_and_storyline_audit(tmp_path) -> None:
+    report_path = tmp_path / "source_role_caps.md"
+    candidates = [
+        {
+            "candidate_id": "bok_youth_rest",
+            "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+            "source": "한국은행",
+            "source_role_class": "research_note",
+            "seed_type": "macro_research_note",
+            "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+            "quality_flags": [],
+            "risk_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 100, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "bok_youth_male",
+            "title": "BOK 남성 청년층 경제활동참가율 하락",
+            "source": "한국은행",
+            "source_role_class": "research_note",
+            "seed_type": "macro_research_note",
+            "why_interesting": "청년 노동시장 이탈을 다른 지표로 설명",
+            "quality_flags": [],
+            "risk_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 99, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "policy_apec",
+            "title": "APEC 통상장관회의, AI·디지털·녹색산업 협력 논의",
+            "source": "정책브리핑",
+            "source_role_class": "policy_release",
+            "seed_type": "policy_release_evidence",
+            "quality_flags": [
+                "policy_release_evidence_default",
+                "policy_release_meeting_only",
+            ],
+            "risk_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 98, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "amotech",
+            "title": "아모텍, 350억원 주주배정 유상증자 결정",
+            "source": "연합뉴스 경제",
+            "source_role_class": "public_wire",
+            "seed_type": "single_company_financing",
+            "quality_flags": ["single_company_frame"],
+            "risk_flags": ["investment_advice_risk", "corporate_promo_risk"],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 97, "broadcast_potential_proxy": 5},
+        },
+        *[
+            {
+                "candidate_id": f"policy_extra_{index}",
+                "title": f"정책브리핑 추가 회의 보도자료 {index}",
+                "source": f"정책브리핑 {index}",
+                "source_role_class": "policy_release",
+                "seed_type": "policy_release_seed",
+                "quality_flags": [],
+                "risk_flags": [],
+                "recommended_action": "gather_more_evidence",
+                "final_grade": "B",
+                "scores": {"total_score": 70 - index, "broadcast_potential_proxy": 4},
+            }
+            for index in range(4)
+        ],
+        *[
+            {
+                "candidate_id": f"public_extra_{index}",
+                "title": f"연합뉴스 AI 공공활용 후보 {index}",
+                "source": f"연합뉴스 산업 {index}",
+                "source_role_class": "public_wire",
+                "seed_type": "public_ai_governance",
+                "quality_flags": [],
+                "risk_flags": [],
+                "recommended_action": "gather_more_evidence",
+                "final_grade": "B",
+                "scores": {"total_score": 60 - index, "broadcast_potential_proxy": 4},
+            }
+            for index in range(6)
+        ],
+    ]
+    top = top_candidates(candidates, limit=6, max_per_source=10)
+
+    write_quality_report(report_path, candidates, top, limit=6, max_per_source=10)
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "## Source Role Cap Status" in report
+    assert "- policy_release: selected=2 cap=2" in report
+    assert "## Source Role Cap-blocked Candidates" in report
+    assert "source_role_cap_reached=policy_release:2" in report
+    assert "## Storyline Fit Audit" in report
+    assert "merge_with_other_candidate" in report
+    assert "evidence_only" in report
+    assert "demote_or_reject" in report
+
+
 def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_path) -> None:
     report_path = tmp_path / "quality.md"
     candidates = [

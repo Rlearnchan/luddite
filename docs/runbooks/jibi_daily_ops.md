@@ -170,6 +170,11 @@ because their published date is missing.
 
 Source-role handling is intentionally conservative during the manual MVP:
 
+- Top Candidate selection now applies source-role soft caps after scoring and
+  quality gates: `research_note` 3, `policy_release` 2, `public_wire` 3,
+  `academic_explainer` 2, `market_wire` 1, and `section_news` 3. These caps do
+  not change candidate scores or thresholds. If the caps would leave the Top
+  list short, the report backfills and marks `cap_backfill_used`.
 - The Conversation is enabled as a controlled academic-explainer experiment,
   not as an always-pass source.
 - Guardian broad international/world feeds stay on hold. Prefer section feeds
@@ -181,10 +186,15 @@ Source-role handling is intentionally conservative during the manual MVP:
 - Policy Briefing and ministry releases are evidence-default. They become seed
   candidates only when they show direct life impact, regulatory conflict,
   industrial mechanism, odd hook, visual proof object, or a material number with
-  a structural signal. Dates and procedural numbers alone stay evidence.
+  a structural signal. Dates, procedural numbers, meeting notices, coordination
+  meetings, and agenda-only releases stay evidence unless there is a concrete
+  life/industry/regulatory mechanism.
 - Yonhap uses section feeds for the manual MVP. Economy, Industry, and
   International are enabled; Latest is held because its RSS lookback is short,
-  while Market+ and Health remain guarded hold sources.
+  while Market+ and Health remain guarded hold sources. Yonhap Industry near
+  misses should be checked for public AI governance/enforcement, workplace AI,
+  platform labor, and industrial labor conflict templates before holding the
+  source.
 
 Read the calibration sections in this order:
 
@@ -199,9 +209,13 @@ Read the calibration sections in this order:
    command never edits `config/rss_collection_allowlist.yaml`.
 6. `Source Mix Experiment Review`: check source-role distribution, cap warnings,
    and the human-review focus list before judging the day's source mix.
-7. `Generic Why Template Improvement Queue`: find concrete stories blocked by
+7. `Source Role Cap Status` and `Storyline Fit Audit`: check whether official
+   sources are overrepresented, whether candidates should be bundled before
+   sheet review, and whether Top items look like standalone seeds, evidence, or
+   demote/reject cases.
+8. `Generic Why Template Improvement Queue`: find concrete stories blocked by
    generic `why_interesting`.
-8. `Near Miss Review Queue`: inspect high-score candidates before any append.
+9. `Near Miss Review Queue`: inspect high-score candidates before any append.
 
 Do not change thresholds based on one run. A low Top count can still be
 acceptable when the near-miss queue shows weak, stale, duplicate, or noisy

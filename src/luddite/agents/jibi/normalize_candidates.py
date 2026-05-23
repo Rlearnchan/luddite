@@ -141,6 +141,12 @@ EDITORIAL_CATEGORY_TYPES = {
     "policy_research_note",
     "academic_explainer",
     "policy_release_seed",
+    "public_ai_governance",
+    "public_ai_enforcement",
+    "workplace_ai_transition",
+    "healthcare_operations_ai",
+    "platform_labor_market",
+    "industrial_labor_conflict",
 }
 FRESHNESS_RECENT_HOURS = 24 * 7
 LOW_FREQUENCY_RESEARCH_POLICY = "low_frequency_research"
@@ -275,6 +281,33 @@ POLICY_RELEASE_ANNOUNCEMENT_TERMS = {
     "안내",
     "발표",
 }
+POLICY_RELEASE_MEETING_TERMS = {
+    "회의",
+    "장관회의",
+    "담당관회의",
+    "공관 담당관회의",
+    "간담회",
+    "논의",
+    "개최",
+    "참석",
+    "협력방안",
+    "활성화 방안",
+    "업무협약",
+    "협약",
+}
+POLICY_RELEASE_PROCEDURAL_NUMBER_TERMS = {
+    "제",
+    "차",
+    "회의",
+    "보고서",
+    "현황",
+    "기준",
+    "신청",
+    "지급",
+    "접수",
+    "공모",
+    "모집",
+}
 POLICY_RELEASE_MATERIAL_NUMBER_TERMS = {
     "예산",
     "투자",
@@ -351,6 +384,12 @@ def _evidence_needed(seed_type: str, risk_flags: list[str]) -> list[str]:
         "market_rate_stress",
         "infrastructure_project_failure",
         "climate_policy_conflict",
+        "public_ai_governance",
+        "public_ai_enforcement",
+        "workplace_ai_transition",
+        "healthcare_operations_ai",
+        "platform_labor_market",
+        "industrial_labor_conflict",
     }:
         evidence.append("숫자/통계 또는 공식 자료")
     if "investment_advice_risk" in risk_flags:
@@ -492,6 +531,72 @@ def _template_insights(seed_type: str) -> tuple[str, list[str]]:
                 "공식 근거로 붙일 수 있는 문장",
                 "추가 기사나 통계가 필요한 지점",
                 "seed로 승격하려면 필요한 생활/산업/숫자 hook",
+            ],
+        ),
+        "public_ai_governance": (
+            (
+                "공공기관의 AI 활용이 효율화와 책임 문제를 동시에 보여주는 사례라, "
+                "AI 도입 기준, 감사/보고서, 사람의 판단 영역을 함께 설명할 수 있음"
+            ),
+            [
+                "공공기관 AI 활용 실태와 부적절 사용 사례",
+                "AI가 행정 효율과 책임 소재를 동시에 바꾸는 지점",
+                "교육·감사·가이드라인이 필요한 이유",
+            ],
+        ),
+        "public_ai_enforcement": (
+            (
+                "AI/드론이 실제 단속·검거·안전 현장에 들어온 사례라, 기술이 공공안전의 "
+                "방식을 어떻게 바꾸는지 보여주는 생활형 공공기술 소재"
+            ),
+            [
+                "AI/드론이 치안·단속 현장에 들어온 장면",
+                "공공안전 효율과 감시/오판 리스크",
+                "한국 지자체·경찰의 기술 도입 기준",
+            ],
+        ),
+        "workplace_ai_transition": (
+            (
+                "AI 도입이 일자리와 노사관계의 의제가 되는 장면이라, 기술 변화가 "
+                "생산성뿐 아니라 협상·교육·직무 재설계를 요구한다는 구조로 확장 가능"
+            ),
+            [
+                "AI 도입과 직무 재설계",
+                "노사 협상에서 AI가 새 의제가 되는 이유",
+                "생산성 향상과 일자리 불안의 균형",
+            ],
+        ),
+        "healthcare_operations_ai": (
+            (
+                "의학적 치료 주장보다 병원 운영·연락·배정 같은 workflow를 AI가 바꾸는 "
+                "사례라, 의료 리스크를 조심하면서도 현장 운영 혁신으로 설명 가능"
+            ),
+            [
+                "병원 연락·배정·예약 workflow 자동화",
+                "의료 인력 부족과 운영 병목",
+                "의학적 효능 주장을 피하는 운영 개선 프레임",
+            ],
+        ),
+        "platform_labor_market": (
+            (
+                "플랫폼의 수수료·배달비·상인/노동자 부담 논쟁이라, 앱 편의성 뒤의 "
+                "비용 배분과 노동시장 구조를 보여줄 수 있음"
+            ),
+            [
+                "플랫폼 무료/할인 경쟁의 비용 전가 구조",
+                "가맹점·노동자·소비자 사이의 부담 배분",
+                "한국 배달/플랫폼 시장의 수수료 논쟁",
+            ],
+        ),
+        "industrial_labor_conflict": (
+            (
+                "단일 기업 노사 뉴스로 끝내면 약하지만, 산업 전환·성과급·직무 변화와 "
+                "맞물리면 한국 제조업/테크 기업의 일터 구조를 설명하는 소재가 될 수 있음"
+            ),
+            [
+                "성과급·임금·직무를 둘러싼 기업 내부 갈등",
+                "산업 전환기 노동시장과 조직 내부 세대/직군 차이",
+                "단일 기업 투자 조언으로 보이지 않게 산업 구조로 확장",
             ],
         ),
         "cost_asymmetry": (
@@ -664,12 +769,25 @@ def _policy_release_raw_seed_signals(text: str) -> list[str]:
 
 def _policy_release_seed_signals(text: str) -> list[str]:
     signals = _policy_release_raw_seed_signals(text)
-    non_number_signals = [
-        signal for signal in signals if signal in POLICY_RELEASE_NON_NUMBER_SIGNALS
-    ]
-    if len(signals) >= 2:
+    is_meeting_or_coordination = contains_any(text, POLICY_RELEASE_MEETING_TERMS)
+    if "odd_hook" in signals:
         return signals
-    if non_number_signals:
+    if "life_impact" in signals:
+        return signals
+    if is_meeting_or_coordination:
+        return []
+    if "industry_mechanism" in signals and "material_number" in signals:
+        return signals
+    if "regulatory_conflict" in signals and (
+        "material_number" in signals or "industry_mechanism" in signals
+    ):
+        return signals
+    if "visual_proof_object" in signals and (
+        "material_number" in signals
+        or "life_impact" in signals
+        or "industry_mechanism" in signals
+        or "regulatory_conflict" in signals
+    ):
         return signals
     return []
 
@@ -691,6 +809,84 @@ def _policy_release_announcement_only(text: str, seed_signals: list[str]) -> boo
     return contains_any(text, POLICY_RELEASE_ANNOUNCEMENT_TERMS)
 
 
+def _policy_release_meeting_only(text: str, seed_signals: list[str]) -> bool:
+    if seed_signals:
+        return False
+    return contains_any(text, POLICY_RELEASE_MEETING_TERMS)
+
+
+def _policy_release_procedural_number_only(text: str) -> bool:
+    if not any(char.isdigit() for char in text):
+        return False
+    if _policy_release_seed_signals(text):
+        return False
+    return contains_any(
+        text,
+        POLICY_RELEASE_PROCEDURAL_NUMBER_TERMS,
+    ) or _policy_release_date_only_number(text)
+
+
+def _public_wire_editorial_category(text: str, source_role_class: str) -> str | None:
+    if source_role_class != SOURCE_ROLE_PUBLIC_WIRE:
+        return None
+    has_ai = contains_any(text, {"ai", "인공지능", "챗봇", "자동화"})
+    if contains_any(text, {"드론", "drone"}) and contains_any(
+        text,
+        {"경찰", "검거", "단속", "수배", "치안", "범인", "공공안전"},
+    ):
+        return "public_ai_enforcement"
+    if has_ai and contains_any(
+        text,
+        {"병원", "의료", "응급", "환자", "연락", "섭외", "예약", "진료"},
+    ):
+        return "healthcare_operations_ai"
+    if has_ai and contains_any(
+        text,
+        {"노사", "노동", "상생위", "경사노위", "직무", "일자리", "근로", "직장"},
+    ):
+        return "workplace_ai_transition"
+    if has_ai and contains_any(
+        text,
+        {
+            "공무원",
+            "공공",
+            "기관",
+            "보고서",
+            "교육",
+            "행정",
+            "부적절",
+            "가짜기사",
+            "가짜뉴스",
+            "허위",
+            "조작",
+            "감사",
+            "가이드라인",
+        },
+    ):
+        return "public_ai_governance"
+    if contains_any(
+        text,
+        {
+            "쿠팡이츠",
+            "배달비",
+            "배달",
+            "업주",
+            "수수료",
+            "플랫폼",
+            "라이더",
+            "상인",
+            "가맹점",
+        },
+    ):
+        return "platform_labor_market"
+    if contains_any(text, {"노노갈등", "노조", "노사", "성과급", "임금"}) and contains_any(
+        text,
+        {"삼성전자", "반도체", "제조", "공장", "직군", "산업"},
+    ):
+        return "industrial_labor_conflict"
+    return None
+
+
 def _infer_editorial_category(
     title: str,
     summary: str,
@@ -702,6 +898,9 @@ def _infer_editorial_category(
         return _research_note_seed_type(text)
     if source_role_class == SOURCE_ROLE_POLICY_RELEASE:
         return "policy_release_seed" if _policy_release_seed_signals(text) else None
+    public_wire_category = _public_wire_editorial_category(text, source_role_class)
+    if public_wire_category:
+        return public_wire_category
     if contains_any(text, {"담보", "단기수익", "생산적", "정책금융", "국민성장펀드"}):
         return "productive_finance_policy"
     if contains_any(text, {"휴머노이드", "ai 로봇", "robotics r&d"}):
@@ -919,9 +1118,10 @@ def _rss_quality_hints(
     if not summary.strip():
         quality_flags.append("empty_summary")
     has_structure = contains_any(text, BROADER_STRUCTURE_TERMS)
+    has_accident_structure = contains_any(text, BROADER_STRUCTURE_TERMS - set(NUMBER_TERMS))
     if source_id == "bbc_rss_candidate" and contains_any(text, SPORT_TERMS) and not has_structure:
         quality_flags.append("sports_only")
-    if contains_any(text, ACCIDENT_TERMS) and not has_structure:
+    if contains_any(text, ACCIDENT_TERMS) and not has_accident_structure:
         quality_flags.append("accident_single_event")
     if source_id == "atlas_obscura" and contains_any(text, PLACE_LISTING_TERMS):
         quality_flags.append("pure_place_listing")
@@ -934,10 +1134,18 @@ def _rss_quality_hints(
             quality_flags.append(
                 "policy_release_seed_signals=" + ",".join(raw_seed_signals)
             )
+        if "material_number" in seed_signals:
+            quality_flags.append("policy_release_material_seed_signal")
         if _policy_release_date_only_number(text):
             quality_flags.append("policy_release_date_only_number")
         if _policy_release_announcement_only(text, seed_signals):
             quality_flags.append("policy_release_announcement_only")
+        if _policy_release_meeting_only(text, seed_signals):
+            quality_flags.append("policy_release_meeting_only")
+        if _policy_release_procedural_number_only(text):
+            quality_flags.append("policy_release_procedural_number_only")
+    if seed_type == "healthcare_operations_ai" and "medical_claim_risk" not in risk_flags:
+        risk_flags.append("medical_claim_risk")
     if contains_any(text, POLITICAL_POLICY_TERMS):
         if "political_sensitivity" not in risk_flags:
             risk_flags.append("political_sensitivity")

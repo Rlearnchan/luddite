@@ -361,6 +361,219 @@ def test_policy_briefing_with_unusual_industry_signal_can_be_seed() -> None:
     assert "공식 보도자료" in candidate["why_interesting"]
 
 
+def test_policy_briefing_meeting_coordination_stays_evidence_default() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_apec",
+            "title": "[산업통상자원부] APEC 통상장관회의 AI·디지털·녹색산업 협력 논의",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=apec",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "장관회의에서 다자 협력방안과 향후 일정을 논의했다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_evidence"
+    assert "policy_release_meeting_only" in candidate["quality_flags"]
+    assert "policy_release_evidence_default" in candidate["quality_flags"]
+
+
+def test_policy_briefing_emergency_coordination_without_mechanism_stays_evidence() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_middle_east",
+            "title": "[외교부] 중동전쟁 비상경제 대응 공관 담당관회의 개최",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=middle-east",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": (
+                "총 10개 공관과 정유·석유화학업계 관계자들이 대체 수급선 "
+                "확보 가능성과 정부 지원방안을 논의했다."
+            ),
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_evidence"
+    assert "policy_release_meeting_only" in candidate["quality_flags"]
+    assert "policy_release_evidence_default" in candidate["quality_flags"]
+
+
+def test_policy_briefing_procedural_number_only_is_evidence() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_status_report",
+            "title": "[행정안전부] 제4차 추진현황 보고서 접수 결과 발표",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=status",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "2026년 기준 보고서와 신청 절차를 안내했다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_evidence"
+    assert "policy_release_procedural_number_only" in candidate["quality_flags"]
+
+
+def test_policy_briefing_onion_life_impact_can_be_candidate_seed() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_onion",
+            "title": "[농림축산식품부] 양파 소비촉진 특판행사로 농가 소득과 물가 부담 완화",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=onion",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "양파 가격 하락과 소비자 가격 부담을 함께 다루는 행사다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_seed"
+    assert "policy_release_evidence_default" not in candidate["quality_flags"]
+
+
+def test_yonhap_public_ai_governance_template_is_specific() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_ai_report",
+            "title": "공무원 해외교육 결과보고서 1천385건 중 11건 AI 부적절 활용",
+            "url": "https://www.yna.co.kr/view/AKR20260523000100001",
+            "source": "연합뉴스 산업",
+            "source_id": "yonhap_industry",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "공공기관 보고서 작성 과정에서 인공지능 사용 기준 문제가 드러났다.",
+            "collector": "rss",
+            "tags": ["rss", "domestic_bridge"],
+        }
+    )
+
+    assert candidate["source_role_class"] == "public_wire"
+    assert candidate["seed_type"] == "public_ai_governance"
+    assert candidate["story_specificity"]["generic_why_detected"] is False
+    assert "공공기관" in candidate["why_interesting"]
+
+
+def test_yonhap_ai_drone_enforcement_template_beats_governance() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_ai_drone",
+            "title": "'AI 드론', 범인 붙잡는데도 쓰이네…경찰 실증 확대",
+            "url": "https://www.yna.co.kr/view/AKR20260523000200001",
+            "source": "연합뉴스 산업",
+            "source_id": "yonhap_industry",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "AI 드론을 치안과 공공안전 현장에 활용하는 사례다.",
+            "collector": "rss",
+            "tags": ["rss", "domestic_bridge"],
+        }
+    )
+
+    assert candidate["seed_type"] == "public_ai_enforcement"
+    assert "공공안전" in candidate["why_interesting"]
+
+
+def test_yonhap_ai_fake_article_is_governance_not_enforcement() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_ai_fake_news",
+            "title": "경찰, '5·18은 北지령' AI가짜기사 작성자 추적…무관용 수사",
+            "url": "https://www.yna.co.kr/view/AKR20260523000600001",
+            "source": "연합뉴스 산업",
+            "source_id": "yonhap_industry",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "AI 가짜기사와 허위 정보 유통에 대한 공공 대응 사례다.",
+            "collector": "rss",
+            "tags": ["rss", "domestic_bridge"],
+        }
+    )
+
+    assert candidate["seed_type"] == "public_ai_governance"
+    assert candidate["seed_type"] != "public_ai_enforcement"
+
+
+def test_yonhap_workplace_ai_transition_template() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_ai_labor",
+            "title": "경사노위 AI 노사상생위 출범…직무 재설계 논의",
+            "url": "https://www.yna.co.kr/view/AKR20260523000300001",
+            "source": "연합뉴스 산업",
+            "source_id": "yonhap_industry",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "노사정이 AI 도입과 일자리 변화, 직무교육 방안을 다룬다.",
+            "collector": "rss",
+            "tags": ["rss", "domestic_bridge"],
+        }
+    )
+
+    assert candidate["seed_type"] == "workplace_ai_transition"
+    assert "직무 재설계" in candidate["why_interesting"]
+
+
+def test_yonhap_public_wire_product_launch_does_not_get_ai_template() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_product",
+            "title": "신제품·스노우피크 어패럴 반바지 출시",
+            "url": "https://www.yna.co.kr/view/AKR20260523000400001",
+            "source": "연합뉴스 경제",
+            "source_id": "yonhap_economy",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "여름 의류 신제품을 소개하는 기사다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    assert candidate["seed_type"] not in {
+        "public_ai_governance",
+        "public_ai_enforcement",
+        "workplace_ai_transition",
+    }
+
+
+def test_yonhap_accident_only_public_safety_story_stays_guarded() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_accident",
+            "title": "도로 추돌사고 발생…경찰 조사",
+            "url": "https://www.yna.co.kr/view/AKR20260523000500001",
+            "source": "연합뉴스 사회",
+            "source_id": "yonhap_society",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "단일 사고 발생 내용을 전하는 기사다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    assert "accident_single_event" in candidate["quality_flags"]
+    assert candidate["seed_type"] not in {
+        "public_ai_governance",
+        "public_ai_enforcement",
+    }
+
+
 def test_normalize_preserves_cross_feed_source_metadata() -> None:
     candidate = normalize_article(
         {
