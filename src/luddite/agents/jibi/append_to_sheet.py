@@ -43,16 +43,16 @@ SHEET_COLUMNS = [
     "why_interesting",
     "possible_expansions",
     "evidence_needed",
-    "slideability_score",
-    "slideability",
-    "first_slide_idea",
-    "likely_proof_object_types",
-    "visual_risks",
     "중복후보",
     "reviewer",
     "review_result",
     "promoted_to_topic_finding",
     "notes",
+    "slideability_score",
+    "slideability",
+    "first_slide_idea",
+    "likely_proof_object_types",
+    "visual_risks",
 ]
 REVIEW_RESULT_VALUES = {
     "",
@@ -93,6 +93,7 @@ class SheetAppendReport:
     styling_applied: bool = False
     sheet_created: bool = False
     header_created: bool = False
+    header_status: str = "not_checked"
     duplicate_keys: list[str] = field(default_factory=list)
     appended_range: AppendResult | None = None
 
@@ -210,14 +211,16 @@ def read_preview_rows(preview_csv: Path) -> list[dict[str, str]]:
     return rows
 
 
-def _header_missing(existing_values: list[list[str]]) -> bool:
+def _header_status(existing_values: list[list[str]]) -> str:
     if not existing_values:
-        return True
+        return "missing"
     header = existing_values[0]
-    return any(
+    if any(
         index >= len(header) or header[index] != column
         for index, column in enumerate(SHEET_COLUMNS)
-    )
+    ):
+        return "mismatch"
+    return "ok"
 
 
 def _existing_duplicate_values(existing_values: list[list[str]]) -> tuple[set[str], set[str]]:
@@ -294,12 +297,16 @@ def append_jibi_sheet(
         if sheet_id is not None:
             existing_values = client.get_values(config.spreadsheet_id, config.target_sheet_name)
 
-    if _header_missing(existing_values):
+    header_status = _header_status(existing_values)
+    report.header_status = header_status
+    if header_status != "ok":
         report.header_created = True
         if not config.create_header_if_missing:
             report.errors.append(
                 "Target sheet header is missing or does not match expected columns."
             )
+        elif config.dry_run:
+            report.header_status = "upgrade_planned"
         elif client and config.spreadsheet_id and not config.dry_run:
             client.update_values(
                 config.spreadsheet_id,
@@ -308,6 +315,7 @@ def append_jibi_sheet(
                 [SHEET_COLUMNS],
             )
             existing_values = [SHEET_COLUMNS, *existing_values[1:]]
+            report.header_status = "upgraded"
 
     duplicate_keys, source_urls = _existing_duplicate_values(existing_values)
     rows_to_append: list[list[str]] = []
@@ -375,6 +383,9 @@ def write_append_report(path: Path, report: SheetAppendReport) -> None:
         f"- Dry run: {report.dry_run}",
         f"- Styling applied: {report.styling_applied}",
         f"- Sheet created: {report.sheet_created}",
+        f"- Header status: `{report.header_status}`",
+        f"- Header update planned: {report.header_status == 'upgrade_planned'}",
+        f"- Header updated: {report.header_status == 'upgraded'}",
         f"- Header created: {report.header_created}",
         f"- Errors: {len(report.errors)}",
         "",

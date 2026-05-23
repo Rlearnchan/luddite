@@ -158,6 +158,9 @@ last_seen_at update -> future work, not 1.0
 
 ## Suggested `jibi 후보` columns
 
+Keep the first 25 columns in this exact order for backward compatibility with
+existing reviewed rows. Add slideability fields only at the far right.
+
 ```text
 digest_date
 collected_at
@@ -179,16 +182,16 @@ risk_flags
 why_interesting
 possible_expansions
 evidence_needed
-slideability_score
-slideability
-first_slide_idea
-likely_proof_object_types
-visual_risks
 중복후보
 reviewer
 review_result
 promoted_to_topic_finding
 notes
+slideability_score
+slideability
+first_slide_idea
+likely_proof_object_types
+visual_risks
 ```
 
 ## Subscription source display rule

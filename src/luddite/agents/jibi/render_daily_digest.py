@@ -12,6 +12,7 @@ import typer
 from rich.console import Console
 
 from luddite import paths
+from luddite.agents.jibi.append_to_sheet import SHEET_COLUMNS
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -257,38 +258,7 @@ def render_markdown(
 
 def write_sheet_preview(path: Path, candidates: list[dict[str, Any]], digest_date: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = [
-        "digest_date",
-        "collected_at",
-        "last_seen_at",
-        "jibi_id",
-        "duplicate_key",
-        "source_url_canonical",
-        "rank",
-        "status",
-        "주제명",
-        "링크",
-        "출처",
-        "source_type",
-        "jibi_grade",
-        "total_score",
-        "recommended_action",
-        "risk_level",
-        "risk_flags",
-        "why_interesting",
-        "possible_expansions",
-        "evidence_needed",
-        "slideability_score",
-        "slideability",
-        "first_slide_idea",
-        "likely_proof_object_types",
-        "visual_risks",
-        "중복후보",
-        "reviewer",
-        "review_result",
-        "promoted_to_topic_finding",
-        "notes",
-    ]
+    fieldnames = SHEET_COLUMNS
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()

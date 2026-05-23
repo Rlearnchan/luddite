@@ -44,6 +44,10 @@ Luddite 후보
 
 ## 4. Column Schema
 
+The first 25 columns intentionally preserve the original MVP sheet order. New
+slideability fields are appended after `notes` so old reviewed rows keep their
+human-review cell meanings when row 1 is upgraded.
+
 | column | type | 설명 |
 |---|---|---|
 | `digest_date` | date | digest 기준일 |
@@ -66,16 +70,16 @@ Luddite 후보
 | `why_interesting` | text | 2~3줄 설명 |
 | `possible_expansions` | text | bullet 또는 `;` 구분 |
 | `evidence_needed` | text | 추가 자료 |
-| `slideability_score` | number/string | 첫 화면/증거물로 보여주기 쉬운 정도 |
-| `slideability` | string | visualizability와 대표 proof object 요약 |
-| `first_slide_idea` | text | 첫 장면 아이디어 |
-| `likely_proof_object_types` | text | diagram/chart/source_card 등 |
-| `visual_risks` | text | 시각화 또는 출처 리스크 |
 | `중복후보` | string | duplicate_of candidate id |
 | `reviewer` | string | 검토자 |
 | `review_result` | string | blank/keep/promote/etc |
 | `promoted_to_topic_finding` | bool/string | 승격 여부 |
 | `notes` | text | 사람이 남기는 메모 |
+| `slideability_score` | number/string | 첫 화면/증거물로 보여주기 쉬운 정도 |
+| `slideability` | string | visualizability와 대표 proof object 요약 |
+| `first_slide_idea` | text | 첫 장면 아이디어 |
+| `likely_proof_object_types` | text | diagram/chart/source_card 등 |
+| `visual_risks` | text | 시각화 또는 출처 리스크 |
 
 ## 5. review_result Enum
 

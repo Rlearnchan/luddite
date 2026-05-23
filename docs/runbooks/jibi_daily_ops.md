@@ -40,6 +40,17 @@ outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv
 outputs/reports/jibi_quality_YYYY-MM-DD.md
 ```
 
+## Morning Checklist
+
+1. Run `make jibi-mvp-rss-dry-run` or the manual equivalent.
+2. Inspect `outputs/daily_digest/YYYY-MM-DD.md`.
+3. Inspect `outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv`.
+4. Inspect `outputs/reports/jibi_sheet_append_YYYY-MM-DD.md`.
+5. Confirm zero errors, expected duplicate skips, and safe `header_status`.
+6. Run explicit real append only if needed.
+7. Open `jibi 후보` and fill `review_result`, `notes`, and promotion fields
+   manually.
+
 ## Real Inbox Or RSS Dry-run
 
 Use this when local article inbox files exist under `data/inbox/articles` or
@@ -52,6 +63,11 @@ make jibi-mvp-rss-dry-run
 This command runs fetch, import, normalize, score, cluster, render, then
 `append-jibi-sheet --dry-run`. It does not append rows to Google Sheets and does
 not call an LLM.
+
+`import-articles --input-dir data/inbox/articles` imports every JSONL/CSV in
+that directory, not only today's RSS file. For clean morning runs, archive old
+inbox files or use a date-specific input directory until a stricter import
+filter exists.
 
 Manual equivalent:
 
@@ -78,7 +94,7 @@ Dry-run reports:
 
 - planned appended row count;
 - duplicate skips using `duplicate_key` and `source_url_canonical`;
-- missing or old header/schema state;
+- missing or old header/schema state through `header_status`;
 - sheet/header creation plan for a missing tab.
 
 Dry-run never creates a sheet, updates row 1, or appends candidate rows.
@@ -117,6 +133,9 @@ Schema mismatch:
   `likely_proof_object_types`, and `visual_risks`.
 - Dry-run reports the mismatch but does not update the sheet.
 - Real append may update row 1 before appending rows.
+- The first 25 columns preserve the old sheet order. Slideability fields are
+  appended after `notes` so existing `reviewer`, `review_result`,
+  `promoted_to_topic_finding`, and `notes` cells keep their meaning.
 
 Duplicate skips:
 
