@@ -12,4 +12,14 @@ def test_source_registry_v0_9_3_groups_and_fetch_policy() -> None:
     assert sources["ap_rss_candidate"].type == "rss_candidate"
     assert sources["ap_rss_candidate"].group == "primary_wire"
     assert sources["bok"].type == "official_release"
-    assert sources["bok"].role == "numbers_evidence"
+    assert sources["bok"].role == "seed_and_numbers_evidence"
+    assert sources["bok"].verified_feed_url == (
+        "https://www.bok.or.kr/portal/bbs/P0002353/news.rss?menuNo=200433"
+    )
+    assert sources["yonhap_rss_candidate"].verified_feed_url == (
+        "https://www.yna.co.kr/rss/news.xml"
+    )
+    assert sources["yonhap_international_rss_candidate"].verified_feed_url == (
+        "https://www.yna.co.kr/rss/international.xml"
+    )
+    assert sources["korea_policy_briefing"].role == "policy_seed_and_evidence"

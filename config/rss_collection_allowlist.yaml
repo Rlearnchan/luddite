@@ -8,6 +8,14 @@ sources:
     collection_enabled: true
     reason: public_feed_test_ingestion
 
+  - source_id: yonhap_rss_candidate
+    collection_enabled: true
+    reason: domestic_wire_latest_seed_test
+
+  - source_id: yonhap_international_rss_candidate
+    collection_enabled: true
+    reason: domestic_wire_international_translation_seed_test
+
   - source_id: infomax_manual
     collection_enabled: true
     reason: domestic_numbers_bridge_test
@@ -22,7 +30,7 @@ sources:
 
   - source_id: guardian_rss_candidate
     collection_enabled: false
-    reason: terms_pending
+    reason: verified_but_hold_until_next_source_mix_test
 
   - source_id: npr_rss_candidate
     collection_enabled: true
@@ -32,6 +40,18 @@ sources:
     collection_enabled: false
     reason: personal_noncommercial_noncollective_terms
 
-  - source_id: atlas_obscura
+  - source_id: bok
     collection_enabled: true
-    reason: weird_culture_seed_test
+    reason: official_issue_note_seed_and_evidence_test
+
+  - source_id: korea_policy_briefing
+    collection_enabled: true
+    reason: official_policy_release_seed_and_evidence_test
+
+  - source_id: the_conversation
+    collection_enabled: false
+    reason: verified_but_hold_until_next_source_mix_test
+
+  - source_id: atlas_obscura
+    collection_enabled: false
+    reason: weak_pool_hold_after_manual_body_probe

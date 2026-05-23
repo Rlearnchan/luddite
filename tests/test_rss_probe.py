@@ -191,6 +191,52 @@ def test_configured_feed_url_candidate_success(tmp_path) -> None:
     assert results[0].collection_enabled is False
 
 
+def test_configured_feed_url_precedes_rss_index_discovery(tmp_path) -> None:
+    registry = tmp_path / "sources.yaml"
+    registry.write_text(
+        """
+sources:
+  - id: configured_with_index
+    name: Configured With Index
+    type: rss_candidate
+    status: rss_verified
+    rss_index_url: https://index.example.com/rss
+    desired_feed: 보도자료
+    verified_feed_url: https://configured.example.com/pressrelease.xml
+""",
+        encoding="utf-8",
+    )
+    client = FakeHttpClient(
+        {
+            "https://index.example.com/rss": HttpResponse(
+                url="https://index.example.com/rss",
+                status=200,
+                content_type="text/html",
+                body=(
+                    '<html><body><a href="/rss/policy.xml">정책뉴스</a>'
+                    '<a href="/rss/press.xml">보도자료</a></body></html>'
+                ).encode(),
+            ),
+            "https://configured.example.com/pressrelease.xml": HttpResponse(
+                url="https://configured.example.com/pressrelease.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=VALID_RSS,
+            ),
+        }
+    )
+
+    results = probe_sources(
+        registry_path=registry,
+        http_client=client,
+        source_id="configured_with_index",
+        checked_at=datetime(2026, 5, 18, tzinfo=UTC),
+    )
+
+    assert results[0].discovery_method == "configured_feed_url"
+    assert results[0].verified_feed_url == "https://configured.example.com/pressrelease.xml"
+
+
 def test_html_autodiscovery_success(tmp_path) -> None:
     registry = tmp_path / "sources.yaml"
     _write_registry(registry)
@@ -262,6 +308,57 @@ def test_rss_index_discovery_prefers_desired_feed(tmp_path) -> None:
     assert results[0].extracted_feed_candidates == [
         "https://index.example.com/rss/press.xml",
         "https://index.example.com/rss/all.xml",
+    ]
+
+
+def test_rss_index_discovery_uses_table_header_labels(tmp_path) -> None:
+    registry = tmp_path / "sources.yaml"
+    registry.write_text(
+        """
+sources:
+  - id: table_index_source
+    name: Table Index Source
+    type: rss_candidate
+    status: rss_candidate
+    rss_index_url: https://table.example.com/rss
+    desired_feed: BOK 이슈노트
+""",
+        encoding="utf-8",
+    )
+    client = FakeHttpClient(
+        {
+            "https://table.example.com/rss": HttpResponse(
+                url="https://table.example.com/rss",
+                status=200,
+                content_type="text/html",
+                body=(
+                    '<table><tr><th scope="row">보도자료(전체)</th>'
+                    '<td><a href="/rss/all.xml">https://table.example.com/rss/all.xml</a></td>'
+                    '</tr><tr><th scope="row">BOK 이슈노트</th>'
+                    '<td><a href="/rss/issue.xml">https://table.example.com/rss/issue.xml</a></td>'
+                    "</tr></table>"
+                ).encode(),
+            ),
+            "https://table.example.com/rss/issue.xml": HttpResponse(
+                url="https://table.example.com/rss/issue.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=VALID_RSS,
+            ),
+        }
+    )
+
+    results = probe_sources(
+        registry_path=registry,
+        http_client=client,
+        source_id="table_index_source",
+        checked_at=datetime(2026, 5, 18, tzinfo=UTC),
+    )
+
+    assert results[0].verified_feed_url == "https://table.example.com/rss/issue.xml"
+    assert results[0].extracted_feed_candidates == [
+        "https://table.example.com/rss/issue.xml",
+        "https://table.example.com/rss/all.xml",
     ]
 
 

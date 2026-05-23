@@ -27,7 +27,8 @@
 # Operational rules:
 #   - overseas seed discovery first; domestic bridge/evidence second
 #   - subscription_manual sources are never auto-fetched
-#   - official_release sources strengthen evidence/numbers, not primary seed rank
+#   - official_release sources can be seed candidates when the feed itself is
+#     editorial/research-like, and evidence/numbers otherwise.
 
 sources:
   - id: manual
@@ -232,17 +233,46 @@ sources:
   - id: yonhap_rss_candidate
     name: 연합뉴스
     type: rss_candidate
-    status: rss_candidate
+    status: rss_verified
     group: korea_business
     role: domestic_bridge
     region: kr
     category_hint: business_policy
     homepage_url: https://www.yna.co.kr
     rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 최신뉴스
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/news.xml
+      - https://www.yna.co.kr/rss/international.xml
+    verified_feed_url: https://www.yna.co.kr/rss/news.xml
+    terms_check_required: true
     collection_enabled: false
-    last_probe_status: retry_with_rss_index
-    failure_reason: http_404
-    recommendation: keep_rss_candidate
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: rss_verified_terms_pending
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: yonhap_international_rss_candidate
+    name: 연합뉴스 세계
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: domestic_bridge
+    region: kr
+    category_hint: international_policy
+    homepage_url: https://www.yna.co.kr
+    rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 세계
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/international.xml
+    verified_feed_url: https://www.yna.co.kr/rss/international.xml
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: rss_verified_terms_pending
     priority: 5
     subscription: false
     auto_fetch: false
@@ -361,12 +391,18 @@ sources:
     type: official_release
     status: official_release
     group: official_evidence
-    role: numbers_evidence
+    role: seed_and_numbers_evidence
     region: kr
     category_hint: macro
     rss_index_url: https://www.bok.or.kr/static/view/popup/rss_popup.html
     desired_feed: BOK 이슈노트
+    feed_url_candidates:
+      - https://www.bok.or.kr/portal/bbs/P0002353/news.rss?menuNo=200433
+    verified_feed_url: https://www.bok.or.kr/portal/bbs/P0002353/news.rss?menuNo=200433
+    terms_check_required: true
     collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
     priority: 5
     subscription: false
     auto_fetch: false
@@ -387,12 +423,18 @@ sources:
     type: official_release
     status: official_release
     group: official_evidence
-    role: policy_evidence
+    role: policy_seed_and_evidence
     region: kr
     category_hint: policy_release
     rss_index_url: https://www.korea.kr/etc/rss.do
     desired_feed: 보도자료
+    feed_url_candidates:
+      - https://www.korea.kr/rss/pressrelease.xml
+    verified_feed_url: https://www.korea.kr/rss/pressrelease.xml
+    terms_check_required: true
     collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
     priority: 5
     subscription: false
     auto_fetch: false
@@ -455,16 +497,21 @@ sources:
   - id: the_conversation
     name: The Conversation
     type: rss_candidate
-    status: rss_failed
+    status: rss_verified
     group: weird_culture_science
     role: weird_hook
     region: global
     category_hint: science_society
     homepage_url: https://theconversation.com
+    feed_url_candidates:
+      - https://theconversation.com/global/articles.atom
+      - https://theconversation.com/us/articles.atom
+    verified_feed_url: https://theconversation.com/global/articles.atom
+    terms_check_required: true
     collection_enabled: false
-    last_probe_status: failed
-    failure_reason: http_404
-    recommendation: retry_later
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: rss_verified_terms_pending
     priority: 4
     subscription: false
     auto_fetch: false

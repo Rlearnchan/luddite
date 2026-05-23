@@ -262,3 +262,4 @@ def test_run_dedupe_and_total_limit(tmp_path) -> None:
 def test_summary_cleanup_and_truncate() -> None:
     assert truncate_summary("x" * 600, limit=10) == "xxxxxxxxx…"
     assert truncate_summary("<p>Hello&nbsp;world</p><a>관련기사</a>", limit=100) == "Hello world"
+    assert truncate_summary("&lt;p&gt;Escaped&nbsp;HTML&lt;/p&gt;", limit=100) == "Escaped HTML"

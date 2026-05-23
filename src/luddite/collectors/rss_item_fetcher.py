@@ -371,7 +371,7 @@ def _source_status(source: Source) -> str:
 def truncate_summary(summary: str | None, *, limit: int = SUMMARY_LIMIT) -> str | None:
     if not summary:
         return None
-    text = SummaryTextExtractor.to_text(summary)
+    text = SummaryTextExtractor.to_text(unescape(summary))
     text = unescape(text)
     text = RELATED_LINK_RE.sub("", text)
     text = " ".join(text.split()).strip()

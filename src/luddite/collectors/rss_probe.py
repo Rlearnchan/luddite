@@ -25,9 +25,14 @@ console = Console()
 DISCOVERY_PATHS = (
     "/rss",
     "/rss.xml",
+    "/rss/news.xml",
+    "/rss/international.xml",
     "/feed",
     "/feed.xml",
     "/atom.xml",
+    "/articles.atom",
+    "/global/articles.atom",
+    "/us/articles.atom",
     "/feeds",
     "/feeds/rss",
     "/news/rss",
@@ -263,7 +268,18 @@ def probe_source(
         checked_at=checked_at,
         terms_check_required=source.terms_check_required or source.feed_url is None,
     )
-    candidates = feed_candidates(source)
+    configured_and_path_candidates = feed_candidates(source)
+    configured_candidates = [
+        candidate
+        for candidate in configured_and_path_candidates
+        if candidate.method == "configured_feed_url"
+    ]
+    path_candidates = [
+        candidate
+        for candidate in configured_and_path_candidates
+        if candidate.method != "configured_feed_url"
+    ]
+    index_candidates: list[FeedCandidate] = []
     if source.rss_index_url:
         index_candidates = rss_index_candidates(
             source,
@@ -272,18 +288,17 @@ def probe_source(
             result=base,
         )
         base.extracted_feed_candidates = [candidate.url for candidate in index_candidates]
-        candidates = [*index_candidates, *candidates]
+    autodiscovery_candidates: list[FeedCandidate] = []
     if source.homepage_url:
-        candidates = [
-            *html_autodiscovery_candidates(
-                source,
-                http_client=http_client,
-                timeout=timeout,
-                result=base,
-            ),
-            *candidates,
-        ]
-        candidates = _dedupe_candidates(candidates)
+        autodiscovery_candidates = html_autodiscovery_candidates(
+            source,
+            http_client=http_client,
+            timeout=timeout,
+            result=base,
+        )
+    candidates = _dedupe_candidates(
+        [*configured_candidates, *autodiscovery_candidates, *index_candidates, *path_candidates]
+    )
     if not candidates:
         base.failure_reason = "No feed_url or homepage_url available for discovery."
         base.recommendation = "keep_rss_candidate"
@@ -375,15 +390,24 @@ class FeedLinkParser(HTMLParser):
         super().__init__()
         self.feed_links: list[tuple[str, str | None]] = []
         self._last_link_index: int | None = None
+        self._in_table_header = False
+        self._table_header_parts: list[str] = []
+        self._pending_table_header: str | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         lower_tag = tag.lower()
+        if lower_tag == "th":
+            self._in_table_header = True
+            self._table_header_parts = []
+            return
         if lower_tag == "a":
             values = {key.lower(): value or "" for key, value in attrs}
             href = values.get("href", "")
             if _looks_like_feed_href(href):
-                self.feed_links.append((href, None))
-                self._last_link_index = len(self.feed_links) - 1
+                label = self._pending_table_header
+                self.feed_links.append((href, label))
+                self._pending_table_header = None
+                self._last_link_index = None if label else len(self.feed_links) - 1
             return
         if lower_tag != "link":
             return
@@ -398,7 +422,20 @@ class FeedLinkParser(HTMLParser):
             self.feed_links.append((href, values.get("title") or None))
             self._last_link_index = len(self.feed_links) - 1
 
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "th":
+            return
+        self._in_table_header = False
+        label = " ".join(self._table_header_parts).strip()
+        self._pending_table_header = label or None
+        self._table_header_parts = []
+
     def handle_data(self, data: str) -> None:
+        if self._in_table_header:
+            text = data.strip()
+            if text:
+                self._table_header_parts.append(text)
+            return
         if self._last_link_index is None:
             return
         text = data.strip()
