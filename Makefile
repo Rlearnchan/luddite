@@ -6,7 +6,7 @@ COMPARE_SLIDEABILITY_VISUAL_QA_ARGS ?= --include-direct --direct-run-id live_m13
 JIBI_DATE ?= $(shell date +%F)
 JIBI_RSS_INBOX ?= data/inbox/articles/rss_$(JIBI_DATE).jsonl
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa render-pptx-contact-sheet summarize-pptx-contact-sheet-review check-pptx-contact-sheet-backend compare-slideability-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest jibi-mvp-rss-dry-run jibi-content-enrichment-review append-jibi-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa render-pptx-contact-sheet summarize-pptx-contact-sheet-review check-pptx-contact-sheet-backend compare-slideability-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest jibi-mvp-rss-dry-run jibi-manual-update jibi-content-enrichment-review append-jibi-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -269,6 +269,11 @@ jibi-mvp-rss-dry-run:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite cluster-jibi-candidates
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-daily-digest
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite append-jibi-sheet --dry-run
+
+jibi-manual-update:
+	JIBI_DATE=$(JIBI_DATE) JIBI_RSS_INBOX=$(JIBI_RSS_INBOX) \
+		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
+		./scripts/run_jibi_manual_update.sh
 
 jibi-content-enrichment-review:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-jibi-content-enrichment-review --date $(JIBI_DATE)

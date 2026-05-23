@@ -51,6 +51,57 @@ outputs/reports/jibi_quality_YYYY-MM-DD.md
 7. Open `jibi 후보` and fill `review_result`, `notes`, and promotion fields
    manually.
 
+## Manual One-shot Operating Loop
+
+The preferred MVP operating mode is a manual one-shot command, not a scheduled
+morning launchd job. Run it when the MacBook is on and you are ready to review
+the output:
+
+```bash
+make jibi-manual-update
+```
+
+The default mode is dry-run. It fetches date-scoped RSS, imports only that file,
+normalizes, scores, clusters, renders the Daily Digest, writes the report-only
+content enrichment review, then runs `append-jibi-sheet --dry-run`.
+
+Use a specific date when needed:
+
+```bash
+make jibi-manual-update JIBI_DATE=2026-05-23
+```
+
+Logs are appended locally:
+
+```text
+~/Library/Logs/luddite/jibi_manual_YYYY-MM-DD.log
+~/Library/Logs/luddite/jibi_manual_YYYY-MM-DD.err.log
+```
+
+The runner uses a lock directory at `/tmp/luddite-jibi-manual-update.lock` so
+two runs cannot overlap. If fetch, import, normalize, score, cluster, or digest
+rendering fails, the sheet append step is not attempted. Content enrichment is
+diagnostic only: a failure is logged but does not block the sheet dry-run or
+staging append.
+
+To opt in to a real staging append, use:
+
+```bash
+JIBI_APPEND_MODE=staging_append \
+LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보" \
+make jibi-manual-update
+```
+
+Safety gates:
+
+- `JIBI_APPEND_MODE` defaults to `dry_run`.
+- Accepted modes are `dry_run` and `staging_append`.
+- `staging_append` may target only the exact `jibi 후보` tab.
+- The runner refuses `주제 찾기` in any mode.
+- Unknown sources are not generically extracted during content enrichment unless
+  `render-jibi-content-enrichment-review --allow-generic-extraction` is run
+  manually outside the one-shot runner.
+
 ## Real Inbox Or RSS Dry-run
 
 Use this when local article inbox files exist under `data/inbox/articles` or
@@ -163,6 +214,30 @@ Run real append only when the dry-run has zero errors and reports one of:
 `ok`, `missing`, or `legacy_25_upgrade_planned`. If dry-run reports
 `unsafe_mismatch`, real append is blocked and row 1 should be inspected
 manually.
+
+For the MVP team-evaluation phase, prefer `make jibi-manual-update` with
+`JIBI_APPEND_MODE=staging_append` over calling `append-jibi-sheet --no-dry-run`
+directly. The one-shot runner applies the target-sheet guard first.
+
+## Research Team Feedback Loop
+
+Keep the sheet schema unchanged during the MVP evaluation. Ask reviewers to use
+existing columns:
+
+- `reviewer`: reviewer name or initials.
+- `review_result`: one of `promote`, `keep`, `needs_more_evidence`,
+  `editorial_review`, or `reject`.
+- `promoted_to_topic_finding`: mark only after a candidate is manually promoted.
+- `notes`: one-line reason, such as "good local analogy but needs Korean
+  evidence" or "too generic for a segment seed."
+
+Suggested rhythm:
+
+1. Run the manual one-shot in dry-run mode for 2-3 days.
+2. When reports look stable, run opt-in `staging_append` to `jibi 후보`.
+3. Let research teammates leave one-line `notes` for several days.
+4. Analyze the feedback later before changing gates, source allowlists, or
+   generic-why templates.
 
 ## Troubleshooting
 

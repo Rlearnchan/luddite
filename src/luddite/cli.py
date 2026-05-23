@@ -28,6 +28,7 @@ from luddite.agents.jibi.cluster_candidates import app as cluster_jibi_candidate
 from luddite.agents.jibi.content_enrichment import app as jibi_content_enrichment_app
 from luddite.agents.jibi.daily_digest import app as jibi_digest_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
+from luddite.agents.jibi.ops_safety import app as jibi_ops_guard_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
 from luddite.agents.jibi.score_candidates import app as score_candidates_app
 from luddite.agents.piti.build_deck_plan_from_storyline import (
@@ -116,6 +117,7 @@ app.add_typer(
     jibi_content_enrichment_app,
     name="render-jibi-content-enrichment-review",
 )
+app.add_typer(jibi_ops_guard_app, name="jibi-ops-guard")
 app.add_typer(probe_rss_sources_app, name="probe-rss-sources")
 
 

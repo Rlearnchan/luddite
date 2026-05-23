@@ -297,7 +297,11 @@ def _source_key(candidate: dict[str, Any]) -> str:
     ).lower()
 
 
-def _method_for_candidate(candidate: dict[str, Any]) -> tuple[str, str | None]:
+def _method_for_candidate(
+    candidate: dict[str, Any],
+    *,
+    allow_generic_extraction: bool = False,
+) -> tuple[str, str | None]:
     source_key = _source_key(candidate)
     if "atlas_obscura" in source_key or "atlasobscura.com" in source_key:
         return "atlas_blocked_manual_only", None
@@ -309,7 +313,9 @@ def _method_for_candidate(candidate: dict[str, Any]) -> tuple[str, str | None]:
         return "infomax_article_view_content", "article-view-content-div"
     if "hankyung" in source_key or "한국경제" in source_key:
         return "hankyung_articletxt", "articletxt"
-    return "generic_article_p", None
+    if allow_generic_extraction:
+        return "generic_article_p", None
+    return "unsupported_source", None
 
 
 def _status_for_extracted_text(
@@ -343,6 +349,7 @@ def enrich_candidate(
     http_client: ArticleHttpClient | None = None,
     timeout: float = 12,
     fetched_at: str | None = None,
+    allow_generic_extraction: bool = False,
 ) -> EnrichmentResult:
     url = canonicalize_url(
         str(candidate.get("seed_url") or candidate.get("source_url_canonical") or "")
@@ -355,7 +362,10 @@ def enrich_candidate(
         selection_role=selection_role,
         fetched_at=fetched_at or datetime.now(UTC).isoformat(),
     )
-    method, target_id = _method_for_candidate(candidate)
+    method, target_id = _method_for_candidate(
+        candidate,
+        allow_generic_extraction=allow_generic_extraction,
+    )
     result.content_enrichment_method = method
     if not url:
         result.content_enrichment_status = "error"
@@ -364,6 +374,10 @@ def enrich_candidate(
     if method == "atlas_blocked_manual_only":
         result.content_enrichment_status = "blocked"
         result.paywall_or_blocked_reason = "atlas_cloudflare_manual_only"
+        return result
+    if method == "unsupported_source":
+        result.content_enrichment_status = "not_attempted"
+        result.paywall_or_blocked_reason = "unsupported_source"
         return result
     client = http_client or UrlLibArticleHttpClient()
     try:
@@ -557,9 +571,9 @@ def _source_status_rows(records: list[dict[str, Any]]) -> list[str]:
     for record in records:
         by_source.setdefault(str(record["source"]), []).append(record)
     rows = [
-        "| source | selected | ok | blocked | paywalled_or_teaser | empty | error | "
-        "dominant_method |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| source | selected | not_attempted | ok | blocked | paywalled_or_teaser | "
+        "empty | error | dominant_method |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for source, items in sorted(by_source.items()):
         statuses = Counter(str(item["content_enrichment_status"]) for item in items)
@@ -570,6 +584,7 @@ def _source_status_rows(records: list[dict[str, Any]]) -> list[str]:
                 [
                     _table_cell(source),
                     str(len(items)),
+                    str(statuses.get("not_attempted", 0)),
                     str(statuses.get("ok", 0)),
                     str(statuses.get("blocked", 0)),
                     str(statuses.get("paywalled_or_teaser", 0)),
@@ -673,7 +688,14 @@ def write_enrichment_report(
         f"- top_selected: {top_selected}",
         f"- near_miss_selected: {near_miss_selected}",
     ]
-    for status in ["ok", "blocked", "paywalled_or_teaser", "empty", "error"]:
+    for status in [
+        "not_attempted",
+        "ok",
+        "blocked",
+        "paywalled_or_teaser",
+        "empty",
+        "error",
+    ]:
         lines.append(f"- enrichment_{status}: {status_counts.get(status, 0)}")
     lines.extend(
         [
@@ -720,6 +742,7 @@ def render_content_enrichment_review(
     min_score: float = 35,
     http_client: ArticleHttpClient | None = None,
     timeout: float = 12,
+    allow_generic_extraction: bool = False,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_text = review_date or datetime.now(UTC).date().isoformat()
     md_path = output_md or paths.REPORTS_DIR / f"jibi_content_enrichment_{date_text}.md"
@@ -748,6 +771,7 @@ def render_content_enrichment_review(
             http_client=http_client,
             timeout=timeout,
             fetched_at=fetched_at,
+            allow_generic_extraction=allow_generic_extraction,
         )
         record = enrichment.to_report_dict()
         record["original_score"] = _total_score(item.candidate)
@@ -830,6 +854,16 @@ def main(
         float,
         typer.Option("--timeout", help="Per-article fetch timeout in seconds."),
     ] = 12,
+    allow_generic_extraction: Annotated[
+        bool,
+        typer.Option(
+            "--allow-generic-extraction/--known-sources-only",
+            help=(
+                "Allow paragraph fallback for unsupported sources. "
+                "Default keeps automated runs known-source-only."
+            ),
+        ),
+    ] = False,
 ) -> None:
     md_path, json_path, records = render_content_enrichment_review(
         input_path=input_path,
@@ -838,6 +872,7 @@ def main(
         review_date=date_text,
         near_miss_limit=near_miss_limit,
         timeout=timeout,
+        allow_generic_extraction=allow_generic_extraction,
     )
     status_counts = Counter(str(item["content_enrichment_status"]) for item in records)
     console.print(

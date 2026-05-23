@@ -203,6 +203,52 @@ def test_atlas_is_blocked_without_fetch_attempt() -> None:
     assert result.http_status is None
 
 
+def test_unknown_source_is_not_attempted_by_default() -> None:
+    result = enrich_candidate(
+        _candidate(
+            source="Unknown Source",
+            source_id="unknown_feed",
+            seed_url="https://unknown.example/story",
+            source_url_canonical="",
+        ),
+        selection_role="near_miss",
+        http_client=RaisingHttpClient(),
+    )
+
+    assert result.content_enrichment_status == "not_attempted"
+    assert result.content_enrichment_method == "unsupported_source"
+    assert result.paywall_or_blocked_reason == "unsupported_source"
+    assert result.http_status is None
+
+
+def test_unknown_source_can_use_generic_extraction_when_explicitly_allowed() -> None:
+    client = FakeArticleHttpClient(
+        {
+            "https://unknown.example/story": (
+                "<html><head><meta name='description' content='Fallback metadata'></head>"
+                f"<body><p>{_long_text('Generic source body')}</p>"
+                f"<p>{_long_text('Generic source second')}</p></body></html>"
+            )
+        }
+    )
+
+    result = enrich_candidate(
+        _candidate(
+            source="Unknown Source",
+            source_id="unknown_feed",
+            seed_url="https://unknown.example/story",
+            source_url_canonical="",
+        ),
+        selection_role="near_miss",
+        http_client=client,
+        allow_generic_extraction=True,
+    )
+
+    assert result.content_enrichment_status == "ok"
+    assert result.content_enrichment_method == "generic_article_p"
+    assert client.calls == [("https://unknown.example/story", 12)]
+
+
 def test_enriched_what_if_resolves_empty_summary() -> None:
     candidate = _candidate(
         source="BBC News",
