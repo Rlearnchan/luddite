@@ -531,7 +531,7 @@ def test_env_vars_override_config_values(tmp_path, monkeypatch) -> None:
         "\n".join(
             [
                 "spreadsheet_id: null",
-                'target_sheet_name: "jibi 후보"',
+                'target_sheet_name: "Jibi"',
                 "dry_run_default: true",
                 "auth_mode: service_account",
             ]
@@ -631,16 +631,15 @@ def test_bundle_review_replace_dry_run_allows_existing_candidate_header(tmp_path
         preview,
         [
             {
-                "순번": "1",
-                "구분": "bundle",
-                "review_item_id": "2026-05-23:story_bundle_youth",
-                "검토대상": "청년 노동시장 이탈",
-                "후보": "쉬었음 청년층의 특징 및 평가",
-                "링크": "https://example.com/bok",
-                "출처": "BOK",
-                "Jibi판정": "merged_seed / standalone_seed",
-                "왜_이렇게_올렸나": "BOK 청년 노동시장 후보들이 같은 질문을 공유함",
-                "review_result": "",
+                "날짜": "2026-05-23",
+                "제목": "청년 노동시장 이탈",
+                "메인 링크": "https://example.com/bok",
+                "서브 링크": "https://example.com/bok2",
+                "설명": "BOK 청년 노동시장 후보들이 같은 질문을 공유함",
+                "리뷰-성원": "",
+                "리뷰-동찬": "",
+                "리뷰-형찬": "",
+                "ID": "2026-05-23:story_bundle_youth",
             }
         ],
     )
@@ -675,16 +674,15 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
         preview,
         [
             {
-                "순번": "1",
-                "구분": "bundle",
-                "review_item_id": "2026-05-23:story_bundle_youth",
-                "검토대상": "청년 노동시장 이탈",
-                "후보": "쉬었음 청년층의 특징 및 평가",
-                "링크": "https://example.com/bok",
-                "출처": "BOK",
-                "Jibi판정": "merged_seed / standalone_seed",
-                "왜_이렇게_올렸나": "BOK 청년 노동시장 후보들이 같은 질문을 공유함",
-                "review_result": "promote",
+                "날짜": "2026-05-23",
+                "제목": "청년 노동시장 이탈",
+                "메인 링크": "https://example.com/bok",
+                "서브 링크": "https://example.com/bok2",
+                "설명": "BOK 청년 노동시장 후보들이 같은 질문을 공유함",
+                "리뷰-성원": "좋음",
+                "리뷰-동찬": "",
+                "리뷰-형찬": "",
+                "ID": "2026-05-23:story_bundle_youth",
             }
         ],
     )
@@ -703,7 +701,7 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
 
     assert client.cleared is True
     assert client.values[0] == BUNDLE_REVIEW_SHEET_COLUMNS
-    assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("검토대상")] == "청년 노동시장 이탈"
+    assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "청년 노동시장 이탈"
     assert client.appended == []
     assert report.sheet_replaced is True
     assert report.header_updated is True

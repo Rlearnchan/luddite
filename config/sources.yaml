@@ -43,7 +43,7 @@ sources:
     auto_fetch: false
 
   - id: google_sheet_jibi_candidates
-    name: Google Sheet jibi 후보
+    name: Google Sheet Jibi
     type: sheet
     group: workflow
     role: staging_append

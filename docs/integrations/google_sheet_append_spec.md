@@ -18,7 +18,7 @@ selected candidates into `주제 찾기`.
 Initial target:
 
 ```text
-jibi 후보
+Jibi
 ```
 
 Promotion target:
@@ -29,7 +29,7 @@ Promotion target:
 
 ## Staging distinction
 
-The dedicated `jibi 후보` tab should still preserve bot metadata:
+The dedicated `Jibi` tab should still preserve bot metadata:
 
 - dedicated `jibi_id`
 - `status`
@@ -45,7 +45,7 @@ The dedicated `jibi 후보` tab should still preserve bot metadata:
 ## Append behavior
 
 Allowed:
-- append new candidate rows to `jibi 후보`
+- append new candidate rows to `Jibi`
 - add bot metadata in appropriate columns
 - write concise reason/summary
 - skip duplicate candidates based on `duplicate_key` or `source_url_canonical`
@@ -62,9 +62,9 @@ Not allowed:
 
 ## Hard MVP rules
 
-- Target only the `jibi 후보` staging sheet for bot append.
+- Target only the `Jibi` staging sheet for bot append.
 - Keep the existing `주제 찾기` sheet human-centered.
-- Promote selected rows from `jibi 후보` to `주제 찾기` only after human review.
+- Promote selected rows from `Jibi` to `주제 찾기` only after human review.
 - Treat the sheet as append-only for the MVP.
 - Never overwrite, reorder, relabel, or silently update human rows.
 - Do not implement status updates in the append MVP; design that separately after the team has used bot rows.
@@ -92,7 +92,7 @@ Required environment variables for production append:
 
 ```bash
 LUDDITE_GOOGLE_SPREADSHEET_ID=...
-LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보"
+LUDDITE_GOOGLE_TARGET_SHEET="Jibi"
 GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
 ```
 
@@ -131,7 +131,7 @@ produce a local report without a spreadsheet id.
 Target sheet defaults to:
 
 ```text
-jibi 후보
+Jibi
 ```
 
 The command creates the target sheet if missing, creates the header row if
@@ -143,7 +143,7 @@ First real run sequence:
 ```text
 1. dry-run against the real spreadsheet
 2. append a 1-2 row test CSV
-3. inspect `jibi 후보`
+3. inspect `Jibi`
 4. append the full daily preview
 5. rerun the same preview to confirm duplicate skip
 ```
@@ -158,7 +158,7 @@ last_seen_at update -> future work, not 1.0
 
 ## Bundle review board mode
 
-For the MVP research-team evaluation phase, `jibi 후보` can be reused as a
+For the MVP research-team evaluation phase, `Jibi` can be reused as a
 current-day bundle review board. This is intentionally sheet-native: reviewers
 write directly in the same shared tab instead of using a new tool.
 
@@ -178,7 +178,7 @@ luddite append-jibi-sheet \
   --dry-run
 ```
 
-Actual replacement is explicit and should be used only for `jibi 후보`:
+Actual replacement is explicit and should be used only for `Jibi`:
 
 ```bash
 JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
@@ -187,7 +187,7 @@ JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manua
 This clears and rewrites the target tab with the day's bundle rows. The old
 append-only candidate CSV remains available for audit and rollback.
 
-## Suggested `jibi 후보` columns
+## Suggested `Jibi` columns
 
 Keep the first 25 columns in this exact order for backward compatibility with
 existing reviewed rows. Add slideability fields only at the far right.

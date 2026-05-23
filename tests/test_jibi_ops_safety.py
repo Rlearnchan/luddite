@@ -22,10 +22,10 @@ def test_invalid_append_mode_errors() -> None:
 
 
 def test_staging_append_requires_exact_staging_sheet() -> None:
-    with pytest.raises(ValueError, match="jibi 후보"):
+    with pytest.raises(ValueError, match="Jibi"):
         validate_ops_safety(
             append_mode=STAGING_APPEND_MODE,
-            target_sheet_name="jibi 후보 복사본",
+            target_sheet_name="Jibi 복사본",
         )
 
 

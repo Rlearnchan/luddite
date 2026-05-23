@@ -15,7 +15,7 @@ def test_manual_runner_does_not_remove_unowned_lock(tmp_path: Path) -> None:
         "JIBI_DATE": run_date,
         "JIBI_LOCK_DIR": str(lock_dir),
         "JIBI_LOG_DIR": str(tmp_path / "logs"),
-        "LUDDITE_GOOGLE_TARGET_SHEET": "jibi 후보",
+        "LUDDITE_GOOGLE_TARGET_SHEET": "Jibi",
         "PYTHONPATH": "src",
         "VENV_PYTHON": sys.executable,
         "JIBI_DISABLE_LOG_TEE": "1",

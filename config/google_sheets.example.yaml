@@ -4,7 +4,7 @@
 # config/google_sheets.local.yaml. Do not commit service account JSON files.
 
 spreadsheet_id: null
-target_sheet_name: "jibi 후보"
+target_sheet_name: "Jibi"
 source_preview_csv: null
 dry_run_default: true
 create_sheet_if_missing: true

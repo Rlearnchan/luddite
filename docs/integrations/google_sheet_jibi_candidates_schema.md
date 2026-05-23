@@ -1,4 +1,4 @@
-# Google Sheet `jibi 후보` Schema
+# Google Sheet `Jibi` Schema
 
 작성일: 2026-05-17  
 업데이트: 2026-05-22  
@@ -15,7 +15,7 @@ jibi → 기존 `주제 찾기` 탭에 직접 append
 수정 계획:
 
 ```text
-jibi → 새 시트 `jibi 후보`에 append
+jibi → 새 시트 `Jibi`에 append
 사람 검토 → 필요 시 `주제 찾기`로 promote
 ```
 
@@ -32,7 +32,7 @@ jibi → 새 시트 `jibi 후보`에 append
 추천:
 
 ```text
-jibi 후보
+Jibi
 ```
 
 대안:
@@ -125,7 +125,7 @@ append-only 유지
 - service account JSON은 git에 넣지 않음
 - 커밋되는 config는 config/google_sheets.example.yaml placeholder만 사용
 - 실제 spreadsheet id와 credential path는 env 또는 gitignored config/google_sheets.local.yaml에 둠
-- LUDDITE_GOOGLE_SPREADSHEET_ID, LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보" 사용
+- LUDDITE_GOOGLE_SPREADSHEET_ID, LUDDITE_GOOGLE_TARGET_SHEET="Jibi" 사용
 - GOOGLE_APPLICATION_CREDENTIALS 또는 LUDDITE_GOOGLE_SERVICE_ACCOUNT_JSON로 key 경로 지정
 - OAuth는 service account 초대가 어려울 때의 fallback
 ```
@@ -179,7 +179,7 @@ Visible sheet에는 넣지 않는다.
 미래 설계:
 
 ```text
-jibi 후보 row
+Jibi row
 → 사람이 review_result=promote
 → promote script가 `주제 찾기`에 복사
 → promoted_to_topic_finding = TRUE
@@ -190,14 +190,14 @@ jibi 후보 row
 
 ## 10. CSV Preview
 
-`outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv`는 `jibi 후보` 시트 컬럼과 동일하게 만든다.
+`outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv`는 `Jibi` 시트 컬럼과 동일하게 만든다.
 
 Rejected item은 기본 preview에 넣지 않는다. 필요하면 나중에 별도
 `rejected_preview.csv`를 설계한다.
 
 ## 11. Bundle Review Board Mode
 
-리서치팀 평가 단계에서는 같은 `jibi 후보` 탭을 후보 행 append 화면이 아니라
+리서치팀 평가 단계에서는 같은 `Jibi` 탭을 후보 행 append 화면이 아니라
 그날의 스토리 번들 리뷰 보드로 쓸 수 있다. 새 도구나 새 공유 문서를 만들지
 않기 위한 운영 모드다.
 
@@ -209,31 +209,26 @@ outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
 
 이 CSV는 `bundle_review` 스키마를 사용한다.
 
-사람이 보기 쉽도록 visible schema는 13개 컬럼만 둔다.
+사람이 보기 쉽도록 visible schema는 9개 컬럼만 둔다.
 
 | column | 설명 |
 |---|---|
-| `순번` | 리뷰 보드 순위 |
-| `구분` | `bundle`, `묶인 후보`, `근거 후보` |
-| `검토대상` | 사람이 먼저 판단할 이야기 묶음 |
-| `후보` | 대표 또는 하위 후보 제목 |
-| `출처` | 대표 또는 하위 후보 출처 |
-| `링크` | 대표 또는 하위 후보 링크 |
-| `Jibi판정` | bundle/storyline/action 판정을 한 칸으로 요약 |
-| `왜_이렇게_올렸나` | 왜 단독 seed, 묶인 후보, evidence인지 한 문장 |
-| `같이볼것` | 함께 볼 supporting/evidence 또는 상위 묶음 |
-| `review_result` | 사람이 남기는 결론 |
-| `research_team_note` | 한 줄 평가 |
-| `reviewer` | 검토자 |
-| `review_item_id` | 추후 회수/분석용 id |
+| `날짜` | 수집일자 |
+| `제목` | 사람이 먼저 판단할 이야기 묶음 |
+| `메인 링크` | 대표 기사/자료 링크 |
+| `서브 링크` | supporting/evidence 링크 목록 |
+| `설명` | 왜 선별했는지, 자료 요약, 묶인 후보 맥락 |
+| `리뷰-성원` | 성원 한 줄 리뷰 |
+| `리뷰-동찬` | 동찬 한 줄 리뷰 |
+| `리뷰-형찬` | 형찬 한 줄 리뷰 |
+| `ID` | 추후 회수/분석용 고유 id |
 
-Top10 후보가 bundle로 접히면서 별도 행에서 사라지는 일을 피하기 위해
-supporting/evidence 하위 후보도 별도 행으로 올린다. 이 행들은 탈락이 아니라
-`묶인 후보` 또는 `근거 후보`로 표시해 “단독 후보가 아닌 판단이 맞았는지”를
-검토받는다.
+Top10 후보가 bundle로 접히는 경우에도 별도 하위 행은 만들지 않는다. 대신
+`서브 링크`와 `설명`에 supporting/evidence 맥락을 남겨 8개 bundle 단위로만
+리뷰받는다.
 
 실제 공유 시트에 반영할 때는 append가 아니라 replace를 권장한다. 기존
-`jibi 후보` 내용은 운영 실험 중 중요하지 않다고 보고, 매 run마다 최신 리뷰
+`Jibi` 내용은 운영 실험 중 중요하지 않다고 보고, 매 run마다 최신 리뷰
 보드만 보이게 하는 방식이다.
 
 ```bash

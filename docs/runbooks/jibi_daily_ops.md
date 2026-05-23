@@ -1,7 +1,7 @@
 # Jibi Daily Ops Runbook
 
 This runbook covers the Jibi MVP daily workflow. It produces candidate topics,
-renders a Daily Digest, and stages rows in the Google Sheet `jibi 후보` tab for
+renders a Daily Digest, and stages rows in the Google Sheet `Jibi` tab for
 human review.
 
 ## Local Setup
@@ -16,7 +16,7 @@ Set Google Sheet environment variables only on the local machine:
 
 ```bash
 export LUDDITE_GOOGLE_SPREADSHEET_ID="1piIsrWAHqSWBk0PwouTK1DWccX3W0Sfqf3YUptXT8QU"
-export LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보"
+export LUDDITE_GOOGLE_TARGET_SHEET="Jibi"
 export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/service-account.json"
 ```
 
@@ -48,8 +48,7 @@ outputs/reports/jibi_quality_YYYY-MM-DD.md
 4. Inspect `outputs/reports/jibi_sheet_append_YYYY-MM-DD.md`.
 5. Confirm zero errors, expected duplicate skips, and safe `header_status`.
 6. Run explicit real append only if needed.
-7. Open `jibi 후보` and fill `review_result`, `notes`, and promotion fields
-   manually.
+7. Open `Jibi` and fill the reviewer-specific columns manually.
 
 ## Manual One-shot Operating Loop
 
@@ -102,15 +101,15 @@ To opt in to a real staging append, use:
 
 ```bash
 JIBI_APPEND_MODE=staging_append \
-LUDDITE_GOOGLE_TARGET_SHEET="jibi 후보" \
+LUDDITE_GOOGLE_TARGET_SHEET="Jibi" \
 make jibi-manual-update
 ```
 
 Safety gates:
 
 - `JIBI_APPEND_MODE` defaults to `dry_run`.
-- Accepted modes are `dry_run` and `staging_append`.
-- `staging_append` may target only the exact `jibi 후보` tab.
+- Accepted modes are `dry_run`, `staging_append`, and `staging_replace`.
+- `staging_append` may target only the exact `Jibi` tab.
 - The runner refuses `주제 찾기` in any mode.
 - The runner verifies the date-specific preview CSV exists before append.
 - The runner removes only locks it owns.
@@ -232,7 +231,7 @@ outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
 ```
 
 For team evaluation, the preferred visible sheet is the existing shared
-`jibi 후보` tab reused as a current-day review board. This avoids making a new
+`Jibi` tab reused as a current-day review board. This avoids making a new
 tool for reviewers. The normal candidate append CSV is still generated for
 audit/backward compatibility, but reviewers should usually see the bundle review
 board instead of separate candidate rows.
@@ -244,26 +243,17 @@ JIBI_SHEET_SCHEMA=bundle_review make jibi-manual-update
 ```
 
 When the dry-run report is clean and the team is ready to review in the shared
-sheet, replace the current contents of `jibi 후보` with the day's bundle board:
+sheet, replace the current contents of `Jibi` with the day's bundle board:
 
 ```bash
 JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
 ```
 
 `staging_replace` is explicit because it clears and rewrites the target tab. It
-is allowed only for `jibi 후보`; the runner still refuses to write to `주제 찾기`.
+is allowed only for `Jibi`; the runner still refuses to write to `주제 찾기`.
 
-Reviewers should read the bundle primary as the row to judge first:
-
-- Treat the bundle primary as the candidate to review.
-- Supporting/evidence rows can be mentioned in `notes` instead of judged as
-  standalone stories.
-- If two rows are clearly the same story, mark the strongest row with
-  `promote` or `keep` and write `same bundle as ...` on the supporting row.
-- Evidence-only rows should not be rejected just because they are weak as
-  standalone stories; judge whether they help the bundle.
-- Do not ask reviewers to evaluate every evidence-only row as an independent
-  broadcast seed.
+Reviewers should read each row as one story bundle. Supporting/evidence items
+are not shown as separate rows; they appear as `서브 링크` and in `설명`.
 
 Good one-line feedback examples:
 
@@ -271,16 +261,15 @@ Good one-line feedback examples:
 - `needs_more_evidence — 양파는 가격 데이터/산지 기사 필요`
 - `reject — 고유가 지원금 현황만으로는 보도자료 느낌`
 
-Suggested review columns in the shared sheet:
+Current review columns in the shared sheet:
 
-- `구분`: `bundle`, `묶인 후보`, or `근거 후보`.
-- `왜_이렇게_올렸나`: read this first when a row looks like it disappeared
-  from Top10; it explains whether the item was bundled or demoted to evidence.
-- `review_result`: `promote`, `keep`, `needs_more_evidence`, `merge`,
-  `evidence_only`, or `reject`.
-- `research_team_note`: one sentence on whether this can become a 슈카월드식
-  storyline.
-- `reviewer`: reviewer name or initials.
+- `날짜`: 수집일자.
+- `제목`: reviewer-facing bundle title.
+- `메인 링크`: primary source link.
+- `서브 링크`: supporting/evidence source links, separated by ` | `.
+- `설명`: why Jibi selected this bundle and a concise source summary.
+- `리뷰-성원`, `리뷰-동찬`, `리뷰-형찬`: one-line reviewer notes.
+- `ID`: stable review item id for later feedback analysis.
 
 ## Google Sheet Dry-run
 
@@ -317,7 +306,7 @@ Run real append only after reviewing the dry-run report:
 PYTHONPATH=src .venv/bin/python -m luddite append-jibi-sheet --no-dry-run
 ```
 
-Real append targets only `jibi 후보`, may update row 1 when the header is
+Real append targets only `Jibi`, may update row 1 when the header is
 missing or the known legacy 25-column header, and appends only new candidate
 rows. It must never append directly to `주제 찾기`.
 
@@ -339,34 +328,24 @@ Before asking the research team to review staged rows:
 2. Inspect the Daily Digest, quality report, content enrichment report, sheet
    append report, and manual summary for each run.
 3. Use `JIBI_APPEND_MODE=staging_append` only once daily, not hourly, and only
-   for `jibi 후보`.
+   for `Jibi`.
 4. Keep the sheet schema unchanged.
-5. Ask reviewers to fill only `reviewer`, `review_result`,
-   `promoted_to_topic_finding`, and `notes`.
-6. Use `review_result` values: `promote`, `keep`, `needs_more_evidence`,
-   `editorial_review`, or `reject`.
-7. Ask for one-line notes.
-8. Do not change gates, source allowlists, or generic-why templates until
+5. Ask reviewers to fill only their own review column.
+6. Ask for one-line notes.
+7. Do not change gates, source allowlists, or generic-why templates until
    several days of feedback exist.
 
 ## Research Team Feedback Loop
 
 Keep the sheet schema unchanged during the MVP evaluation. Ask reviewers to use
-existing columns:
-
-- `reviewer`: reviewer name or initials.
-- `review_result`: one of `promote`, `keep`, `needs_more_evidence`,
-  `editorial_review`, or `reject`.
-- `promoted_to_topic_finding`: mark only after a candidate is manually promoted.
-- `notes`: one-line reason, such as "good local analogy but needs Korean
-  evidence" or "too generic for a segment seed."
+only `리뷰-성원`, `리뷰-동찬`, and `리뷰-형찬`.
 
 Suggested rhythm:
 
 1. Run the manual one-shot in dry-run mode for 2-3 days.
-2. When reports look stable, run opt-in `staging_append` to `jibi 후보` once
+2. When reports look stable, run opt-in `staging_append` to `Jibi` once
    daily. Do not run hourly appends during MVP evaluation.
-3. Let research teammates leave one-line `notes` for several days.
+3. Let research teammates leave one-line notes for several days.
 4. Analyze the feedback later before changing gates, source allowlists, or
    generic-why templates.
 

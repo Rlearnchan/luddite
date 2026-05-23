@@ -100,11 +100,21 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     with bundle_csv_path.open(encoding="utf-8-sig", newline="") as source:
         bundle_rows = list(csv.DictReader(source))
     assert len(bundle_rows) == 1
-    assert bundle_rows[0]["구분"] == "bundle"
-    assert bundle_rows[0]["검토대상"] == "전당포 주식회사"
-    assert bundle_rows[0]["후보"] == "전당포 주식회사"
-    assert bundle_rows[0]["링크"] == "https://example.com/f88"
-    assert bundle_rows[0]["research_team_note"] == ""
+    assert list(bundle_rows[0].keys()) == [
+        "날짜",
+        "제목",
+        "메인 링크",
+        "서브 링크",
+        "설명",
+        "리뷰-성원",
+        "리뷰-동찬",
+        "리뷰-형찬",
+        "ID",
+    ]
+    assert bundle_rows[0]["날짜"] == "2026-05-17"
+    assert bundle_rows[0]["제목"] == "전당포 주식회사"
+    assert bundle_rows[0]["메인 링크"] == "https://example.com/f88"
+    assert bundle_rows[0]["리뷰-성원"] == ""
 
 
 def test_top_candidates_excludes_rejects() -> None:

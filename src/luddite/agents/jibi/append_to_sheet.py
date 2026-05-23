@@ -1,4 +1,4 @@
-"""Append jibi Daily Digest preview rows to the `jibi 후보` Google Sheet."""
+"""Append jibi Daily Digest preview rows to the `Jibi` Google Sheet."""
 
 from __future__ import annotations
 
@@ -58,19 +58,15 @@ SLIDEABILITY_SHEET_COLUMNS = [
 ]
 SHEET_COLUMNS = [*LEGACY_25_SHEET_COLUMNS, *SLIDEABILITY_SHEET_COLUMNS]
 BUNDLE_REVIEW_SHEET_COLUMNS = [
-    "순번",
-    "구분",
-    "검토대상",
-    "후보",
-    "출처",
-    "링크",
-    "Jibi판정",
-    "왜_이렇게_올렸나",
-    "같이볼것",
-    "review_result",
-    "research_team_note",
-    "reviewer",
-    "review_item_id",
+    "날짜",
+    "제목",
+    "메인 링크",
+    "서브 링크",
+    "설명",
+    "리뷰-성원",
+    "리뷰-동찬",
+    "리뷰-형찬",
+    "ID",
 ]
 CANDIDATE_SHEET_SCHEMA = "candidate"
 BUNDLE_REVIEW_SHEET_SCHEMA = "bundle_review"
@@ -93,7 +89,7 @@ BUNDLE_REVIEW_PREVIEW_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_bundle_review_sheet\.
 @dataclass(frozen=True)
 class GoogleSheetAppendConfig:
     spreadsheet_id: str | None = None
-    target_sheet_name: str = "jibi 후보"
+    target_sheet_name: str = "Jibi"
     source_preview_csv: Path | None = None
     sheet_schema: str = CANDIDATE_SHEET_SCHEMA
     dry_run: bool = True
@@ -199,7 +195,7 @@ def _schema_legacy_columns(sheet_schema: str) -> list[str] | None:
 def _schema_default_duplicate_keys(sheet_schema: str) -> tuple[str, ...]:
     schema = _normalize_sheet_schema(sheet_schema)
     if schema == BUNDLE_REVIEW_SHEET_SCHEMA:
-        return ("review_item_id",)
+        return ("ID",)
     return ("duplicate_key", "source_url_canonical")
 
 
@@ -257,7 +253,7 @@ def load_append_config(
         or _as_optional_str(raw.get("spreadsheet_id")),
         target_sheet_name=os.environ.get("LUDDITE_GOOGLE_TARGET_SHEET")
         or _as_optional_str(raw.get("target_sheet_name"))
-        or "jibi 후보",
+        or "Jibi",
         source_preview_csv=Path(str(preview_value)) if preview_value else None,
         sheet_schema=sheet_schema,
         dry_run=bool(raw.get("dry_run_default", True)) if dry_run is None else dry_run,

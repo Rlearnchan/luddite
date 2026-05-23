@@ -33,7 +33,7 @@ def test_append_args_include_date_specific_preview_csv() -> None:
     args = append_jibi_sheet_args(
         run_date="2026-05-23",
         append_mode="dry_run",
-        target_sheet_name="jibi 후보",
+        target_sheet_name="Jibi",
         preview_csv_path=Path(
             "outputs/daily_digest/2026-05-23_sheet_append_preview.csv"
         ),
@@ -47,7 +47,7 @@ def test_append_args_include_date_specific_preview_csv() -> None:
         "candidate",
         "--dry-run",
         "--sheet-name",
-        "jibi 후보",
+        "Jibi",
     ]
 
 
@@ -55,7 +55,7 @@ def test_append_args_for_staging_append_are_pinned() -> None:
     args = append_jibi_sheet_args(
         run_date="2026-05-23",
         append_mode="staging_append",
-        target_sheet_name="jibi 후보",
+        target_sheet_name="Jibi",
     )
 
     assert "--preview-csv" in args
@@ -70,7 +70,7 @@ def test_append_args_for_bundle_review_dry_run_plan_replace() -> None:
     args = append_jibi_sheet_args(
         run_date="2026-05-23",
         append_mode="dry_run",
-        target_sheet_name="jibi 후보",
+        target_sheet_name="Jibi",
         sheet_schema="bundle_review",
     )
 
@@ -87,7 +87,7 @@ def test_append_args_for_bundle_review_staging_replace() -> None:
     args = append_jibi_sheet_args(
         run_date="2026-05-23",
         append_mode="staging_replace",
-        target_sheet_name="jibi 후보",
+        target_sheet_name="Jibi",
         sheet_schema="bundle_review",
     )
 
@@ -102,7 +102,7 @@ def test_write_manual_run_manifest_has_no_credentials(tmp_path) -> None:
     manifest = write_manual_run_manifest(
         run_date="2026-05-23",
         append_mode="dry_run",
-        target_sheet_name="jibi 후보",
+        target_sheet_name="Jibi",
         sheet_schema="candidate",
         rss_inbox_path=Path("data/inbox/articles/rss_2026-05-23.jsonl"),
         preview_csv_path=Path(

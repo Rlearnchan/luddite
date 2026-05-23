@@ -524,7 +524,6 @@ def write_bundle_review_sheet_preview(
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        row_rank = 1
         for record in bundle_records:
             primary_id = str(record.get("primary_candidate_id") or "")
             representative_id = primary_id
@@ -549,63 +548,17 @@ def write_bundle_review_sheet_preview(
             primary_title = record.get("primary_title") or representative.get("title") or ""
             writer.writerow(
                 _bundle_review_row(
-                    rank=row_rank,
-                    scope="bundle",
+                    digest_date=digest_date,
                     review_item_id=f"{digest_date}:{record['story_bundle_id']}",
                     review_title=str(record["bundle_title"]),
                     candidate=representative,
                     candidate_title=primary_title,
                     jibi_judgment=_bundle_judgment(record, fit),
                     reason=_join_distinct_reason(str(record["why_bundle"]), reason),
-                    related=_related_bundle_titles(record),
+                    sub_links=_related_bundle_links(record, candidate_by_id),
+                    related_titles=_related_bundle_titles(record),
                 )
             )
-            row_rank += 1
-            for member_id, member_scope in [
-                *[
-                    (item_id, "bundled_support")
-                    for item_id in record.get("supporting_candidate_ids", [])
-                ],
-                *[
-                    (item_id, "bundled_evidence")
-                    for item_id in record.get("evidence_candidate_ids", [])
-                ],
-            ]:
-                if str(member_id) == representative_id:
-                    continue
-                member = candidate_by_id.get(str(member_id))
-                if not member:
-                    continue
-                member_fit, member_reason, member_action = _storyline_fit_classification(
-                    member,
-                    candidates,
-                )
-                if member_scope == "bundled_support":
-                    scope_label = "묶인 후보"
-                    reason_text = (
-                        "단독 탈락이 아니라 위 story bundle의 하위 후보로 접음: "
-                        f"{member_reason}"
-                    )
-                else:
-                    scope_label = "근거 후보"
-                    reason_text = (
-                        "단독 seed보다 evidence로 검토: "
-                        f"{member_reason}"
-                    )
-                writer.writerow(
-                    _bundle_review_row(
-                        rank=row_rank,
-                        scope=scope_label,
-                        review_item_id=f"{digest_date}:{record['story_bundle_id']}:{member_id}",
-                        review_title=str(record["bundle_title"]),
-                        candidate=member,
-                        candidate_title=str(member.get("title") or member_id),
-                        jibi_judgment=f"{member_fit} / {member_action}",
-                        reason=reason_text,
-                        related=f"상위 묶음: {record['bundle_title']}",
-                    )
-                )
-                row_rank += 1
 
 
 def _bundle_judgment(record: dict[str, Any], fit: str) -> str:
@@ -631,32 +584,52 @@ def _related_bundle_titles(record: dict[str, Any]) -> str:
     return " | ".join(related)
 
 
+def _related_bundle_links(
+    record: dict[str, Any],
+    candidate_by_id: dict[str, dict[str, Any]],
+) -> str:
+    links: list[str] = []
+    for item_id in [
+        *record.get("supporting_candidate_ids", []),
+        *record.get("evidence_candidate_ids", []),
+    ]:
+        candidate = candidate_by_id.get(str(item_id))
+        if not candidate:
+            continue
+        link = str(candidate.get("seed_url") or "").strip()
+        if link and link not in links:
+            links.append(link)
+    return " | ".join(links)
+
+
 def _bundle_review_row(
     *,
-    rank: int,
-    scope: str,
+    digest_date: str,
     review_item_id: str,
     review_title: str,
     candidate: dict[str, Any],
     candidate_title: str,
     jibi_judgment: str,
     reason: str,
-    related: str,
+    sub_links: str,
+    related_titles: str,
 ) -> dict[str, Any]:
+    why = str(candidate.get("why_interesting") or "").strip()
+    description_parts = [
+        f"{jibi_judgment}: {reason}".strip(": "),
+        f"자료 요약: {why}" if why else "",
+        f"같이 볼 후보: {related_titles}" if related_titles else "",
+    ]
     return {
-        "순번": rank,
-        "구분": scope,
-        "검토대상": review_title,
-        "후보": candidate_title,
-        "출처": candidate.get("source", ""),
-        "링크": candidate.get("seed_url", ""),
-        "Jibi판정": jibi_judgment,
-        "왜_이렇게_올렸나": reason,
-        "같이볼것": related,
-        "review_result": "",
-        "research_team_note": "",
-        "reviewer": "",
-        "review_item_id": review_item_id,
+        "날짜": digest_date,
+        "제목": review_title or candidate_title,
+        "메인 링크": candidate.get("seed_url", ""),
+        "서브 링크": sub_links,
+        "설명": " ".join(part for part in description_parts if part),
+        "리뷰-성원": "",
+        "리뷰-동찬": "",
+        "리뷰-형찬": "",
+        "ID": review_item_id,
     }
 
 
