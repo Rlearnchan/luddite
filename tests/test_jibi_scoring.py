@@ -239,6 +239,8 @@ def test_near_duplicate_cross_source_groups_as_supporting_source() -> None:
 
     assert grouped[0]["near_duplicate_role"] == "primary"
     assert grouped[1]["near_duplicate_role"] == "supporting_source"
+    assert grouped[1]["near_duplicate_shared_tokens"] >= 3
+    assert grouped[1]["near_duplicate_title_overlap"] >= 0.8
 
 
 def test_broad_generic_titles_do_not_collapse() -> None:
@@ -261,6 +263,75 @@ def test_broad_generic_titles_do_not_collapse() -> None:
 
     assert grouped[0]["near_duplicate_role"] == "none"
     assert grouped[1]["near_duplicate_role"] == "none"
+
+
+def test_korean_reordered_high_overlap_titles_collapse_when_strong() -> None:
+    candidates = [
+        {
+            "candidate_id": "primary",
+            "title": "AI 학교 현장 비용 변화",
+            "source": "한국경제",
+            "scores": {"total_score": 80},
+        },
+        {
+            "candidate_id": "supporting",
+            "title": "학교 현장 비용 변화 AI",
+            "source": "연합뉴스",
+            "scores": {"total_score": 70},
+        },
+    ]
+
+    grouped = annotate_near_duplicates(candidates)
+
+    assert grouped[0]["near_duplicate_role"] == "primary"
+    assert grouped[1]["near_duplicate_role"] == "supporting_source"
+    assert grouped[1]["near_duplicate_shared_tokens"] == 5
+    assert grouped[1]["near_duplicate_title_overlap"] == 1.0
+
+
+def test_korean_broad_same_topic_titles_do_not_collapse() -> None:
+    candidates = [
+        {
+            "candidate_id": "school_ai",
+            "title": "AI 학교 수업 변화",
+            "source": "한국경제",
+            "scores": {"total_score": 80},
+        },
+        {
+            "candidate_id": "finance_ai",
+            "title": "AI 금융 시장 변화",
+            "source": "연합뉴스",
+            "scores": {"total_score": 70},
+        },
+    ]
+
+    grouped = annotate_near_duplicates(candidates)
+
+    assert grouped[0]["near_duplicate_role"] == "none"
+    assert grouped[1]["near_duplicate_role"] == "none"
+
+
+def test_near_duplicate_primary_is_highest_scoring_candidate() -> None:
+    candidates = [
+        {
+            "candidate_id": "lower_first",
+            "title": "Drone defense costs surge as cheap drones spread",
+            "source": "BBC News",
+            "scores": {"total_score": 70},
+        },
+        {
+            "candidate_id": "higher_second",
+            "title": "Cheap drones spread as drone defense costs surge",
+            "source": "NPR",
+            "scores": {"total_score": 90},
+        },
+    ]
+
+    grouped = annotate_near_duplicates(candidates)
+    by_id = {item["candidate_id"]: item for item in grouped}
+
+    assert by_id["higher_second"]["near_duplicate_role"] == "primary"
+    assert by_id["lower_first"]["near_duplicate_role"] == "supporting_source"
 
 
 def test_rss_bbc_sport_item_is_quality_gated() -> None:

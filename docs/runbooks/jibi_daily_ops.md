@@ -91,10 +91,15 @@ make render-daily-digest
 PYTHONPATH=src .venv/bin/python -m luddite append-jibi-sheet --dry-run
 ```
 
-The quality report includes source freshness, source quality flags, source skew
-warnings, and conservative near-duplicate groups. `stale` RSS items are
-downranked or kept out of Top Candidates conservatively; manual candidates with
-unknown freshness are not blocked only because their published date is missing.
+The quality report includes a candidate funnel, source survival table, source
+freshness, source quality flags, source skew warnings, near-miss review queue,
+and conservative near-duplicate audit. Use the funnel to separate "there were no
+good candidates" from "the gates were too strict." `top_count_too_low` means at
+least 30 candidates were scored but fewer than 5 rendered as Top Candidates, so
+check the near-miss queue and source survival warnings before changing
+thresholds. `stale` RSS items are downranked or kept out of Top Candidates
+conservatively; manual candidates with unknown freshness are not blocked only
+because their published date is missing.
 
 ## Google Sheet Dry-run
 

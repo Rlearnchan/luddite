@@ -211,6 +211,62 @@ def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_pat
     assert "NPR: raw=1, top=0, recent=0, stale=1" in report
     assert "## Near Duplicate Groups" in report
     assert "`nd_abc`" in report
+    assert "shared_tokens=" in report
+
+
+def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) -> None:
+    report_path = tmp_path / "quality.md"
+    top_candidate = {
+        "candidate_id": "top",
+        "title": "AI search changes how people verify facts",
+        "source": "NPR",
+        "seed_type": "ai_knowledge_institution",
+        "risk_flags": [],
+        "quality_flags": [],
+        "freshness_status": "recent",
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
+        "slideability": {"visualizability": "high"},
+    }
+    stale_candidates = [
+        {
+            "candidate_id": f"stale_{index}",
+            "title": (
+                "Stale but high scoring infrastructure story"
+                if index == 0
+                else f"Old story {index}"
+            ),
+            "source": "BBC News",
+            "seed_type": "other",
+            "risk_flags": [],
+            "quality_flags": ["stale_item"],
+            "failure_modes": ["stale_rss_item"],
+            "freshness_status": "stale",
+            "age_hours": 240 + index,
+            "recommended_action": "keep_for_later",
+            "final_grade": "B",
+            "scores": {"total_score": 90 - index, "broadcast_potential_proxy": 3},
+            "slideability": {"visualizability": "medium"},
+        }
+        for index in range(30)
+    ]
+
+    write_quality_report(report_path, [top_candidate, *stale_candidates], [top_candidate])
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "## Candidate Funnel" in report
+    assert "- raw_candidates: 31" in report
+    assert "- stale_candidates: 30" in report
+    assert "- top_eligible_candidates: 1" in report
+    assert "- rendered_top_candidates: 1" in report
+    assert "top_count_too_low" in report
+    assert "## Source Survival Table" in report
+    assert "source_all_stale" in report
+    assert "source_zero_survivors" in report
+    assert "## Near Miss Review Queue" in report
+    assert "Stale but high scoring infrastructure story" in report
+    assert "reason=excluded_quality_flags=stale_item" in report
 
 
 def test_top_candidates_excludes_single_company_thin_evidence() -> None:

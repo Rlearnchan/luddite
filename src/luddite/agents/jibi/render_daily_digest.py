@@ -36,6 +36,7 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
     "generic_local_incident",
     "stale_item",
 }
+DEFAULT_TOP_MIN_SCORE = 35
 GENERIC_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
     "공급망, 인프라, 규제, 산업 전환 중 어느 축",
@@ -65,16 +66,9 @@ def top_candidates(
     candidates: list[dict[str, Any]],
     limit: int = 10,
     max_per_source: int = 3,
-    min_score: float = 35,
+    min_score: float = DEFAULT_TOP_MIN_SCORE,
 ) -> list[dict[str, Any]]:
-    eligible = [
-        candidate
-        for candidate in candidates
-        if candidate.get("recommended_action", "keep_for_later") in TOP_ACTIONS
-        and _passes_top_quality_gate(candidate)
-        and candidate.get("final_grade") != "D"
-        and float(candidate.get("scores", {}).get("total_score", 0) or 0) >= min_score
-    ]
+    eligible = _top_eligible_candidates(candidates, min_score=min_score)
     ranked = sorted(
         eligible,
         key=lambda item: (
@@ -97,25 +91,49 @@ def top_candidates(
 
 
 def _passes_top_quality_gate(candidate: dict[str, Any]) -> bool:
+    return not _top_quality_gate_failures(candidate)
+
+
+def _top_quality_gate_failures(candidate: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
     flags = set(candidate.get("quality_flags", []))
     failure_modes = set(candidate.get("failure_modes", []))
-    if TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags):
-        return False
+    excluded_flags = sorted(TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags))
+    if excluded_flags:
+        failures.append(f"excluded_quality_flags={','.join(excluded_flags)}")
     if candidate.get("near_duplicate_role") in {"duplicate", "supporting_source"}:
-        return False
+        failures.append(f"near_duplicate_role={candidate.get('near_duplicate_role')}")
     if "single_company_frame" in flags and "broader_industry_bridge" not in flags:
-        return False
+        failures.append("single_company_without_broader_bridge")
     if "market_rate_stress" in flags and "broader_macro_angle" not in flags:
-        return False
+        failures.append("market_rate_without_macro_bridge")
     seed_type = str(candidate.get("seed_type") or "other")
     if seed_type not in SPECIFIC_TOP_SEED_TYPES and _has_generic_why(candidate):
-        return False
+        failures.append("generic_why_for_unspecific_seed_type")
     if (
         "political_sensitivity" in candidate.get("risk_flags", [])
         and "live_news_volatility" in failure_modes
     ):
-        return False
-    return True
+        failures.append("live_political_volatility")
+    return failures
+
+
+def _total_score(candidate: dict[str, Any]) -> float:
+    return float(candidate.get("scores", {}).get("total_score", 0) or 0)
+
+
+def _top_eligible_candidates(
+    candidates: list[dict[str, Any]],
+    min_score: float = DEFAULT_TOP_MIN_SCORE,
+) -> list[dict[str, Any]]:
+    return [
+        candidate
+        for candidate in candidates
+        if candidate.get("recommended_action", "keep_for_later") in TOP_ACTIONS
+        and _passes_top_quality_gate(candidate)
+        and candidate.get("final_grade") != "D"
+        and _total_score(candidate) >= min_score
+    ]
 
 
 def _has_generic_why(candidate: dict[str, Any]) -> bool:
@@ -329,7 +347,13 @@ def render_daily_digest(
         encoding="utf-8",
     )
     write_sheet_preview(csv_path, top, date_value)
-    write_quality_report(paths.REPORTS_DIR / f"jibi_quality_{date_value}.md", candidates, top)
+    write_quality_report(
+        paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
+        candidates,
+        top,
+        limit=limit,
+        max_per_source=max_per_source,
+    )
     return md_path, csv_path, top
 
 
@@ -337,16 +361,36 @@ def write_quality_report(
     path: Path,
     candidates: list[dict[str, Any]],
     top: list[dict[str, Any]],
+    limit: int = 10,
+    max_per_source: int = 3,
+    min_score: float = DEFAULT_TOP_MIN_SCORE,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     source_counts = Counter(str(item.get("source") or "unknown") for item in top)
     seed_counts = Counter(str(item.get("seed_type") or "unknown") for item in top)
     action_counts = Counter(str(item.get("recommended_action") or "unknown") for item in candidates)
     raw_source_counts = Counter(str(item.get("source") or "unknown") for item in candidates)
-    after_gate = [item for item in candidates if _passes_top_quality_gate(item)]
-    after_gate_source_counts = Counter(str(item.get("source") or "unknown") for item in after_gate)
+    quality_gate_pass = [item for item in candidates if _passes_top_quality_gate(item)]
+    after_gate_source_counts = Counter(
+        str(item.get("source") or "unknown") for item in quality_gate_pass
+    )
+    top_eligible = _top_eligible_candidates(candidates, min_score=min_score)
+    top_eligible_source_counts = Counter(
+        str(item.get("source") or "unknown") for item in top_eligible
+    )
+    top_ids = {str(item.get("candidate_id")) for item in top}
     quality_gated = [
         item for item in candidates if item.get("quality_flags") or item.get("failure_modes")
+    ]
+    quality_flagged = [item for item in candidates if item.get("quality_flags")]
+    quality_flagged_source_counts = Counter(
+        str(item.get("source") or "unknown") for item in quality_flagged
+    )
+    duplicate_grouped = [
+        item for item in candidates if int(item.get("near_duplicate_count") or 1) > 1
+    ]
+    duplicate_primary = [
+        item for item in candidates if item.get("near_duplicate_role") == "primary"
     ]
     failure_modes = Counter(
         mode
@@ -370,13 +414,38 @@ def write_quality_report(
         for flag in item.get("quality_flags", []):
             if str(flag).strip():
                 flag_counter[str(flag)] += 1
+    source_warning_codes = _source_warning_codes(
+        raw_source_counts=raw_source_counts,
+        source_counts=source_counts,
+        top_eligible_source_counts=top_eligible_source_counts,
+        freshness_by_source=freshness_by_source,
+        empty_summary_counts=empty_summary_counts,
+    )
     near_duplicate_groups = _near_duplicate_groups(candidates)
+    calibration_warnings = _calibration_warnings(candidates, top)
     skew_warnings = _source_skew_warnings(source_counts, len(top))
+    source_survival_rows = _source_survival_table(
+        raw_source_counts=raw_source_counts,
+        source_counts=source_counts,
+        top_eligible_source_counts=top_eligible_source_counts,
+        freshness_by_source=freshness_by_source,
+        quality_flagged_source_counts=quality_flagged_source_counts,
+        quality_flags_by_source=quality_flags_by_source,
+        empty_summary_counts=empty_summary_counts,
+        source_warning_codes=source_warning_codes,
+    )
+    near_miss_queue = _near_miss_queue(
+        candidates,
+        top_ids,
+        top,
+        limit=limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
     raw_top = candidates[:10]
-    top_ids = {str(item.get("candidate_id")) for item in top}
     removed_from_top = [item for item in raw_top if str(item.get("candidate_id")) not in top_ids]
     generic_why_examples = [
         item
@@ -402,6 +471,23 @@ def write_quality_report(
         f"- quality-gated candidates: {len(quality_gated)}",
         f"- single_company_frame count: {single_company_count}",
         f"- political_sensitivity count: {political_count}",
+        "",
+        "## Candidate Funnel",
+        "",
+        f"- raw_candidates: {len(candidates)}",
+        f"- recent_candidates: {_freshness_count(candidates, 'recent')}",
+        f"- unknown_freshness_candidates: {_freshness_count(candidates, 'unknown')}",
+        f"- stale_candidates: {_freshness_count(candidates, 'stale')}",
+        f"- quality_flagged_candidates: {len(quality_flagged)}",
+        f"- quality_gate_pass_candidates: {len(quality_gate_pass)}",
+        f"- duplicate_grouped_candidates: {len(duplicate_grouped)}",
+        f"- duplicate_primary_candidates: {len(duplicate_primary)}",
+        f"- top_eligible_candidates: {len(top_eligible)}",
+        f"- rendered_top_candidates: {len(top)}",
+        "",
+        "## Calibration Warnings",
+        "",
+        *(calibration_warnings or ["- none"]),
         "",
         "## Slideability Summary",
         "",
@@ -438,6 +524,15 @@ def write_quality_report(
             )
             for source, _count in raw_source_counts.most_common()
         ],
+        "",
+        "## Source Survival Table",
+        "",
+        (
+            "| source | raw | recent | unknown | stale | quality_flagged | "
+            "top_eligible | top | dominant_flags | warning |"
+        ),
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |",
+        *source_survival_rows,
         "",
         "## Source Quality Flags",
         "",
@@ -516,6 +611,10 @@ def write_quality_report(
             for item in removed_from_top
         ],
         "",
+        "## Near Miss Review Queue",
+        "",
+        *(near_miss_queue or ["- none"]),
+        "",
         "## Empty Summary Count By Source",
         "",
         *[f"- {source}: {count}" for source, count in empty_summary_counts.most_common()],
@@ -545,6 +644,179 @@ def write_quality_report(
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _freshness_count(candidates: list[dict[str, Any]], status: str) -> int:
+    return sum(1 for item in candidates if str(item.get("freshness_status") or "unknown") == status)
+
+
+def _format_list(values: list[Any] | tuple[Any, ...] | set[Any]) -> str:
+    cleaned = [str(value) for value in values if str(value).strip()]
+    return ", ".join(cleaned) if cleaned else "none"
+
+
+def _table_cell(value: object) -> str:
+    return str(value).replace("|", "/")
+
+
+def _source_warning_codes(
+    *,
+    raw_source_counts: Counter[str],
+    source_counts: Counter[str],
+    top_eligible_source_counts: Counter[str],
+    freshness_by_source: dict[str, Counter[str]],
+    empty_summary_counts: Counter[str],
+) -> dict[str, list[str]]:
+    total_top = sum(source_counts.values())
+    warnings: dict[str, list[str]] = {}
+    for source, raw_count in raw_source_counts.items():
+        source_warnings: list[str] = []
+        freshness = freshness_by_source.get(source, Counter())
+        stale = freshness.get("stale", 0)
+        unknown = freshness.get("unknown", 0)
+        if raw_count > 0 and stale == raw_count:
+            source_warnings.append("source_all_stale")
+        if raw_count >= 5 and empty_summary_counts.get(source, 0) / raw_count >= 0.5:
+            source_warnings.append("source_many_empty_summary")
+        if raw_count > 0 and top_eligible_source_counts.get(source, 0) == 0:
+            source_warnings.append("source_zero_survivors")
+        if raw_count >= 5 and unknown / raw_count >= 0.5:
+            source_warnings.append("source_unknown_freshness_high")
+        if total_top >= 3 and source_counts.get(source, 0) / total_top >= 0.6:
+            source_warnings.append("source_top_skew")
+        warnings[source] = source_warnings
+    return warnings
+
+
+def _source_survival_table(
+    *,
+    raw_source_counts: Counter[str],
+    source_counts: Counter[str],
+    top_eligible_source_counts: Counter[str],
+    freshness_by_source: dict[str, Counter[str]],
+    quality_flagged_source_counts: Counter[str],
+    quality_flags_by_source: dict[str, Counter[str]],
+    empty_summary_counts: Counter[str],
+    source_warning_codes: dict[str, list[str]],
+) -> list[str]:
+    rows: list[str] = []
+    for source, raw_count in raw_source_counts.most_common():
+        freshness = freshness_by_source.get(source, Counter())
+        dominant_flags = ", ".join(
+            f"{flag}={count}"
+            for flag, count in quality_flags_by_source.get(source, Counter()).most_common(3)
+        ) or "none"
+        warnings = ", ".join(source_warning_codes.get(source, [])) or "ok"
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(source),
+                    str(raw_count),
+                    str(freshness.get("recent", 0)),
+                    str(freshness.get("unknown", 0)),
+                    str(freshness.get("stale", 0)),
+                    str(quality_flagged_source_counts.get(source, 0)),
+                    str(top_eligible_source_counts.get(source, 0)),
+                    str(source_counts.get(source, 0)),
+                    _table_cell(dominant_flags),
+                    _table_cell(warnings),
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | 0 | 0 | 0 | 0 | 0 | 0 | 0 | none | ok |"]
+
+
+def _calibration_warnings(
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+) -> list[str]:
+    warnings: list[str] = []
+    if len(candidates) >= 30 and len(top) < 5:
+        warnings.append(
+            "- top_count_too_low: "
+            f"raw_candidates={len(candidates)}, rendered_top_candidates={len(top)} (<5)"
+        )
+    return warnings
+
+
+def _top_exclusion_reasons(
+    candidate: dict[str, Any],
+    top_ids: set[str],
+    top_source_counts: Counter[str],
+    *,
+    rendered_top_count: int,
+    limit: int,
+    max_per_source: int,
+    min_score: float,
+) -> list[str]:
+    candidate_id = str(candidate.get("candidate_id"))
+    if candidate_id in top_ids:
+        return ["included"]
+    reasons: list[str] = []
+    action = str(candidate.get("recommended_action") or "keep_for_later")
+    if action not in TOP_ACTIONS:
+        reasons.append(f"action_not_top={action}")
+    if str(candidate.get("final_grade") or "") == "D":
+        reasons.append("final_grade=D")
+    score = _total_score(candidate)
+    if score < min_score:
+        reasons.append(f"score_below_{min_score:g}")
+    reasons.extend(_top_quality_gate_failures(candidate))
+    if not reasons:
+        source = str(candidate.get("source") or candidate.get("source_id") or "unknown")
+        if max_per_source > 0 and top_source_counts.get(source, 0) >= max_per_source:
+            reasons.append(f"source_cap_reached={max_per_source}")
+        elif rendered_top_count >= limit:
+            reasons.append(f"below_render_limit={limit}")
+        else:
+            reasons.append("not_selected_after_balance")
+    return reasons
+
+
+def _near_miss_queue(
+    candidates: list[dict[str, Any]],
+    top_ids: set[str],
+    top: list[dict[str, Any]],
+    *,
+    limit: int,
+    max_per_source: int,
+    min_score: float,
+) -> list[str]:
+    top_source_counts = Counter(str(item.get("source") or "unknown") for item in top)
+    near_misses = sorted(
+        [item for item in candidates if str(item.get("candidate_id")) not in top_ids],
+        key=_total_score,
+        reverse=True,
+    )[:10]
+    lines: list[str] = []
+    for item in near_misses:
+        reasons = _top_exclusion_reasons(
+            item,
+            top_ids,
+            top_source_counts,
+            rendered_top_count=len(top),
+            limit=limit,
+            max_per_source=max_per_source,
+            min_score=min_score,
+        )
+        age_hours = item.get("age_hours")
+        freshness = str(item.get("freshness_status") or "unknown")
+        age_text = "unknown" if age_hours is None else f"{age_hours}h"
+        duplicate_role = str(item.get("near_duplicate_role") or "none")
+        duplicate_reason = str(item.get("near_duplicate_reason") or "none")
+        lines.append(
+            f"- {item.get('title')}: source={item.get('source', 'unknown')}; "
+            f"total_score={_total_score(item):g}; "
+            f"action={item.get('recommended_action')}; grade={item.get('final_grade')}; "
+            f"freshness={freshness}/{age_text}; "
+            f"quality_flags={_format_list(item.get('quality_flags') or [])}; "
+            f"failure_modes={_format_list(item.get('failure_modes') or [])}; "
+            f"near_duplicate={duplicate_role} ({duplicate_reason}); "
+            f"reason={_format_list(reasons)}"
+        )
+    return lines
+
+
 def _source_skew_warnings(source_counts: Counter[str], top_count: int) -> list[str]:
     if top_count < 3:
         return []
@@ -552,7 +824,10 @@ def _source_skew_warnings(source_counts: Counter[str], top_count: int) -> list[s
     for source, count in source_counts.most_common():
         share = count / top_count
         if share >= 0.6:
-            warnings.append(f"- {source}: {count}/{top_count} top candidates ({share:.0%})")
+            warnings.append(
+                f"- source_top_skew: {source} has {count}/{top_count} "
+                f"top candidates ({share:.0%})"
+            )
     return warnings
 
 
@@ -569,12 +844,17 @@ def _near_duplicate_groups(candidates: list[dict[str, Any]]) -> list[str]:
             items[0],
         )
         lines.append(
-            f"- `{group_id}` primary=`{primary.get('title')}` count={len(items)}"
+            f"- `{group_id}` primary=`{primary.get('title')}` "
+            f"source={primary.get('source')} score={_total_score(primary):g} "
+            f"count={len(items)}"
         )
-        for item in items:
+        for item in sorted(items, key=_total_score, reverse=True):
             lines.append(
                 f"  - {item.get('near_duplicate_role')}: {item.get('source')} / "
-                f"{item.get('title')} ({item.get('near_duplicate_reason')})"
+                f"{item.get('title')} score={_total_score(item):g}; "
+                f"reason={item.get('near_duplicate_reason')}; "
+                f"shared_tokens={item.get('near_duplicate_shared_tokens', 0)}; "
+                f"overlap={item.get('near_duplicate_title_overlap', 0)}"
             )
     return lines
 

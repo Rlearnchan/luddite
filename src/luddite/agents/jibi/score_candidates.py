@@ -674,6 +674,9 @@ def annotate_near_duplicates(candidates: list[dict[str, Any]]) -> list[dict[str,
             "near_duplicate_count": 1,
             "near_duplicate_role": "none",
             "near_duplicate_reason": "",
+            "near_duplicate_shared_tokens": 0,
+            "near_duplicate_title_overlap": 0.0,
+            "_near_duplicate_tokens": tokens,
         }
         if matched_group is None:
             group = {
@@ -685,27 +688,49 @@ def annotate_near_duplicates(candidates: list[dict[str, Any]]) -> list[dict[str,
             annotated.append(prepared)
             continue
         prepared["near_duplicate_group_id"] = matched_group["group_id"]
-        same_source = str(prepared.get("source") or prepared.get("source_id")) == str(
-            matched_group["items"][0].get("source")
-            or matched_group["items"][0].get("source_id")
-        )
-        prepared["near_duplicate_role"] = "duplicate" if same_source else "supporting_source"
-        reason_prefix = "same_source" if same_source else "cross_source"
-        prepared["near_duplicate_reason"] = (
-            f"{reason_prefix}_title_overlap_{matched_overlap:.2f}"
-        )
+        prepared["near_duplicate_shared_tokens"] = len(tokens & matched_group["tokens"])
+        prepared["near_duplicate_title_overlap"] = round(matched_overlap, 2)
         matched_group["items"].append(prepared)
         annotated.append(prepared)
     for group in groups:
+        for item in group["items"]:
+            item.pop("_near_duplicate_tokens", None)
         if len(group["items"]) <= 1:
             continue
-        primary = group["items"][0]
-        primary["near_duplicate_group_id"] = group["group_id"]
+        primary = max(
+            group["items"],
+            key=lambda item: (
+                float(item.get("scores", {}).get("total_score", 0) or 0),
+                float(item.get("scores", {}).get("broadcast_potential_proxy", 0) or 0),
+            ),
+        )
+        primary_tokens = set(
+            normalize_title_for_near_duplicate(str(primary.get("title") or ""))
+        )
+        group_id = _near_duplicate_group_id(primary_tokens)
+        primary_source = str(primary.get("source") or primary.get("source_id") or "")
+        primary["near_duplicate_group_id"] = group_id
         primary["near_duplicate_count"] = len(group["items"])
         primary["near_duplicate_role"] = "primary"
         primary["near_duplicate_reason"] = "highest_scoring_title_overlap_primary"
-        for item in group["items"][1:]:
+        for item in group["items"]:
+            item["near_duplicate_group_id"] = group_id
             item["near_duplicate_count"] = len(group["items"])
+            if item is primary:
+                continue
+            item_tokens = set(
+                normalize_title_for_near_duplicate(str(item.get("title") or ""))
+            )
+            shared = len(primary_tokens & item_tokens)
+            overlap = _title_overlap(primary_tokens, item_tokens)
+            same_source = str(item.get("source") or item.get("source_id") or "") == primary_source
+            item["near_duplicate_role"] = "duplicate" if same_source else "supporting_source"
+            reason_prefix = "same_source" if same_source else "cross_source"
+            item["near_duplicate_shared_tokens"] = shared
+            item["near_duplicate_title_overlap"] = round(overlap, 2)
+            item["near_duplicate_reason"] = (
+                f"{reason_prefix}_title_overlap_{overlap:.2f}_shared_{shared}"
+            )
     return annotated
 
 
