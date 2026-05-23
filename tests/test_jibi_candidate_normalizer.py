@@ -1,4 +1,8 @@
-from luddite.agents.jibi.normalize_candidates import normalize_article, normalize_candidates
+from luddite.agents.jibi.normalize_candidates import (
+    classify_freshness,
+    normalize_article,
+    normalize_candidates,
+)
 from luddite.utils.jsonl import write_jsonl
 
 
@@ -65,6 +69,60 @@ def test_normalize_article_keeps_real_drone_cost_asymmetry() -> None:
     candidate = normalize_article(article)
 
     assert candidate["seed_type"] == "cost_asymmetry"
+
+
+def test_classify_freshness_recent_stale_unknown() -> None:
+    assert classify_freshness("2026-05-20T00:00:00Z", "2026-05-23T00:00:00Z") == (
+        "recent",
+        72.0,
+    )
+    assert classify_freshness("2026-05-01T00:00:00Z", "2026-05-23T00:00:00Z") == (
+        "stale",
+        528.0,
+    )
+    assert classify_freshness(None, "2026-05-23T00:00:00Z") == ("unknown", None)
+
+
+def test_manual_unknown_freshness_is_not_quality_blocked() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_manual_unknown",
+            "title": "300달러 드론을 수백만 달러 미사일로 막는 비용 역전",
+            "url": "https://example.com/drone",
+            "source": "Manual Input",
+            "source_id": "manual",
+            "published_at": None,
+            "collected_at": "2026-05-23T00:00:00+00:00",
+            "raw_summary": "값싼 드론과 비싼 방공 미사일의 비용 구조",
+            "collector": "manual",
+            "tags": ["manual"],
+        }
+    )
+
+    assert candidate["freshness_status"] == "unknown"
+    assert candidate["age_hours"] is None
+    assert "stale_item" not in candidate["quality_flags"]
+
+
+def test_stale_rss_item_gets_quality_flag() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_stale",
+            "title": "Old local incident resurfaces in RSS",
+            "url": "https://example.com/stale",
+            "source": "BBC News",
+            "source_id": "bbc_rss_candidate",
+            "published_at": "2026-05-01T00:00:00Z",
+            "collected_at": "2026-05-23T00:00:00+00:00",
+            "raw_summary": "A thin old item with limited structure.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    assert candidate["freshness_status"] == "stale"
+    assert candidate["age_hours"] == 528.0
+    assert "stale_item" in candidate["quality_flags"]
 
 
 def test_normalize_skc_like_single_company_financing_risk() -> None:

@@ -25,6 +25,7 @@ console = Console()
 
 @dataclass
 class ImportReport:
+    input_mode: str = "input_dir"
     input_files: int = 0
     imported: int = 0
     duplicates: int = 0
@@ -69,11 +70,25 @@ def _read_csv(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
         return list(csv.DictReader(source)), []
 
 
-def read_input_records(input_dir: Path) -> tuple[list[tuple[Path, dict[str, Any]]], ImportReport]:
-    report = ImportReport()
+def read_input_records(
+    input_dir: Path,
+    input_files: list[Path] | None = None,
+) -> tuple[list[tuple[Path, dict[str, Any]]], ImportReport]:
+    report = ImportReport(input_mode="input_file" if input_files else "input_dir")
     records: list[tuple[Path, dict[str, Any]]] = []
-    for path in sorted([*input_dir.glob("*.jsonl"), *input_dir.glob("*.csv")]):
+    paths_to_read = (
+        [Path(path) for path in input_files]
+        if input_files
+        else sorted([*input_dir.glob("*.jsonl"), *input_dir.glob("*.csv")])
+    )
+    for path in paths_to_read:
         report.input_files += 1
+        if path.suffix not in {".jsonl", ".csv"}:
+            report.failures.append(f"{path}: unsupported input file type")
+            continue
+        if not path.exists():
+            report.failures.append(f"{path}: input file does not exist")
+            continue
         if path.suffix == ".jsonl":
             loaded, failures = _read_jsonl(path)
         else:
@@ -114,12 +129,13 @@ def normalize_article_record(
 
 def import_articles(
     input_dir: Path = paths.ARTICLE_INBOX_DIR,
+    input_files: list[Path] | None = None,
     output_path: Path = paths.RAW_ARTICLES_JSONL,
     report_path: Path = paths.REPORTS_DIR / "article_import_report.md",
     registry_path: Path = paths.SOURCE_REGISTRY_YAML,
 ) -> tuple[list[dict[str, Any]], ImportReport]:
     collected_at = datetime.now(UTC).isoformat()
-    raw_records, report = read_input_records(input_dir)
+    raw_records, report = read_input_records(input_dir, input_files=input_files)
     seen_urls: set[str] = set()
     articles: list[dict[str, Any]] = []
     for path, raw in raw_records:
@@ -151,6 +167,7 @@ def write_import_report(path: Path, report: ImportReport, output_path: Path) -> 
     lines = [
         "# Article Import Report",
         "",
+        f"- Input mode: `{report.input_mode}`",
         f"- Input files: {report.input_files}",
         f"- Imported: {report.imported}",
         f"- Duplicate URLs skipped: {report.duplicates}",
@@ -173,12 +190,20 @@ def main(
         Path,
         typer.Option("--input-dir", help="Directory containing article JSONL/CSV files."),
     ] = paths.ARTICLE_INBOX_DIR,
+    input_file: Annotated[
+        list[Path] | None,
+        typer.Option("--input-file", help="Specific article JSONL/CSV file to import."),
+    ] = None,
     output: Annotated[
         Path,
         typer.Option("--output", help="Output raw article JSONL path."),
     ] = paths.RAW_ARTICLES_JSONL,
 ) -> None:
-    articles, report = import_articles(input_dir=input_dir, output_path=output)
+    articles, report = import_articles(
+        input_dir=input_dir,
+        input_files=input_file,
+        output_path=output,
+    )
     console.print(
         f"[green]Imported {len(articles)} articles to {output} "
         f"({report.duplicates} duplicates, {len(report.failures)} failures).[/green]"

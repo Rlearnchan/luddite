@@ -1,4 +1,8 @@
-from luddite.agents.jibi.score_candidates import score_candidate, score_candidates
+from luddite.agents.jibi.score_candidates import (
+    annotate_near_duplicates,
+    score_candidate,
+    score_candidates,
+)
 from luddite.utils.jsonl import write_jsonl
 
 
@@ -192,6 +196,73 @@ def test_score_candidates_sorts_by_total_score(tmp_path) -> None:
     assert output_path.exists()
 
 
+def test_near_duplicate_same_source_title_groups_as_duplicate() -> None:
+    candidates = [
+        {
+            "candidate_id": "primary",
+            "title": "Drone defense costs surge as cheap drones spread",
+            "source": "BBC News",
+            "scores": {"total_score": 80},
+        },
+        {
+            "candidate_id": "duplicate",
+            "title": "Drone defense costs surge as cheap drones spread",
+            "source": "BBC News",
+            "scores": {"total_score": 70},
+        },
+    ]
+
+    grouped = annotate_near_duplicates(candidates)
+
+    assert grouped[0]["near_duplicate_role"] == "primary"
+    assert grouped[1]["near_duplicate_role"] == "duplicate"
+    assert grouped[0]["near_duplicate_group_id"] == grouped[1]["near_duplicate_group_id"]
+
+
+def test_near_duplicate_cross_source_groups_as_supporting_source() -> None:
+    candidates = [
+        {
+            "candidate_id": "primary",
+            "title": "Drone defense costs surge as cheap drones spread",
+            "source": "BBC News",
+            "scores": {"total_score": 80},
+        },
+        {
+            "candidate_id": "supporting",
+            "title": "Cheap drones spread as drone defense costs surge",
+            "source": "NPR",
+            "scores": {"total_score": 70},
+        },
+    ]
+
+    grouped = annotate_near_duplicates(candidates)
+
+    assert grouped[0]["near_duplicate_role"] == "primary"
+    assert grouped[1]["near_duplicate_role"] == "supporting_source"
+
+
+def test_broad_generic_titles_do_not_collapse() -> None:
+    candidates = [
+        {
+            "candidate_id": "ai_market",
+            "title": "AI stocks rise",
+            "source": "BBC News",
+            "scores": {"total_score": 80},
+        },
+        {
+            "candidate_id": "ai_school",
+            "title": "AI changes schools",
+            "source": "NPR",
+            "scores": {"total_score": 70},
+        },
+    ]
+
+    grouped = annotate_near_duplicates(candidates)
+
+    assert grouped[0]["near_duplicate_role"] == "none"
+    assert grouped[1]["near_duplicate_role"] == "none"
+
+
 def test_rss_bbc_sport_item_is_quality_gated() -> None:
     candidate = {
         "candidate_id": "bbc_sport",
@@ -261,6 +332,24 @@ def test_empty_summary_lowers_evidence_depth() -> None:
 
     assert scored["scores"]["evidence_depth"] == 1
     assert "thin_evidence" in scored["failure_modes"]
+
+
+def test_stale_rss_item_is_downranked_and_not_top_material() -> None:
+    candidate = {
+        "candidate_id": "stale_rss",
+        "title": "Old RSS item about an infrastructure dispute",
+        "summary": "A stale feed item with limited current relevance.",
+        "risk_flags": [],
+        "quality_flags": ["stale_item"],
+        "freshness_status": "stale",
+        "evidence_depth_hint": "medium",
+    }
+
+    scored = score_candidate(candidate)
+
+    assert scored["recommended_action"] == "keep_for_later"
+    assert scored["scores"]["timeliness"] == 1
+    assert "stale_rss_item" in scored["failure_modes"]
 
 
 def test_single_company_financing_is_not_low_risk_b() -> None:

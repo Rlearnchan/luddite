@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import re
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -125,6 +127,7 @@ QUALITY_GATE_FAILURES = {
     "market_rate_stress": ("single_stock_investment_frame", 16, "editorial_review"),
     "empty_summary": ("thin_evidence", 12, "keep_for_later"),
     "empty_summary_domestic_business": ("thin_evidence", 16, "keep_for_later"),
+    "stale_item": ("stale_rss_item", 18, "keep_for_later"),
 }
 FALLBACK_EXPANSIONS = {
     "cost_asymmetry": [
@@ -187,6 +190,27 @@ FALLBACK_EXPANSIONS = {
         "현지 시장/사회 구조로 확장되는 지점",
         "한국 시청자가 이해할 수 있는 비유와 회수",
     ],
+}
+TITLE_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "for",
+    "from",
+    "in",
+    "is",
+    "of",
+    "on",
+    "says",
+    "the",
+    "to",
+    "with",
+    "속보",
+    "단독",
+    "뉴스",
+    "관련",
 }
 
 SCORING_WEIGHTS = {
@@ -482,7 +506,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     )
     if quality_gate["evidence_cap"] is not None:
         evidence_depth = min(evidence_depth, int(quality_gate["evidence_cap"]))
-    timeliness = 3 if candidate.get("published_at") else 2
+    freshness_status = str(candidate.get("freshness_status") or "unknown")
+    timeliness = {"recent": 4, "unknown": 2, "stale": 1}.get(freshness_status, 2)
     broadcast_potential_proxy = _bounded(
         weird_hook + structural_expansion + punchline_potential - 3,
         high=5,
@@ -609,6 +634,81 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     return scored
 
 
+def normalize_title_for_near_duplicate(title: str) -> list[str]:
+    normalized = re.sub(r"[^\w\s]", " ", title.lower())
+    return [
+        token
+        for token in normalized.split()
+        if token and token not in TITLE_STOPWORDS and len(token) > 1
+    ]
+
+
+def _title_overlap(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    return len(left & right) / len(left | right)
+
+
+def _near_duplicate_group_id(tokens: set[str]) -> str:
+    key = " ".join(sorted(tokens))
+    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:10]
+    return f"nd_{digest}"
+
+
+def annotate_near_duplicates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    groups: list[dict[str, Any]] = []
+    annotated: list[dict[str, Any]] = []
+    for candidate in candidates:
+        tokens = set(normalize_title_for_near_duplicate(str(candidate.get("title") or "")))
+        matched_group: dict[str, Any] | None = None
+        matched_overlap = 0.0
+        for group in groups:
+            shared = len(tokens & group["tokens"])
+            overlap = _title_overlap(tokens, group["tokens"])
+            if shared >= 3 and overlap >= 0.8 and overlap > matched_overlap:
+                matched_group = group
+                matched_overlap = overlap
+        prepared = {
+            **candidate,
+            "near_duplicate_group_id": "",
+            "near_duplicate_count": 1,
+            "near_duplicate_role": "none",
+            "near_duplicate_reason": "",
+        }
+        if matched_group is None:
+            group = {
+                "tokens": tokens,
+                "group_id": _near_duplicate_group_id(tokens),
+                "items": [prepared],
+            }
+            groups.append(group)
+            annotated.append(prepared)
+            continue
+        prepared["near_duplicate_group_id"] = matched_group["group_id"]
+        same_source = str(prepared.get("source") or prepared.get("source_id")) == str(
+            matched_group["items"][0].get("source")
+            or matched_group["items"][0].get("source_id")
+        )
+        prepared["near_duplicate_role"] = "duplicate" if same_source else "supporting_source"
+        reason_prefix = "same_source" if same_source else "cross_source"
+        prepared["near_duplicate_reason"] = (
+            f"{reason_prefix}_title_overlap_{matched_overlap:.2f}"
+        )
+        matched_group["items"].append(prepared)
+        annotated.append(prepared)
+    for group in groups:
+        if len(group["items"]) <= 1:
+            continue
+        primary = group["items"][0]
+        primary["near_duplicate_group_id"] = group["group_id"]
+        primary["near_duplicate_count"] = len(group["items"])
+        primary["near_duplicate_role"] = "primary"
+        primary["near_duplicate_reason"] = "highest_scoring_title_overlap_primary"
+        for item in group["items"][1:]:
+            item["near_duplicate_count"] = len(group["items"])
+    return annotated
+
+
 def score_candidates(
     input_path: Path = paths.JIBI_CANDIDATES_JSONL,
     output_path: Path = paths.JIBI_SCORED_CANDIDATES_JSONL,
@@ -622,6 +722,7 @@ def score_candidates(
         ),
         reverse=True,
     )
+    scored = annotate_near_duplicates(scored)
     write_jsonl(output_path, scored)
     return scored
 

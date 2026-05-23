@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -133,6 +135,7 @@ EDITORIAL_CATEGORY_TYPES = {
     "infrastructure_project_failure",
     "climate_policy_conflict",
 }
+FRESHNESS_RECENT_HOURS = 24 * 7
 
 
 def _evidence_needed(seed_type: str, risk_flags: list[str]) -> list[str]:
@@ -322,6 +325,39 @@ def _infer_editorial_category(title: str, summary: str, source_id: str | None) -
     return None
 
 
+def _parse_datetime(value: object) -> datetime | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = parsedate_to_datetime(text)
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    except (TypeError, ValueError):
+        pass
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+def classify_freshness(
+    published_at: object,
+    collected_at: object,
+    *,
+    recent_hours: int = FRESHNESS_RECENT_HOURS,
+) -> tuple[str, float | None]:
+    published = _parse_datetime(published_at)
+    collected = _parse_datetime(collected_at) or datetime.now(UTC)
+    if not published:
+        return "unknown", None
+    age_hours = max(0.0, (collected - published).total_seconds() / 3600)
+    status = "recent" if age_hours <= recent_hours else "stale"
+    return status, round(age_hours, 1)
+
+
 def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None:
     text = text_blob(title, summary)
     if ("드론" in text or "drone" in text) and (
@@ -475,6 +511,7 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     risk_flags = infer_risk_flags(title, summary, tags)
     registry = source_by_id()
     source = registry.get(article.get("source_id") or "")
+    source_type = source.type if source else article.get("collector", "manual")
     if source and source.subscription and "subscription_source_only" not in risk_flags:
         risk_flags.append("subscription_source_only")
     text = text_blob(title, summary, " ".join(tags))
@@ -496,6 +533,17 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         seed_type=seed_type,
         risk_flags=risk_flags,
     )
+    freshness_status, age_hours = classify_freshness(
+        article.get("published_at"),
+        article.get("collected_at"),
+    )
+    if (
+        freshness_status == "stale"
+        and source_type != "manual"
+        and seed_type not in EDITORIAL_CATEGORY_TYPES
+        and "stale_item" not in quality_flags
+    ):
+        quality_flags.append("stale_item")
     specific_insights = _specific_insights(title, summary)
     template_rationale, possible_expansions = specific_insights or _template_insights(seed_type)
     if specific_insights is None and seed_type not in EDITORIAL_CATEGORY_TYPES:
@@ -526,9 +574,11 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "duplicate_key": article.get("duplicate_key") or source_url_canonical,
         "source": article["source"],
         "source_id": article.get("source_id"),
-        "source_type": source.type if source else article.get("collector", "manual"),
+        "source_type": source_type,
         "published_at": article.get("published_at"),
         "collected_at": article["collected_at"],
+        "freshness_status": freshness_status,
+        "age_hours": age_hours,
         "first_seen_at": article.get("first_seen_at") or article["collected_at"],
         "last_seen_at": article.get("last_seen_at") or article["collected_at"],
         "source_count": int(article.get("source_count") or 1),

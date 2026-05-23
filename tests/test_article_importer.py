@@ -66,3 +66,48 @@ def test_import_articles_csv(tmp_path) -> None:
 
     assert report.imported == 1
     assert articles[0]["tags"] == ["drone", "cost"]
+
+
+def test_import_articles_input_file_ignores_other_inbox_files(tmp_path) -> None:
+    input_dir = tmp_path / "articles"
+    input_dir.mkdir()
+    output_path = tmp_path / "raw_articles.jsonl"
+    report_path = tmp_path / "report.md"
+    today = input_dir / "rss_2026-05-23.jsonl"
+    old = input_dir / "rss_2026-05-22.jsonl"
+    today.write_text(
+        json.dumps(
+            {
+                "title": "Today drone cost asymmetry",
+                "url": "https://example.com/today",
+                "source": "manual",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    old.write_text(
+        json.dumps(
+            {
+                "title": "Old stale item",
+                "url": "https://example.com/old",
+                "source": "manual",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    articles, report = import_articles(
+        input_dir=input_dir,
+        input_files=[today],
+        output_path=output_path,
+        report_path=report_path,
+    )
+
+    assert report.input_mode == "input_file"
+    assert report.input_files == 1
+    assert [article["title"] for article in articles] == ["Today drone cost asymmetry"]
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "Input mode: `input_file`" in report_text
+    assert "Old stale item" not in output_path.read_text(encoding="utf-8")

@@ -60,26 +60,41 @@ when a one-shot RSS fetch should populate the inbox first.
 make jibi-mvp-rss-dry-run
 ```
 
+Rerun for a specific date:
+
+```bash
+make jibi-mvp-rss-dry-run JIBI_DATE=2026-05-23
+```
+
 This command runs fetch, import, normalize, score, cluster, render, then
 `append-jibi-sheet --dry-run`. It does not append rows to Google Sheets and does
 not call an LLM.
 
-`import-articles --input-dir data/inbox/articles` imports every JSONL/CSV in
-that directory, not only today's RSS file. For clean morning runs, archive old
-inbox files or use a date-specific input directory until a stricter import
-filter exists.
+The Make target writes RSS items to
+`data/inbox/articles/rss_$(JIBI_DATE).jsonl` and imports only that file with
+`--input-file`. This keeps old inbox files from contaminating today's run.
+Manual `import-articles --input-dir data/inbox/articles` still imports every
+JSONL/CSV in that directory.
 
 Manual equivalent:
 
 ```bash
-make fetch-rss-articles
-PYTHONPATH=src .venv/bin/python -m luddite import-articles --input-dir data/inbox/articles
+PYTHONPATH=src .venv/bin/python -m luddite fetch-rss-articles \
+  --date 2026-05-23 \
+  --output data/inbox/articles/rss_2026-05-23.jsonl
+PYTHONPATH=src .venv/bin/python -m luddite import-articles \
+  --input-file data/inbox/articles/rss_2026-05-23.jsonl
 make normalize-candidates
 make score-candidates
 make cluster-jibi-candidates
 make render-daily-digest
 PYTHONPATH=src .venv/bin/python -m luddite append-jibi-sheet --dry-run
 ```
+
+The quality report includes source freshness, source quality flags, source skew
+warnings, and conservative near-duplicate groups. `stale` RSS items are
+downranked or kept out of Top Candidates conservatively; manual candidates with
+unknown freshness are not blocked only because their published date is missing.
 
 ## Google Sheet Dry-run
 

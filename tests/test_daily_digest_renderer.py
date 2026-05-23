@@ -1,6 +1,10 @@
 import csv
 
-from luddite.agents.jibi.render_daily_digest import render_daily_digest, top_candidates
+from luddite.agents.jibi.render_daily_digest import (
+    render_daily_digest,
+    top_candidates,
+    write_quality_report,
+)
 from luddite.utils.jsonl import write_jsonl
 
 
@@ -110,6 +114,27 @@ def test_top_candidates_excludes_rejects() -> None:
     assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == ["good"]
 
 
+def test_top_candidates_uses_only_near_duplicate_primary() -> None:
+    candidates = [
+        {
+            "candidate_id": "primary",
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+            "near_duplicate_role": "primary",
+        },
+        {
+            "candidate_id": "supporting",
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 79, "broadcast_potential_proxy": 5},
+            "near_duplicate_role": "supporting_source",
+        },
+    ]
+
+    assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == ["primary"]
+
+
 def test_top_candidates_limits_same_source() -> None:
     candidates = [
         {
@@ -139,6 +164,53 @@ def test_top_candidates_limits_same_source() -> None:
         "same_2",
         "other",
     ]
+
+
+def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_path) -> None:
+    report_path = tmp_path / "quality.md"
+    candidates = [
+        {
+            "candidate_id": "primary",
+            "title": "Drone defense costs surge as cheap drones spread",
+            "source": "BBC News",
+            "seed_type": "cost_asymmetry",
+            "risk_flags": [],
+            "quality_flags": [],
+            "freshness_status": "recent",
+            "recommended_action": "gather_more_evidence",
+            "scores": {"total_score": 80},
+            "slideability": {"visualizability": "high"},
+            "near_duplicate_group_id": "nd_abc",
+            "near_duplicate_count": 2,
+            "near_duplicate_role": "primary",
+            "near_duplicate_reason": "highest_scoring_title_overlap_primary",
+        },
+        {
+            "candidate_id": "supporting",
+            "title": "Cheap drones spread as drone defense costs surge",
+            "source": "NPR",
+            "seed_type": "cost_asymmetry",
+            "risk_flags": [],
+            "quality_flags": ["empty_summary", "stale_item"],
+            "freshness_status": "stale",
+            "recommended_action": "keep_for_later",
+            "scores": {"total_score": 30},
+            "slideability": {"visualizability": "medium"},
+            "near_duplicate_group_id": "nd_abc",
+            "near_duplicate_count": 2,
+            "near_duplicate_role": "supporting_source",
+            "near_duplicate_reason": "cross_source_title_overlap_0.82",
+        },
+    ]
+
+    write_quality_report(report_path, candidates, [candidates[0]])
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "## Source Freshness Summary" in report
+    assert "BBC News: raw=1, top=1, recent=1" in report
+    assert "NPR: raw=1, top=0, recent=0, stale=1" in report
+    assert "## Near Duplicate Groups" in report
+    assert "`nd_abc`" in report
 
 
 def test_top_candidates_excludes_single_company_thin_evidence() -> None:

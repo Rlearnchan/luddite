@@ -34,6 +34,7 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
     "accident_single_event",
     "pure_place_listing",
     "generic_local_incident",
+    "stale_item",
 }
 GENERIC_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
@@ -99,6 +100,8 @@ def _passes_top_quality_gate(candidate: dict[str, Any]) -> bool:
     flags = set(candidate.get("quality_flags", []))
     failure_modes = set(candidate.get("failure_modes", []))
     if TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags):
+        return False
+    if candidate.get("near_duplicate_role") in {"duplicate", "supporting_source"}:
         return False
     if "single_company_frame" in flags and "broader_industry_bridge" not in flags:
         return False
@@ -357,6 +360,18 @@ def write_quality_report(
         if "empty_summary" in item.get("quality_flags", [])
         or "empty_summary_domestic_business" in item.get("quality_flags", [])
     )
+    freshness_by_source: dict[str, Counter[str]] = {}
+    quality_flags_by_source: dict[str, Counter[str]] = {}
+    for item in candidates:
+        source = str(item.get("source") or "unknown")
+        freshness = str(item.get("freshness_status") or "unknown")
+        freshness_by_source.setdefault(source, Counter())[freshness] += 1
+        flag_counter = quality_flags_by_source.setdefault(source, Counter())
+        for flag in item.get("quality_flags", []):
+            if str(flag).strip():
+                flag_counter[str(flag)] += 1
+    near_duplicate_groups = _near_duplicate_groups(candidates)
+    skew_warnings = _source_skew_warnings(source_counts, len(top))
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
@@ -409,6 +424,47 @@ def write_quality_report(
             )
             for item in top
         ],
+        "",
+        "## Source Freshness Summary",
+        "",
+        *[
+            (
+                f"- {source}: raw={raw_source_counts.get(source, 0)}, "
+                f"top={source_counts.get(source, 0)}, "
+                f"recent={freshness_by_source.get(source, Counter()).get('recent', 0)}, "
+                f"stale={freshness_by_source.get(source, Counter()).get('stale', 0)}, "
+                f"unknown={freshness_by_source.get(source, Counter()).get('unknown', 0)}, "
+                f"empty_summary={empty_summary_counts.get(source, 0)}"
+            )
+            for source, _count in raw_source_counts.most_common()
+        ],
+        "",
+        "## Source Quality Flags",
+        "",
+        *[
+            (
+                f"- {source}: "
+                + (
+                    ", ".join(
+                        f"{flag}={count}"
+                        for flag, count in quality_flags_by_source.get(
+                            source,
+                            Counter(),
+                        ).most_common()
+                    )
+                    or "none"
+                )
+            )
+            for source, _count in raw_source_counts.most_common()
+        ],
+        "",
+        "## Source Skew Warnings",
+        "",
+        *(skew_warnings or ["- none"]),
+        "",
+        "## Near Duplicate Groups",
+        "",
+        *(near_duplicate_groups or ["- none"]),
         "",
         "## Top Candidates Source Distribution",
         "",
@@ -487,6 +543,40 @@ def write_quality_report(
     else:
         lines.append("- none")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _source_skew_warnings(source_counts: Counter[str], top_count: int) -> list[str]:
+    if top_count < 3:
+        return []
+    warnings: list[str] = []
+    for source, count in source_counts.most_common():
+        share = count / top_count
+        if share >= 0.6:
+            warnings.append(f"- {source}: {count}/{top_count} top candidates ({share:.0%})")
+    return warnings
+
+
+def _near_duplicate_groups(candidates: list[dict[str, Any]]) -> list[str]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for item in candidates:
+        group_id = str(item.get("near_duplicate_group_id") or "")
+        if group_id and int(item.get("near_duplicate_count") or 1) > 1:
+            grouped.setdefault(group_id, []).append(item)
+    lines: list[str] = []
+    for group_id, items in grouped.items():
+        primary = next(
+            (item for item in items if item.get("near_duplicate_role") == "primary"),
+            items[0],
+        )
+        lines.append(
+            f"- `{group_id}` primary=`{primary.get('title')}` count={len(items)}"
+        )
+        for item in items:
+            lines.append(
+                f"  - {item.get('near_duplicate_role')}: {item.get('source')} / "
+                f"{item.get('title')} ({item.get('near_duplicate_reason')})"
+            )
+    return lines
 
 
 @app.callback(invoke_without_command=True)
