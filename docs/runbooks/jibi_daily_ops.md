@@ -92,10 +92,11 @@ and report paths, content-enrichment status, append status, and log paths. It
 does not include credential paths or article bodies.
 
 The runner uses a lock directory at `/tmp/luddite-jibi-manual-update.lock` so
-two runs cannot overlap. If fetch, import, normalize, score, cluster, or digest
-rendering fails, the sheet append step is not attempted. Content enrichment is
-diagnostic only: a failure is logged but does not block the sheet dry-run or
-staging append.
+two runs cannot overlap. The runner only removes the lock when the current
+process acquired it, so a failed second run cannot delete another run's lock. If
+fetch, import, normalize, score, cluster, or digest rendering fails, the sheet
+append step is not attempted. Content enrichment is diagnostic only: a failure
+is logged but does not block the sheet dry-run or staging append.
 
 To opt in to a real staging append, use:
 
@@ -112,6 +113,7 @@ Safety gates:
 - `staging_append` may target only the exact `jibi 후보` tab.
 - The runner refuses `주제 찾기` in any mode.
 - The runner verifies the date-specific preview CSV exists before append.
+- The runner removes only locks it owns.
 - Unknown sources are not generically extracted during content enrichment unless
   `render-jibi-content-enrichment-review --allow-generic-extraction` is run
   manually outside the one-shot runner.
@@ -233,6 +235,24 @@ For the MVP team-evaluation phase, prefer `make jibi-manual-update` with
 `JIBI_APPEND_MODE=staging_append` over calling `append-jibi-sheet --no-dry-run`
 directly. The one-shot runner applies the target-sheet guard first and pins the
 append to that run's date-specific preview CSV.
+
+## Feedback Collection Readiness
+
+Before asking the research team to review staged rows:
+
+1. Run dry-run mode for 2-3 days.
+2. Inspect the Daily Digest, quality report, content enrichment report, sheet
+   append report, and manual summary for each run.
+3. Use `JIBI_APPEND_MODE=staging_append` only once daily, not hourly, and only
+   for `jibi 후보`.
+4. Keep the sheet schema unchanged.
+5. Ask reviewers to fill only `reviewer`, `review_result`,
+   `promoted_to_topic_finding`, and `notes`.
+6. Use `review_result` values: `promote`, `keep`, `needs_more_evidence`,
+   `editorial_review`, or `reject`.
+7. Ask for one-line notes.
+8. Do not change gates, source allowlists, or generic-why templates until
+   several days of feedback exist.
 
 ## Research Team Feedback Loop
 

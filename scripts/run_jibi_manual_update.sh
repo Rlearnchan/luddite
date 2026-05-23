@@ -30,9 +30,12 @@ MANUAL_SUMMARY_JSON="outputs/reports/jibi_manual_update_${JIBI_DATE}.json"
 CONTENT_ENRICHMENT_STATUS="not_run"
 APPEND_STATUS="not_run"
 SUMMARY_WRITTEN=0
+LOCK_HELD=0
 
 mkdir -p "${LOG_DIR}"
-exec > >(tee -a "${LOG_FILE}") 2> >(tee -a "${ERR_FILE}" >&2)
+if [[ "${JIBI_DISABLE_LOG_TEE:-0}" != "1" ]]; then
+  exec > >(tee -a "${LOG_FILE}") 2> >(tee -a "${ERR_FILE}" >&2)
+fi
 
 write_summary() {
   local command_status="$1"
@@ -62,7 +65,9 @@ cleanup() {
   if [[ "${SUMMARY_WRITTEN}" != "1" ]]; then
     write_summary "failed_${status}" || true
   fi
-  rmdir "${LOCK_DIR}" 2>/dev/null || true
+  if [[ "${LOCK_HELD}" == "1" ]]; then
+    rmdir "${LOCK_DIR}" 2>/dev/null || true
+  fi
   exit "${status}"
 }
 trap cleanup EXIT
@@ -71,6 +76,7 @@ if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
   echo "Another Jibi manual update is already running: ${LOCK_DIR}" >&2
   exit 42
 fi
+LOCK_HELD=1
 
 if [[ ! -x "${VENV_PYTHON}" ]]; then
   echo "Python runtime is not executable: ${VENV_PYTHON}" >&2
