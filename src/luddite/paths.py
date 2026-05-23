@@ -49,6 +49,7 @@ ANNY_EVIDENCE_PACK_AI_KNOWLEDGE_JSON = (
 OUTPUTS_DIR = REPO_ROOT / "outputs"
 REPORTS_DIR = OUTPUTS_DIR / "reports"
 DAILY_DIGEST_DIR = OUTPUTS_DIR / "daily_digest"
+JIBI_REVIEW_BOARD_HISTORY_JSONL = REPORTS_DIR / "jibi_review_board_history.jsonl"
 PITI_STORYBOARDS_DIR = OUTPUTS_DIR / "samples" / "piti_storyboards"
 PPTX_OUTPUT_DIR = OUTPUTS_DIR / "pptx"
 MODEL_DRY_RUNS_DIR = OUTPUTS_DIR / "model_dry_runs"

@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
+import os
 import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import urlparse
 
 import typer
 from rich.console import Console
@@ -16,6 +19,7 @@ from rich.console import Console
 from luddite import paths
 from luddite.agents.jibi.append_to_sheet import (
     BUNDLE_REVIEW_SHEET_COLUMNS,
+    REVIEWER_COLUMNS,
     SHEET_COLUMNS,
 )
 from luddite.utils.jsonl import read_jsonl
@@ -43,6 +47,8 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
     "policy_release_evidence_default",
 }
 DEFAULT_TOP_MIN_SCORE = 35
+DEFAULT_REVIEW_BOARD_LIMIT = 10
+DEFAULT_BUNDLE_NEAR_MISS_LIMIT = 10
 DEFAULT_SOURCE_ROLE_TOP_CAPS = {
     "research_note": 3,
     "policy_release": 2,
@@ -105,6 +111,17 @@ POLICY_STATUS_EVIDENCE_TERMS = {
 
 def _digest_date(value: str | None = None) -> str:
     return value or date.today().isoformat()
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        return default
+    return max(parsed, 0)
 
 
 def _score_band(candidate: dict[str, Any]) -> str:
@@ -513,6 +530,10 @@ def write_bundle_review_sheet_preview(
     candidates: list[dict[str, Any]],
     top: list[dict[str, Any]],
     digest_date: str,
+    *,
+    review_board_limit: int = DEFAULT_REVIEW_BOARD_LIMIT,
+    bundle_near_miss_limit: int = DEFAULT_BUNDLE_NEAR_MISS_LIMIT,
+    review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -521,7 +542,12 @@ def write_bundle_review_sheet_preview(
         for candidate in candidates
         if candidate.get("candidate_id")
     }
-    bundle_records = _story_bundle_records(candidates, top, near_miss_limit=0)
+    history_index = _load_review_history_index(review_history_path)
+    bundle_records = _story_bundle_records(
+        candidates,
+        top,
+        near_miss_limit=bundle_near_miss_limit,
+    )[:review_board_limit]
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
@@ -546,6 +572,7 @@ def write_bundle_review_sheet_preview(
                     representative,
                     candidates,
                 )
+            history_status = _record_history_status(record, history_index)
             primary_title = record.get("primary_title") or representative.get("title") or ""
             writer.writerow(
                 _bundle_review_row(
@@ -560,8 +587,10 @@ def write_bundle_review_sheet_preview(
                     candidate_title=primary_title,
                     jibi_judgment=_bundle_judgment(record, fit),
                     reason=_join_distinct_reason(str(record["why_bundle"]), reason),
-                    sub_links=_related_bundle_links(record, candidate_by_id),
+                    sub_links=_related_bundle_links(record, candidate_by_id, limit=3),
                     related_titles=_related_bundle_titles(record),
+                    record=record,
+                    history_status=history_status,
                 )
             )
 
@@ -720,6 +749,18 @@ def _human_reason(value: str) -> str:
                 "story_fit_uncertain": (
                     "방송 주제로 자랄 수 있는지 사람이 한 번 더 봐야 합니다."
                 ),
+                "generic why without specific template": (
+                    "아직 구체 템플릿이 약해 사람이 각도를 확인해야 합니다."
+                ),
+                "generic_why_without_specific_template": (
+                    "아직 구체 템플릿이 약해 사람이 각도를 확인해야 합니다."
+                ),
+                "lifestyle hook but source is promotional": (
+                    "생활 hook은 있지만 원문이 홍보성이라 보강이 필요합니다."
+                ),
+                "lifestyle_hook_but_source_is_promotional": (
+                    "생활 hook은 있지만 원문이 홍보성이라 보강이 필요합니다."
+                ),
             }.get(part, part.replace("_", " "))
         )
     deduped: list[str] = []
@@ -755,26 +796,162 @@ def _source_cue(candidate: dict[str, Any]) -> str:
     return ""
 
 
+def _score_display(candidate: dict[str, Any]) -> str:
+    if not candidate:
+        return ""
+    score = round(_total_score(candidate))
+    grade = _compact_text(candidate.get("final_grade")) or "?"
+    action = ACTION_LABELS.get(
+        str(candidate.get("recommended_action") or ""),
+        _compact_text(candidate.get("recommended_action")) or "검토 필요",
+    )
+    return f"{score}점 · {grade} · {action}"
+
+
+def _board_text(record: dict[str, Any], candidate: dict[str, Any]) -> str:
+    return " ".join(
+        [
+            str(record.get("bundle_title") or ""),
+            str(record.get("why_bundle") or ""),
+            str(candidate.get("title") or ""),
+            str(candidate.get("summary") or ""),
+            str(candidate.get("why_interesting") or ""),
+            str(candidate.get("seed_type") or ""),
+            str(candidate.get("source_role_class") or ""),
+        ]
+    ).lower()
+
+
+def _board_why_sentence(
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    reason: str,
+) -> str:
+    text = _board_text(record, candidate)
+    if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
+        return "한국은행 청년 노동시장 자료들이 같은 문제를 다른 지표로 보고 있습니다."
+    if "토큰화" in text or "tokenization" in text or "rwa" in text:
+        return "자산 토큰화가 제도권 금융 인프라로 들어오는 흐름을 보여주는 후보입니다."
+    if any(term in text for term in ("public_ai", "공공 ai", "ai 드론", "ai 노사", "ai 도입")):
+        return "공공기관과 현장에서 AI가 실제 업무에 들어오는 사례입니다."
+    if "양파" in text:
+        return (
+            "작아 보이는 양파 특판 보도자료지만 농산물 가격과 정부 개입을 "
+            "볼 수 있는 생활경제 후보입니다."
+        )
+    if any(term in text for term in ("무료배달", "배달비", "수수료", "플랫폼")):
+        return "무료배달과 수수료 부담이 플랫폼 비용 배분 문제로 이어지는 후보입니다."
+    if any(term in text for term in ("고유가", "유가", "피해지원금", "지원금")):
+        return "고유가 지원 현황을 통해 에너지 가격 충격의 생활 영향을 볼 수 있는 근거 자료입니다."
+    if str(record.get("bundle_type")) == "evidence_cluster":
+        return "공식자료 성격이 강해 단독 주제보다는 큰 이야기의 근거로 쓰기 좋은 후보입니다."
+    if str(candidate.get("source_role_class")) == "academic_explainer":
+        return "해외 해설 기사라 사건 자체보다 작동 원리를 설명하는 데 강점이 있습니다."
+    readable_reason = _human_reason(reason)
+    return readable_reason or (
+        "Jibi가 오늘 후보군 안에서 비교적 방송 소재 가능성이 있다고 본 항목입니다."
+    )
+
+
+def _board_growth_sentence(record: dict[str, Any], candidate: dict[str, Any]) -> str:
+    text = _board_text(record, candidate)
+    if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
+        return (
+            "실업자가 아닌 '쉬었음'과 경제활동참가율을 묶으면 "
+            "청년 노동시장 이탈 이야기로 커질 수 있습니다."
+        )
+    if "토큰화" in text or "tokenization" in text or "rwa" in text:
+        return (
+            "부동산·채권·권리를 잘게 쪼개 거래하는 구조로 풀면 "
+            "금융 제도와 코인 이후의 변화를 함께 설명할 수 있습니다."
+        )
+    if any(term in text for term in ("public_ai", "공공 ai", "ai 드론", "ai 노사", "ai 도입")):
+        return "행정 효율이 올라가는 만큼 보고서 책임, 오판, 감시 기준 문제가 같이 생깁니다."
+    if "양파" in text:
+        return (
+            "산지 가격, 마트 가격, 소비촉진 예산을 붙이면 "
+            "농산물 가격의 정치경제학으로 키울 수 있습니다."
+        )
+    if any(term in text for term in ("무료배달", "배달비", "수수료", "플랫폼")):
+        return (
+            "소비자 편의 뒤에서 누가 비용을 내는지 보여주면 "
+            "앱 경제와 자영업 부담 이야기로 자랄 수 있습니다."
+        )
+    if any(term in text for term in ("고유가", "유가", "피해지원금", "지원금")):
+        return (
+            "유가, 물류비, 지원금 지급 경로를 붙이면 "
+            "멀리 있는 가격 충격이 생활비가 되는 과정을 설명할 수 있습니다."
+        )
+    if str(record.get("bundle_type")) == "evidence_cluster":
+        return "다른 기사나 통계와 붙을 때 정책 대응의 공식 확인 자료로 가치가 있습니다."
+    if str(candidate.get("source_role_class")) == "academic_explainer":
+        return "한국 시청자가 아는 사례와 연결하면 설명형 소재로 검토할 수 있습니다."
+    return "숫자, 현장 사례, 한국 연결고리가 붙으면 하나의 설명형 이야기로 키울 수 있습니다."
+
+
+def _board_need_sentence(
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    evidence_text: str,
+    related_titles: str,
+    history_status: str,
+) -> str:
+    needs: list[str] = []
+    if evidence_text:
+        needs.append(evidence_text)
+    action = str(record.get("suggested_operator_action") or "")
+    if "collect_second_source" in action:
+        needs.append("숫자와 두 번째 출처")
+    elif "collect_price" in action:
+        needs.append("가격·생활 영향·산업 자료")
+    elif "attach_to_larger_story" in action:
+        needs.append("이 자료를 붙일 더 큰 주제")
+    if related_titles:
+        needs.append("서브 링크의 관련 후보")
+    status_text = _history_sentence(history_status)
+    base = " / ".join(dict.fromkeys(item for item in needs if item))
+    if base and status_text:
+        return f"확인할 것: {base}. {status_text}"
+    if base:
+        return f"확인할 것: {base}."
+    return status_text or "추가 출처를 붙여 실제 방송 소재인지 확인하면 좋습니다."
+
+
+def _history_sentence(status: str) -> str:
+    return {
+        "seen_before": "이전에 보드에 올라온 적이 있어 새 각도인지 확인하세요.",
+        "reviewed_before": "이전에 사람이 리뷰한 주제라 지난 의견과 비교하세요.",
+        "rejected_before": "이전에 reject 의견이 있던 주제라 다시 올릴 이유가 있는지 확인하세요.",
+        "promoted_before": "이전에 seed 의견이 있던 주제라 후속 업데이트인지 확인하세요.",
+    }.get(status, "")
+
+
 def _human_description(
     *,
     candidate: dict[str, Any],
+    record: dict[str, Any],
     jibi_judgment: str,
     reason: str,
     related_titles: str,
+    history_status: str,
 ) -> str:
-    why = _humanize_review_text(candidate.get("why_interesting"))
     evidence = candidate.get("evidence_needed") or ""
     if isinstance(evidence, list):
         evidence_text = ", ".join(str(item) for item in evidence if str(item).strip())
     else:
         evidence_text = _compact_text(evidence)
+    source = _source_cue(candidate)
     parts = [
-        f"성격: {jibi_judgment}." if jibi_judgment else "",
-        f"선정 이유: {_human_reason(reason)}" if reason else "",
-        _source_cue(candidate),
-        f"볼 포인트: {why}" if why else "",
-        f"확인할 자료: {evidence_text}" if evidence_text else "",
-        f"함께 볼 후보: {related_titles}" if related_titles else "",
+        _board_why_sentence(record, candidate, reason),
+        _board_growth_sentence(record, candidate),
+        _board_need_sentence(
+            record,
+            candidate,
+            evidence_text,
+            related_titles,
+            history_status,
+        ),
+        source,
     ]
     return " ".join(part for part in parts if part)
 
@@ -796,6 +973,8 @@ def _related_bundle_titles(record: dict[str, Any]) -> str:
 def _related_bundle_links(
     record: dict[str, Any],
     candidate_by_id: dict[str, dict[str, Any]],
+    *,
+    limit: int | None = None,
 ) -> str:
     links: list[str] = []
     for item_id in [
@@ -808,6 +987,8 @@ def _related_bundle_links(
         link = str(candidate.get("seed_url") or "").strip()
         if link and link not in links:
             links.append(link)
+        if limit is not None and len(links) >= limit:
+            break
     return " | ".join(links)
 
 
@@ -822,17 +1003,22 @@ def _bundle_review_row(
     reason: str,
     sub_links: str,
     related_titles: str,
+    record: dict[str, Any],
+    history_status: str,
 ) -> dict[str, Any]:
     return {
         "날짜": digest_date,
         "제목": review_title or candidate_title,
+        "점수": _score_display(candidate),
         "메인 링크": candidate.get("seed_url", ""),
         "서브 링크": sub_links,
         "설명": _human_description(
             candidate=candidate,
+            record=record,
             jibi_judgment=jibi_judgment,
             reason=reason,
             related_titles=related_titles,
+            history_status=history_status,
         ),
         "리뷰-성원": "",
         "리뷰-동찬": "",
@@ -847,8 +1033,21 @@ def render_daily_digest(
     digest_date: str | None = None,
     limit: int = 10,
     max_per_source: int = 3,
+    review_board_limit: int | None = None,
+    bundle_near_miss_limit: int | None = None,
+    review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
+    resolved_review_board_limit = (
+        review_board_limit
+        if review_board_limit is not None
+        else _env_int("JIBI_REVIEW_BOARD_LIMIT", DEFAULT_REVIEW_BOARD_LIMIT)
+    )
+    resolved_bundle_near_miss_limit = (
+        bundle_near_miss_limit
+        if bundle_near_miss_limit is not None
+        else _env_int("JIBI_BUNDLE_NEAR_MISS_LIMIT", DEFAULT_BUNDLE_NEAR_MISS_LIMIT)
+    )
     candidates = read_jsonl(input_path) if input_path.exists() else []
     top = top_candidates(candidates, limit=limit, max_per_source=max_per_source)
     excluded = excluded_candidates(candidates)
@@ -867,6 +1066,9 @@ def render_daily_digest(
         candidates,
         top,
         date_value,
+        review_board_limit=resolved_review_board_limit,
+        bundle_near_miss_limit=resolved_bundle_near_miss_limit,
+        review_history_path=review_history_path,
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -874,6 +1076,7 @@ def render_daily_digest(
         top,
         limit=limit,
         max_per_source=max_per_source,
+        review_history_path=review_history_path,
     )
     return md_path, csv_path, top
 
@@ -885,6 +1088,7 @@ def write_quality_report(
     limit: int = 10,
     max_per_source: int = 3,
     min_score: float = DEFAULT_TOP_MIN_SCORE,
+    review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     source_counts = Counter(str(item.get("source") or "unknown") for item in top)
@@ -1054,6 +1258,11 @@ def write_quality_report(
     )
     story_bundle_records = _story_bundle_records(candidates, top)
     story_bundle_rows = _story_bundle_review_rows(story_bundle_records)
+    review_history_index = _load_review_history_index(review_history_path)
+    cross_run_story_rows = _cross_run_story_review_rows(
+        story_bundle_records,
+        review_history_index,
+    )
     storyline_fit_rows = _storyline_fit_audit_rows(
         candidates,
         top,
@@ -1113,6 +1322,12 @@ def write_quality_report(
         "| bundle | primary | supporting/evidence | bundle_type | suggested_action |",
         "| --- | --- | --- | --- | --- |",
         *story_bundle_rows,
+        "",
+        "## Cross-run Duplicate / Reappearing Story Review",
+        "",
+        "| story_fingerprint | title | status | note |",
+        "| --- | --- | --- | --- |",
+        *cross_run_story_rows,
         "",
         "## Storyline Fit Audit",
         "",
@@ -1670,6 +1885,136 @@ def _story_bundle_hash(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
 
 
+def _normalized_for_fingerprint(value: object) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def _domain(value: object) -> str:
+    url = str(value or "").strip()
+    if not url:
+        return ""
+    return urlparse(url).netloc.lower().removeprefix("www.")
+
+
+def _story_fingerprint(rule: dict[str, str], primary: dict[str, Any] | None) -> str:
+    key = str(rule.get("key") or "").strip()
+    if key and not key.startswith("candidate_"):
+        return key
+    if not primary:
+        return key or "story_" + _story_bundle_hash(str(rule.get("title") or "unknown"))
+    source_role = _normalized_for_fingerprint(primary.get("source_role_class"))
+    seed_type = _normalized_for_fingerprint(primary.get("seed_type"))
+    title = _normalized_for_fingerprint(rule.get("title") or primary.get("title"))
+    domain = _domain(primary.get("source_url_canonical") or primary.get("seed_url"))
+    canonical = canonicalize_url(str(primary.get("seed_url") or ""))
+    raw = "|".join([title, source_role, seed_type, domain, canonical])
+    return "story_" + _story_bundle_hash(raw)
+
+
+def _review_history_tag(note: str) -> str:
+    text = note.strip().lower()
+    if not text:
+        return "unlabeled"
+    token = re.split(r"\s*(?:—|–|-|:)\s*|\s+", text, maxsplit=1)[0].strip()
+    return {
+        "seed": "seed",
+        "방송": "seed",
+        "소재": "seed",
+        "evidence": "evidence",
+        "근거": "evidence",
+        "merge": "merge",
+        "묶기": "merge",
+        "중복": "merge",
+        "needs": "needs",
+        "보강": "needs",
+        "자료필요": "needs",
+        "reject": "reject",
+        "기각": "reject",
+        "별로": "reject",
+        "아님": "reject",
+        "unclear": "unclear",
+        "애매": "unclear",
+        "모름": "unclear",
+    }.get(token, "unlabeled")
+
+
+def _history_row_status(row: dict[str, Any]) -> str:
+    notes = [
+        str(row.get(column) or "").strip()
+        for column in REVIEWER_COLUMNS
+        if str(row.get(column) or "").strip()
+    ]
+    if not notes:
+        return "seen_before"
+    tags = {_review_history_tag(note) for note in notes}
+    if "reject" in tags:
+        return "rejected_before"
+    if "seed" in tags:
+        return "promoted_before"
+    return "reviewed_before"
+
+
+def _history_key_from_row(row: dict[str, Any]) -> str:
+    fingerprint = str(row.get("story_fingerprint") or "").strip()
+    if fingerprint:
+        return fingerprint
+    review_id = str(row.get("ID") or row.get("id") or "").strip()
+    if ":" in review_id:
+        return review_id.rsplit(":", 1)[1]
+    return review_id
+
+
+def _load_review_history_index(path: Path) -> dict[str, list[dict[str, Any]]]:
+    if not path.exists():
+        return {}
+    index: dict[str, list[dict[str, Any]]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        for row in payload.get("rows", []):
+            if not isinstance(row, dict):
+                continue
+            row = dict(row)
+            row["history_status"] = _history_row_status(row)
+            key = _history_key_from_row(row)
+            if key:
+                index.setdefault(key, []).append(row)
+    return index
+
+
+def _rank_history_status(status: str) -> int:
+    return {
+        "rejected_before": 4,
+        "promoted_before": 3,
+        "reviewed_before": 2,
+        "seen_before": 1,
+        "new": 0,
+    }.get(status, 0)
+
+
+def _record_history_status(
+    record: dict[str, Any],
+    history_index: dict[str, list[dict[str, Any]]],
+) -> str:
+    keys = [
+        str(record.get("story_fingerprint") or ""),
+        str(record.get("story_bundle_id") or ""),
+    ]
+    statuses = [
+        str(item.get("history_status") or "seen_before")
+        for key in keys
+        for item in history_index.get(key, [])
+        if key
+    ]
+    if not statuses:
+        return "new"
+    return max(statuses, key=_rank_history_status)
+
+
 def _policy_status_or_meeting_release(candidate: dict[str, Any]) -> bool:
     if _candidate_role(candidate) != "policy_release":
         return False
@@ -1843,6 +2188,7 @@ def _story_bundle_records(
         records.append(
             {
                 "story_bundle_id": "story_bundle_" + _story_bundle_hash(key),
+                "story_fingerprint": _story_fingerprint(rule, primary),
                 "bundle_title": rule["title"],
                 "primary_candidate_id": primary_id,
                 "primary_title": primary_title,
@@ -1893,6 +2239,31 @@ def _story_bundle_review_rows(records: list[dict[str, Any]]) -> list[str]:
             + " |"
         )
     return rows or ["| none | none | none | needs_external_sources | none |"]
+
+
+def _cross_run_story_review_rows(
+    records: list[dict[str, Any]],
+    history_index: dict[str, list[dict[str, Any]]],
+) -> list[str]:
+    rows: list[str] = []
+    for record in records:
+        status = _record_history_status(record, history_index)
+        if status == "new":
+            continue
+        note = _history_sentence(status) or "previously seen"
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(record.get("story_fingerprint", "")),
+                    _table_cell(record.get("bundle_title", "")),
+                    status,
+                    _table_cell(note),
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | none | new | no cross-run matches |"]
 
 
 def _freshness_count(candidates: list[dict[str, Any]], status: str) -> int:
@@ -2704,6 +3075,21 @@ def main(
         int,
         typer.Option("--max-per-source", min=1, help="Max top candidates per source."),
     ] = 3,
+    review_board_limit: Annotated[
+        int | None,
+        typer.Option("--review-board-limit", help="Max rows in bundle review board."),
+    ] = None,
+    bundle_near_miss_limit: Annotated[
+        int | None,
+        typer.Option(
+            "--bundle-near-miss-limit",
+            help="High-score near misses available for bundle support links.",
+        ),
+    ] = None,
+    review_history_path: Annotated[
+        Path,
+        typer.Option("--review-history", help="Local review-board history JSONL."),
+    ] = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
 ) -> None:
     md_path, csv_path, top = render_daily_digest(
         input_path=input_path,
@@ -2711,6 +3097,9 @@ def main(
         digest_date=digest_date,
         limit=limit,
         max_per_source=max_per_source,
+        review_board_limit=review_board_limit,
+        bundle_near_miss_limit=bundle_near_miss_limit,
+        review_history_path=review_history_path,
     )
     bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(

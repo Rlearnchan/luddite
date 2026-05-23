@@ -714,7 +714,7 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
     assert client.cleared is True
     assert client.values[0] == BUNDLE_REVIEW_SHEET_COLUMNS
     assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "청년 노동시장 이탈"
-    assert client.review_board_formats == [(99, 2, 9)]
+    assert client.review_board_formats == [(99, 2, 10)]
     assert report.styling_applied is True
     assert client.appended == []
     assert report.sheet_replaced is True
@@ -746,7 +746,10 @@ def test_bundle_review_replace_dry_run_detects_existing_review_comments(
     }
     client = FakeGoogleSheetsClient(
         sheet_id=99,
-        values=[BUNDLE_REVIEW_SHEET_COLUMNS, _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS)],
+        values=[
+            BUNDLE_REVIEW_SHEET_COLUMNS,
+            _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS),
+        ],
     )
 
     report = append_jibi_sheet(
@@ -792,7 +795,10 @@ def test_bundle_review_replace_refuses_to_overwrite_existing_comments(
     }
     client = FakeGoogleSheetsClient(
         sheet_id=99,
-        values=[BUNDLE_REVIEW_SHEET_COLUMNS, _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS)],
+        values=[
+            BUNDLE_REVIEW_SHEET_COLUMNS,
+            _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS),
+        ],
     )
 
     report = append_jibi_sheet(
@@ -811,10 +817,14 @@ def test_bundle_review_replace_refuses_to_overwrite_existing_comments(
     assert report.review_comments_found is True
     assert report.review_comment_cells == 1
     assert report.review_overwrite_allowed is False
-    assert report.review_snapshot_path == tmp_path / "jibi_review_board_snapshot_2026-05-23.json"
+    assert report.review_snapshot_path is not None
+    assert report.review_snapshot_path.name.startswith("jibi_review_board_snapshot_")
     assert report.review_snapshot_path.exists()
+    assert report.review_history_archive_path == tmp_path / "jibi_review_board_history.jsonl"
+    assert report.review_history_archive_path.exists()
     snapshot = json.loads(report.review_snapshot_path.read_text(encoding="utf-8"))
     assert snapshot["rows"][0]["리뷰-동찬"] == "reject — 단독으로 약함"
+    assert snapshot["rows"][0]["story_fingerprint"] == "story_bundle_old"
     assert client.cleared is False
     assert client.header_updates == []
 
@@ -843,7 +853,10 @@ def test_bundle_review_replace_override_allows_existing_comments(
     }
     client = FakeGoogleSheetsClient(
         sheet_id=99,
-        values=[BUNDLE_REVIEW_SHEET_COLUMNS, _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS)],
+        values=[
+            BUNDLE_REVIEW_SHEET_COLUMNS,
+            _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS),
+        ],
     )
 
     report = append_jibi_sheet(
@@ -863,8 +876,47 @@ def test_bundle_review_replace_override_allows_existing_comments(
     assert report.review_comments_found is True
     assert report.review_overwrite_allowed is True
     assert report.review_snapshot_path and report.review_snapshot_path.exists()
+    assert report.review_history_archive_path and report.review_history_archive_path.exists()
     assert client.cleared is True
     assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "새 후보"
+
+
+def test_bundle_review_same_day_snapshots_do_not_overwrite(tmp_path) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    _write_bundle_review_preview(
+        preview,
+        [{"날짜": "2026-05-23", "제목": "새 후보", "ID": "2026-05-23:new"}],
+    )
+    existing = {
+        "날짜": "2026-05-23",
+        "제목": "기존 후보",
+        "리뷰-성원": "seed — 가능",
+        "ID": "2026-05-23:story_bundle_old",
+    }
+
+    for _ in range(2):
+        client = FakeGoogleSheetsClient(
+            sheet_id=99,
+            values=[
+                BUNDLE_REVIEW_SHEET_COLUMNS,
+                _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS),
+            ],
+        )
+        append_jibi_sheet(
+            config=GoogleSheetAppendConfig(
+                spreadsheet_id="spreadsheet",
+                source_preview_csv=preview,
+                sheet_schema="bundle_review",
+                dry_run=False,
+                replace_existing=True,
+                review_snapshot_dir=tmp_path,
+            ),
+            client=client,
+        )
+
+    snapshots = sorted(tmp_path.glob("jibi_review_board_snapshot_*.json"))
+    assert len(snapshots) == 2
+    assert snapshots[0].name != snapshots[1].name
 
 
 def test_candidate_schema_append_does_not_check_bundle_reviewer_columns(

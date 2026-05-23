@@ -93,3 +93,29 @@ def test_render_review_feedback_summary_from_local_csv(tmp_path) -> None:
     )
     payload = json.loads(output_json.read_text(encoding="utf-8"))
     assert payload["rows"][0]["id"] == "2026-05-23:story_bundle_onion"
+
+
+def test_render_review_feedback_summary_accepts_old_nine_column_board(tmp_path) -> None:
+    input_csv = tmp_path / "old_review_board.csv"
+    fieldnames = [column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "점수"]
+    with input_csv.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(
+            {
+                "날짜": "2026-05-23",
+                "제목": "기존 9컬럼 보드",
+                "메인 링크": "https://example.com",
+                "리뷰-성원": "seed — 가능",
+                "ID": "2026-05-23:story_bundle_old",
+            }
+        )
+
+    _outputs, summary = render_review_feedback_summary(
+        input_csv=input_csv,
+        markdown_path=tmp_path / "feedback.md",
+        json_path=tmp_path / "feedback.json",
+    )
+
+    assert summary["total_rows"] == 1
+    assert summary["rows"][0]["score"] == ""

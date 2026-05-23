@@ -115,6 +115,7 @@ def summarize_review_feedback(
             "row": index,
             "date": row.get("날짜", ""),
             "title": row.get("제목", ""),
+            "score": row.get("점수", ""),
             "id": row.get("ID", ""),
             "reviewers": reviewer_notes,
         }
@@ -160,6 +161,8 @@ def _markdown(summary: dict[str, Any]) -> str:
         lines.append(f"### {row['title'] or 'untitled'}")
         lines.append("")
         lines.append(f"- ID: `{row['id']}`")
+        if row.get("score"):
+            lines.append(f"- 점수: {row['score']}")
         for reviewer in REVIEWER_COLUMNS:
             note = row["reviewers"][reviewer]
             note_text = note["note"] or "(blank)"
@@ -223,7 +226,8 @@ def render_review_feedback_summary(
 ) -> tuple[ReviewFeedbackPaths, dict[str, Any]]:
     loaded = config or load_append_config()
     rows = _rows_from_csv(input_csv) if input_csv else _read_sheet_rows(loaded)
-    missing = [column for column in BUNDLE_REVIEW_SHEET_COLUMNS if rows and column not in rows[0]]
+    required_columns = [column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "점수"]
+    missing = [column for column in required_columns if rows and column not in rows[0]]
     if missing:
         raise ValueError("Review board is missing columns: " + ", ".join(missing))
     date_value = run_date or _default_run_date(rows)

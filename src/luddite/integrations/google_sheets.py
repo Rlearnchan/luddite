@@ -217,7 +217,7 @@ class GoogleSheetsApiClient:
         row_count: int,
         column_count: int,
     ) -> None:
-        column_widths = [90, 280, 190, 190, 520, 180, 180, 180, 230]
+        column_widths = [90, 280, 120, 190, 190, 560, 180, 180, 180, 230]
         requests: list[dict[str, Any]] = [
             {
                 "repeatCell": {

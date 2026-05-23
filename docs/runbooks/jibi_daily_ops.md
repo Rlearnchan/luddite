@@ -255,7 +255,8 @@ If existing reviewer comments are present in `리뷰-성원`, `리뷰-동찬`, o
 `리뷰-형찬`, a real replace stops by default and writes a local snapshot:
 
 ```text
-outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD.json
+outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD_HHMMSS_xxxxxx.json
+outputs/reports/jibi_review_board_history.jsonl
 ```
 
 Only overwrite a reviewed board intentionally:
@@ -284,11 +285,30 @@ Current review columns in the shared sheet:
 
 - `날짜`: 수집일자.
 - `제목`: reviewer-facing bundle title.
+- `점수`: Jibi ranking hint, e.g. `72점 · B · 자료 보강 필요`; not a command.
 - `메인 링크`: primary source link.
 - `서브 링크`: supporting/evidence source links, separated by ` | `.
-- `설명`: why Jibi selected this bundle and a concise source summary.
+- `설명`: why Jibi selected this bundle, how it could become a story, what is missing, and source/title cues.
 - `리뷰-성원`, `리뷰-동찬`, `리뷰-형찬`: one-line reviewer notes.
 - `ID`: stable review item id for later feedback analysis.
+
+To widen the board during an experiment, keep the review format one-line and
+raise only the board limit:
+
+```bash
+JIBI_REVIEW_BOARD_LIMIT=20 make jibi-review-board-dry-run
+JIBI_REVIEW_BOARD_LIMIT=20 make jibi-review-board-replace
+```
+
+To let high-score near-misses provide supporting/evidence links, tune:
+
+```bash
+JIBI_BUNDLE_NEAR_MISS_LIMIT=10 make jibi-review-board-dry-run
+```
+
+Repeated stories are not automatically suppressed. If `설명` says a topic was
+seen, reviewed, rejected, or seed-tagged before, treat that as a reappearance
+hint and decide whether it is a genuinely new angle.
 
 After reviewers write notes, summarize the current board without changing the
 sheet:
@@ -306,6 +326,14 @@ outputs/reports/jibi_review_feedback_YYYY-MM-DD.json
 
 The summary reports reviewer completion counts, tag counts, raw one-line notes,
 and rows where reviewers strongly disagree, such as `seed` vs `reject`.
+
+Guardian section feeds remain held by default. For a controlled experiment,
+copy `config/rss_collection_allowlist.yaml` to a local temporary allowlist,
+enable only `guardian_business`, `guardian_technology`, and
+`guardian_environment` with moderate fetch limits, then pass that temporary
+allowlist to `fetch-rss-articles` manually. Do not enable the broad Guardian
+international/world feed for the normal daily run until the review-board history
+loop has several days of data.
 
 ## Google Sheet Dry-run
 

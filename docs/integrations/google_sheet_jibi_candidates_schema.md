@@ -209,15 +209,16 @@ outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
 
 이 CSV는 `bundle_review` 스키마를 사용한다.
 
-사람이 보기 쉽도록 visible schema는 9개 컬럼만 둔다.
+사람이 보기 쉽도록 visible schema는 10개 컬럼만 둔다.
 
 | column | 설명 |
 |---|---|
 | `날짜` | 수집일자 |
 | `제목` | 사람이 먼저 판단할 이야기 묶음 |
+| `점수` | `72점 · B · 보강 필요` 형식의 Jibi 신뢰도 힌트 |
 | `메인 링크` | 대표 기사/자료 링크 |
 | `서브 링크` | supporting/evidence 링크 목록 |
-| `설명` | 왜 선별했는지, 자료 요약, 묶인 후보 맥락 |
+| `설명` | 왜 선별했는지, 어떻게 story로 자랄 수 있는지, 무엇이 부족한지 |
 | `리뷰-성원` | 성원 한 줄 리뷰 |
 | `리뷰-동찬` | 동찬 한 줄 리뷰 |
 | `리뷰-형찬` | 형찬 한 줄 리뷰 |
@@ -244,3 +245,16 @@ PYTHONPATH=src .venv/bin/python -m luddite append-jibi-sheet \
 ```bash
 JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace make jibi-manual-update
 ```
+
+운영 실험에서는 `Jibi`를 live current-day board로 유지하고, replace 직전의
+기존 보드는 로컬 history/archive로 남긴다.
+
+```text
+outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD_HHMMSS_xxxxxx.json
+outputs/reports/jibi_review_board_history.jsonl
+```
+
+새 보드 생성 시 local history에 같은 story fingerprint가 있으면 `설명`과
+quality report에 `seen_before`, `reviewed_before`, `rejected_before`,
+`promoted_before` 중 하나로 표시한다. 이 표시는 suppress가 아니라 사람이
+재등장/중복 여부를 판단하기 위한 힌트다.

@@ -1,4 +1,5 @@
 import csv
+import json
 
 from luddite.agents.jibi.render_daily_digest import (
     render_daily_digest,
@@ -104,6 +105,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert list(bundle_rows[0].keys()) == [
         "날짜",
         "제목",
+        "점수",
         "메인 링크",
         "서브 링크",
         "설명",
@@ -114,11 +116,11 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     ]
     assert bundle_rows[0]["날짜"] == "2026-05-17"
     assert bundle_rows[0]["제목"] == "전당포 주식회사"
+    assert bundle_rows[0]["점수"] == "55점 · A · 즉시 스토리라인 후보"
     assert bundle_rows[0]["메인 링크"] == "https://example.com/f88"
     assert bundle_rows[0]["리뷰-성원"] == ""
     assert "story_fit_uncertain" not in bundle_rows[0]["설명"]
     assert "manual_editorial_review" not in bundle_rows[0]["설명"]
-    assert "선정 이유:" in bundle_rows[0]["설명"]
     assert "출처/원문:" in bundle_rows[0]["설명"]
 
 
@@ -429,6 +431,100 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert "merged_seed" not in rows[0]["설명"]
     assert "review_primary_and_bundle_supporting" not in rows[0]["설명"]
     assert "한국은행 청년 노동시장 자료들이 같은 문제" in rows[0]["설명"]
+    assert rows[0]["점수"] == "80점 · B · 자료 보강 필요"
+
+
+def test_bundle_review_marks_reappearing_story_from_history(tmp_path) -> None:
+    history_path = tmp_path / "jibi_review_board_history.jsonl"
+    history_path.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-22",
+                "rows": [
+                    {
+                        "ID": "2026-05-22:story_bundle_2bdd0b9bb3",
+                        "제목": "청년 노동시장",
+                        "리뷰-성원": "reject — 이미 다룬 소재",
+                        "story_fingerprint": "story_bundle_2bdd0b9bb3",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    youth_rest = {
+        "candidate_id": "bok_youth_rest",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [youth_rest],
+        [youth_rest],
+        "2026-05-23",
+        review_history_path=history_path,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert "이전에 reject 의견" in rows[0]["설명"]
+
+
+def test_bundle_review_limit_and_near_miss_sublinks(tmp_path) -> None:
+    top = {
+        "candidate_id": "ai_primary",
+        "title": "공공기관 AI 도입",
+        "seed_url": "https://example.com/ai-primary",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "public_ai_governance",
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 90, "broadcast_potential_proxy": 5},
+    }
+    near_misses = [
+        {
+            "candidate_id": f"ai_support_{index}",
+            "title": f"AI 드론 현장 사례 {index}",
+            "seed_url": f"https://example.com/ai-support-{index}",
+            "source": "연합뉴스 산업",
+            "source_role_class": "public_wire",
+            "seed_type": "public_ai_enforcement",
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 80 - index, "broadcast_potential_proxy": 5},
+        }
+        for index in range(4)
+    ]
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [top, *near_misses],
+        [top],
+        "2026-05-23",
+        review_board_limit=1,
+        bundle_near_miss_limit=4,
+        review_history_path=tmp_path / "missing_history.jsonl",
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert rows[0]["제목"] == "AI가 현장 행정과 치안으로 들어올 때 생기는 문제"
+    assert rows[0]["서브 링크"].count("https://example.com/ai-support-") == 3
 
 
 def test_story_bundle_review_marks_policy_status_as_evidence(tmp_path) -> None:

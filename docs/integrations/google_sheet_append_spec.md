@@ -192,7 +192,8 @@ blocked unless `JIBI_ALLOW_REVIEW_OVERWRITE=1` or `--allow-review-overwrite` is
 explicitly used. Existing board rows are snapshotted locally first:
 
 ```text
-outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD.json
+outputs/reports/jibi_review_board_snapshot_YYYY-MM-DD_HHMMSS_xxxxxx.json
+outputs/reports/jibi_review_board_history.jsonl
 ```
 
 After reviewers add one-line notes, summarize the board without writing to
@@ -205,6 +206,8 @@ luddite summarize-jibi-review-board
 Reviewer notes should start with a light tag such as `seed`, `evidence`,
 `merge`, `needs`, `reject`, or `unclear`; the summary command also accepts
 simple Korean aliases such as `방송`, `근거`, `묶기`, `보강`, `별로`, and `애매`.
+The live `Jibi` board stays replace-only and current-day; local history/archive
+is used for multi-day duplicate or reappearing-story review.
 
 ## Suggested `Jibi` columns
 

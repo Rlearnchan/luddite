@@ -62,6 +62,7 @@ SHEET_COLUMNS = [*LEGACY_25_SHEET_COLUMNS, *SLIDEABILITY_SHEET_COLUMNS]
 BUNDLE_REVIEW_SHEET_COLUMNS = [
     "날짜",
     "제목",
+    "점수",
     "메인 링크",
     "서브 링크",
     "설명",
@@ -136,6 +137,7 @@ class SheetAppendReport:
     review_comment_cells: int = 0
     review_overwrite_allowed: bool = False
     review_snapshot_path: Path | None = None
+    review_history_archive_path: Path | None = None
 
 
 def _parse_scalar(value: str) -> str | bool | None:
@@ -435,7 +437,7 @@ def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, str | int
         if not any(str(value).strip() for value in row):
             continue
         item: dict[str, str | int] = {"row": row_number}
-        for column in ["날짜", "제목", *REVIEWER_COLUMNS, "ID"]:
+        for column in ["날짜", "제목", "점수", *REVIEWER_COLUMNS, "ID"]:
             column_index = indexes.get(column)
             item[column] = (
                 row[column_index]
@@ -446,27 +448,48 @@ def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, str | int
     return rows
 
 
+def _fingerprint_from_review_id(value: str) -> str:
+    text = value.strip()
+    if ":" in text:
+        return text.rsplit(":", 1)[1]
+    return text
+
+
+def _append_review_board_history(payload: dict[str, object], output_dir: Path) -> Path:
+    archive_path = output_dir / "jibi_review_board_history.jsonl"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with archive_path.open("a", encoding="utf-8") as output:
+        output.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+    return archive_path
+
+
 def _write_review_board_snapshot(
     *,
     preview_csv: Path,
     sheet_name: str,
     existing_values: list[list[str]],
     output_dir: Path,
-) -> Path:
+) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    snapshot_path = output_dir / f"jibi_review_board_snapshot_{_preview_date(preview_csv)}.json"
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S_%f")
+    snapshot_path = output_dir / f"jibi_review_board_snapshot_{timestamp}.json"
+    rows = _snapshot_rows(existing_values)
+    for row in rows:
+        review_id = str(row.get("ID") or "")
+        row["story_fingerprint"] = _fingerprint_from_review_id(review_id)
     payload = {
         "created_at": datetime.now(UTC).isoformat(),
+        "run_date": _preview_date(preview_csv),
         "sheet_name": sheet_name,
         "preview_csv": str(preview_csv),
         "reviewer_columns": REVIEWER_COLUMNS,
-        "rows": _snapshot_rows(existing_values),
+        "rows": rows,
     }
     snapshot_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    return snapshot_path
+    return snapshot_path, _append_review_board_history(payload, output_dir)
 
 
 def append_jibi_sheet(
@@ -534,12 +557,14 @@ def append_jibi_sheet(
             report.review_comment_cells = len(comment_cells)
             report.review_comments_found = bool(comment_cells)
             if existing_values and len(existing_values) > 1 and not config.dry_run:
-                report.review_snapshot_path = _write_review_board_snapshot(
+                snapshot_path, archive_path = _write_review_board_snapshot(
                     preview_csv=preview_csv,
                     sheet_name=config.target_sheet_name,
                     existing_values=existing_values,
                     output_dir=config.review_snapshot_dir,
                 )
+                report.review_snapshot_path = snapshot_path
+                report.review_history_archive_path = archive_path
             if comment_cells and not config.dry_run and not config.allow_review_overwrite:
                 report.errors.append(
                     "Existing Jibi review comments found; refusing to replace the "
@@ -689,6 +714,7 @@ def write_append_report(path: Path, report: SheetAppendReport) -> None:
         f"- Review comment cells: {report.review_comment_cells}",
         f"- Review overwrite allowed: {report.review_overwrite_allowed}",
         f"- Review snapshot path: `{report.review_snapshot_path or ''}`",
+        f"- Review history archive path: `{report.review_history_archive_path or ''}`",
         f"- Header status: `{report.header_status}`",
         f"- Header safe to update: {report.header_safe_to_update}",
         f"- Header reason: `{report.header_reason}`",
