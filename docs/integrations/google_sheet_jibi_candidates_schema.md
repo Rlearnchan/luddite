@@ -209,35 +209,28 @@ outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
 
 이 CSV는 `bundle_review` 스키마를 사용한다.
 
+사람이 보기 쉽도록 visible schema는 13개 컬럼만 둔다.
+
 | column | 설명 |
 |---|---|
-| `digest_date` | run 기준일 |
-| `review_rank` | 리뷰 보드 순위 |
-| `review_item_id` | 날짜 + bundle id |
-| `story_bundle_id` | 안정적인 story bundle id |
-| `bundle_type` | standalone_seed / merged_seed / needs_external_sources / evidence_cluster |
-| `review_status` | 기본 `new` |
-| `검토대상` | 사람이 먼저 볼 bundle 제목 |
-| `대표후보` | 대표 기사/자료 제목 |
-| `대표링크` | 대표 링크 |
-| `대표출처` | 대표 출처 |
-| `묶인후보` | supporting 후보 제목 목록 |
-| `근거후보` | evidence-only 후보 제목 목록 |
-| `candidate_count` | 묶인 후보 수 |
-| `jibi_grade` | 대표 후보 점수 등급 |
-| `total_score` | 대표 후보 총점 |
-| `recommended_action` | 대표 후보 Jibi action |
-| `storyline_fit` | standalone/evidence/merge/demote 등 rule-based 판정 |
-| `why_bundle` | 왜 묶었는지 |
-| `suggested_operator_action` | 운영자 권장 행동 |
-| `evidence_needed` | 추가 확인할 자료 |
-| `first_slide_idea` | 첫 화면 아이디어 |
-| `risk_level` | 대표 후보 리스크 |
-| `risk_flags` | 대표 후보 리스크 플래그 |
-| `reviewer` | 검토자 |
+| `순번` | 리뷰 보드 순위 |
+| `구분` | `bundle`, `묶인 후보`, `근거 후보` |
+| `검토대상` | 사람이 먼저 판단할 이야기 묶음 |
+| `후보` | 대표 또는 하위 후보 제목 |
+| `출처` | 대표 또는 하위 후보 출처 |
+| `링크` | 대표 또는 하위 후보 링크 |
+| `Jibi판정` | bundle/storyline/action 판정을 한 칸으로 요약 |
+| `왜_이렇게_올렸나` | 왜 단독 seed, 묶인 후보, evidence인지 한 문장 |
+| `같이볼것` | 함께 볼 supporting/evidence 또는 상위 묶음 |
 | `review_result` | 사람이 남기는 결론 |
 | `research_team_note` | 한 줄 평가 |
-| `promoted_to_topic_finding` | 수동 승격 여부 |
+| `reviewer` | 검토자 |
+| `review_item_id` | 추후 회수/분석용 id |
+
+Top10 후보가 bundle로 접히면서 별도 행에서 사라지는 일을 피하기 위해
+supporting/evidence 하위 후보도 별도 행으로 올린다. 이 행들은 탈락이 아니라
+`묶인 후보` 또는 `근거 후보`로 표시해 “단독 후보가 아닌 판단이 맞았는지”를
+검토받는다.
 
 실제 공유 시트에 반영할 때는 append가 아니라 replace를 권장한다. 기존
 `jibi 후보` 내용은 운영 실험 중 중요하지 않다고 보고, 매 run마다 최신 리뷰

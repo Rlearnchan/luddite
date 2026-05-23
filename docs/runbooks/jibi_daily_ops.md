@@ -273,13 +273,14 @@ Good one-line feedback examples:
 
 Suggested review columns in the shared sheet:
 
+- `구분`: `bundle`, `묶인 후보`, or `근거 후보`.
+- `왜_이렇게_올렸나`: read this first when a row looks like it disappeared
+  from Top10; it explains whether the item was bundled or demoted to evidence.
 - `review_result`: `promote`, `keep`, `needs_more_evidence`, `merge`,
   `evidence_only`, or `reject`.
 - `research_team_note`: one sentence on whether this can become a 슈카월드식
   storyline.
 - `reviewer`: reviewer name or initials.
-- `promoted_to_topic_finding`: mark only after someone manually promotes the
-  item.
 
 ## Google Sheet Dry-run
 

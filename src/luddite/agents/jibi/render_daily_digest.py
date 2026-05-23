@@ -524,7 +524,8 @@ def write_bundle_review_sheet_preview(
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        for rank, record in enumerate(bundle_records, start=1):
+        row_rank = 1
+        for record in bundle_records:
             primary_id = str(record.get("primary_candidate_id") or "")
             representative_id = primary_id
             if not representative_id:
@@ -539,46 +540,124 @@ def write_bundle_review_sheet_preview(
                 )
             representative = candidate_by_id.get(representative_id, {})
             fit = ""
+            reason = str(record["why_bundle"])
             if representative:
-                fit, _reason, _action = _storyline_fit_classification(
+                fit, reason, _action = _storyline_fit_classification(
                     representative,
                     candidates,
                 )
-            slideability = representative.get("slideability") or {}
             primary_title = record.get("primary_title") or representative.get("title") or ""
             writer.writerow(
-                {
-                    "digest_date": digest_date,
-                    "review_rank": rank,
-                    "review_item_id": f"{digest_date}:{record['story_bundle_id']}",
-                    "story_bundle_id": record["story_bundle_id"],
-                    "bundle_type": record["bundle_type"],
-                    "review_status": "new",
-                    "검토대상": record["bundle_title"],
-                    "대표후보": primary_title,
-                    "대표링크": representative.get("seed_url", ""),
-                    "대표출처": representative.get("source", ""),
-                    "묶인후보": " | ".join(record.get("supporting_titles", [])),
-                    "근거후보": " | ".join(record.get("evidence_titles", [])),
-                    "candidate_count": record.get("candidate_count", 0),
-                    "jibi_grade": _score_band(representative) if representative else "",
-                    "total_score": _total_score(representative) if representative else "",
-                    "recommended_action": representative.get("recommended_action", ""),
-                    "storyline_fit": fit,
-                    "why_bundle": record["why_bundle"],
-                    "suggested_operator_action": record["suggested_operator_action"],
-                    "evidence_needed": " | ".join(
-                        representative.get("evidence_needed", [])
-                    ),
-                    "first_slide_idea": slideability.get("first_slide_idea", ""),
-                    "risk_level": representative.get("risk_level", ""),
-                    "risk_flags": ",".join(representative.get("risk_flags", [])),
-                    "reviewer": "",
-                    "review_result": "",
-                    "research_team_note": "",
-                    "promoted_to_topic_finding": "",
-                }
+                _bundle_review_row(
+                    rank=row_rank,
+                    scope="bundle",
+                    review_item_id=f"{digest_date}:{record['story_bundle_id']}",
+                    review_title=str(record["bundle_title"]),
+                    candidate=representative,
+                    candidate_title=primary_title,
+                    jibi_judgment=_bundle_judgment(record, fit),
+                    reason=_join_distinct_reason(str(record["why_bundle"]), reason),
+                    related=_related_bundle_titles(record),
+                )
             )
+            row_rank += 1
+            for member_id, member_scope in [
+                *[
+                    (item_id, "bundled_support")
+                    for item_id in record.get("supporting_candidate_ids", [])
+                ],
+                *[
+                    (item_id, "bundled_evidence")
+                    for item_id in record.get("evidence_candidate_ids", [])
+                ],
+            ]:
+                if str(member_id) == representative_id:
+                    continue
+                member = candidate_by_id.get(str(member_id))
+                if not member:
+                    continue
+                member_fit, member_reason, member_action = _storyline_fit_classification(
+                    member,
+                    candidates,
+                )
+                if member_scope == "bundled_support":
+                    scope_label = "묶인 후보"
+                    reason_text = (
+                        "단독 탈락이 아니라 위 story bundle의 하위 후보로 접음: "
+                        f"{member_reason}"
+                    )
+                else:
+                    scope_label = "근거 후보"
+                    reason_text = (
+                        "단독 seed보다 evidence로 검토: "
+                        f"{member_reason}"
+                    )
+                writer.writerow(
+                    _bundle_review_row(
+                        rank=row_rank,
+                        scope=scope_label,
+                        review_item_id=f"{digest_date}:{record['story_bundle_id']}:{member_id}",
+                        review_title=str(record["bundle_title"]),
+                        candidate=member,
+                        candidate_title=str(member.get("title") or member_id),
+                        jibi_judgment=f"{member_fit} / {member_action}",
+                        reason=reason_text,
+                        related=f"상위 묶음: {record['bundle_title']}",
+                    )
+                )
+                row_rank += 1
+
+
+def _bundle_judgment(record: dict[str, Any], fit: str) -> str:
+    values = [
+        str(record.get("bundle_type") or ""),
+        fit,
+        str(record.get("suggested_operator_action") or ""),
+    ]
+    return " / ".join(value for value in values if value)
+
+
+def _join_distinct_reason(primary: str, secondary: str) -> str:
+    if not secondary or secondary == primary:
+        return primary
+    return f"{primary} / {secondary}"
+
+
+def _related_bundle_titles(record: dict[str, Any]) -> str:
+    related = [
+        *[f"묶인: {title}" for title in record.get("supporting_titles", [])],
+        *[f"근거: {title}" for title in record.get("evidence_titles", [])],
+    ]
+    return " | ".join(related)
+
+
+def _bundle_review_row(
+    *,
+    rank: int,
+    scope: str,
+    review_item_id: str,
+    review_title: str,
+    candidate: dict[str, Any],
+    candidate_title: str,
+    jibi_judgment: str,
+    reason: str,
+    related: str,
+) -> dict[str, Any]:
+    return {
+        "순번": rank,
+        "구분": scope,
+        "검토대상": review_title,
+        "후보": candidate_title,
+        "출처": candidate.get("source", ""),
+        "링크": candidate.get("seed_url", ""),
+        "Jibi판정": jibi_judgment,
+        "왜_이렇게_올렸나": reason,
+        "같이볼것": related,
+        "review_result": "",
+        "research_team_note": "",
+        "reviewer": "",
+        "review_item_id": review_item_id,
+    }
 
 
 def render_daily_digest(

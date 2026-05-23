@@ -100,9 +100,10 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     with bundle_csv_path.open(encoding="utf-8-sig", newline="") as source:
         bundle_rows = list(csv.DictReader(source))
     assert len(bundle_rows) == 1
-    assert bundle_rows[0]["review_status"] == "new"
+    assert bundle_rows[0]["구분"] == "bundle"
     assert bundle_rows[0]["검토대상"] == "전당포 주식회사"
-    assert bundle_rows[0]["대표링크"] == "https://example.com/f88"
+    assert bundle_rows[0]["후보"] == "전당포 주식회사"
+    assert bundle_rows[0]["링크"] == "https://example.com/f88"
     assert bundle_rows[0]["research_team_note"] == ""
 
 

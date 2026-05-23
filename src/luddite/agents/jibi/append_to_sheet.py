@@ -58,33 +58,19 @@ SLIDEABILITY_SHEET_COLUMNS = [
 ]
 SHEET_COLUMNS = [*LEGACY_25_SHEET_COLUMNS, *SLIDEABILITY_SHEET_COLUMNS]
 BUNDLE_REVIEW_SHEET_COLUMNS = [
-    "digest_date",
-    "review_rank",
-    "review_item_id",
-    "story_bundle_id",
-    "bundle_type",
-    "review_status",
+    "순번",
+    "구분",
     "검토대상",
-    "대표후보",
-    "대표링크",
-    "대표출처",
-    "묶인후보",
-    "근거후보",
-    "candidate_count",
-    "jibi_grade",
-    "total_score",
-    "recommended_action",
-    "storyline_fit",
-    "why_bundle",
-    "suggested_operator_action",
-    "evidence_needed",
-    "first_slide_idea",
-    "risk_level",
-    "risk_flags",
-    "reviewer",
+    "후보",
+    "출처",
+    "링크",
+    "Jibi판정",
+    "왜_이렇게_올렸나",
+    "같이볼것",
     "review_result",
     "research_team_note",
-    "promoted_to_topic_finding",
+    "reviewer",
+    "review_item_id",
 ]
 CANDIDATE_SHEET_SCHEMA = "candidate"
 BUNDLE_REVIEW_SHEET_SCHEMA = "bundle_review"
@@ -213,7 +199,7 @@ def _schema_legacy_columns(sheet_schema: str) -> list[str] | None:
 def _schema_default_duplicate_keys(sheet_schema: str) -> tuple[str, ...]:
     schema = _normalize_sheet_schema(sheet_schema)
     if schema == BUNDLE_REVIEW_SHEET_SCHEMA:
-        return ("review_item_id", "story_bundle_id")
+        return ("review_item_id",)
     return ("duplicate_key", "source_url_canonical")
 
 
