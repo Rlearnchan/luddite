@@ -427,10 +427,13 @@ def write_quality_report(
     )
     freshness_by_source: dict[str, Counter[str]] = {}
     quality_flags_by_source: dict[str, Counter[str]] = {}
+    source_policy_by_source: dict[str, str] = {}
     for item in candidates:
         source = str(item.get("source") or "unknown")
         freshness = str(item.get("freshness_status") or "unknown")
         freshness_by_source.setdefault(source, Counter())[freshness] += 1
+        if item.get("source_freshness_policy"):
+            source_policy_by_source[source] = str(item["source_freshness_policy"])
         flag_counter = quality_flags_by_source.setdefault(source, Counter())
         for flag in item.get("quality_flags", []):
             if str(flag).strip():
@@ -493,6 +496,7 @@ def write_quality_report(
         top_eligible_source_counts=top_eligible_source_counts,
         quality_flags_by_source=quality_flags_by_source,
         source_warning_codes=source_warning_codes,
+        source_policy_by_source=source_policy_by_source,
     )
     source_recommendation_rows = _source_recommendation_table(
         source_recommendation_records,
@@ -1072,8 +1076,10 @@ def _source_recommendation_records(
     top_eligible_source_counts: Counter[str],
     quality_flags_by_source: dict[str, Counter[str]],
     source_warning_codes: dict[str, list[str]],
+    source_policy_by_source: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
+    source_policy_by_source = source_policy_by_source or {}
     for source, raw_count in raw_source_counts.most_common():
         recommendation, reason = _source_recommendation(
             raw_count=raw_count,
@@ -1081,6 +1087,7 @@ def _source_recommendation_records(
             top_eligible_count=top_eligible_source_counts.get(source, 0),
             quality_flags=quality_flags_by_source.get(source, Counter()),
             warnings=source_warning_codes.get(source, []),
+            source_freshness_policy=source_policy_by_source.get(source),
         )
         records.append(
             {
@@ -1111,6 +1118,7 @@ def _source_recommendation(
     top_eligible_count: int,
     quality_flags: Counter[str],
     warnings: list[str],
+    source_freshness_policy: str | None = None,
 ) -> tuple[str, str]:
     dominant_flag, dominant_count = quality_flags.most_common(1)[0] if quality_flags else ("", 0)
     dominant_share = dominant_count / raw_count if raw_count else 0
@@ -1137,6 +1145,11 @@ def _source_recommendation(
         return "review", "source_all_stale; verify feed freshness before holding"
     if "source_unknown_freshness_high" in warnings:
         return "review", "source_unknown_freshness_high"
+    if source_freshness_policy == "low_frequency_research" and raw_count >= 5:
+        return (
+            "review",
+            "low_frequency_research; review research-template queue before holding",
+        )
     if raw_count >= 5 and "source_zero_survivors" in warnings:
         return "hold_daily_fetch", "source_zero_survivors"
     return "review", "insufficient survival signal"
@@ -1151,6 +1164,8 @@ def _source_manual_action(recommendation: str, reason: str) -> str:
         return "use_as_manual_evidence_source"
     if recommendation == "manual_only":
         return "manual_curation_only"
+    if "low_frequency_research" in reason:
+        return "review_research_template_queue"
     if "stale" in reason or "freshness" in reason:
         return "review_feed_freshness"
     return "consider_hold_daily_fetch"

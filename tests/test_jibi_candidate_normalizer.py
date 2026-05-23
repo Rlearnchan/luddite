@@ -127,6 +127,32 @@ def test_stale_rss_item_gets_quality_flag() -> None:
     assert "stale_item" in candidate["quality_flags"]
 
 
+def test_bok_issue_note_uses_low_frequency_research_freshness_window() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_bok_issue_note",
+            "title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+            "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10097981",
+            "source": "한국은행",
+            "source_id": "bok",
+            "published_at": "2026-05-14T03:00:00Z",
+            "collected_at": "2026-05-23T00:00:00+00:00",
+            "raw_summary": (
+                "글로벌 자산 토큰화 시장 규모는 503.7억달러이며 "
+                "제도적 기반이 마련되었다."
+            ),
+            "collector": "rss",
+            "tags": ["rss", "official_evidence", "seed_and_numbers_evidence"],
+        }
+    )
+
+    assert candidate["source_freshness_policy"] == "low_frequency_research"
+    assert candidate["source_freshness_window_days"] == 90
+    assert candidate["freshness_status"] == "recent"
+    assert candidate["research_publication_age_days"] == 8.9
+    assert "stale_item" not in candidate["quality_flags"]
+
+
 def test_story_specificity_generic_fallback_is_low() -> None:
     specificity = infer_story_specificity(
         title="AI stocks rise",

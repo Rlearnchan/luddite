@@ -25,6 +25,8 @@ class Source:
     feed_url: str | None = None
     feed_url_candidates: tuple[str, ...] = ()
     verified_feed_url: str | None = None
+    freshness_policy: str | None = None
+    freshness_window_days: int | None = None
     terms_check_required: bool = False
     collection_enabled: bool = False
     last_probe_status: str | None = None
@@ -126,6 +128,16 @@ def load_sources(path: Path = paths.SOURCE_REGISTRY_YAML) -> list[Source]:
             verified_feed_url=(
                 item.get("verified_feed_url")
                 if isinstance(item.get("verified_feed_url"), str)
+                else None
+            ),
+            freshness_policy=(
+                item.get("freshness_policy")
+                if isinstance(item.get("freshness_policy"), str)
+                else None
+            ),
+            freshness_window_days=(
+                int(item["freshness_window_days"])
+                if isinstance(item.get("freshness_window_days"), int)
                 else None
             ),
             terms_check_required=bool(item.get("terms_check_required", False)),

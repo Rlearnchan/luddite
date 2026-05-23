@@ -137,6 +137,7 @@ EDITORIAL_CATEGORY_TYPES = {
     "climate_policy_conflict",
 }
 FRESHNESS_RECENT_HOURS = 24 * 7
+LOW_FREQUENCY_RESEARCH_POLICY = "low_frequency_research"
 GENERIC_SPECIFICITY_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
     "공급망, 인프라, 규제, 산업 전환 중 어느 축",
@@ -672,13 +673,26 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         seed_type=seed_type,
         risk_flags=risk_flags,
     )
+    freshness_window_days = source.freshness_window_days if source else None
+    freshness_policy = source.freshness_policy if source else None
     freshness_status, age_hours = classify_freshness(
         article.get("published_at"),
         article.get("collected_at"),
+        recent_hours=(
+            int(freshness_window_days) * 24
+            if freshness_policy == LOW_FREQUENCY_RESEARCH_POLICY and freshness_window_days
+            else FRESHNESS_RECENT_HOURS
+        ),
+    )
+    research_publication_age_days = (
+        round(age_hours / 24, 1)
+        if freshness_policy == LOW_FREQUENCY_RESEARCH_POLICY and age_hours is not None
+        else None
     )
     if (
         freshness_status == "stale"
         and source_type != "manual"
+        and freshness_policy != LOW_FREQUENCY_RESEARCH_POLICY
         and seed_type not in EDITORIAL_CATEGORY_TYPES
         and "stale_item" not in quality_flags
     ):
@@ -720,10 +734,13 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "source": article["source"],
         "source_id": article.get("source_id"),
         "source_type": source_type,
+        "source_freshness_policy": freshness_policy,
+        "source_freshness_window_days": freshness_window_days,
         "published_at": article.get("published_at"),
         "collected_at": article["collected_at"],
         "freshness_status": freshness_status,
         "age_hours": age_hours,
+        "research_publication_age_days": research_publication_age_days,
         "first_seen_at": article.get("first_seen_at") or article["collected_at"],
         "last_seen_at": article.get("last_seen_at") or article["collected_at"],
         "source_count": int(article.get("source_count") or 1),

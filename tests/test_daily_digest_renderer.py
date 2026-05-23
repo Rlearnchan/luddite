@@ -337,6 +337,31 @@ def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) 
     assert "number_tension_bridge" in report
 
 
+def test_low_frequency_research_source_is_not_hold_daily_fetch(tmp_path) -> None:
+    report_path = tmp_path / "quality.md"
+    candidates = [
+        {
+            "candidate_id": f"bok_{index}",
+            "title": f"BOK 이슈노트 {index}",
+            "source": "한국은행",
+            "source_freshness_policy": "low_frequency_research",
+            "freshness_status": "recent",
+            "quality_flags": [],
+            "failure_modes": ["thin_evidence"],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 20 - index, "broadcast_potential_proxy": 2},
+        }
+        for index in range(5)
+    ]
+
+    write_quality_report(report_path, candidates, [])
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "| 한국은행 | review | low_frequency_research" in report
+    assert "review_research_template_queue" in report
+
+
 def test_operator_summary_primary_bottlenecks(tmp_path) -> None:
     stale_report = tmp_path / "stale.md"
     stale_candidates = [

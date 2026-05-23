@@ -16,6 +16,8 @@ def test_source_registry_v0_9_3_groups_and_fetch_policy() -> None:
     assert sources["bok"].verified_feed_url == (
         "https://www.bok.or.kr/portal/bbs/P0002353/news.rss?menuNo=200433"
     )
+    assert sources["bok"].freshness_policy == "low_frequency_research"
+    assert sources["bok"].freshness_window_days == 90
     assert sources["yonhap_rss_candidate"].verified_feed_url == (
         "https://www.yna.co.kr/rss/news.xml"
     )
