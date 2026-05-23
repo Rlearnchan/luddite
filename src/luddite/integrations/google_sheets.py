@@ -52,6 +52,15 @@ class GoogleSheetsClient(Protocol):
         end_row: int,
     ) -> None: ...
 
+    def format_review_board(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        *,
+        row_count: int,
+        column_count: int,
+    ) -> None: ...
+
 
 class GoogleSheetsApiClient:
     """Thin wrapper around Google Sheets API v4.
@@ -194,6 +203,93 @@ class GoogleSheetsApiClient:
                 }
             }
         ]
+        (
+            self.service.spreadsheets()
+            .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
+            .execute()
+        )
+
+    def format_review_board(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        *,
+        row_count: int,
+        column_count: int,
+    ) -> None:
+        column_widths = [90, 280, 190, 190, 520, 180, 180, 180, 230]
+        requests: list[dict[str, Any]] = [
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": max(row_count, 1),
+                        "startColumnIndex": 0,
+                        "endColumnIndex": column_count,
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "wrapStrategy": "CLIP",
+                            "verticalAlignment": "TOP",
+                        }
+                    },
+                    "fields": (
+                        "userEnteredFormat.wrapStrategy,"
+                        "userEnteredFormat.verticalAlignment"
+                    ),
+                }
+            },
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 1,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": column_count,
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": {
+                                "red": 0.93,
+                                "green": 0.96,
+                                "blue": 1.0,
+                            },
+                            "textFormat": {"bold": True},
+                        }
+                    },
+                    "fields": (
+                        "userEnteredFormat.backgroundColor,"
+                        "userEnteredFormat.textFormat.bold"
+                    ),
+                }
+            },
+            {
+                "updateSheetProperties": {
+                    "properties": {
+                        "sheetId": sheet_id,
+                        "gridProperties": {"frozenRowCount": 1},
+                    },
+                    "fields": "gridProperties.frozenRowCount",
+                }
+            },
+        ]
+        for index, width in enumerate(column_widths[:column_count]):
+            requests.append(
+                {
+                    "updateDimensionProperties": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "dimension": "COLUMNS",
+                            "startIndex": index,
+                            "endIndex": index + 1,
+                        },
+                        "properties": {"pixelSize": width},
+                        "fields": "pixelSize",
+                    }
+                }
+            )
         (
             self.service.spreadsheets()
             .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})

@@ -449,8 +449,17 @@ def append_jibi_sheet(
                 start_row=2 if rows_to_write else None,
                 end_row=(len(rows_to_write) + 1) if rows_to_write else None,
             )
+            if sheet_schema == BUNDLE_REVIEW_SHEET_SCHEMA and sheet_id is not None:
+                client.format_review_board(
+                    config.spreadsheet_id,
+                    sheet_id,
+                    row_count=len(rows_to_write) + 1,
+                    column_count=len(columns),
+                )
+                report.styling_applied = True
             if (
-                config.styling_enabled
+                sheet_schema != BUNDLE_REVIEW_SHEET_SCHEMA
+                and config.styling_enabled
                 and sheet_id is not None
                 and rows_to_write
             ):

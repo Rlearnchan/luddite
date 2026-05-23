@@ -3,6 +3,7 @@ import csv
 from luddite.agents.jibi.render_daily_digest import (
     render_daily_digest,
     top_candidates,
+    write_bundle_review_sheet_preview,
     write_quality_report,
 )
 from luddite.utils.jsonl import write_jsonl
@@ -115,6 +116,9 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
     assert bundle_rows[0]["제목"] == "전당포 주식회사"
     assert bundle_rows[0]["메인 링크"] == "https://example.com/f88"
     assert bundle_rows[0]["리뷰-성원"] == ""
+    assert "story_fit_uncertain" not in bundle_rows[0]["설명"]
+    assert "manual_editorial_review" not in bundle_rows[0]["설명"]
+    assert "선정 이유:" in bundle_rows[0]["설명"]
 
 
 def test_top_candidates_excludes_rejects() -> None:
@@ -410,6 +414,20 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert "merged_seed" in report
     assert "BOK '쉬었음' 청년층의 특징 및 평가" in report
     assert "supporting: BOK 남성 청년층 경제활동참가율 하락" in report
+
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [youth_rest, youth_male],
+        [youth_rest],
+        "2026-05-23",
+    )
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert rows[0]["제목"] == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
+    assert "merged_seed" not in rows[0]["설명"]
+    assert "review_primary_and_bundle_supporting" not in rows[0]["설명"]
+    assert "한국은행 청년 노동시장 자료들이 같은 문제" in rows[0]["설명"]
 
 
 def test_story_bundle_review_marks_policy_status_as_evidence(tmp_path) -> None:

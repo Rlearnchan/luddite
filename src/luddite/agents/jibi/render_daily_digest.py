@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -550,7 +551,11 @@ def write_bundle_review_sheet_preview(
                 _bundle_review_row(
                     digest_date=digest_date,
                     review_item_id=f"{digest_date}:{record['story_bundle_id']}",
-                    review_title=str(record["bundle_title"]),
+                    review_title=_human_review_title(
+                        record,
+                        representative,
+                        str(primary_title),
+                    ),
                     candidate=representative,
                     candidate_title=primary_title,
                     jibi_judgment=_bundle_judgment(record, fit),
@@ -562,12 +567,203 @@ def write_bundle_review_sheet_preview(
 
 
 def _bundle_judgment(record: dict[str, Any], fit: str) -> str:
-    values = [
-        str(record.get("bundle_type") or ""),
-        fit,
-        str(record.get("suggested_operator_action") or ""),
+    bundle_type = _human_bundle_type(str(record.get("bundle_type") or "")) or (
+        _human_storyline_fit(fit)
+    )
+    next_step = _human_operator_action(str(record.get("suggested_operator_action") or ""))
+    if bundle_type and next_step:
+        return f"{bundle_type}. 다음: {next_step}"
+    return bundle_type or next_step
+
+
+def _compact_text(value: object) -> str:
+    return " ".join(str(value or "").split())
+
+
+def _clean_review_title(value: object) -> str:
+    title = _compact_text(value)
+    title = re.sub(r"^\[[^\]]+\]\s*", "", title)
+    title = re.sub(r"^\([^)]*(?:보도자료|보도참고자료)[^)]*\)\s*", "", title)
+    title = re.sub(r"^\S+·", "", title)
+    return title.strip(" -:") or _compact_text(value)
+
+
+def _human_review_title(
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    candidate_title: str,
+) -> str:
+    raw_title = str(record.get("bundle_title") or candidate_title or candidate.get("title") or "")
+    text = " ".join(
+        [
+            raw_title,
+            str(candidate_title or ""),
+            str(candidate.get("title") or ""),
+            str(candidate.get("summary") or ""),
+            str(candidate.get("seed_type") or ""),
+        ]
+    ).lower()
+    if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
+        return "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
+    if "토큰화" in text or "tokenization" in text or "rwa" in text:
+        return "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
+    if any(
+        term in text
+        for term in (
+            "공공/현장 ai",
+            "ai 도입",
+            "ai 부적절",
+            "ai 드론",
+            "ai 노사",
+            "public_ai",
+        )
+    ):
+        return "AI가 현장 행정과 치안으로 들어올 때 생기는 문제"
+    if "양파" in text:
+        return "양파가 너무 많으면 정부는 무엇을 하나"
+    if any(term in text for term in ("무료배달", "배달비", "수수료", "플랫폼")):
+        return "무료배달은 누가 내나: 배달앱 수수료와 업주 부담"
+    if any(term in text for term in ("고유가", "유가", "피해지원금", "지원금")):
+        return "고유가 지원금 현황으로 보는 에너지 가격 충격"
+    if "spacex" in text or "starship" in text:
+        return "스페이스X 스타십: 상장 기대와 환경 논란"
+    if "taunting and degrading civilians" in text or "degrading civilians" in text:
+        return "전쟁 중 민간인 조롱과 모욕은 왜 국제법 문제가 되나"
+    return _clean_review_title(raw_title or candidate_title)
+
+
+def _human_bundle_type(value: str) -> str:
+    return {
+        "merged_seed": "묶어서 볼 핵심 주제",
+        "standalone_seed": "단독 검토 후보",
+        "needs_external_sources": "보강하면 살아날 후보",
+        "evidence_cluster": "큰 이야기의 근거 자료",
+    }.get(value, "")
+
+
+def _human_storyline_fit(value: str) -> str:
+    return {
+        "standalone_seed": "방송 주제로 키울 수 있음",
+        "merge_with_other_candidate": "비슷한 후보와 합쳐서 검토",
+        "evidence_only": "단독 주제보다는 근거 자료",
+        "needs_external_sources": "외부 자료가 붙으면 살아남",
+        "demote_or_reject": "단독 후보로는 약함",
+    }.get(value, "")
+
+
+def _human_operator_action(value: str) -> str:
+    return {
+        "review_primary_and_bundle_supporting": "대표 후보만 보고 나머지는 보조 자료로 묶기",
+        "review_as_core_seed": "핵심 후보로 우선 검토",
+        "review_as_explainer_seed": "설명형 후보로 검토",
+        "split_or_bundle_after_human_review": "같은 이야기인지 사람이 나눠 보기",
+        "collect_second_source_and_numbers": "숫자와 두 번째 출처를 보강",
+        "collect_price_life_or_industry_data": "가격·생활 영향·산업 자료를 보강",
+        "attach_to_larger_story": "큰 기획의 근거로 붙이기",
+        "use_only_inside_market_structure_story": "시장 구조 이야기 안에서만 사용",
+        "reject_as_standalone_seed": "단독 후보에서는 내리기",
+        "find_brand_or_market_structure_angle": "투자 얘기가 아닌 구조·브랜드 각도 찾기",
+        "bundle_before_sheet_review": "같은 주제 후보와 먼저 합치기",
+        "manual_editorial_review": "사람이 맥락 확인",
+    }.get(value, "")
+
+
+def _human_reason(value: str) -> str:
+    parts = [
+        part.strip()
+        for part in _compact_text(value).replace(" / ", "|").split("|")
+        if part.strip()
     ]
-    return " / ".join(value for value in values if value)
+    translated: list[str] = []
+    for part in parts:
+        if part.startswith("merge_target="):
+            translated.append("같은 큰 질문을 다루는 후보와 묶어 검토하면 좋습니다.")
+            continue
+        translated.append(
+            {
+                "BOK 청년 노동시장 후보들이 같은 큰 질문을 공유함": (
+                    "한국은행 청년 노동시장 자료들이 같은 문제를 다른 각도에서 봅니다."
+                ),
+                "무료배달, 수수료, 업주 부담이 같은 플랫폼 비용 배분 이야기로 묶임": (
+                    "무료배달, 수수료, 업주 부담이 같은 비용 배분 문제로 이어집니다."
+                ),
+                "공공 AI 활용, 치안, 행정 보고서, 직무 전환 후보를 함께 검토": (
+                    "공공 AI 활용과 책임 문제를 한 묶음으로 볼 수 있습니다."
+                ),
+                "회의/현황/절차성 보도자료는 단독 seed보다 큰 이야기의 근거로 검토": (
+                    "회의나 현황 보도자료라 단독 주제보다는 큰 이야기의 근거로 적합합니다."
+                ),
+                "research_note_has_structural_numbers": (
+                    "연구노트라 숫자와 구조 설명이 있어 단독 주제로 키우기 좋습니다."
+                ),
+                "official_release_meeting_or_evidence_default": (
+                    "공식 보도자료지만 회의·현황 성격이 강해 근거 자료에 가깝습니다."
+                ),
+                "official_release_seed_needs_independent_context": (
+                    "공식자료만으로는 부족해 독립 기사나 통계가 더 필요합니다."
+                ),
+                "market_schedule_or_ipo_context": (
+                    "시장 일정 정보라 단독 후보보다는 맥락 자료에 가깝습니다."
+                ),
+                "single_company_or_investment_frame": (
+                    "단일 기업·투자 프레임이 강해 단독 후보로는 위험합니다."
+                ),
+                "finance_story_needs_non_investment_frame": (
+                    "투자 판단이 아니라 산업 구조나 자금 조달 이야기로 바꿔야 합니다."
+                ),
+                "public_wire_story_has_concrete_broadcast_hook": (
+                    "생활·현장 장면이 있어 숫자와 두 번째 출처가 붙으면 살아날 수 있습니다."
+                ),
+                "academic_explainer_has_mechanism": (
+                    "원리를 설명하는 구조가 있어 설명형 후보로 볼 수 있습니다."
+                ),
+                "story_fit_uncertain": (
+                    "방송 주제로 자랄 수 있는지 사람이 한 번 더 봐야 합니다."
+                ),
+            }.get(part, part.replace("_", " "))
+        )
+    deduped: list[str] = []
+    for part in translated:
+        if part and part not in deduped:
+            deduped.append(part)
+    return " ".join(deduped)
+
+
+def _humanize_review_text(value: object) -> str:
+    text = _compact_text(value)
+    replacements = {
+        "seed 후보": "방송 후보",
+        "seed로": "방송 소재로",
+        "seed": "방송 소재",
+        "evidence를": "근거 자료를",
+        "evidence": "근거 자료",
+    }
+    for source, replacement in replacements.items():
+        text = text.replace(source, replacement)
+    return text
+
+
+def _human_description(
+    *,
+    candidate: dict[str, Any],
+    jibi_judgment: str,
+    reason: str,
+    related_titles: str,
+) -> str:
+    why = _humanize_review_text(candidate.get("why_interesting"))
+    evidence = candidate.get("evidence_needed") or ""
+    if isinstance(evidence, list):
+        evidence_text = ", ".join(str(item) for item in evidence if str(item).strip())
+    else:
+        evidence_text = _compact_text(evidence)
+    parts = [
+        f"성격: {jibi_judgment}." if jibi_judgment else "",
+        f"선정 이유: {_human_reason(reason)}" if reason else "",
+        f"볼 포인트: {why}" if why else "",
+        f"확인할 자료: {evidence_text}" if evidence_text else "",
+        f"함께 볼 후보: {related_titles}" if related_titles else "",
+    ]
+    return " ".join(part for part in parts if part)
 
 
 def _join_distinct_reason(primary: str, secondary: str) -> str:
@@ -614,18 +810,17 @@ def _bundle_review_row(
     sub_links: str,
     related_titles: str,
 ) -> dict[str, Any]:
-    why = str(candidate.get("why_interesting") or "").strip()
-    description_parts = [
-        f"{jibi_judgment}: {reason}".strip(": "),
-        f"자료 요약: {why}" if why else "",
-        f"같이 볼 후보: {related_titles}" if related_titles else "",
-    ]
     return {
         "날짜": digest_date,
         "제목": review_title or candidate_title,
         "메인 링크": candidate.get("seed_url", ""),
         "서브 링크": sub_links,
-        "설명": " ".join(part for part in description_parts if part),
+        "설명": _human_description(
+            candidate=candidate,
+            jibi_judgment=jibi_judgment,
+            reason=reason,
+            related_titles=related_titles,
+        ),
         "리뷰-성원": "",
         "리뷰-동찬": "",
         "리뷰-형찬": "",

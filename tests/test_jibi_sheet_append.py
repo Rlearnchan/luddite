@@ -55,6 +55,7 @@ class FakeGoogleSheetsClient:
         self.cleared = False
         self.appended = []
         self.formatted = []
+        self.review_board_formats = []
 
     def get_sheet_id(self, spreadsheet_id: str, sheet_name: str) -> int | None:
         return self.sheet_id
@@ -103,6 +104,16 @@ class FakeGoogleSheetsClient:
         end_row: int,
     ) -> None:
         self.formatted.append((sheet_id, start_row, end_row))
+
+    def format_review_board(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        *,
+        row_count: int,
+        column_count: int,
+    ) -> None:
+        self.review_board_formats.append((sheet_id, row_count, column_count))
 
 
 def _write_preview(path, rows):
@@ -702,6 +713,8 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
     assert client.cleared is True
     assert client.values[0] == BUNDLE_REVIEW_SHEET_COLUMNS
     assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "청년 노동시장 이탈"
+    assert client.review_board_formats == [(99, 2, 9)]
+    assert report.styling_applied is True
     assert client.appended == []
     assert report.sheet_replaced is True
     assert report.header_updated is True
