@@ -137,6 +137,9 @@ def _top_eligible_candidates(
 
 
 def _has_generic_why(candidate: dict[str, Any]) -> bool:
+    specificity = candidate.get("story_specificity")
+    if isinstance(specificity, dict) and specificity.get("generic_why_detected"):
+        return True
     why = str(candidate.get("why_interesting") or "")
     return any(pattern in why for pattern in GENERIC_WHY_PATTERNS)
 
@@ -442,6 +445,38 @@ def write_quality_report(
         max_per_source=max_per_source,
         min_score=min_score,
     )
+    gate_reason_distribution = _top_gate_reason_distribution(
+        candidates,
+        top_ids,
+        top,
+        limit=limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
+    calibration_summary = _calibration_summary(
+        candidates=candidates,
+        top=top,
+        source_warning_codes=source_warning_codes,
+        gate_reason_distribution=gate_reason_distribution,
+        top_eligible_count=len(top_eligible),
+        quality_flagged_count=len(quality_flagged),
+        duplicate_grouped_count=len(duplicate_grouped),
+    )
+    source_recommendation_rows = _source_recommendation_table(
+        raw_source_counts=raw_source_counts,
+        source_counts=source_counts,
+        top_eligible_source_counts=top_eligible_source_counts,
+        quality_flags_by_source=quality_flags_by_source,
+        source_warning_codes=source_warning_codes,
+    )
+    generic_specificity_examples = _generic_specificity_examples(
+        candidates,
+        top_ids,
+        top,
+        limit=limit,
+        max_per_source=max_per_source,
+        min_score=min_score,
+    )
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
@@ -489,6 +524,26 @@ def write_quality_report(
         "",
         *(calibration_warnings or ["- none"]),
         "",
+        "## Calibration Summary",
+        "",
+        *(calibration_summary or ["- none"]),
+        "",
+        "## Top Gate Reason Distribution",
+        "",
+        "### All Non-top Candidates",
+        "",
+        *(
+            _reason_distribution_lines(gate_reason_distribution["all"])
+            or ["- none"]
+        ),
+        "",
+        "### Top 20 Non-top Candidates By Score",
+        "",
+        *(
+            _reason_distribution_lines(gate_reason_distribution["top20"])
+            or ["- none"]
+        ),
+        "",
         "## Slideability Summary",
         "",
         *[
@@ -533,6 +588,12 @@ def write_quality_report(
         ),
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |",
         *source_survival_rows,
+        "",
+        "## Source Recommendations",
+        "",
+        "| source | recommendation | reason |",
+        "| --- | --- | --- |",
+        *source_recommendation_rows,
         "",
         "## Source Quality Flags",
         "",
@@ -629,6 +690,10 @@ def write_quality_report(
             f"- {item.get('title')}: {item.get('why_interesting')}"
             for item in generic_why_examples
         ],
+        "",
+        "## Generic Why / Specificity Examples",
+        "",
+        *(generic_specificity_examples or ["- none"]),
         "",
         "## Downranked Examples",
         "",
@@ -737,6 +802,228 @@ def _calibration_warnings(
             f"raw_candidates={len(candidates)}, rendered_top_candidates={len(top)} (<5)"
         )
     return warnings
+
+
+def _reason_distribution_lines(counter: Counter[str]) -> list[str]:
+    return [f"- {reason}: {count}" for reason, count in counter.most_common()]
+
+
+def _top_gate_reason_distribution(
+    candidates: list[dict[str, Any]],
+    top_ids: set[str],
+    top: list[dict[str, Any]],
+    *,
+    limit: int,
+    max_per_source: int,
+    min_score: float,
+) -> dict[str, Counter[str]]:
+    top_source_counts = Counter(str(item.get("source") or "unknown") for item in top)
+    non_top = [
+        item for item in candidates if str(item.get("candidate_id")) not in top_ids
+    ]
+    ranked_non_top = sorted(non_top, key=_total_score, reverse=True)
+
+    def count_reasons(items: list[dict[str, Any]]) -> Counter[str]:
+        counter: Counter[str] = Counter()
+        for item in items:
+            counter.update(
+                _top_exclusion_reasons(
+                    item,
+                    top_ids,
+                    top_source_counts,
+                    rendered_top_count=len(top),
+                    limit=limit,
+                    max_per_source=max_per_source,
+                    min_score=min_score,
+                )
+            )
+        return counter
+
+    return {
+        "all": count_reasons(non_top),
+        "top20": count_reasons(ranked_non_top[:20]),
+    }
+
+
+def _calibration_summary(
+    *,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    source_warning_codes: dict[str, list[str]],
+    gate_reason_distribution: dict[str, Counter[str]],
+    top_eligible_count: int,
+    quality_flagged_count: int,
+    duplicate_grouped_count: int,
+) -> list[str]:
+    labels: list[str] = []
+    top20 = gate_reason_distribution.get("top20", Counter())
+    all_reasons = gate_reason_distribution.get("all", Counter())
+    warning_values = [warning for warnings in source_warning_codes.values() for warning in warnings]
+    if candidates and (
+        quality_flagged_count / len(candidates) >= 0.5
+        or warning_values.count("source_zero_survivors")
+        >= max(1, len(source_warning_codes) // 2)
+    ):
+        labels.append("likely_source_quality_issue")
+    if top20.get("generic_why_for_unspecific_seed_type", 0) >= 3:
+        labels.append("likely_generic_why_gate_pressure")
+    if top20.get("generic_why_for_unspecific_seed_type", 0) >= 3 or (
+        len(candidates) >= 30 and 0 < top_eligible_count < 5
+    ):
+        labels.append("likely_gate_too_strict")
+    duplicate_reasons = sum(
+        count for reason, count in all_reasons.items() if reason.startswith("near_duplicate_role")
+    )
+    if duplicate_reasons >= 3 or (
+        candidates and duplicate_grouped_count / len(candidates) >= 0.2
+    ):
+        labels.append("likely_duplicate_collapse")
+    if "source_top_skew" in warning_values:
+        labels.append("likely_source_skew")
+    weak_quality_reasons = sum(
+        count
+        for reason, count in top20.items()
+        if reason.startswith("action_not_top")
+        or reason.startswith("score_below")
+        or reason == "final_grade=D"
+    )
+    if top20 and weak_quality_reasons / sum(top20.values()) >= 0.4:
+        labels.append("likely_low_raw_quality")
+    if not labels:
+        labels.append("no_clear_bottleneck")
+    return [
+        "- summary_labels: " + " + ".join(dict.fromkeys(labels)),
+        f"- top_eligible_candidates: {top_eligible_count}",
+        f"- rendered_top_candidates: {len(top)}",
+    ]
+
+
+def _source_recommendation_table(
+    *,
+    raw_source_counts: Counter[str],
+    source_counts: Counter[str],
+    top_eligible_source_counts: Counter[str],
+    quality_flags_by_source: dict[str, Counter[str]],
+    source_warning_codes: dict[str, list[str]],
+) -> list[str]:
+    rows: list[str] = []
+    for source, raw_count in raw_source_counts.most_common():
+        recommendation, reason = _source_recommendation(
+            raw_count=raw_count,
+            top_count=source_counts.get(source, 0),
+            top_eligible_count=top_eligible_source_counts.get(source, 0),
+            quality_flags=quality_flags_by_source.get(source, Counter()),
+            warnings=source_warning_codes.get(source, []),
+        )
+        rows.append(
+            f"| {_table_cell(source)} | {recommendation} | {_table_cell(reason)} |"
+        )
+    return rows or ["| none | review | no source candidates |"]
+
+
+def _source_recommendation(
+    *,
+    raw_count: int,
+    top_count: int,
+    top_eligible_count: int,
+    quality_flags: Counter[str],
+    warnings: list[str],
+) -> tuple[str, str]:
+    dominant_flag, dominant_count = quality_flags.most_common(1)[0] if quality_flags else ("", 0)
+    dominant_share = dominant_count / raw_count if raw_count else 0
+    if top_count > 0:
+        return "keep", "has rendered top candidates"
+    if top_eligible_count > 0:
+        if dominant_share >= 0.5:
+            return "review", f"has eligible candidates but dominant flag {dominant_flag}"
+        return "keep", "has top eligible candidates"
+    if dominant_share >= 0.4 and dominant_flag in {
+        "single_stock_or_asset_frame",
+        "market_rate_stress",
+        "single_company_frame",
+    }:
+        return "evidence_only", f"{dominant_flag} dominant; use as evidence/manual source"
+    if dominant_share >= 0.5 and dominant_flag in {"pure_place_listing"}:
+        return "manual_only", "pure_place_listing dominant; not daily seed discovery"
+    if dominant_share >= 0.5 and dominant_flag in {
+        "empty_summary",
+        "empty_summary_domestic_business",
+    }:
+        return "manual_only", "many empty summaries; needs manual curation"
+    if "source_all_stale" in warnings:
+        return "review", "source_all_stale; verify feed freshness before holding"
+    if "source_unknown_freshness_high" in warnings:
+        return "review", "source_unknown_freshness_high"
+    if raw_count >= 5 and "source_zero_survivors" in warnings:
+        return "hold_daily_fetch", "source_zero_survivors"
+    return "review", "insufficient survival signal"
+
+
+def _story_specificity(candidate: dict[str, Any]) -> dict[str, Any]:
+    specificity = candidate.get("story_specificity")
+    if isinstance(specificity, dict):
+        return specificity
+    return {
+        "score": 0.0,
+        "level": "low",
+        "signals": [],
+        "generic_why_detected": _has_generic_why(candidate),
+    }
+
+
+def _specificity_suggested_action(candidate: dict[str, Any]) -> str:
+    specificity = _story_specificity(candidate)
+    level = str(specificity.get("level") or "low")
+    flags = set(candidate.get("quality_flags") or [])
+    if TOP_EXCLUDED_QUALITY_FLAGS.intersection(flags):
+        return "keep_gate"
+    if level == "high":
+        return "improve_template"
+    if level == "medium":
+        return "manual_review"
+    return "keep_gate"
+
+
+def _generic_specificity_examples(
+    candidates: list[dict[str, Any]],
+    top_ids: set[str],
+    top: list[dict[str, Any]],
+    *,
+    limit: int,
+    max_per_source: int,
+    min_score: float,
+) -> list[str]:
+    top_source_counts = Counter(str(item.get("source") or "unknown") for item in top)
+    examples: list[dict[str, Any]] = []
+    for item in sorted(candidates, key=_total_score, reverse=True):
+        if str(item.get("candidate_id")) in top_ids:
+            continue
+        reasons = _top_exclusion_reasons(
+            item,
+            top_ids,
+            top_source_counts,
+            rendered_top_count=len(top),
+            limit=limit,
+            max_per_source=max_per_source,
+            min_score=min_score,
+        )
+        if "generic_why_for_unspecific_seed_type" in reasons:
+            examples.append({**item, "_top_exclusion_reasons": reasons})
+        if len(examples) >= 10:
+            break
+    lines: list[str] = []
+    for item in examples:
+        specificity = _story_specificity(item)
+        signals = _format_list(specificity.get("signals") or [])
+        lines.append(
+            f"- {item.get('title')}: score={_total_score(item):g}; "
+            f"specificity={specificity.get('score')} "
+            f"({specificity.get('level')}); signals={signals}; "
+            f"generic_why_detected={specificity.get('generic_why_detected')}; "
+            f"suggested_action={_specificity_suggested_action(item)}; "
+            f"reason={_format_list(item.get('_top_exclusion_reasons') or [])}"
+        )
+    return lines
 
 
 def _top_exclusion_reasons(

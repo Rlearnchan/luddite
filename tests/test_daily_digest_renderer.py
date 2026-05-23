@@ -229,6 +229,32 @@ def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) 
         "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
         "slideability": {"visualizability": "high"},
     }
+    generic_specific_candidate = {
+        "candidate_id": "generic_specific",
+        "title": "Google spends $2B as AI search costs pressure schools",
+        "source": "NPR",
+        "seed_type": "other",
+        "risk_flags": [],
+        "quality_flags": [],
+        "freshness_status": "recent",
+        "why_interesting": "사건 자체보다 배경, 이해관계자 연결고리가 있는지 확인",
+        "story_specificity": {
+            "score": 0.83,
+            "level": "high",
+            "signals": [
+                "has_named_actor",
+                "has_number",
+                "has_mechanism",
+                "has_tension",
+                "has_visual_hook",
+            ],
+            "generic_why_detected": True,
+        },
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 75, "broadcast_potential_proxy": 4},
+        "slideability": {"visualizability": "high"},
+    }
     stale_candidates = [
         {
             "candidate_id": f"stale_{index}",
@@ -251,22 +277,55 @@ def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) 
         }
         for index in range(30)
     ]
+    empty_summary_candidates = [
+        {
+            "candidate_id": f"empty_{index}",
+            "title": f"Domestic market note {index}",
+            "source": "Empty Source",
+            "seed_type": "other",
+            "risk_flags": [],
+            "quality_flags": ["empty_summary"],
+            "failure_modes": ["thin_evidence"],
+            "freshness_status": "recent",
+            "recommended_action": "keep_for_later",
+            "final_grade": "D",
+            "scores": {"total_score": 20 - index, "broadcast_potential_proxy": 1},
+            "slideability": {"visualizability": "low"},
+        }
+        for index in range(5)
+    ]
 
-    write_quality_report(report_path, [top_candidate, *stale_candidates], [top_candidate])
+    write_quality_report(
+        report_path,
+        [top_candidate, generic_specific_candidate, *stale_candidates, *empty_summary_candidates],
+        [top_candidate],
+    )
 
     report = report_path.read_text(encoding="utf-8")
     assert "## Candidate Funnel" in report
-    assert "- raw_candidates: 31" in report
+    assert "- raw_candidates: 37" in report
     assert "- stale_candidates: 30" in report
     assert "- top_eligible_candidates: 1" in report
     assert "- rendered_top_candidates: 1" in report
     assert "top_count_too_low" in report
+    assert "## Calibration Summary" in report
+    assert "likely_source_quality_issue" in report
+    assert "## Top Gate Reason Distribution" in report
+    assert "excluded_quality_flags=stale_item: 30" in report
+    assert "generic_why_for_unspecific_seed_type" in report
     assert "## Source Survival Table" in report
     assert "source_all_stale" in report
     assert "source_zero_survivors" in report
+    assert "## Source Recommendations" in report
+    assert "| NPR | keep | has rendered top candidates |" in report
+    assert "| BBC News | review | source_all_stale" in report
+    assert "| Empty Source | manual_only | many empty summaries" in report
     assert "## Near Miss Review Queue" in report
     assert "Stale but high scoring infrastructure story" in report
     assert "reason=excluded_quality_flags=stale_item" in report
+    assert "## Generic Why / Specificity Examples" in report
+    assert "Google spends $2B" in report
+    assert "suggested_action=improve_template" in report
 
 
 def test_top_candidates_excludes_single_company_thin_evidence() -> None:

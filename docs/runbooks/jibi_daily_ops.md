@@ -101,6 +101,18 @@ thresholds. `stale` RSS items are downranked or kept out of Top Candidates
 conservatively; manual candidates with unknown freshness are not blocked only
 because their published date is missing.
 
+Read the calibration sections in this order:
+
+1. `Candidate Funnel`: find the biggest drop before Top Candidates.
+2. `Top Gate Reason Distribution`: compare all non-top candidates with the top
+   20 near misses by score.
+3. `Calibration Summary`: use the likely bottleneck labels as a starting
+   diagnosis, not an automatic threshold change.
+4. `Source Recommendations`: report-only hints for source allowlist review;
+   this command never edits `config/rss_collection_allowlist.yaml`.
+5. `Generic Why / Specificity Examples`: find candidates where the article is
+   concrete but the generated `why_interesting` is still too generic.
+
 ## Google Sheet Dry-run
 
 Dry-run from the latest sheet preview:

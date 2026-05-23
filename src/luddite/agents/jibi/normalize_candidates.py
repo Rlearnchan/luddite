@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -136,6 +137,96 @@ EDITORIAL_CATEGORY_TYPES = {
     "climate_policy_conflict",
 }
 FRESHNESS_RECENT_HOURS = 24 * 7
+GENERIC_SPECIFICITY_WHY_PATTERNS = {
+    "수동 후보로 들어온 소재",
+    "공급망, 인프라, 규제, 산업 전환 중 어느 축",
+    "사건 자체보다 배경",
+}
+MECHANISM_TERMS = {
+    "cost",
+    "budget",
+    "supply chain",
+    "regulation",
+    "policy",
+    "market",
+    "infrastructure",
+    "insurance",
+    "funding",
+    "fund",
+    "구조",
+    "비용",
+    "예산",
+    "공급망",
+    "규제",
+    "정책",
+    "시장",
+    "인프라",
+    "보험",
+    "투자",
+    "자금",
+}
+TENSION_TERMS = {
+    "vs",
+    "versus",
+    "battle",
+    "conflict",
+    "clash",
+    "risk",
+    "pressure",
+    "ban",
+    "backlash",
+    "논쟁",
+    "충돌",
+    "갈등",
+    "리스크",
+    "압박",
+    "반발",
+    "금지",
+    "딜레마",
+}
+KOREA_BRIDGE_TERMS = {
+    "korea",
+    "korean",
+    "한국",
+    "국내",
+    "우리나라",
+}
+VISUAL_HOOK_TERMS = WEIRD_TERMS | {
+    "chart",
+    "map",
+    "diagram",
+    "before and after",
+    "차트",
+    "지도",
+    "도표",
+    "그래프",
+    "비교",
+    "전후",
+}
+KOREAN_NAMED_ACTOR_TERMS = {
+    "정부",
+    "은행",
+    "기업",
+    "회사",
+    "대통령",
+    "총리",
+    "구글",
+    "스타벅스",
+    "삼성",
+    "skc",
+    "f88",
+}
+ENGLISH_NAMED_ACTOR_TERMS = {
+    "amazon",
+    "bbc",
+    "google",
+    "microsoft",
+    "npr",
+    "openai",
+    "starbucks",
+    "tesla",
+    "trump",
+}
 
 
 def _evidence_needed(seed_type: str, risk_flags: list[str]) -> list[str]:
@@ -358,6 +449,54 @@ def classify_freshness(
     return status, round(age_hours, 1)
 
 
+def _has_named_actor(text: str) -> bool:
+    lower_text = text.lower()
+    if contains_any(lower_text, KOREAN_NAMED_ACTOR_TERMS | ENGLISH_NAMED_ACTOR_TERMS):
+        return True
+    if re.search(r"\b(?!AI\b)[A-Z]{3,}\b", text):
+        return True
+    return bool(re.search(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b", text))
+
+
+def infer_story_specificity(
+    *,
+    title: str,
+    summary: str,
+    why_interesting: str = "",
+    possible_expansions: list[str] | None = None,
+) -> dict[str, Any]:
+    article_text = text_blob(title, summary)
+    signals: list[str] = []
+    if _has_named_actor(f"{title} {summary}"):
+        signals.append("has_named_actor")
+    if any(char.isdigit() for char in article_text) or contains_any(article_text, NUMBER_TERMS):
+        signals.append("has_number")
+    if contains_any(article_text, MECHANISM_TERMS):
+        signals.append("has_mechanism")
+    if contains_any(article_text, TENSION_TERMS):
+        signals.append("has_tension")
+    if contains_any(article_text, KOREA_BRIDGE_TERMS):
+        signals.append("has_korea_bridge")
+    if contains_any(article_text, VISUAL_HOOK_TERMS):
+        signals.append("has_visual_hook")
+    score = round(len(signals) / 6, 2)
+    if score >= 0.67:
+        level = "high"
+    elif score >= 0.34:
+        level = "medium"
+    else:
+        level = "low"
+    return {
+        "score": score,
+        "level": level,
+        "signals": signals,
+        "generic_why_detected": any(
+            pattern in str(why_interesting or "")
+            for pattern in GENERIC_SPECIFICITY_WHY_PATTERNS
+        ),
+    }
+
+
 def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None:
     text = text_blob(title, summary)
     if ("드론" in text or "drone" in text) and (
@@ -565,6 +704,12 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
     if numbers:
         score_reason.append("숫자나 통계로 증명할 여지가 있음")
     why_interesting = template_rationale or "수동 후보로 들어온 방송 소재"
+    story_specificity = infer_story_specificity(
+        title=title,
+        summary=summary,
+        why_interesting=why_interesting,
+        possible_expansions=possible_expansions,
+    )
     return {
         "candidate_id": f"jibi_{article['article_id'].removeprefix('article_')}",
         "article_id": article["article_id"],
@@ -587,6 +732,7 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "editorial_category": editorial_category or seed_type,
         "summary": summary,
         "why_interesting": why_interesting,
+        "story_specificity": story_specificity,
         "score_reason": score_reason,
         "possible_expansions": possible_expansions,
         "korea_bridge": None,

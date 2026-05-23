@@ -196,6 +196,23 @@ def test_score_candidates_sorts_by_total_score(tmp_path) -> None:
     assert output_path.exists()
 
 
+def test_score_candidate_adds_story_specificity_when_missing() -> None:
+    scored = score_candidate(
+        {
+            "candidate_id": "specific",
+            "title": "Google spends $2B as AI search costs pressure schools",
+            "summary": "A concrete funding mechanism creates tension for education.",
+            "why_interesting": "사건 자체보다 배경, 이해관계자 연결고리가 있는지 확인",
+            "risk_flags": [],
+            "quality_flags": [],
+            "evidence_depth_hint": "medium",
+        }
+    )
+
+    assert scored["story_specificity"]["level"] in {"medium", "high"}
+    assert scored["story_specificity"]["generic_why_detected"] is True
+
+
 def test_near_duplicate_same_source_title_groups_as_duplicate() -> None:
     candidates = [
         {

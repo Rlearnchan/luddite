@@ -1,5 +1,6 @@
 from luddite.agents.jibi.normalize_candidates import (
     classify_freshness,
+    infer_story_specificity,
     normalize_article,
     normalize_candidates,
 )
@@ -32,6 +33,7 @@ def test_normalize_article_sets_risk_and_hints() -> None:
     assert "코카인 하마" in candidate["why_interesting"]
     assert "제목에서 바로 엥?" not in candidate["why_interesting"]
     assert any("제목에서 바로 엥?" in reason for reason in candidate["score_reason"])
+    assert candidate["story_specificity"]["level"] in {"low", "medium", "high"}
 
 
 def test_normalize_article_does_not_overclassify_industry_disruption() -> None:
@@ -123,6 +125,46 @@ def test_stale_rss_item_gets_quality_flag() -> None:
     assert candidate["freshness_status"] == "stale"
     assert candidate["age_hours"] == 528.0
     assert "stale_item" in candidate["quality_flags"]
+
+
+def test_story_specificity_generic_fallback_is_low() -> None:
+    specificity = infer_story_specificity(
+        title="AI stocks rise",
+        summary="",
+        why_interesting="사건 자체보다 배경, 이해관계자 연결고리가 있는지 확인",
+        possible_expansions=["배경 설명"],
+    )
+
+    assert specificity["level"] == "low"
+    assert specificity["generic_why_detected"] is True
+
+
+def test_story_specificity_concrete_actor_number_mechanism_is_high() -> None:
+    specificity = infer_story_specificity(
+        title="Google invests $2B as AI search costs pressure publishers",
+        summary="The deal reveals a platform funding mechanism and market tension.",
+        why_interesting="AI 검색 비용과 지식기관의 수익 구조 변화",
+        possible_expansions=["한국 플랫폼과 언론 수익배분 비교"],
+    )
+
+    assert specificity["level"] == "high"
+    assert "has_named_actor" in specificity["signals"]
+    assert "has_number" in specificity["signals"]
+    assert "has_mechanism" in specificity["signals"]
+    assert "has_tension" in specificity["signals"]
+
+
+def test_story_specificity_korean_concrete_story_gets_medium_or_high() -> None:
+    specificity = infer_story_specificity(
+        title="한국 정부, 2030년까지 휴머노이드 로봇 예산 투입",
+        summary="제조 현장 인력난과 산업정책 충돌 속에서 로봇 투자가 늘어난다.",
+        why_interesting="로봇·제조 산업정책의 구조 변화",
+        possible_expansions=["한국 제조업과 인력난"],
+    )
+
+    assert specificity["level"] in {"medium", "high"}
+    assert "has_named_actor" in specificity["signals"]
+    assert "has_number" in specificity["signals"]
 
 
 def test_normalize_skc_like_single_company_financing_risk() -> None:

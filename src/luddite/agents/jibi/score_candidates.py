@@ -24,6 +24,7 @@ from luddite.agents.jibi.heuristics import (
     infer_seed_type,
     text_blob,
 )
+from luddite.agents.jibi.normalize_candidates import infer_story_specificity
 from luddite.agents.jibi.slideability import analyze_slideability
 from luddite.utils.jsonl import read_jsonl, write_jsonl
 from luddite.utils.urls import canonicalize_url
@@ -481,6 +482,14 @@ def _weighted_score(value: int, weight: int) -> float:
 
 
 def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
+    story_specificity = candidate.get("story_specificity")
+    if not isinstance(story_specificity, dict):
+        story_specificity = infer_story_specificity(
+            title=str(candidate.get("title") or ""),
+            summary=str(candidate.get("summary") or ""),
+            why_interesting=str(candidate.get("why_interesting") or ""),
+            possible_expansions=list(candidate.get("possible_expansions") or []),
+        )
     text = text_blob(
         candidate.get("title"),
         candidate.get("summary"),
@@ -608,6 +617,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     )
     scored = {
         **candidate,
+        "story_specificity": story_specificity,
         "quality_flags": quality_gate["quality_flags"],
         "possible_expansions": possible_expansions,
         "scores": {
