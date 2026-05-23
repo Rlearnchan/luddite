@@ -396,6 +396,10 @@ def write_quality_report(
     seed_counts = Counter(str(item.get("seed_type") or "unknown") for item in top)
     action_counts = Counter(str(item.get("recommended_action") or "unknown") for item in candidates)
     raw_source_counts = Counter(str(item.get("source") or "unknown") for item in candidates)
+    raw_role_counts = Counter(
+        str(item.get("source_role_class") or "unknown") for item in candidates
+    )
+    top_role_counts = Counter(str(item.get("source_role_class") or "unknown") for item in top)
     quality_gate_pass = [item for item in candidates if _passes_top_quality_gate(item)]
     after_gate_source_counts = Counter(
         str(item.get("source") or "unknown") for item in quality_gate_pass
@@ -538,6 +542,14 @@ def write_quality_report(
         source_warning_codes=source_warning_codes,
         gate_reason_distribution=gate_reason_distribution,
     )
+    source_mix_review = _source_mix_experiment_review(
+        candidates=candidates,
+        top=top,
+        raw_role_counts=raw_role_counts,
+        top_role_counts=top_role_counts,
+        raw_source_counts=raw_source_counts,
+        source_counts=source_counts,
+    )
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
@@ -571,6 +583,10 @@ def write_quality_report(
         "## Operator Summary",
         "",
         *operator_summary,
+        "",
+        "## Source Mix Experiment Review",
+        "",
+        *source_mix_review,
         "",
         "## Candidate Funnel",
         "",
@@ -791,6 +807,120 @@ def write_quality_report(
     else:
         lines.append("- none")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _counter_lines(counter: Counter[str]) -> list[str]:
+    return [f"- {key}: {count}" for key, count in counter.most_common()] or ["- none"]
+
+
+def _source_role_cap_warnings(top_role_counts: Counter[str]) -> list[str]:
+    caps = {
+        "research_note": 3,
+        "policy_release": 2,
+        "academic_explainer": 3,
+        "market_wire": 2,
+        "public_wire": 3,
+        "section_news": 3,
+    }
+    warnings = [
+        f"- source_role_cap_warning: {role} has {count} top candidates (suggested <= {cap})"
+        for role, cap in caps.items()
+        if (count := top_role_counts.get(role, 0)) > cap
+    ]
+    return warnings or ["- none"]
+
+
+def _source_mix_focus_line(
+    label: str,
+    candidates: list[dict[str, Any]],
+    *,
+    limit: int = 5,
+) -> str:
+    if not candidates:
+        return f"- {label}: none"
+    examples = "; ".join(
+        f"{item.get('title')} ({item.get('source')}, {item.get('seed_type')})"
+        for item in sorted(candidates, key=_total_score, reverse=True)[:limit]
+    )
+    return f"- {label}: {examples}"
+
+
+def _source_mix_experiment_review(
+    *,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    raw_role_counts: Counter[str],
+    top_role_counts: Counter[str],
+    raw_source_counts: Counter[str],
+    source_counts: Counter[str],
+) -> list[str]:
+    official_roles = {"research_note", "policy_release"}
+    public_roles = {"public_wire", "section_news"}
+    academic_roles = {"academic_explainer"}
+    market_roles = {"market_wire"}
+
+    def count_roles(items: list[dict[str, Any]], roles: set[str]) -> int:
+        return sum(1 for item in items if str(item.get("source_role_class")) in roles)
+
+    research_candidates = [
+        item for item in candidates if item.get("source_role_class") == "research_note"
+    ]
+    policy_candidates = [
+        item for item in candidates if item.get("source_role_class") == "policy_release"
+    ]
+    academic_candidates = [
+        item for item in candidates if item.get("source_role_class") == "academic_explainer"
+    ]
+    yonhap_candidates = [
+        item
+        for item in candidates
+        if str(item.get("source_id") or "").startswith("yonhap_")
+        and str(item.get("source_id")) not in {"yonhap_rss_candidate"}
+    ]
+
+    lines = [
+        "### Source Role Distribution",
+        "",
+        "Raw candidates:",
+        *_counter_lines(raw_role_counts),
+        "",
+        "Top candidates:",
+        *_counter_lines(top_role_counts),
+        "",
+        "### Exact Source Distribution",
+        "",
+        "Raw candidates:",
+        *_counter_lines(raw_source_counts),
+        "",
+        "Top candidates:",
+        *_counter_lines(source_counts),
+        "",
+        "### Source Role Balance",
+        "",
+        f"- official/research raw: {count_roles(candidates, official_roles)}",
+        f"- official/research top: {count_roles(top, official_roles)}",
+        f"- public/section raw: {count_roles(candidates, public_roles)}",
+        f"- public/section top: {count_roles(top, public_roles)}",
+        f"- academic raw: {count_roles(candidates, academic_roles)}",
+        f"- academic top: {count_roles(top, academic_roles)}",
+        f"- market raw: {count_roles(candidates, market_roles)}",
+        f"- market top: {count_roles(top, market_roles)}",
+        "",
+        "### Source Role Cap Warnings",
+        "",
+        *_source_role_cap_warnings(top_role_counts),
+        "",
+        "### Recommended Human Review Focus",
+        "",
+        _source_mix_focus_line("BOK research-note candidates", research_candidates),
+        _source_mix_focus_line("Policy Briefing seed/evidence candidates", policy_candidates),
+        _source_mix_focus_line("The Conversation academic explainers", academic_candidates),
+        _source_mix_focus_line(
+            "Yonhap economy/industry/international seeds",
+            yonhap_candidates,
+        ),
+    ]
+    return lines
 
 
 def _freshness_count(candidates: list[dict[str, Any]], status: str) -> int:

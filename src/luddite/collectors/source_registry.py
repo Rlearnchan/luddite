@@ -20,6 +20,8 @@ class Source:
     role_class: str | None = None
     region: str | None = None
     category_hint: str | None = None
+    section_name: str | None = None
+    source_mix_notes: str | None = None
     homepage_url: str | None = None
     rss_index_url: str | None = None
     desired_feed: str | None = None
@@ -113,6 +115,14 @@ def load_sources(path: Path = paths.SOURCE_REGISTRY_YAML) -> list[Source]:
             region=item.get("region") if isinstance(item.get("region"), str) else None,
             category_hint=(
                 item.get("category_hint") if isinstance(item.get("category_hint"), str) else None
+            ),
+            section_name=(
+                item.get("section_name") if isinstance(item.get("section_name"), str) else None
+            ),
+            source_mix_notes=(
+                item.get("source_mix_notes")
+                if isinstance(item.get("source_mix_notes"), str)
+                else None
             ),
             homepage_url=(
                 item.get("homepage_url") if isinstance(item.get("homepage_url"), str) else None

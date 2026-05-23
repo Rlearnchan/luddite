@@ -499,25 +499,34 @@ outputs/reports/rss_ingest_YYYY-MM-DD.md
 - 24/7 collector나 scheduler는 아니다.
 - Google Sheet 자동 append와 연결하지 않는다.
 - feed summary/description만 저장하고 기사 전문은 저장하지 않는다.
-- run 안에서 `duplicate_key`와 `source_url_canonical` 중복을 skip한다.
-- report에는 source별 fetched/written/duplicate/failure/sample title을 남긴다.
+- run 안에서 `duplicate_key`와 `source_url_canonical` 중복을 skip하고,
+  같은 URL이 여러 섹션 feed에 뜨면 `source_count`, `source_sections`,
+  `supporting_source_ids`를 compact metadata로 보존한다.
+- report에는 raw feed items, unique URLs written, duplicate URL appearances,
+  source별 fetched/written/duplicate/failure/sample title을 남긴다.
 - Top Candidates는 동일 source가 과도하게 쏠리지 않도록 기본 최대 3개로 제한한다.
 
 Current manual MVP allowlist:
 
 ```text
-enabled: BBC, NPR, 연합뉴스, 연합뉴스 세계, 연합인포맥스, 한국경제,
-         한국은행, 정책브리핑, The Conversation
-disabled/hold: Guardian broad international, Guardian section feeds, Le Monde,
-               매일경제, Atlas Obscura
+enabled: BBC, NPR, 연합뉴스 경제, 연합뉴스 산업, 연합뉴스 세계,
+         연합인포맥스, 한국경제, 한국은행, 정책브리핑, The Conversation
+disabled/hold: 연합뉴스 최신기사, 연합뉴스 마켓+, 연합뉴스 건강,
+               Guardian broad international, Guardian section feeds,
+               Le Monde, 매일경제, Atlas Obscura
 ```
 
 한국은행은 low-frequency research-note source로 취급해 일반 stale RSS와 분리한다.
-정책브리핑/부처 보도자료는 evidence-default이며, 숫자·생활 영향·규제 갈등·
-산업 메커니즘·시각화 가능한 proof object가 있을 때만 seed 후보로 승격한다.
+정책브리핑/부처 보도자료는 evidence-default이며, 날짜/절차용 숫자만으로는
+seed로 승격하지 않는다. 생활 영향·규제 갈등·산업 메커니즘·odd hook·
+시각화 가능한 proof object 같은 non-number signal이나 material number와
+구조 signal이 있을 때만 seed 후보로 승격한다.
 The Conversation은 controlled academic-explainer experiment로 켜두되, source cap과
 manual review를 유지한다. Guardian은 broad international feed 대신 Business,
 Technology, Environment section feed를 우선 테스트한다.
+연합뉴스는 최신기사 feed보다 섹션 feed를 우선한다. 초기 enable은 economy,
+industry, international이며, market은 market_wire/evidence context로 보류하고
+health는 medical-risk guard가 생길 때까지 보류한다.
 
 ## 13. Milestone 1.2.2 Candidate Quality Gate
 

@@ -254,6 +254,91 @@ def test_policy_briefing_without_seed_signals_defaults_to_evidence() -> None:
     assert "policy_release_evidence_default" in candidate["quality_flags"]
 
 
+def test_policy_briefing_date_only_number_is_evidence_default() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_date_only",
+            "title": "[행정안전부] 2026년 5월 23일 제3차 관계기관 회의 개최",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=date",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "2026년 6월 1일 후속 회의를 열고 향후 일정을 논의한다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_evidence"
+    assert "policy_release_evidence_default" in candidate["quality_flags"]
+    assert "policy_release_date_only_number" in candidate["quality_flags"]
+    assert "policy_release_announcement_only" in candidate["quality_flags"]
+
+
+def test_policy_briefing_budget_life_impact_can_be_seed() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_household_budget",
+            "title": "[기획재정부] 2조원 규모 가계 요금 지원으로 소비자 부담 완화",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=budget",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "가구별 전기요금과 물가 부담을 낮추는 지원 예산을 발표했다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_seed"
+    assert "policy_release_evidence_default" not in candidate["quality_flags"]
+    assert "policy_release_seed_signals=material_number,life_impact" in candidate[
+        "quality_flags"
+    ]
+
+
+def test_policy_briefing_regulation_and_industry_mechanism_can_be_seed() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_regulation_industry",
+            "title": "[산업부] 공급망 규제 갈등에 대응한 산업 구조 전환 방안",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=reg",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "제재와 시장 구조 변화에 대응해 인프라와 생산 체계를 바꾼다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_seed"
+    assert "policy_release_evidence_default" not in candidate["quality_flags"]
+
+
+def test_policy_briefing_many_dates_only_is_not_seed() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_policy_many_dates",
+            "title": "[국토부] 2026년 5월 23일 설명회 및 6월 2일 공모 안내",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=dates",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "7월 1일 접수하고 8월 15일 결과를 발표한다.",
+            "collector": "rss",
+            "tags": ["rss", "official_evidence"],
+        }
+    )
+
+    assert candidate["seed_type"] == "policy_release_evidence"
+    assert "policy_release_date_only_number" in candidate["quality_flags"]
+
+
 def test_policy_briefing_with_unusual_industry_signal_can_be_seed() -> None:
     candidate = normalize_article(
         {
@@ -274,6 +359,30 @@ def test_policy_briefing_with_unusual_industry_signal_can_be_seed() -> None:
     assert candidate["seed_type"] == "policy_release_seed"
     assert "policy_release_evidence_default" not in candidate["quality_flags"]
     assert "공식 보도자료" in candidate["why_interesting"]
+
+
+def test_normalize_preserves_cross_feed_source_metadata() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_cross_feed",
+            "title": "AI 드론 산업 규제와 공급망 논쟁",
+            "url": "https://www.yna.co.kr/view/AKR20260523000100001",
+            "source": "연합뉴스 경제",
+            "source_id": "yonhap_economy",
+            "published_at": "2026-05-23T00:00:00Z",
+            "collected_at": "2026-05-23T01:00:00+00:00",
+            "raw_summary": "산업과 경제 섹션에 함께 걸린 기사.",
+            "collector": "rss",
+            "tags": ["rss", "domestic_bridge"],
+            "source_count": 2,
+            "source_sections": ["economy", "industry"],
+            "supporting_source_ids": ["yonhap_industry"],
+        }
+    )
+
+    assert candidate["source_count"] == 2
+    assert candidate["source_sections"] == ["economy", "industry"]
+    assert candidate["supporting_source_ids"] == ["yonhap_industry"]
 
 
 def test_story_specificity_generic_fallback_is_low() -> None:

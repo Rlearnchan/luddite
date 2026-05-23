@@ -298,7 +298,9 @@ sources:
     role: domestic_bridge
     role_class: public_wire
     region: kr
-    category_hint: business_policy
+    category_hint: latest_general
+    section_name: latest
+    source_mix_notes: hold_latest_feed_short_lookback_prefer_section_feeds
     homepage_url: https://www.yna.co.kr
     rss_index_url: https://www.yna.co.kr/rss/index
     desired_feed: 최신뉴스
@@ -310,7 +312,7 @@ sources:
     collection_enabled: false
     last_probe_status: parsed
     failure_reason: null
-    recommendation: rss_verified_terms_pending
+    recommendation: hold_short_lookback_use_section_feeds
     priority: 5
     subscription: false
     auto_fetch: false
@@ -324,6 +326,8 @@ sources:
     role_class: public_wire
     region: kr
     category_hint: international_policy
+    section_name: international
+    source_mix_notes: legacy_section_source_replaced_by_yonhap_international
     homepage_url: https://www.yna.co.kr
     rss_index_url: https://www.yna.co.kr/rss/index
     desired_feed: 세계
@@ -336,6 +340,136 @@ sources:
     failure_reason: null
     recommendation: rss_verified_terms_pending
     priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: yonhap_economy
+    name: 연합뉴스 경제
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: domestic_bridge
+    role_class: public_wire
+    region: kr
+    category_hint: economy_policy_business
+    section_name: economy
+    source_mix_notes: daily_manual_section_seed_and_evidence_candidate
+    homepage_url: https://www.yna.co.kr
+    rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 경제
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/economy.xml
+    verified_feed_url: https://www.yna.co.kr/rss/economy.xml
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: enable_conservative_section_test
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: yonhap_industry
+    name: 연합뉴스 산업
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: domestic_bridge
+    role_class: public_wire
+    region: kr
+    category_hint: industry_technology_business
+    section_name: industry
+    source_mix_notes: daily_manual_section_seed_and_evidence_candidate
+    homepage_url: https://www.yna.co.kr
+    rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 산업
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/industry.xml
+    verified_feed_url: https://www.yna.co.kr/rss/industry.xml
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: enable_conservative_section_test
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: yonhap_international
+    name: 연합뉴스 세계
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: domestic_bridge
+    role_class: public_wire
+    region: kr
+    category_hint: international_policy_guarded
+    section_name: international
+    source_mix_notes: guarded_for_political_sensitivity_and_wire_single_event_items
+    homepage_url: https://www.yna.co.kr
+    rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 세계
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/international.xml
+    verified_feed_url: https://www.yna.co.kr/rss/international.xml
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: enable_guarded_section_test
+    priority: 5
+    subscription: false
+    auto_fetch: false
+
+  - id: yonhap_market
+    name: 연합뉴스 마켓+
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: numbers_bridge
+    role_class: market_wire
+    region: kr
+    category_hint: market_evidence_context
+    section_name: market
+    source_mix_notes: guarded_market_wire_evidence_context_hold_initially
+    homepage_url: https://www.yna.co.kr
+    rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 마켓+
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/market.xml
+    verified_feed_url: https://www.yna.co.kr/rss/market.xml
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: guarded_hold_until_market_wire_calibration
+    priority: 4
+    subscription: false
+    auto_fetch: false
+
+  - id: yonhap_health
+    name: 연합뉴스 건강
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: evidence_context
+    role_class: section_news
+    region: kr
+    category_hint: health_medical_guarded
+    section_name: health
+    source_mix_notes: medical_risk_guarded_hold_initially
+    homepage_url: https://www.yna.co.kr
+    rss_index_url: https://www.yna.co.kr/rss/index
+    desired_feed: 건강
+    feed_url_candidates:
+      - https://www.yna.co.kr/rss/health.xml
+    verified_feed_url: https://www.yna.co.kr/rss/health.xml
+    terms_check_required: true
+    collection_enabled: false
+    last_probe_status: parsed
+    failure_reason: null
+    recommendation: guarded_hold_until_medical_risk_calibration
+    priority: 3
     subscription: false
     auto_fetch: false
 

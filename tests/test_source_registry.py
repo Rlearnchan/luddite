@@ -31,4 +31,14 @@ def test_source_registry_v0_9_3_groups_and_fetch_policy() -> None:
     assert sources["yonhap_international_rss_candidate"].verified_feed_url == (
         "https://www.yna.co.kr/rss/international.xml"
     )
+    assert sources["yonhap_rss_candidate"].section_name == "latest"
+    assert sources["yonhap_economy"].role_class == "public_wire"
+    assert sources["yonhap_economy"].section_name == "economy"
+    assert sources["yonhap_economy"].verified_feed_url == (
+        "https://www.yna.co.kr/rss/economy.xml"
+    )
+    assert sources["yonhap_industry"].section_name == "industry"
+    assert sources["yonhap_international"].section_name == "international"
+    assert sources["yonhap_market"].role_class == "market_wire"
+    assert sources["yonhap_health"].section_name == "health"
     assert sources["korea_policy_briefing"].role == "policy_seed_and_evidence"

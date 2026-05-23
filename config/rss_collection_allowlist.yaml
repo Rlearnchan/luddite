@@ -9,12 +9,37 @@ sources:
     reason: public_feed_test_ingestion
 
   - source_id: yonhap_rss_candidate
-    collection_enabled: true
-    reason: domestic_wire_latest_seed_test
+    collection_enabled: false
+    reason: latest_short_lookback_hold_prefer_section_feeds
 
   - source_id: yonhap_international_rss_candidate
+    collection_enabled: false
+    reason: legacy_international_id_hold_use_yonhap_international
+
+  - source_id: yonhap_economy
     collection_enabled: true
-    reason: domestic_wire_international_translation_seed_test
+    fetch_limit: 120
+    reason: yonhap_section_economy_daily_manual_test
+
+  - source_id: yonhap_industry
+    collection_enabled: true
+    fetch_limit: 120
+    reason: yonhap_section_industry_daily_manual_test
+
+  - source_id: yonhap_international
+    collection_enabled: true
+    fetch_limit: 120
+    reason: yonhap_section_international_guarded_daily_manual_test
+
+  - source_id: yonhap_market
+    collection_enabled: false
+    fetch_limit: 120
+    reason: market_wire_guarded_hold_until_calibration
+
+  - source_id: yonhap_health
+    collection_enabled: false
+    fetch_limit: 120
+    reason: medical_risk_guarded_hold_until_calibration
 
   - source_id: infomax_manual
     collection_enabled: true

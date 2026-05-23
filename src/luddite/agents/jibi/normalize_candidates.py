@@ -260,6 +260,59 @@ VISUAL_HOOK_TERMS = WEIRD_TERMS | {
     "비교",
     "전후",
 }
+POLICY_RELEASE_ANNOUNCEMENT_TERMS = {
+    "회의",
+    "간담회",
+    "논의",
+    "개최",
+    "참석",
+    "업무협약",
+    "협약",
+    "보고회",
+    "설명회",
+    "공모",
+    "모집",
+    "안내",
+    "발표",
+}
+POLICY_RELEASE_MATERIAL_NUMBER_TERMS = {
+    "예산",
+    "투자",
+    "지원",
+    "보조금",
+    "가구",
+    "가계",
+    "청년",
+    "노인",
+    "근로자",
+    "소상공인",
+    "중소기업",
+    "물가",
+    "요금",
+    "임금",
+    "일자리",
+    "budget",
+    "investment",
+    "household",
+    "consumer",
+    "jobs",
+    "wage",
+}
+POLICY_RELEASE_NON_NUMBER_SIGNALS = {
+    "odd_hook",
+    "life_impact",
+    "regulatory_conflict",
+    "industry_mechanism",
+    "visual_proof_object",
+}
+POLICY_RELEASE_MATERIAL_NUMBER_RE = re.compile(
+    r"\d[\d,.]*\s*(조|억|만|명|가구|건|개|원|달러|%|퍼센트|배|톤|ha|㎢|km|mwh|gw|mw)",
+    re.IGNORECASE,
+)
+POLICY_RELEASE_DATE_RE = re.compile(
+    r"(20\d{2}\s*년|\d{1,2}\s*월\s*\d{1,2}\s*일|"
+    r"\d{4}[.-]\d{1,2}[.-]\d{1,2}|제\s*\d+\s*차)"
+)
 KOREAN_NAMED_ACTOR_TERMS = {
     "정부",
     "은행",
@@ -517,7 +570,9 @@ def _source_role_class(source: Any, source_id: str | None) -> str:
         return SOURCE_ROLE_POLICY_RELEASE
     if source_id == "the_conversation":
         return SOURCE_ROLE_ACADEMIC_EXPLAINER
-    if source_id in {"yonhap_rss_candidate", "yonhap_international_rss_candidate"}:
+    if source_id == "yonhap_market":
+        return SOURCE_ROLE_MARKET_WIRE
+    if source_id and source_id.startswith("yonhap_"):
         return SOURCE_ROLE_PUBLIC_WIRE
     if source_id == "infomax_manual":
         return SOURCE_ROLE_MARKET_WIRE
@@ -548,12 +603,19 @@ def _academic_explainer_terms_dominate(text: str) -> bool:
     return explainer_hits >= max(finance_hits, 1)
 
 
-def _policy_release_seed_signals(text: str) -> list[str]:
+def _policy_release_has_material_number(text: str) -> bool:
+    return bool(POLICY_RELEASE_MATERIAL_NUMBER_RE.search(text)) or (
+        contains_any(text, POLICY_RELEASE_MATERIAL_NUMBER_TERMS)
+        and (contains_any(text, NUMBER_TERMS) or any(char.isdigit() for char in text))
+    )
+
+
+def _policy_release_raw_seed_signals(text: str) -> list[str]:
     signals: list[str] = []
     if contains_any(text, WEIRD_TERMS | {"염소", "goat"}):
         signals.append("odd_hook")
-    if contains_any(text, NUMBER_TERMS) or any(char.isdigit() for char in text):
-        signals.append("strong_number")
+    if _policy_release_has_material_number(text):
+        signals.append("material_number")
     if contains_any(
         text,
         {
@@ -598,6 +660,35 @@ def _policy_release_seed_signals(text: str) -> list[str]:
     if contains_any(text, VISUAL_HOOK_TERMS | {"도표", "통계", "지도", "map", "chart"}):
         signals.append("visual_proof_object")
     return list(dict.fromkeys(signals))
+
+
+def _policy_release_seed_signals(text: str) -> list[str]:
+    signals = _policy_release_raw_seed_signals(text)
+    non_number_signals = [
+        signal for signal in signals if signal in POLICY_RELEASE_NON_NUMBER_SIGNALS
+    ]
+    if len(signals) >= 2:
+        return signals
+    if non_number_signals:
+        return signals
+    return []
+
+
+def _policy_release_date_only_number(text: str) -> bool:
+    if not any(char.isdigit() for char in text):
+        return False
+    if _policy_release_has_material_number(text):
+        return False
+    return bool(POLICY_RELEASE_DATE_RE.search(text)) or contains_any(
+        text,
+        POLICY_RELEASE_ANNOUNCEMENT_TERMS,
+    )
+
+
+def _policy_release_announcement_only(text: str, seed_signals: list[str]) -> bool:
+    if seed_signals:
+        return False
+    return contains_any(text, POLICY_RELEASE_ANNOUNCEMENT_TERMS)
 
 
 def _infer_editorial_category(
@@ -836,6 +927,17 @@ def _rss_quality_hints(
         quality_flags.append("pure_place_listing")
     if source_role_class == SOURCE_ROLE_POLICY_RELEASE and seed_type == "policy_release_evidence":
         quality_flags.append("policy_release_evidence_default")
+    if source_role_class == SOURCE_ROLE_POLICY_RELEASE:
+        raw_seed_signals = _policy_release_raw_seed_signals(text)
+        seed_signals = _policy_release_seed_signals(text)
+        if raw_seed_signals:
+            quality_flags.append(
+                "policy_release_seed_signals=" + ",".join(raw_seed_signals)
+            )
+        if _policy_release_date_only_number(text):
+            quality_flags.append("policy_release_date_only_number")
+        if _policy_release_announcement_only(text, seed_signals):
+            quality_flags.append("policy_release_announcement_only")
     if contains_any(text, POLITICAL_POLICY_TERMS):
         if "political_sensitivity" not in risk_flags:
             risk_flags.append("political_sensitivity")
@@ -1004,6 +1106,8 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "first_seen_at": article.get("first_seen_at") or article["collected_at"],
         "last_seen_at": article.get("last_seen_at") or article["collected_at"],
         "source_count": int(article.get("source_count") or 1),
+        "source_sections": article.get("source_sections") or [],
+        "supporting_source_ids": article.get("supporting_source_ids") or [],
         "mode": article.get("mode") or "normal",
         "seed_type": seed_type,
         "editorial_category": editorial_category or seed_type,

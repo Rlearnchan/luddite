@@ -111,3 +111,35 @@ def test_import_articles_input_file_ignores_other_inbox_files(tmp_path) -> None:
     report_text = report_path.read_text(encoding="utf-8")
     assert "Input mode: `input_file`" in report_text
     assert "Old stale item" not in output_path.read_text(encoding="utf-8")
+
+
+def test_import_articles_preserves_cross_feed_source_metadata(tmp_path) -> None:
+    input_dir = tmp_path / "articles"
+    input_dir.mkdir()
+    output_path = tmp_path / "raw_articles.jsonl"
+    report_path = tmp_path / "report.md"
+    record = {
+        "title": "Same Yonhap story",
+        "url": "https://www.yna.co.kr/view/AKR20260523000100001",
+        "source": "연합뉴스 경제",
+        "source_id": "yonhap_economy",
+        "source_count": 2,
+        "source_sections": ["economy", "industry"],
+        "supporting_source_ids": ["yonhap_industry"],
+        "tags": ["rss", "korea_business"],
+    }
+    (input_dir / "rss.jsonl").write_text(
+        json.dumps(record, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    articles, report = import_articles(
+        input_dir=input_dir,
+        output_path=output_path,
+        report_path=report_path,
+    )
+
+    assert report.imported == 1
+    assert articles[0]["source_count"] == 2
+    assert articles[0]["source_sections"] == ["economy", "industry"]
+    assert articles[0]["supporting_source_ids"] == ["yonhap_industry"]

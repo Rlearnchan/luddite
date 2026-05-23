@@ -207,11 +207,79 @@ def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_pat
 
     report = report_path.read_text(encoding="utf-8")
     assert "## Source Freshness Summary" in report
+    assert "## Source Mix Experiment Review" in report
     assert "BBC News: raw=1, top=1, recent=1" in report
     assert "NPR: raw=1, top=0, recent=0, stale=1" in report
     assert "## Near Duplicate Groups" in report
     assert "`nd_abc`" in report
     assert "shared_tokens=" in report
+
+
+def test_quality_report_contains_source_mix_review_focus(tmp_path) -> None:
+    report_path = tmp_path / "quality_source_mix.md"
+    candidates = [
+        {
+            "candidate_id": "bok",
+            "title": "BOK 자산 토큰화 연구노트",
+            "source": "한국은행",
+            "source_id": "bok",
+            "source_role_class": "research_note",
+            "seed_type": "policy_research_note",
+            "quality_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 75, "broadcast_potential_proxy": 4},
+        },
+        {
+            "candidate_id": "policy",
+            "title": "정책브리핑 가계 지원 보도자료",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "source_role_class": "policy_release",
+            "seed_type": "policy_release_seed",
+            "quality_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+        },
+        {
+            "candidate_id": "conversation",
+            "title": "SpaceX academic explainer",
+            "source": "The Conversation",
+            "source_id": "the_conversation",
+            "source_role_class": "academic_explainer",
+            "seed_type": "academic_explainer",
+            "quality_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 68, "broadcast_potential_proxy": 4},
+        },
+        {
+            "candidate_id": "yonhap",
+            "title": "연합뉴스 산업 AI 드론",
+            "source": "연합뉴스 산업",
+            "source_id": "yonhap_industry",
+            "source_role_class": "public_wire",
+            "seed_type": "industry_disruption",
+            "quality_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 66, "broadcast_potential_proxy": 4},
+        },
+    ]
+
+    write_quality_report(report_path, candidates, candidates)
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "### Source Role Distribution" in report
+    assert "- research_note: 1" in report
+    assert "- policy_release: 1" in report
+    assert "### Source Role Balance" in report
+    assert "### Source Role Cap Warnings" in report
+    assert "BOK research-note candidates" in report
+    assert "Policy Briefing seed/evidence candidates" in report
+    assert "The Conversation academic explainers" in report
+    assert "Yonhap economy/industry/international seeds" in report
 
 
 def test_quality_report_contains_candidate_funnel_and_near_miss_queue(tmp_path) -> None:
@@ -569,3 +637,34 @@ def test_top_candidates_excludes_generic_other_rationale() -> None:
     ]
 
     assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == ["specific"]
+
+
+def test_top_candidates_excludes_policy_evidence_default_even_with_high_score() -> None:
+    candidates = [
+        {
+            "candidate_id": "policy_date_only",
+            "source": "정책브리핑",
+            "seed_type": "policy_release_evidence",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [
+                "policy_release_evidence_default",
+                "policy_release_date_only_number",
+            ],
+            "scores": {"total_score": 90, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "yonhap_seed",
+            "source": "연합뉴스 산업",
+            "seed_type": "industry_disruption",
+            "final_grade": "B",
+            "recommended_action": "gather_more_evidence",
+            "quality_flags": [],
+            "why_interesting": "AI 산업정책의 구조 변화",
+            "scores": {"total_score": 50, "broadcast_potential_proxy": 3},
+        },
+    ]
+
+    assert [candidate["candidate_id"] for candidate in top_candidates(candidates)] == [
+        "yonhap_seed"
+    ]

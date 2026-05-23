@@ -57,6 +57,7 @@ class AllowlistEntry:
     source_id: str
     collection_enabled: bool = False
     reason: str | None = None
+    fetch_limit: int | None = None
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,8 @@ class SourceIngestResult:
     feed_url: str | None
     collection_enabled: bool
     status: str
+    section_name: str | None = None
+    fetch_limit: int | None = None
     fetch_status: str = "not_fetched"
     parse_status: str = "not_parsed"
     item_count: int = 0
@@ -97,6 +100,8 @@ class RssIngestReport:
     sources_skipped: int = 0
     items_fetched: int = 0
     items_written: int = 0
+    unique_urls_written: int = 0
+    duplicate_url_appearances: int = 0
     duplicates_skipped: int = 0
     failures: list[str] = field(default_factory=list)
     per_source: list[SourceIngestResult] = field(default_factory=list)
@@ -138,10 +143,15 @@ def _store_allowlist_entry(entries: dict[str, AllowlistEntry], item: dict[str, o
         source_id=str(source_id),
         collection_enabled=bool(item.get("collection_enabled", False)),
         reason=str(item["reason"]) if item.get("reason") else None,
+        fetch_limit=(
+            int(item["fetch_limit"])
+            if isinstance(item.get("fetch_limit"), int)
+            else None
+        ),
     )
 
 
-def _parse_scalar(value: str) -> str | bool | None:
+def _parse_scalar(value: str) -> str | int | bool | None:
     value = value.strip()
     if value in {"", "null", "None"}:
         return None
@@ -149,6 +159,8 @@ def _parse_scalar(value: str) -> str | bool | None:
         return True
     if value.lower() == "false":
         return False
+    if value.isdigit():
+        return int(value)
     return value.strip('"').strip("'")
 
 
@@ -179,6 +191,7 @@ def fetch_rss_articles(
     articles: list[dict[str, object]] = []
     seen_duplicate_keys: set[str] = set()
     seen_urls: set[str] = set()
+    article_by_url: dict[str, dict[str, object]] = {}
 
     for source in sources:
         remaining_total_limit = None if total_limit is None else total_limit - len(articles)
@@ -194,6 +207,7 @@ def fetch_rss_articles(
             collected_at=collected_at_text,
             seen_duplicate_keys=seen_duplicate_keys,
             seen_urls=seen_urls,
+            article_by_url=article_by_url,
             remaining_total_limit=remaining_total_limit,
         )
         report.per_source.append(result)
@@ -209,7 +223,11 @@ def fetch_rss_articles(
         report.items_fetched += result.item_count
         report.items_written += result.items_written
         report.duplicates_skipped += result.duplicates_skipped
+        report.duplicate_url_appearances += result.duplicates_skipped
         articles.extend(source_articles)
+    report.unique_urls_written = len(
+        {str(article.get("source_url_canonical")) for article in articles}
+    )
     write_jsonl(output_path, articles)
     report.items_written = len(articles)
     write_ingest_report(report_path, report, output_path)
@@ -226,6 +244,7 @@ def _ingest_source(
     collected_at: str,
     seen_duplicate_keys: set[str],
     seen_urls: set[str],
+    article_by_url: dict[str, dict[str, object]],
     remaining_total_limit: int | None,
 ) -> tuple[SourceIngestResult, list[dict[str, object]]]:
     status = _source_status(source)
@@ -238,6 +257,8 @@ def _ingest_source(
         feed_url=feed_url,
         collection_enabled=collection_enabled,
         status=status,
+        section_name=source.section_name or source.desired_feed,
+        fetch_limit=allowlist_entry.fetch_limit if allowlist_entry else None,
     )
     if status in {"manual", "subscription_manual", "disabled"} or source.type in {
         "manual",
@@ -287,7 +308,11 @@ def _ingest_source(
     result.oldest_published_at, result.newest_published_at = _published_bounds(items)
     result.sample_titles = [unescape(str(item.title).strip()) for item in items if item.title][:3]
     articles: list[dict[str, object]] = []
-    write_limit = limit_per_source
+    write_limit = (
+        allowlist_entry.fetch_limit
+        if allowlist_entry and allowlist_entry.fetch_limit
+        else limit_per_source
+    )
     if remaining_total_limit is not None:
         write_limit = min(write_limit, remaining_total_limit)
     for item in items:
@@ -299,6 +324,9 @@ def _ingest_source(
         duplicate_key = str(article["duplicate_key"])
         canonical_url = str(article["source_url_canonical"])
         if duplicate_key in seen_duplicate_keys or canonical_url in seen_urls:
+            existing = article_by_url.get(canonical_url)
+            if existing:
+                _merge_duplicate_source_metadata(existing, source)
             result.duplicates_skipped += 1
             if len(result.duplicate_examples) < 3:
                 result.duplicate_examples.append(f"{article['title']} — {canonical_url}")
@@ -310,6 +338,7 @@ def _ingest_source(
             continue
         seen_duplicate_keys.add(duplicate_key)
         seen_urls.add(canonical_url)
+        article_by_url[canonical_url] = article
         articles.append(article)
     result.items_written = len(articles)
     return result, articles
@@ -356,7 +385,36 @@ def feed_item_to_article(
         "raw_summary": truncate_summary(item.summary),
         "collector": "rss",
         "tags": ["rss", source.group or "", source.role or ""],
+        "source_count": 1,
+        "source_sections": [
+            source.section_name or source.desired_feed or source.category_hint or source.id
+        ],
+        "supporting_source_ids": [],
     }
+
+
+def _merge_duplicate_source_metadata(article: dict[str, object], source: Source) -> None:
+    primary_source_id = str(article.get("source_id") or "")
+    source_ids = [primary_source_id]
+    supporting_ids = [
+        str(value)
+        for value in article.get("supporting_source_ids", [])
+        if str(value).strip()
+    ]
+    if source.id != primary_source_id and source.id not in supporting_ids:
+        supporting_ids.append(source.id)
+    source_ids.extend(supporting_ids)
+    sections = [
+        str(value)
+        for value in article.get("source_sections", [])
+        if str(value).strip()
+    ]
+    section = source.section_name or source.desired_feed or source.category_hint or source.id
+    if section and section not in sections:
+        sections.append(section)
+    article["supporting_source_ids"] = supporting_ids
+    article["source_sections"] = sections
+    article["source_count"] = len(dict.fromkeys(source_ids))
 
 
 def stable_duplicate_key(url: str) -> str:
@@ -460,8 +518,10 @@ def write_ingest_report(path: Path, report: RssIngestReport, output_path: Path) 
         f"- sources enabled: {report.sources_enabled}",
         f"- sources fetched: {report.sources_fetched}",
         f"- sources skipped: {report.sources_skipped}",
-        f"- items fetched: {report.items_fetched}",
+        f"- raw feed items: {report.items_fetched}",
+        f"- unique URLs written: {report.unique_urls_written or report.items_written}",
         f"- items written: {report.items_written}",
+        f"- duplicate URL appearances: {report.duplicate_url_appearances}",
         f"- duplicates skipped: {report.duplicates_skipped}",
         f"- failures: {len(report.failures)}",
         f"- output: `{output_path}`",
@@ -475,6 +535,8 @@ def write_ingest_report(path: Path, report: RssIngestReport, output_path: Path) 
                 f"### {result.source_id} — {result.name}",
                 "",
                 f"- feed_url: `{result.feed_url or ''}`",
+                f"- section_name: `{result.section_name or ''}`",
+                f"- fetch_limit: {result.fetch_limit or ''}",
                 f"- collection_enabled: {result.collection_enabled}",
                 f"- status: `{result.status}`",
                 f"- fetch_status: `{result.fetch_status}`",

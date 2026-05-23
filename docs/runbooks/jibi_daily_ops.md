@@ -179,8 +179,12 @@ Source-role handling is intentionally conservative during the manual MVP:
   they use a longer freshness window and should be reviewed through the
   research-template queue rather than treated as stale RSS.
 - Policy Briefing and ministry releases are evidence-default. They become seed
-  candidates only when they show a strong number, direct life impact, regulatory
-  conflict, industrial mechanism, odd hook, or visual proof object.
+  candidates only when they show direct life impact, regulatory conflict,
+  industrial mechanism, odd hook, visual proof object, or a material number with
+  a structural signal. Dates and procedural numbers alone stay evidence.
+- Yonhap uses section feeds for the manual MVP. Economy, Industry, and
+  International are enabled; Latest is held because its RSS lookback is short,
+  while Market+ and Health remain guarded hold sources.
 
 Read the calibration sections in this order:
 
@@ -193,9 +197,11 @@ Read the calibration sections in this order:
    unchanged.
 5. `Source Allowlist Review Queue`: review suggested source actions; this
    command never edits `config/rss_collection_allowlist.yaml`.
-6. `Generic Why Template Improvement Queue`: find concrete stories blocked by
+6. `Source Mix Experiment Review`: check source-role distribution, cap warnings,
+   and the human-review focus list before judging the day's source mix.
+7. `Generic Why Template Improvement Queue`: find concrete stories blocked by
    generic `why_interesting`.
-7. `Near Miss Review Queue`: inspect high-score candidates before any append.
+8. `Near Miss Review Queue`: inspect high-score candidates before any append.
 
 Do not change thresholds based on one run. A low Top count can still be
 acceptable when the near-miss queue shows weak, stale, duplicate, or noisy

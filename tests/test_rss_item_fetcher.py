@@ -84,6 +84,7 @@ sources:
     type: rss_candidate
     status: rss_verified
     group: primary_wire
+    section_name: npr
     region: global
     verified_feed_url: https://feeds.example.com/npr.xml
   - id: guardian_rss_candidate
@@ -113,6 +114,7 @@ sources:
     reason: public_feed_test_ingestion
   - source_id: npr_rss_candidate
     collection_enabled: true
+    fetch_limit: 5
     reason: public_feed_test_ingestion
   - source_id: guardian_rss_candidate
     collection_enabled: false
@@ -133,6 +135,16 @@ def test_load_allowlist(tmp_path) -> None:
 
     assert loaded["bbc_rss_candidate"].collection_enabled is True
     assert loaded["guardian_rss_candidate"].collection_enabled is False
+
+
+def test_real_allowlist_prefers_yonhap_sections_over_latest() -> None:
+    loaded = load_allowlist()
+
+    assert loaded["yonhap_rss_candidate"].collection_enabled is False
+    assert loaded["yonhap_economy"].collection_enabled is True
+    assert loaded["yonhap_industry"].collection_enabled is True
+    assert loaded["yonhap_international"].collection_enabled is True
+    assert loaded["yonhap_economy"].fetch_limit == 120
 
 
 def test_parse_valid_rss_and_atom_items() -> None:
@@ -257,6 +269,95 @@ def test_run_dedupe_and_total_limit(tmp_path) -> None:
     assert report.duplicates_skipped == 1
     assert report.per_source[0].duplicates_skipped == 1
     assert "https://example.com/dupe" in report.per_source[0].duplicate_examples[0]
+
+
+def test_cross_feed_url_dedupe_preserves_supporting_sections(tmp_path) -> None:
+    registry = tmp_path / "sources.yaml"
+    allowlist = tmp_path / "allowlist.yaml"
+    registry.write_text(
+        """
+sources:
+  - id: yonhap_economy
+    name: 연합뉴스 경제
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: domestic_bridge
+    role_class: public_wire
+    region: kr
+    section_name: economy
+    verified_feed_url: https://feeds.example.com/yonhap-economy.xml
+  - id: yonhap_industry
+    name: 연합뉴스 산업
+    type: rss_candidate
+    status: rss_verified
+    group: korea_business
+    role: domestic_bridge
+    role_class: public_wire
+    region: kr
+    section_name: industry
+    verified_feed_url: https://feeds.example.com/yonhap-industry.xml
+""",
+        encoding="utf-8",
+    )
+    allowlist.write_text(
+        """
+sources:
+  - source_id: yonhap_economy
+    collection_enabled: true
+    fetch_limit: 10
+    reason: test
+  - source_id: yonhap_industry
+    collection_enabled: true
+    fetch_limit: 10
+    reason: test
+""",
+        encoding="utf-8",
+    )
+    duplicate_body = b"""<?xml version="1.0"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>Same Yonhap story</title>
+      <link>https://www.yna.co.kr/view/AKR20260523000100001?utm_source=rss</link>
+      <pubDate>Sat, 23 May 2026 10:00:00 +0900</pubDate>
+      <description>Cross-section story.</description>
+    </item>
+  </channel>
+</rss>
+"""
+    client = FakeHttpClient(
+        {
+            "https://feeds.example.com/yonhap-economy.xml": HttpResponse(
+                url="https://feeds.example.com/yonhap-economy.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=duplicate_body,
+            ),
+            "https://feeds.example.com/yonhap-industry.xml": HttpResponse(
+                url="https://feeds.example.com/yonhap-industry.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=duplicate_body,
+            ),
+        }
+    )
+
+    articles, report = fetch_rss_articles(
+        registry_path=registry,
+        allowlist_path=allowlist,
+        output_path=tmp_path / "rss_yonhap_dedupe.jsonl",
+        report_path=tmp_path / "rss_yonhap_dedupe.md",
+        http_client=client,
+        collected_at=datetime(2026, 5, 23, tzinfo=UTC),
+    )
+
+    assert len(articles) == 1
+    assert report.duplicates_skipped == 1
+    assert report.unique_urls_written == 1
+    assert articles[0]["source_count"] == 2
+    assert articles[0]["source_sections"] == ["economy", "industry"]
+    assert articles[0]["supporting_source_ids"] == ["yonhap_industry"]
 
 
 def test_summary_cleanup_and_truncate() -> None:

@@ -46,6 +46,14 @@ def _split_tags(value: Any) -> list[str]:
     return [item.strip() for item in str(value).replace(";", ",").split(",") if item.strip()]
 
 
+def _split_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if not value:
+        return []
+    return [item.strip() for item in str(value).replace(";", ",").split(",") if item.strip()]
+
+
 def _read_jsonl(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
     records: list[dict[str, Any]] = []
     failures: list[str] = []
@@ -123,6 +131,9 @@ def normalize_article_record(
         "raw_summary": raw.get("raw_summary") or raw.get("summary") or None,
         "collector": str(raw.get("collector") or source.type or "manual"),
         "tags": _split_tags(raw.get("tags")),
+        "source_count": int(raw.get("source_count") or 1),
+        "source_sections": _split_list(raw.get("source_sections")),
+        "supporting_source_ids": _split_list(raw.get("supporting_source_ids")),
     }
     return article
 
