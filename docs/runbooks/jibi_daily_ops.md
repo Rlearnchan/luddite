@@ -63,7 +63,9 @@ make jibi-manual-update
 
 The default mode is dry-run. It fetches date-scoped RSS, imports only that file,
 normalizes, scores, clusters, renders the Daily Digest, writes the report-only
-content enrichment review, then runs `append-jibi-sheet --dry-run`.
+content enrichment review, then runs `append-jibi-sheet --dry-run` pinned to
+`outputs/daily_digest/YYYY-MM-DD_sheet_append_preview.csv`. The runner never
+uses the append command's latest-preview fallback.
 
 Use a specific date when needed:
 
@@ -77,6 +79,17 @@ Logs are appended locally:
 ~/Library/Logs/luddite/jibi_manual_YYYY-MM-DD.log
 ~/Library/Logs/luddite/jibi_manual_YYYY-MM-DD.err.log
 ```
+
+Each run also writes a local manifest:
+
+```text
+outputs/reports/jibi_manual_update_YYYY-MM-DD.md
+outputs/reports/jibi_manual_update_YYYY-MM-DD.json
+```
+
+The manifest records the append mode, target sheet, pinned preview CSV, digest
+and report paths, content-enrichment status, append status, and log paths. It
+does not include credential paths or article bodies.
 
 The runner uses a lock directory at `/tmp/luddite-jibi-manual-update.lock` so
 two runs cannot overlap. If fetch, import, normalize, score, cluster, or digest
@@ -98,6 +111,7 @@ Safety gates:
 - Accepted modes are `dry_run` and `staging_append`.
 - `staging_append` may target only the exact `jibi 후보` tab.
 - The runner refuses `주제 찾기` in any mode.
+- The runner verifies the date-specific preview CSV exists before append.
 - Unknown sources are not generically extracted during content enrichment unless
   `render-jibi-content-enrichment-review --allow-generic-extraction` is run
   manually outside the one-shot runner.
@@ -217,7 +231,8 @@ manually.
 
 For the MVP team-evaluation phase, prefer `make jibi-manual-update` with
 `JIBI_APPEND_MODE=staging_append` over calling `append-jibi-sheet --no-dry-run`
-directly. The one-shot runner applies the target-sheet guard first.
+directly. The one-shot runner applies the target-sheet guard first and pins the
+append to that run's date-specific preview CSV.
 
 ## Research Team Feedback Loop
 
@@ -234,7 +249,8 @@ existing columns:
 Suggested rhythm:
 
 1. Run the manual one-shot in dry-run mode for 2-3 days.
-2. When reports look stable, run opt-in `staging_append` to `jibi 후보`.
+2. When reports look stable, run opt-in `staging_append` to `jibi 후보` once
+   daily. Do not run hourly appends during MVP evaluation.
 3. Let research teammates leave one-line `notes` for several days.
 4. Analyze the feedback later before changing gates, source allowlists, or
    generic-why templates.

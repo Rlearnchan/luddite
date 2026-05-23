@@ -27,6 +27,7 @@ from luddite.agents.jibi.append_to_sheet import app as append_jibi_sheet_app
 from luddite.agents.jibi.cluster_candidates import app as cluster_jibi_candidates_app
 from luddite.agents.jibi.content_enrichment import app as jibi_content_enrichment_app
 from luddite.agents.jibi.daily_digest import app as jibi_digest_app
+from luddite.agents.jibi.manual_ops import app as jibi_manual_run_summary_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
 from luddite.agents.jibi.ops_safety import app as jibi_ops_guard_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
@@ -118,6 +119,7 @@ app.add_typer(
     name="render-jibi-content-enrichment-review",
 )
 app.add_typer(jibi_ops_guard_app, name="jibi-ops-guard")
+app.add_typer(jibi_manual_run_summary_app, name="jibi-manual-run-summary")
 app.add_typer(probe_rss_sources_app, name="probe-rss-sources")
 
 
