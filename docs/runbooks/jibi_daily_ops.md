@@ -105,6 +105,11 @@ snapshot so the ingest report can show `new_since_previous_run` and
 same-day evening runs and next-day RSS lookback checks; it is not yet a full
 article database.
 
+The RSS ingest report also shows percent new/drop churn and a report-only
+cadence recommendation. Treat this as operator telemetry, not a quality score:
+newness can indicate RSS window movement, but it does not make a weak article a
+good seed.
+
 The runner uses a lock directory at `/tmp/luddite-jibi-manual-update.lock` so
 two runs cannot overlap. The runner only removes the lock when the current
 process acquired it, so a failed second run cannot delete another run's lock. If
@@ -131,6 +136,43 @@ Safety gates:
 - Unknown sources are not generically extracted during content enrichment unless
   `render-jibi-content-enrichment-review --allow-generic-extraction` is run
   manually outside the one-shot runner.
+
+## 3-5 Day Research-Team Experiment
+
+Run one visible board per day unless there is a strong editorial reason to do
+otherwise.
+
+Daily flow:
+
+1. Morning: run `make jibi-review-board-replace`.
+2. Research teammates write one-line free-text comments in their reviewer
+   columns.
+3. After comments: run `make jibi-review-feedback JIBI_DATE=YYYY-MM-DD`.
+4. Optional evening: run RSS dry-run/history observation only. Do not replace
+   the visible board after reviewers start writing.
+5. Next morning: read/snapshot feedback before replacing the board.
+
+Guardrails:
+
+- Do not use `JIBI_ALLOW_REVIEW_OVERWRITE=1` unless feedback was already
+  summarized or intentionally archived.
+- Visible `일시` is the board registration time. Run date and published date
+  remain internal/report-level details.
+- Reviewers can write natural text. Prefix tags such as `seed`, `evidence`,
+  `needs`, `merge`, or `reject` are helpful but optional.
+- `점수` is Jibi confidence, not an instruction to approve.
+- Local review-board history stores hidden metadata such as source role,
+  seed type, story fingerprint, and score so feedback calibration still works
+  after candidate JSONL files rotate.
+- Each bundle review CSV has a local
+  `*_bundle_review_sheet_metadata.json` sidecar. Keep it with local outputs; it
+  is not a visible Sheet schema change.
+- History/newness is for operating cadence and source diagnostics. Do not use
+  it as a scoring boost yet.
+- Stay on JSONL article history until queries, volume, joins, multi-process
+  writes, retention, or a syuka-ops bridge make SQLite worth the extra shape.
+- Guardian section experiments remain optional and controlled. Do not enable a
+  broad Guardian feed by default.
 
 ## Real Inbox Or RSS Dry-run
 

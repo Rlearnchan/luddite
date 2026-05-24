@@ -308,6 +308,8 @@ def test_article_history_tracks_new_and_previous_run_delta(tmp_path) -> None:
     assert len(first_articles) == 1
     assert first_report.article_history
     assert first_report.article_history.new_since_previous_run == 1
+    assert first_report.article_history.percent_new_since_previous_run == 100.0
+    assert first_report.article_history.churn_label == "high_churn"
     assert len(second_articles) == 2
     assert second_report.article_history
     assert second_report.article_history.previous_run_id == first_report.article_history.run_id
@@ -315,9 +317,63 @@ def test_article_history_tracks_new_and_previous_run_delta(tmp_path) -> None:
     assert second_report.article_history.returning_known == 1
     assert second_report.article_history.new_since_previous_run == 1
     assert second_report.article_history.dropped_since_previous_run == 0
+    assert second_report.article_history.percent_new_since_previous_run == 50.0
+    assert second_report.article_history.churn_label == "high_churn"
     assert len(read_jsonl(history_path)) == 2
     assert len(read_jsonl(run_ledger_path)) == 2
     assert "## Article History" in (tmp_path / "rss_second.md").read_text(encoding="utf-8")
+
+
+def test_article_history_same_urls_report_low_churn(tmp_path) -> None:
+    registry = tmp_path / "sources.yaml"
+    allowlist = tmp_path / "allowlist.yaml"
+    history_path = tmp_path / "jibi_article_history.jsonl"
+    run_ledger_path = tmp_path / "jibi_article_runs.jsonl"
+    _write_registry(registry)
+    _write_allowlist(allowlist)
+    client = FakeHttpClient(
+        {
+            "https://feeds.example.com/bbc.xml": HttpResponse(
+                url="https://feeds.example.com/bbc.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=VALID_RSS,
+            )
+        }
+    )
+
+    fetch_rss_articles(
+        registry_path=registry,
+        allowlist_path=allowlist,
+        output_path=tmp_path / "rss_first.jsonl",
+        report_path=tmp_path / "rss_first.md",
+        history_path=history_path,
+        run_ledger_path=run_ledger_path,
+        http_client=client,
+        source_id="bbc_rss_candidate",
+        collected_at=datetime(2026, 5, 18, 0, 0, tzinfo=UTC),
+    )
+    _articles, report = fetch_rss_articles(
+        registry_path=registry,
+        allowlist_path=allowlist,
+        output_path=tmp_path / "rss_second.jsonl",
+        report_path=tmp_path / "rss_second.md",
+        history_path=history_path,
+        run_ledger_path=run_ledger_path,
+        http_client=client,
+        source_id="bbc_rss_candidate",
+        collected_at=datetime(2026, 5, 18, 1, 0, tzinfo=UTC),
+    )
+
+    assert report.article_history
+    assert report.article_history.new_since_previous_run == 0
+    assert report.article_history.dropped_since_previous_run == 0
+    assert report.article_history.percent_new_since_previous_run == 0.0
+    assert report.article_history.percent_dropped_since_previous_run == 0.0
+    assert report.article_history.churn_label == "low_churn"
+    report_text = (tmp_path / "rss_second.md").read_text(encoding="utf-8")
+    assert "churn label: `low_churn`" in report_text
+    assert "one_visible_board_per_day_is_enough" in report_text
 
 
 def test_source_id_and_limit_per_source(tmp_path) -> None:

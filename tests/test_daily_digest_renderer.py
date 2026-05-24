@@ -428,11 +428,19 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     )
     with csv_path.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
+    metadata_path = csv_path.with_name(f"{csv_path.stem}_metadata.json")
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     assert rows[0]["제목"] == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
     assert "merged_seed" not in rows[0]["설명"]
     assert "review_primary_and_bundle_supporting" not in rows[0]["설명"]
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in rows[0]["설명"]
     assert rows[0]["점수"] == "80점 · B · 자료 보강 필요"
+    assert metadata["rows"][0]["ID"] == rows[0]["ID"]
+    assert metadata["rows"][0]["source"] == "한국은행"
+    assert metadata["rows"][0]["source_role"] == "research_note"
+    assert metadata["rows"][0]["seed_type"] == "macro_research_note"
+    assert metadata["rows"][0]["bundle_type"] == "merged_seed"
+    assert metadata["rows"][0]["run_date"] == "2026-05-23"
 
 
 def test_bundle_review_marks_reappearing_story_from_history(tmp_path) -> None:

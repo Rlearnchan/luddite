@@ -233,3 +233,47 @@ def test_render_review_history_calibration_aggregates_multiday_feedback(tmp_path
     report = outputs.markdown_path.read_text(encoding="utf-8")
     assert "Source-Level Feedback Summary" in report
     assert "Report-Only Recommendations" in report
+
+
+def test_review_history_calibration_prefers_durable_row_metadata(tmp_path) -> None:
+    history_path = tmp_path / "jibi_review_board_history.jsonl"
+    candidates_path = tmp_path / "missing_candidates.jsonl"
+    history_path.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-24",
+                "created_at": "2026-05-24T00:00:00+00:00",
+                "rows": [
+                    {
+                        "일시": "2026-05-24 09:30",
+                        "제목": "공공 AI 도입",
+                        "메인 링크": "https://www.yna.co.kr/view/AKR202605240001",
+                        "리뷰-성원": "seed — 현장 사례로 좋음",
+                        "ID": "2026-05-24:story_bundle_ai",
+                        "story_fingerprint": "public_ai_adoption",
+                        "source": "연합뉴스 산업",
+                        "source_id": "yonhap_industry",
+                        "source_role": "public_wire",
+                        "seed_type": "public_ai_governance",
+                        "bundle_type": "needs_external_sources",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    _outputs, summary = render_review_history_calibration(
+        history_path=history_path,
+        candidates_path=candidates_path,
+        run_date="2026-05-24",
+        markdown_path=tmp_path / "calibration.md",
+        json_path=tmp_path / "calibration.json",
+    )
+
+    assert summary["source_feedback"][0]["key"] == "연합뉴스 산업"
+    assert summary["source_role_feedback"][0]["key"] == "public_wire"
+    assert summary["seed_type_feedback"][0]["key"] == "public_ai_governance"
+    assert summary["rows"][0]["source_role"] == "public_wire"

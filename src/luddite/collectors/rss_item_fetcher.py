@@ -604,8 +604,15 @@ def _article_history_report_lines(history: ArticleHistorySummary | None) -> list
         f"- previous run URLs: {history.previous_run_urls}",
         f"- new since previous run: {history.new_since_previous_run}",
         f"- dropped since previous run: {history.dropped_since_previous_run}",
+        f"- percent new since previous run: {history.percent_new_since_previous_run:.2f}%",
+        f"- percent dropped since previous run: {history.percent_dropped_since_previous_run:.2f}%",
+        f"- churn label: `{history.churn_label}`",
         f"- history ledger: `{history.history_path}`",
         f"- run ledger: `{history.run_ledger_path}`",
+        "",
+        "### Cadence Recommendation",
+        "",
+        *_cadence_recommendation_lines(history),
         "",
         "### Source Delta",
         "",
@@ -643,6 +650,28 @@ def _article_history_report_lines(history: ArticleHistorySummary | None) -> list
         lines.append("- none")
     lines.append("")
     return lines
+
+
+def _cadence_recommendation_lines(history: ArticleHistorySummary) -> list[str]:
+    if history.churn_label == "high_churn":
+        return [
+            "- recommendation: optional_evening_rss_observation_only",
+            "- reason: RSS moving window churn is high; inspect new/dropped "
+            "examples before changing cadence",
+            "- guardrail: do not replace the visible board twice after reviewers start writing",
+        ]
+    if history.churn_label == "normal_churn":
+        return [
+            "- recommendation: one_visible_board_per_day_plus_optional_rss_check",
+            "- reason: RSS churn is noticeable but not enough to justify a "
+            "second visible board by itself",
+            "- guardrail: keep newness report-only; do not use it as a scoring boost yet",
+        ]
+    return [
+        "- recommendation: one_visible_board_per_day_is_enough",
+        "- reason: RSS churn is low versus the previous run",
+        "- guardrail: use evening runs for observation only, not board replacement",
+    ]
 
 
 @app.callback(invoke_without_command=True)

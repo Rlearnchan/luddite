@@ -427,16 +427,16 @@ def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, st
     return cells
 
 
-def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, str | int]]:
+def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, object]]:
     if not existing_values:
         return []
     header = existing_values[0]
     indexes = {column: _column_index(header, column) for column in BUNDLE_REVIEW_SHEET_COLUMNS}
-    rows: list[dict[str, str | int]] = []
+    rows: list[dict[str, object]] = []
     for row_number, row in enumerate(existing_values[1:], start=2):
         if not any(str(value).strip() for value in row):
             continue
-        item: dict[str, str | int] = {"row": row_number}
+        item: dict[str, object] = {"row": row_number}
         for column in BUNDLE_REVIEW_SHEET_COLUMNS:
             column_index = indexes.get(column)
             item[column] = (
@@ -453,6 +453,66 @@ def _fingerprint_from_review_id(value: str) -> str:
     if ":" in text:
         return text.rsplit(":", 1)[1]
     return text
+
+
+def _review_board_metadata_paths(preview_csv: Path) -> list[Path]:
+    return sorted(preview_csv.parent.glob("*_bundle_review_sheet_metadata.json"))
+
+
+def _load_review_board_metadata_index(preview_csv: Path) -> dict[str, dict[str, object]]:
+    index: dict[str, dict[str, object]] = {}
+    for path in _review_board_metadata_paths(preview_csv):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for row in payload.get("rows", []):
+            if not isinstance(row, dict):
+                continue
+            keys = {
+                str(row.get("ID") or "").strip(),
+                str(row.get("review_item_id") or "").strip(),
+                str(row.get("story_bundle_id") or "").strip(),
+                str(row.get("story_fingerprint") or "").strip(),
+            }
+            for key in keys:
+                if key:
+                    index.setdefault(key, row)
+    return index
+
+
+def _enrich_snapshot_row(
+    row: dict[str, object],
+    metadata_index: dict[str, dict[str, object]],
+) -> None:
+    review_id = str(row.get("ID") or "").strip()
+    fingerprint = str(row.get("story_fingerprint") or "").strip()
+    metadata = metadata_index.get(review_id) or metadata_index.get(fingerprint) or {}
+    for key in [
+        "review_item_id",
+        "registered_at",
+        "run_date",
+        "story_bundle_id",
+        "title",
+        "score",
+        "total_score",
+        "main_link",
+        "sub_links",
+        "source",
+        "source_id",
+        "source_role",
+        "source_role_class",
+        "seed_type",
+        "bundle_type",
+        "suggested_operator_action",
+        "primary_candidate_id",
+        "supporting_candidate_ids",
+        "evidence_candidate_ids",
+        "candidate_count",
+    ]:
+        value = metadata.get(key)
+        if value not in (None, "", []):
+            row[key] = value
 
 
 def _append_review_board_history(payload: dict[str, object], output_dir: Path) -> Path:
@@ -473,15 +533,18 @@ def _write_review_board_snapshot(
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S_%f")
     snapshot_path = output_dir / f"jibi_review_board_snapshot_{timestamp}.json"
+    metadata_index = _load_review_board_metadata_index(preview_csv)
     rows = _snapshot_rows(existing_values)
     for row in rows:
         review_id = str(row.get("ID") or "")
         row["story_fingerprint"] = _fingerprint_from_review_id(review_id)
+        _enrich_snapshot_row(row, metadata_index)
     payload = {
         "created_at": datetime.now(UTC).isoformat(),
         "run_date": _preview_date(preview_csv),
         "sheet_name": sheet_name,
         "preview_csv": str(preview_csv),
+        "metadata_sidecars": [str(path) for path in _review_board_metadata_paths(preview_csv)],
         "reviewer_columns": REVIEWER_COLUMNS,
         "rows": rows,
     }

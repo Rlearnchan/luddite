@@ -795,6 +795,33 @@ def test_bundle_review_replace_refuses_to_overwrite_existing_comments(
         "리뷰-동찬": "reject — 단독으로 약함",
         "ID": "2026-05-23:story_bundle_old",
     }
+    (tmp_path / "2026-05-23_bundle_review_sheet_metadata.json").write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "rows": [
+                    {
+                        "ID": "2026-05-23:story_bundle_old",
+                        "review_item_id": "2026-05-23:story_bundle_old",
+                        "story_fingerprint": "story_bundle_old",
+                        "source": "연합뉴스 산업",
+                        "source_id": "yonhap_industry",
+                        "source_role": "public_wire",
+                        "seed_type": "platform_labor_market",
+                        "bundle_type": "needs_external_sources",
+                        "suggested_operator_action": "collect_second_source",
+                        "main_link": "https://example.com/old",
+                        "sub_links": ["https://example.com/supporting"],
+                        "score": "72점 · B",
+                        "registered_at": "2026-05-23 09:00",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     client = FakeGoogleSheetsClient(
         sheet_id=99,
         values=[
@@ -827,6 +854,10 @@ def test_bundle_review_replace_refuses_to_overwrite_existing_comments(
     snapshot = json.loads(report.review_snapshot_path.read_text(encoding="utf-8"))
     assert snapshot["rows"][0]["리뷰-동찬"] == "reject — 단독으로 약함"
     assert snapshot["rows"][0]["story_fingerprint"] == "story_bundle_old"
+    assert snapshot["rows"][0]["source"] == "연합뉴스 산업"
+    assert snapshot["rows"][0]["source_role"] == "public_wire"
+    assert snapshot["rows"][0]["seed_type"] == "platform_labor_market"
+    assert snapshot["rows"][0]["sub_links"] == ["https://example.com/supporting"]
     assert client.cleared is False
     assert client.header_updates == []
 

@@ -565,6 +565,7 @@ def write_bundle_review_sheet_preview(
         top,
         near_miss_limit=bundle_near_miss_limit,
     )[:review_board_limit]
+    metadata_rows: list[dict[str, Any]] = []
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
@@ -591,26 +592,110 @@ def write_bundle_review_sheet_preview(
                 )
             history_status = _record_history_status(record, history_index)
             primary_title = record.get("primary_title") or representative.get("title") or ""
-            writer.writerow(
-                _bundle_review_row(
-                    digest_date=digest_date,
-                    registered_at=registered_at_value,
-                    review_item_id=f"{digest_date}:{record['story_bundle_id']}",
-                    review_title=_human_review_title(
-                        record,
-                        representative,
-                        str(primary_title),
-                    ),
-                    candidate=representative,
-                    candidate_title=primary_title,
-                    jibi_judgment=_bundle_judgment(record, fit),
-                    reason=_join_distinct_reason(str(record["why_bundle"]), reason),
-                    sub_links=_related_bundle_links(record, candidate_by_id, limit=3),
-                    related_titles=_related_bundle_titles(record),
+            review_item_id = f"{digest_date}:{record['story_bundle_id']}"
+            review_title = _human_review_title(
+                record,
+                representative,
+                str(primary_title),
+            )
+            sub_links = _related_bundle_links(record, candidate_by_id, limit=3)
+            jibi_judgment = _bundle_judgment(record, fit)
+            joined_reason = _join_distinct_reason(str(record["why_bundle"]), reason)
+            row = _bundle_review_row(
+                digest_date=digest_date,
+                registered_at=registered_at_value,
+                review_item_id=review_item_id,
+                review_title=review_title,
+                candidate=representative,
+                candidate_title=primary_title,
+                jibi_judgment=jibi_judgment,
+                reason=joined_reason,
+                sub_links=sub_links,
+                related_titles=_related_bundle_titles(record),
+                record=record,
+                history_status=history_status,
+            )
+            writer.writerow(row)
+            metadata_rows.append(
+                _bundle_review_metadata_row(
+                    row=row,
                     record=record,
-                    history_status=history_status,
+                    candidate=representative,
+                    review_item_id=review_item_id,
+                    registered_at=registered_at_value,
+                    run_date=digest_date,
+                    sub_links=sub_links,
                 )
             )
+    _write_bundle_review_metadata(
+        _bundle_review_metadata_path(path),
+        rows=metadata_rows,
+        digest_date=digest_date,
+        registered_at=registered_at_value,
+    )
+
+
+def _bundle_review_metadata_path(path: Path) -> Path:
+    return path.with_name(f"{path.stem}_metadata.json")
+
+
+def _write_bundle_review_metadata(
+    path: Path,
+    *,
+    rows: list[dict[str, Any]],
+    digest_date: str,
+    registered_at: str,
+) -> None:
+    payload = {
+        "run_date": digest_date,
+        "registered_at": registered_at,
+        "visible_columns": BUNDLE_REVIEW_SHEET_COLUMNS,
+        "rows": rows,
+    }
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _bundle_review_metadata_row(
+    *,
+    row: dict[str, Any],
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    review_item_id: str,
+    registered_at: str,
+    run_date: str,
+    sub_links: str,
+) -> dict[str, Any]:
+    return {
+        "ID": review_item_id,
+        "review_item_id": review_item_id,
+        "registered_at": registered_at,
+        "run_date": run_date,
+        "story_fingerprint": str(record.get("story_fingerprint") or ""),
+        "story_bundle_id": str(record.get("story_bundle_id") or ""),
+        "title": str(row.get("제목") or record.get("bundle_title") or ""),
+        "score": row.get("점수", ""),
+        "total_score": _total_score(candidate),
+        "main_link": str(row.get("메인 링크") or ""),
+        "sub_links": [link.strip() for link in sub_links.split("|") if link.strip()],
+        "source": str(candidate.get("source") or ""),
+        "source_id": str(candidate.get("source_id") or ""),
+        "source_role": str(candidate.get("source_role_class") or "unknown"),
+        "source_role_class": str(candidate.get("source_role_class") or "unknown"),
+        "seed_type": str(candidate.get("seed_type") or "unknown"),
+        "bundle_type": str(record.get("bundle_type") or ""),
+        "suggested_operator_action": str(record.get("suggested_operator_action") or ""),
+        "primary_candidate_id": str(record.get("primary_candidate_id") or ""),
+        "supporting_candidate_ids": [
+            str(item) for item in record.get("supporting_candidate_ids", [])
+        ],
+        "evidence_candidate_ids": [
+            str(item) for item in record.get("evidence_candidate_ids", [])
+        ],
+        "candidate_count": int(record.get("candidate_count") or 0),
+    }
 
 
 def _bundle_judgment(record: dict[str, Any], fit: str) -> str:

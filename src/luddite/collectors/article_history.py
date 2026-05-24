@@ -39,6 +39,9 @@ class ArticleHistorySummary:
     previous_run_urls: int = 0
     new_since_previous_run: int = 0
     dropped_since_previous_run: int = 0
+    percent_new_since_previous_run: float = 0.0
+    percent_dropped_since_previous_run: float = 0.0
+    churn_label: str = "low_churn"
     per_source: list[SourceHistoryDelta] = field(default_factory=list)
     new_examples: list[dict[str, str]] = field(default_factory=list)
     dropped_examples: list[dict[str, str]] = field(default_factory=list)
@@ -74,6 +77,9 @@ def update_article_history(
     else:
         new_since_previous_urls = set(current_urls)
         dropped_since_previous_urls = set()
+    percent_new = _percentage(len(new_since_previous_urls), len(current_urls))
+    percent_dropped = _percentage(len(dropped_since_previous_urls), len(previous_urls))
+    churn_label = _churn_label(percent_new, percent_dropped)
 
     updated_history = dict(history_before)
     for canonical_url, article in current_by_url.items():
@@ -120,6 +126,9 @@ def update_article_history(
         "previous_run_urls": len(previous_urls),
         "new_since_previous_run": len(new_since_previous_urls),
         "dropped_since_previous_run": len(dropped_since_previous_urls),
+        "percent_new_since_previous_run": percent_new,
+        "percent_dropped_since_previous_run": percent_dropped,
+        "churn_label": churn_label,
         "canonical_urls": sorted(current_urls),
         "items": sorted(run_items, key=lambda item: item["canonical_url"]),
     }
@@ -140,6 +149,9 @@ def update_article_history(
         previous_run_urls=len(previous_urls),
         new_since_previous_run=len(new_since_previous_urls),
         dropped_since_previous_run=len(dropped_since_previous_urls),
+        percent_new_since_previous_run=percent_new,
+        percent_dropped_since_previous_run=percent_dropped,
+        churn_label=churn_label,
         per_source=_source_deltas(
             current_by_url=current_by_url,
             previous_by_url=previous_by_url,
@@ -155,6 +167,21 @@ def update_article_history(
 def make_run_id(run_date: str, collected_at: str) -> str:
     safe_timestamp = RUN_ID_SAFE_RE.sub("", collected_at)[:16]
     return f"rss_{run_date}_{safe_timestamp}"
+
+
+def _percentage(numerator: int, denominator: int) -> float:
+    if denominator <= 0:
+        return 0.0
+    return round(numerator / denominator * 100, 2)
+
+
+def _churn_label(percent_new: float, percent_dropped: float) -> str:
+    churn = max(percent_new, percent_dropped)
+    if churn <= 5:
+        return "low_churn"
+    if churn <= 25:
+        return "normal_churn"
+    return "high_churn"
 
 
 def _load_history(path: Path) -> dict[str, dict[str, Any]]:

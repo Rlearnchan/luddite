@@ -299,6 +299,7 @@ def _candidate_metadata_index(path: Path) -> dict[str, dict[str, str]]:
         }
         metadata = {
             "source": str(candidate.get("source") or "").strip(),
+            "source_id": str(candidate.get("source_id") or ""),
             "source_role": str(candidate.get("source_role_class") or "unknown"),
             "seed_type": str(candidate.get("seed_type") or "unknown"),
             "candidate_id": str(candidate.get("candidate_id") or ""),
@@ -318,6 +319,7 @@ def _metadata_for_row(
     metadata = candidate_index.get(canonicalize_url(link), {})
     return {
         "source": metadata.get("source") or _domain(link),
+        "source_id": metadata.get("source_id") or "",
         "source_role": metadata.get("source_role") or "unknown",
         "seed_type": metadata.get("seed_type") or "unknown",
         "candidate_id": metadata.get("candidate_id") or "",
@@ -612,7 +614,14 @@ def _metadata_enriched_rows(
             {str(key): str(value) for key, value in item.items()},
             candidate_index,
         )
-        item.update(metadata)
+        for key, value in metadata.items():
+            current = str(item.get(key) or "").strip()
+            if not current or current == "unknown":
+                item[key] = value
+        if not str(item.get("source_role") or "").strip():
+            item["source_role"] = item.get("source_role_class") or "unknown"
+        if not str(item.get("source_role_class") or "").strip():
+            item["source_role_class"] = item.get("source_role") or "unknown"
         enriched.append(item)
     return enriched
 
