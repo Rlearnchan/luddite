@@ -104,6 +104,17 @@ def _note_payload(note: str) -> dict[str, str]:
     return {"tag": parse_review_tag(note), "note": note.strip()}
 
 
+def _row_registered_at(row: dict[str, Any]) -> str:
+    return str(row.get("일시") or row.get("날짜") or "").strip()
+
+
+def _row_date(row: dict[str, Any], fallback: str = "") -> str:
+    value = _row_registered_at(row)
+    if len(value) >= 10:
+        return value[:10]
+    return fallback
+
+
 def summarize_review_feedback(
     rows: list[dict[str, str]],
     *,
@@ -123,7 +134,8 @@ def summarize_review_feedback(
         tags = {note["tag"] for note in reviewer_notes.values() if note["note"]}
         row_payload = {
             "row": index,
-            "date": row.get("날짜", ""),
+            "date": _row_date(row, run_date),
+            "registered_at": _row_registered_at(row),
             "title": row.get("제목", ""),
             "score": row.get("점수", ""),
             "id": row.get("ID", ""),
@@ -192,9 +204,9 @@ def _markdown(summary: dict[str, Any]) -> str:
 
 def _default_run_date(rows: list[dict[str, str]]) -> str:
     for row in rows:
-        value = str(row.get("날짜", "")).strip()
+        value = _row_registered_at(row)
         if value:
-            return value
+            return value[:10]
     return datetime.now(UTC).date().isoformat()
 
 
@@ -236,8 +248,14 @@ def render_review_feedback_summary(
 ) -> tuple[ReviewFeedbackPaths, dict[str, Any]]:
     loaded = config or load_append_config()
     rows = _rows_from_csv(input_csv) if input_csv else _read_sheet_rows(loaded)
-    required_columns = [column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "점수"]
+    required_columns = [
+        column
+        for column in BUNDLE_REVIEW_SHEET_COLUMNS
+        if column not in {"점수", "일시"}
+    ]
     missing = [column for column in required_columns if rows and column not in rows[0]]
+    if rows and "일시" not in rows[0] and "날짜" not in rows[0]:
+        missing.append("일시")
     if missing:
         raise ValueError("Review board is missing columns: " + ", ".join(missing))
     date_value = run_date or _default_run_date(rows)
@@ -323,7 +341,7 @@ def _history_payload_rows(history_path: Path) -> list[dict[str, Any]]:
             if not isinstance(row, dict):
                 continue
             item = {str(key): str(value) for key, value in row.items()}
-            item["날짜"] = item.get("날짜") or run_date
+            item["일시"] = item.get("일시") or item.get("날짜") or run_date
             item["story_fingerprint"] = _history_key_from_row(item)
             item["_snapshot_created_at"] = snapshot_created_at
             item["_source_kind"] = "history"
@@ -410,7 +428,13 @@ def _story_reappearance_summary(rows: list[dict[str, Any]]) -> list[dict[str, An
             for note in _review_tags_for_row(row).values():
                 if note["note"]:
                     tag_counts[note["tag"]] += 1
-        dates = sorted({str(item.get("날짜") or "") for item in items if item.get("날짜")})
+        dates = sorted(
+            {
+                _row_date(item)
+                for item in items
+                if _row_date(item)
+            }
+        )
         payload.append(
             {
                 "story_fingerprint": key,
@@ -442,7 +466,8 @@ def _strong_disagreements(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         disagreements.append(
             {
-                "date": row.get("날짜", ""),
+                "date": _row_date(row),
+                "registered_at": _row_registered_at(row),
                 "title": row.get("제목", ""),
                 "id": row.get("ID", ""),
                 "story_fingerprint": row.get("story_fingerprint", ""),
@@ -535,7 +560,7 @@ def summarize_review_history_calibration(
     rows_by_date: Counter[str] = Counter()
     normalized_rows: list[dict[str, Any]] = []
     for row in rows:
-        date_value = str(row.get("날짜") or run_date)
+        date_value = _row_date(row, run_date)
         rows_by_date[date_value] += 1
         _ = reviewer_completion[date_value]
         reviewer_notes = _review_tags_for_row(row)

@@ -213,7 +213,7 @@ outputs/daily_digest/YYYY-MM-DD_bundle_review_sheet.csv
 
 | column | 설명 |
 |---|---|
-| `날짜` | 수집일자 |
+| `일시` | 보드 등록 시각(Asia/Seoul) |
 | `제목` | 사람이 먼저 판단할 이야기 묶음 |
 | `점수` | `72점 · B · 보강 필요` 형식의 Jibi 신뢰도 힌트 |
 | `메인 링크` | 대표 기사/자료 링크 |

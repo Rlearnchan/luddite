@@ -283,7 +283,7 @@ Good one-line feedback examples:
 
 Current review columns in the shared sheet:
 
-- `날짜`: 수집일자.
+- `일시`: board row registration timestamp in Asia/Seoul time.
 - `제목`: reviewer-facing bundle title.
 - `점수`: Jibi ranking hint, e.g. `72점 · B · 자료 보강 필요`; not a command.
 - `메인 링크`: primary source link.

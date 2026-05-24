@@ -10,7 +10,8 @@ from luddite.agents.jibi.render_daily_digest import (
 from luddite.utils.jsonl import write_jsonl
 
 
-def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
+def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("JIBI_REVIEW_BOARD_REGISTERED_AT", "2026-05-17 09:30")
     input_path = tmp_path / "scored.jsonl"
     output_dir = tmp_path / "daily_digest"
     write_jsonl(
@@ -103,7 +104,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
         bundle_rows = list(csv.DictReader(source))
     assert len(bundle_rows) == 1
     assert list(bundle_rows[0].keys()) == [
-        "날짜",
+        "일시",
         "제목",
         "점수",
         "메인 링크",
@@ -114,7 +115,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path) -> None:
         "리뷰-형찬",
         "ID",
     ]
-    assert bundle_rows[0]["날짜"] == "2026-05-17"
+    assert bundle_rows[0]["일시"] == "2026-05-17 09:30"
     assert bundle_rows[0]["제목"] == "전당포 주식회사"
     assert bundle_rows[0]["점수"] == "55점 · A · 즉시 스토리라인 후보"
     assert bundle_rows[0]["메인 링크"] == "https://example.com/f88"

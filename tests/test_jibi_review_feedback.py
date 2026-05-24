@@ -16,7 +16,9 @@ def _write_review_board(path, rows):
         writer.writeheader()
         for row in rows:
             payload = {column: "" for column in BUNDLE_REVIEW_SHEET_COLUMNS}
-            payload.update(row)
+            payload.update(
+                {key: value for key, value in row.items() if key in payload}
+            )
             writer.writerow(payload)
 
 
@@ -98,7 +100,14 @@ def test_render_review_feedback_summary_from_local_csv(tmp_path) -> None:
 
 def test_render_review_feedback_summary_accepts_old_nine_column_board(tmp_path) -> None:
     input_csv = tmp_path / "old_review_board.csv"
-    fieldnames = [column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "점수"]
+    fieldnames = [
+        "날짜",
+        *[
+            column
+            for column in BUNDLE_REVIEW_SHEET_COLUMNS
+            if column not in {"일시", "점수"}
+        ],
+    ]
     with input_csv.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()

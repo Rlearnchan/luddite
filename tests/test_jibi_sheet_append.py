@@ -133,7 +133,9 @@ def _write_bundle_review_preview(path, rows):
         writer.writeheader()
         for row in rows:
             payload = {column: "" for column in BUNDLE_REVIEW_SHEET_COLUMNS}
-            payload.update(row)
+            payload.update(
+                {key: value for key, value in row.items() if key in payload}
+            )
             writer.writerow(payload)
 
 

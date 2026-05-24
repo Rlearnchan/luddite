@@ -8,10 +8,11 @@ import json
 import os
 import re
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import typer
 from rich.console import Console
@@ -53,6 +54,7 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
 DEFAULT_TOP_MIN_SCORE = 35
 DEFAULT_REVIEW_BOARD_LIMIT = 10
 DEFAULT_BUNDLE_NEAR_MISS_LIMIT = 10
+KST = ZoneInfo("Asia/Seoul")
 DEFAULT_SOURCE_ROLE_TOP_CAPS = {
     "research_note": 3,
     "policy_release": 2,
@@ -115,6 +117,15 @@ POLICY_STATUS_EVIDENCE_TERMS = {
 
 def _digest_date(value: str | None = None) -> str:
     return value or date.today().isoformat()
+
+
+def _review_board_registered_at(value: str | None = None) -> str:
+    env_value = os.environ.get("JIBI_REVIEW_BOARD_REGISTERED_AT")
+    if value and value.strip():
+        return value.strip()
+    if env_value and env_value.strip():
+        return env_value.strip()
+    return datetime.now(KST).strftime("%Y-%m-%d %H:%M")
 
 
 def _env_int(name: str, default: int) -> int:
@@ -538,6 +549,7 @@ def write_bundle_review_sheet_preview(
     review_board_limit: int = DEFAULT_REVIEW_BOARD_LIMIT,
     bundle_near_miss_limit: int = DEFAULT_BUNDLE_NEAR_MISS_LIMIT,
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    registered_at: str | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -547,6 +559,7 @@ def write_bundle_review_sheet_preview(
         if candidate.get("candidate_id")
     }
     history_index = _load_review_history_index(review_history_path)
+    registered_at_value = _review_board_registered_at(registered_at)
     bundle_records = _story_bundle_records(
         candidates,
         top,
@@ -581,6 +594,7 @@ def write_bundle_review_sheet_preview(
             writer.writerow(
                 _bundle_review_row(
                     digest_date=digest_date,
+                    registered_at=registered_at_value,
                     review_item_id=f"{digest_date}:{record['story_bundle_id']}",
                     review_title=_human_review_title(
                         record,
@@ -952,6 +966,7 @@ def _related_bundle_links(
 def _bundle_review_row(
     *,
     digest_date: str,
+    registered_at: str,
     review_item_id: str,
     review_title: str,
     candidate: dict[str, Any],
@@ -964,7 +979,7 @@ def _bundle_review_row(
     history_status: str,
 ) -> dict[str, Any]:
     return {
-        "날짜": digest_date,
+        "일시": registered_at,
         "제목": review_title or candidate_title,
         "점수": _score_display(candidate),
         "메인 링크": candidate.get("seed_url", ""),
