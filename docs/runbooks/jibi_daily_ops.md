@@ -90,6 +90,21 @@ The manifest records the append mode, target sheet, pinned preview CSV, digest
 and report paths, content-enrichment status, append status, and log paths. It
 does not include credential paths or article bodies.
 
+RSS fetch also maintains local, git-ignored article history ledgers:
+
+```text
+data/candidates/jibi_article_history.jsonl
+data/candidates/jibi_article_runs.jsonl
+outputs/reports/rss_ingest_YYYY-MM-DD.md
+```
+
+`jibi_article_history.jsonl` is URL-level seen history with `first_seen_at`,
+`last_seen_at`, and `seen_count`. `jibi_article_runs.jsonl` stores each RSS run
+snapshot so the ingest report can show `new_since_previous_run` and
+`dropped_since_previous_run`. This is the lightweight comparison layer for
+same-day evening runs and next-day RSS lookback checks; it is not yet a full
+article database.
+
 The runner uses a lock directory at `/tmp/luddite-jibi-manual-update.lock` so
 two runs cannot overlap. The runner only removes the lock when the current
 process acquired it, so a failed second run cannot delete another run's lock. If

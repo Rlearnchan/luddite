@@ -18,6 +18,10 @@ import typer
 from rich.console import Console
 
 from luddite import paths
+from luddite.collectors.article_history import (
+    ArticleHistorySummary,
+    update_article_history,
+)
 from luddite.collectors.rss_probe import HttpClient, UrlLibHttpClient
 from luddite.collectors.source_registry import Source, load_sources
 from luddite.utils.jsonl import write_jsonl
@@ -103,8 +107,11 @@ class RssIngestReport:
     unique_urls_written: int = 0
     duplicate_url_appearances: int = 0
     duplicates_skipped: int = 0
+    output_status: str = "not_written"
+    output_preserved_reason: str | None = None
     failures: list[str] = field(default_factory=list)
     per_source: list[SourceIngestResult] = field(default_factory=list)
+    article_history: ArticleHistorySummary | None = None
 
 
 def load_allowlist(
@@ -170,6 +177,8 @@ def fetch_rss_articles(
     allowlist_path: Path = paths.CONFIG_DIR / "rss_collection_allowlist.yaml",
     output_path: Path | None = None,
     report_path: Path | None = None,
+    history_path: Path | None = None,
+    run_ledger_path: Path | None = None,
     http_client: HttpClient | None = None,
     source_id: str | None = None,
     limit_per_source: int = 20,
@@ -228,8 +237,21 @@ def fetch_rss_articles(
     report.unique_urls_written = len(
         {str(article.get("source_url_canonical")) for article in articles}
     )
-    write_jsonl(output_path, articles)
+    if not articles and report.failures and output_path.exists():
+        report.output_status = "preserved_existing"
+        report.output_preserved_reason = "zero_articles_with_fetch_failures"
+    else:
+        write_jsonl(output_path, articles)
+        report.output_status = "written"
     report.items_written = len(articles)
+    if history_path and articles:
+        report.article_history = update_article_history(
+            articles,
+            run_date=date_text,
+            collected_at=collected_at_text,
+            history_path=history_path,
+            run_ledger_path=run_ledger_path or paths.JIBI_ARTICLE_RUNS_JSONL,
+        )
     write_ingest_report(report_path, report, output_path)
     return articles, report
 
@@ -524,11 +546,13 @@ def write_ingest_report(path: Path, report: RssIngestReport, output_path: Path) 
         f"- duplicate URL appearances: {report.duplicate_url_appearances}",
         f"- duplicates skipped: {report.duplicates_skipped}",
         f"- failures: {len(report.failures)}",
+        f"- output status: `{report.output_status}`",
+        f"- output preserved reason: `{report.output_preserved_reason or ''}`",
         f"- output: `{output_path}`",
         "",
-        "## Per Source",
-        "",
     ]
+    lines.extend(_article_history_report_lines(report.article_history))
+    lines.extend(["## Per Source", ""])
     for result in report.per_source:
         lines.extend(
             [
@@ -564,6 +588,63 @@ def write_ingest_report(path: Path, report: RssIngestReport, output_path: Path) 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _article_history_report_lines(history: ArticleHistorySummary | None) -> list[str]:
+    if not history:
+        return []
+    lines = [
+        "## Article History",
+        "",
+        f"- run_id: `{history.run_id}`",
+        f"- previous_run_id: `{history.previous_run_id or ''}`",
+        f"- current URLs: {history.current_urls}",
+        f"- known before: {history.known_before}",
+        f"- known after: {history.known_after}",
+        f"- new to history: {history.new_to_history}",
+        f"- returning known: {history.returning_known}",
+        f"- previous run URLs: {history.previous_run_urls}",
+        f"- new since previous run: {history.new_since_previous_run}",
+        f"- dropped since previous run: {history.dropped_since_previous_run}",
+        f"- history ledger: `{history.history_path}`",
+        f"- run ledger: `{history.run_ledger_path}`",
+        "",
+        "### Source Delta",
+        "",
+        "| source | current | new_to_history | new_since_previous | dropped_since_previous |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ]
+    lines.extend(
+        (
+            f"| {delta.source} | {delta.current_urls} | {delta.new_to_history} | "
+            f"{delta.new_since_previous_run} | {delta.dropped_since_previous_run} |"
+        )
+        for delta in history.per_source
+    )
+    lines.extend(["", "### New Since Previous Run Examples", ""])
+    if history.new_examples:
+        lines.extend(
+            (
+                f"- {example['source']} | {example['published_at']} | "
+                f"[{example['title']}]({example['url']})"
+            )
+            for example in history.new_examples
+        )
+    else:
+        lines.append("- none")
+    lines.extend(["", "### Dropped Since Previous Run Examples", ""])
+    if history.dropped_examples:
+        lines.extend(
+            (
+                f"- {example['source']} | {example['published_at']} | "
+                f"[{example['title']}]({example['url']})"
+            )
+            for example in history.dropped_examples
+        )
+    else:
+        lines.append("- none")
+    lines.append("")
+    return lines
+
+
 @app.callback(invoke_without_command=True)
 def main(
     source_id: Annotated[
@@ -590,6 +671,18 @@ def main(
         Path | None,
         typer.Option("--report", help="Markdown ingest report path."),
     ] = None,
+    history_output: Annotated[
+        Path,
+        typer.Option("--history-output", help="Durable URL-level article history JSONL."),
+    ] = paths.JIBI_ARTICLE_HISTORY_JSONL,
+    run_ledger_output: Annotated[
+        Path,
+        typer.Option("--run-ledger-output", help="Append-only RSS run snapshot JSONL."),
+    ] = paths.JIBI_ARTICLE_RUNS_JSONL,
+    skip_history: Annotated[
+        bool,
+        typer.Option("--skip-history", help="Do not update article history ledgers."),
+    ] = False,
     timeout: Annotated[
         float,
         typer.Option("--timeout", min=0.5, help="Fetch timeout seconds."),
@@ -602,12 +695,22 @@ def main(
         run_date=date,
         output_path=output,
         report_path=report,
+        history_path=None if skip_history else history_output,
+        run_ledger_path=None if skip_history else run_ledger_output,
         timeout=timeout,
     )
+    history_text = ""
+    if ingest_report.article_history:
+        history = ingest_report.article_history
+        history_text = (
+            f", new_since_previous={history.new_since_previous_run}, "
+            f"dropped_since_previous={history.dropped_since_previous_run}, "
+            f"known={history.known_after}"
+        )
     console.print(
         "[green]rss articles fetched "
         f"(sources={ingest_report.sources_fetched}, articles={len(articles)}, "
-        f"skipped={ingest_report.sources_skipped}).[/green]"
+        f"skipped={ingest_report.sources_skipped}{history_text}).[/green]"
     )
 
 

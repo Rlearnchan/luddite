@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from urllib.error import URLError
 
 from luddite.collectors.rss_item_fetcher import (
     fetch_rss_articles,
@@ -7,6 +8,7 @@ from luddite.collectors.rss_item_fetcher import (
     truncate_summary,
 )
 from luddite.collectors.rss_probe import HttpResponse
+from luddite.utils.jsonl import read_jsonl
 from luddite.utils.schemas import validate_with_schema
 
 
@@ -61,6 +63,25 @@ DUPLICATE_RSS = b"""<?xml version="1.0"?>
       <link>https://example.com/dupe</link>
       <pubDate>Mon, 18 May 2026 01:00:00 GMT</pubDate>
       <description>Second summary.</description>
+    </item>
+  </channel>
+</rss>
+"""
+
+TWO_ITEM_RSS = b"""<?xml version="1.0"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>BBC RSS Item</title>
+      <link>https://example.com/item?utm_source=rss</link>
+      <pubDate>Mon, 18 May 2026 00:00:00 GMT</pubDate>
+      <description>Short feed summary.</description>
+    </item>
+    <item>
+      <title>BBC New RSS Item</title>
+      <link>https://example.com/new-item</link>
+      <pubDate>Mon, 18 May 2026 01:00:00 GMT</pubDate>
+      <description>Second feed summary.</description>
     </item>
   </channel>
 </rss>
@@ -193,6 +214,7 @@ def test_fetch_enabled_sources_to_article_jsonl(tmp_path) -> None:
     assert len(articles) == 2
     assert report.sources_fetched == 2
     assert report.sources_skipped == 3
+    assert report.output_status == "written"
     assert len(client.calls) == 2
     assert "guardian" not in [call[0] for call in client.calls]
     assert articles[0]["source_url_canonical"] == "https://example.com/item"
@@ -200,6 +222,102 @@ def test_fetch_enabled_sources_to_article_jsonl(tmp_path) -> None:
     assert validate_with_schema(articles[0], "article_schema.json") == []
     assert output.read_text(encoding="utf-8").count("\n") == 2
     assert "collection_enabled_false" in report_path.read_text(encoding="utf-8")
+
+
+def test_fetch_failure_preserves_existing_output_file(tmp_path) -> None:
+    registry = tmp_path / "sources.yaml"
+    allowlist = tmp_path / "allowlist.yaml"
+    output = tmp_path / "rss_existing.jsonl"
+    report_path = tmp_path / "rss_failure.md"
+    _write_registry(registry)
+    _write_allowlist(allowlist)
+    output.write_text('{"title": "keep me"}\n', encoding="utf-8")
+    client = FakeHttpClient(
+        {
+            "https://feeds.example.com/bbc.xml": URLError("network down"),
+        }
+    )
+
+    articles, report = fetch_rss_articles(
+        registry_path=registry,
+        allowlist_path=allowlist,
+        output_path=output,
+        report_path=report_path,
+        http_client=client,
+        source_id="bbc_rss_candidate",
+        collected_at=datetime(2026, 5, 18, tzinfo=UTC),
+    )
+
+    assert articles == []
+    assert report.output_status == "preserved_existing"
+    assert output.read_text(encoding="utf-8") == '{"title": "keep me"}\n'
+    assert "zero_articles_with_fetch_failures" in report_path.read_text(encoding="utf-8")
+
+
+def test_article_history_tracks_new_and_previous_run_delta(tmp_path) -> None:
+    registry = tmp_path / "sources.yaml"
+    allowlist = tmp_path / "allowlist.yaml"
+    history_path = tmp_path / "jibi_article_history.jsonl"
+    run_ledger_path = tmp_path / "jibi_article_runs.jsonl"
+    _write_registry(registry)
+    _write_allowlist(allowlist)
+    first_client = FakeHttpClient(
+        {
+            "https://feeds.example.com/bbc.xml": HttpResponse(
+                url="https://feeds.example.com/bbc.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=VALID_RSS,
+            )
+        }
+    )
+    second_client = FakeHttpClient(
+        {
+            "https://feeds.example.com/bbc.xml": HttpResponse(
+                url="https://feeds.example.com/bbc.xml",
+                status=200,
+                content_type="application/rss+xml",
+                body=TWO_ITEM_RSS,
+            )
+        }
+    )
+
+    first_articles, first_report = fetch_rss_articles(
+        registry_path=registry,
+        allowlist_path=allowlist,
+        output_path=tmp_path / "rss_first.jsonl",
+        report_path=tmp_path / "rss_first.md",
+        history_path=history_path,
+        run_ledger_path=run_ledger_path,
+        http_client=first_client,
+        source_id="bbc_rss_candidate",
+        collected_at=datetime(2026, 5, 18, 0, 0, tzinfo=UTC),
+    )
+    second_articles, second_report = fetch_rss_articles(
+        registry_path=registry,
+        allowlist_path=allowlist,
+        output_path=tmp_path / "rss_second.jsonl",
+        report_path=tmp_path / "rss_second.md",
+        history_path=history_path,
+        run_ledger_path=run_ledger_path,
+        http_client=second_client,
+        source_id="bbc_rss_candidate",
+        collected_at=datetime(2026, 5, 18, 1, 0, tzinfo=UTC),
+    )
+
+    assert len(first_articles) == 1
+    assert first_report.article_history
+    assert first_report.article_history.new_since_previous_run == 1
+    assert len(second_articles) == 2
+    assert second_report.article_history
+    assert second_report.article_history.previous_run_id == first_report.article_history.run_id
+    assert second_report.article_history.new_to_history == 1
+    assert second_report.article_history.returning_known == 1
+    assert second_report.article_history.new_since_previous_run == 1
+    assert second_report.article_history.dropped_since_previous_run == 0
+    assert len(read_jsonl(history_path)) == 2
+    assert len(read_jsonl(run_ledger_path)) == 2
+    assert "## Article History" in (tmp_path / "rss_second.md").read_text(encoding="utf-8")
 
 
 def test_source_id_and_limit_per_source(tmp_path) -> None:
