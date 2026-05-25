@@ -245,14 +245,31 @@ candidate rows, or the visible `Jibi` sheet.
 For controlled source trials, keep the default allowlist untouched. Use the
 experiment notes in `docs/integrations/jibi_source_experiment_pack.md` and the
 temporary Guardian section pack in `config/experiments/rss_guardian_sections.yaml`.
-After an experiment board is rendered, compare baseline and experiment metadata:
+Generate the temporary allowlist and command plan with:
+
+```bash
+make jibi-source-experiment-guardian JIBI_DATE=2026-05-25
+```
+
+This does not fetch by itself, does not change scoring, does not edit
+`config/rss_collection_allowlist.yaml`, and does not write Google Sheets. The
+plan report lists the exact `fetch-rss-articles --allowlist-path ...` command
+for the isolated experiment inbox. After an experiment board is rendered,
+compare baseline and experiment metadata:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m luddite compare-jibi-source-experiment \
   --date 2026-05-25 \
   --baseline-metadata outputs/daily_digest/2026-05-25_bundle_review_sheet_metadata.json \
-  --experiment-metadata outputs/daily_digest/2026-05-25_guardian_experiment_metadata.json
+  --experiment-metadata outputs/daily_digest/2026-05-25_guardian_experiment_metadata.json \
+  --baseline-triage outputs/reports/jibi_board_triage_2026-05-25.json \
+  --experiment-triage outputs/reports/jibi_board_triage_guardian_2026-05-25.json
 ```
+
+Treat triage labels as advisory. `weak_or_downrank_candidate` means "low
+priority or likely weak" for operator review, not automatic deletion. Check
+`triage_confidence`, `next_action`, and `review_sample_size` before changing
+source defaults.
 
 ## Real Inbox Or RSS Dry-run
 
@@ -491,12 +508,13 @@ falls back to generic wording, treat that as a template-improvement signal
 rather than as a reviewer instruction.
 
 Guardian section feeds remain held by default. For a controlled experiment,
-copy `config/rss_collection_allowlist.yaml` to a local temporary allowlist,
+generate the temporary allowlist with `make jibi-source-experiment-guardian`,
 enable only `guardian_business`, `guardian_technology`, and
 `guardian_environment` with moderate fetch limits, then pass that temporary
-allowlist to `fetch-rss-articles` manually. Do not enable the broad Guardian
-international/world feed for the normal daily run until the review-board history
-loop has several days of data.
+allowlist to `fetch-rss-articles --allowlist-path` manually. Do not enable the
+broad Guardian international/world feed for the normal daily run until the
+review-board history loop has several days of data and at least one experiment
+comparison shows useful reviewed rows.
 
 ## Google Sheet Dry-run
 

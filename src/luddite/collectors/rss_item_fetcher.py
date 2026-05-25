@@ -696,6 +696,10 @@ def main(
         Path | None,
         typer.Option("--output", help="Output article inbox JSONL path."),
     ] = None,
+    allowlist_path: Annotated[
+        Path,
+        typer.Option("--allowlist-path", help="RSS collection allowlist YAML path."),
+    ] = paths.CONFIG_DIR / "rss_collection_allowlist.yaml",
     report: Annotated[
         Path | None,
         typer.Option("--report", help="Markdown ingest report path."),
@@ -722,6 +726,7 @@ def main(
         limit_per_source=limit_per_source,
         total_limit=total_limit,
         run_date=date,
+        allowlist_path=allowlist_path,
         output_path=output,
         report_path=report,
         history_path=None if skip_history else history_output,
