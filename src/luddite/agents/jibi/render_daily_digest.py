@@ -1335,7 +1335,7 @@ def _board_why_sentence(
     text = _board_text(record, candidate)
     if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
         return "한국은행 청년 노동시장 자료들이 같은 문제를 다른 지표로 보고 있습니다."
-    if "토큰화" in text or "tokenization" in text or "rwa" in text:
+    if _has_tokenization_bridge_signal(text):
         return "자산 토큰화가 제도권 금융 인프라로 들어오는 흐름을 보여주는 후보입니다."
     if any(term in text for term in ("public_ai", "공공 ai", "ai 드론", "ai 노사", "ai 도입")):
         return "공공기관과 현장에서 AI가 실제 업무에 들어오는 사례입니다."
@@ -1365,7 +1365,7 @@ def _board_growth_sentence(record: dict[str, Any], candidate: dict[str, Any]) ->
             "실업자가 아닌 '쉬었음'과 경제활동참가율을 묶으면 "
             "청년 노동시장 이탈 이야기로 커질 수 있습니다."
         )
-    if "토큰화" in text or "tokenization" in text or "rwa" in text:
+    if _has_tokenization_bridge_signal(text):
         return (
             "부동산·채권·권리를 잘게 쪼개 거래하는 구조로 풀면 "
             "금융 제도와 코인 이후의 변화를 함께 설명할 수 있습니다."

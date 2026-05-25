@@ -73,6 +73,14 @@ def _has_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
+def _has_tokenization_signal(text: str) -> bool:
+    return (
+        "토큰화" in text
+        or "tokenization" in text
+        or bool(re.search(r"\brwa\b", text, flags=re.IGNORECASE))
+    )
+
+
 def review_board_title(
     record: dict[str, Any],
     candidate: dict[str, Any],
@@ -82,7 +90,7 @@ def review_board_title(
     text = _copy_text(record, candidate, candidate_title)
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
-    if _has_any(text, ("토큰화", "tokenization", "rwa")):
+    if _has_tokenization_signal(text):
         return "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
     if _has_any(
         text,
@@ -177,7 +185,7 @@ def _template_description(
             "실업률만 보면 안 보이는 노동시장 밖 청년을 다루는 주제라, 구직 포기·첫 직장 실패·지역/학력 mismatch·결혼/출산 지연까지 연결할 수 있습니다. "
             "리서치 포인트는 BOK 자료들을 한 묶음으로 보고, 청년 실업률보다 경제활동참가율과 비경제활동인구가 왜 더 중요한지 그림으로 설명할 수 있는지입니다."
         )
-    if _has_any(text, ("토큰화", "tokenization", "rwa")):
+    if _has_tokenization_signal(text):
         return (
             "한국은행 이슈노트라 seed 가치가 높습니다. "
             "핵심은 코인 가격 이야기가 아니라, 부동산·채권·펀드 같은 현실 자산의 권리를 디지털 토큰으로 기록하고 쪼개 거래하려는 제도권 금융의 움직임입니다. "

@@ -105,6 +105,23 @@ def test_review_board_copy_handles_editorial_override_story_types() -> None:
         assert expected_phrase in copy.description
 
 
+def test_review_board_copy_does_not_treat_underwater_as_rwa() -> None:
+    copy = _copy(
+        {"bundle_title": "The network watching the world’s oceans is under pressure"},
+        {
+            "title": "The network watching the world’s oceans is under pressure",
+            "summary": "Underwater gliders feed data to ocean scientists.",
+            "source": "The Conversation",
+            "source_role_class": "academic_explainer",
+            "seed_type": "academic_explainer",
+        },
+    )
+
+    assert copy.title == "The network watching the world’s oceans is under pressure"
+    assert "자산 토큰화" not in copy.title
+    assert "부동산·채권" not in copy.description
+
+
 def test_review_board_copy_excludes_internal_labels() -> None:
     copy = _copy(
         {
