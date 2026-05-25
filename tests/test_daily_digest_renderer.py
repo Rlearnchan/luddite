@@ -156,6 +156,8 @@ def test_syuka_bridge_query_report_is_contract_only(tmp_path) -> None:
     assert "No syuka-ops DB was queried by luddite." in report
     assert payload["queries"][0]["priority"] == "high"
     assert "쉬었음" in payload["queries"][0]["query_terms"]
+    assert "비경제활동" in payload["queries"][0]["core_terms"]
+    assert "청년" in payload["queries"][0]["context_terms"]
     assert payload["queries"][0]["trigger"] == "heuristic"
     assert payload["queries"][0]["source_review_note_excerpt"] == ""
     assert "## Syuka Bridge Handoff Notes" in report
@@ -536,6 +538,132 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert metadata["rows"][0]["run_date"] == "2026-05-23"
 
 
+def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -> None:
+    youth_rest = {
+        "candidate_id": "bok_youth_rest",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "seed_url": "https://www.bok.or.kr/youth",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+    syuka_report = tmp_path / "jibi_syuka_snapshot_matches_2026-05-23.json"
+    syuka_report.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "results": [
+                    {
+                        "story_fingerprint": "youth_labor_exit",
+                        "query_title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+                        "recommendation": "duplicate",
+                        "past_video_response_signal": "duplicate_do_not_repeat",
+                        "matches": [
+                            {
+                                "title": "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?",
+                                "match_score": 12,
+                                "matched_terms": ["쉬었음", "경제활동참가율"],
+                                "matched_fields": ["title", "analysis"],
+                                "url": "https://youtu.be/youth",
+                                "view_count": 1500000,
+                                "upload_date": "20260501",
+                            }
+                        ],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [youth_rest],
+        [youth_rest],
+        "2026-05-23",
+        syuka_similarity_report_path=syuka_report,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    metadata = json.loads(
+        csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
+    )
+    assert list(rows[0].keys()) == [
+        "일시",
+        "제목",
+        "점수",
+        "메인 링크",
+        "서브 링크",
+        "설명",
+        "리뷰-성원",
+        "리뷰-동찬",
+        "리뷰-형찬",
+        "ID",
+    ]
+    assert "과거 영상과 강하게 겹칠 수 있습니다" in rows[0]["설명"]
+    assert metadata["rows"][0]["syuka_similarity"]["recommendation"] == "duplicate"
+    assert metadata["rows"][0]["syuka_similarity"]["top_match_score"] == 12
+
+
+def test_bundle_review_does_not_annotate_safe_new_angle(tmp_path) -> None:
+    candidate = {
+        "candidate_id": "ocean",
+        "title": "The network watching the world’s oceans",
+        "seed_url": "https://theconversation.com/ocean",
+        "source": "The Conversation",
+        "source_role_class": "academic_explainer",
+        "seed_type": "academic_explainer",
+        "why_interesting": "해양 관측 네트워크 설명",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
+    }
+    syuka_report = tmp_path / "jibi_syuka_snapshot_matches_2026-05-23.json"
+    syuka_report.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "results": [
+                    {
+                        "story_fingerprint": "story_57025461e7",
+                        "query_title": "The network watching the world’s oceans",
+                        "recommendation": "safe_new_angle",
+                        "past_video_response_signal": "safe_new_angle",
+                        "matches": [],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [candidate],
+        [candidate],
+        "2026-05-23",
+        syuka_similarity_report_path=syuka_report,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert "신규성" not in rows[0]["설명"]
+    assert "로컬 snapshot" not in rows[0]["설명"]
+
+
 def test_bundle_review_marks_reappearing_story_from_history(tmp_path) -> None:
     history_path = tmp_path / "jibi_review_board_history.jsonl"
     history_path.write_text(
@@ -732,6 +860,98 @@ def test_quality_report_contains_source_freshness_and_duplicate_sections(tmp_pat
     assert "## Near Duplicate Groups" in report
     assert "`nd_abc`" in report
     assert "shared_tokens=" in report
+
+
+def test_quality_report_includes_syuka_similarity_summary_when_available(tmp_path) -> None:
+    report_path = tmp_path / "quality.md"
+    syuka_report = tmp_path / "jibi_syuka_snapshot_matches_2026-05-25.json"
+    syuka_report.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-25",
+                "results": [
+                    {
+                        "story_fingerprint": "youth_labor_exit",
+                        "query_title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+                        "recommendation": "duplicate",
+                        "past_video_response_signal": "duplicate_do_not_repeat",
+                        "matches": [
+                            {
+                                "title": "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?",
+                                "match_score": 12,
+                                "matched_terms": ["쉬었음"],
+                                "matched_fields": ["title"],
+                                "url": "https://youtu.be/youth",
+                                "view_count": 1500000,
+                                "upload_date": "20260501",
+                            }
+                        ],
+                    },
+                    {
+                        "story_fingerprint": "story_ocean",
+                        "query_title": "해양 관측 네트워크",
+                        "recommendation": "safe_new_angle",
+                        "past_video_response_signal": "safe_new_angle",
+                        "matches": [],
+                    },
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    candidate = {
+        "candidate_id": "youth",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+
+    write_quality_report(
+        report_path,
+        [candidate],
+        [candidate],
+        syuka_similarity_report_path=syuka_report,
+    )
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "## Syuka Similarity Summary" in report
+    assert "- duplicate: 1" in report
+    assert "- safe_new_angle: 1" in report
+    assert "duplicate_do_not_repeat" in report
+
+
+def test_quality_report_handles_missing_syuka_similarity_report(tmp_path) -> None:
+    report_path = tmp_path / "quality.md"
+    candidate = {
+        "candidate_id": "youth",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+
+    write_quality_report(
+        report_path,
+        [candidate],
+        [candidate],
+        syuka_similarity_report_path=tmp_path / "missing.json",
+    )
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "## Syuka Similarity Summary" in report
+    assert "- report_status: missing_or_empty" in report
 
 
 def test_quality_report_contains_source_mix_review_focus(tmp_path) -> None:

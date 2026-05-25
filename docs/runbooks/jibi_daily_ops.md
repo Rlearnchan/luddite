@@ -215,6 +215,12 @@ Use the recommendations as advisory:
 - `needs_human_check`: weak, negative-term, or transcript-only match.
 - `safe_new_angle`: no obvious local snapshot match; not proof of novelty.
 
+When a snapshot report exists for the same date, the Jibi bundle review metadata
+sidecar records a `syuka_similarity` object. The visible `Jibi` sheet schema does
+not change. The `설명` cell only gets a short caution sentence for duplicate,
+adjacent, or weak overlap cases; no candidate is removed or promoted by the
+snapshot probe.
+
 ## Real Inbox Or RSS Dry-run
 
 Use this when local article inbox files exist under `data/inbox/articles` or

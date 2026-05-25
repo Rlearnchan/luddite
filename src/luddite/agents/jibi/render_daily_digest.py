@@ -562,6 +562,7 @@ def write_bundle_review_sheet_preview(
     bundle_near_miss_limit: int = DEFAULT_BUNDLE_NEAR_MISS_LIMIT,
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
     registered_at: str | None = None,
+    syuka_similarity_report_path: Path | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -571,6 +572,7 @@ def write_bundle_review_sheet_preview(
         if candidate.get("candidate_id")
     }
     history_index = _load_review_history_index(review_history_path)
+    syuka_similarity_index = _load_syuka_similarity_index(syuka_similarity_report_path)
     registered_at_value = _review_board_registered_at(registered_at)
     bundle_records = _story_bundle_records(
         candidates,
@@ -613,6 +615,11 @@ def write_bundle_review_sheet_preview(
             sub_links = _related_bundle_links(record, candidate_by_id, limit=3)
             jibi_judgment = _bundle_judgment(record, fit)
             joined_reason = _join_distinct_reason(str(record["why_bundle"]), reason)
+            syuka_similarity = _syuka_similarity_for_record(
+                record,
+                representative,
+                syuka_similarity_index,
+            )
             row = _bundle_review_row(
                 digest_date=digest_date,
                 registered_at=registered_at_value,
@@ -626,6 +633,7 @@ def write_bundle_review_sheet_preview(
                 related_titles=_related_bundle_titles(record),
                 record=record,
                 history_status=history_status,
+                syuka_similarity=syuka_similarity,
             )
             writer.writerow(row)
             metadata_rows.append(
@@ -637,6 +645,7 @@ def write_bundle_review_sheet_preview(
                     registered_at=registered_at_value,
                     run_date=digest_date,
                     sub_links=sub_links,
+                    syuka_similarity=syuka_similarity,
                 )
             )
     _write_bundle_review_metadata(
@@ -660,6 +669,7 @@ def write_alternate_review_board_outputs(
     current_board_csv_path: Path | None = None,
     include_reviewed: bool = False,
     registered_at: str | None = None,
+    syuka_similarity_report_path: Path | None = None,
 ) -> tuple[Path, Path, Path]:
     """Write a second review-board batch without touching the live Jibi sheet."""
 
@@ -671,6 +681,7 @@ def write_alternate_review_board_outputs(
         if candidate.get("candidate_id")
     }
     history_index = _load_review_history_index(review_history_path)
+    syuka_similarity_index = _load_syuka_similarity_index(syuka_similarity_report_path)
     current_csv = current_board_csv_path or path.with_name(
         f"{digest_date}_bundle_review_sheet.csv"
     )
@@ -712,6 +723,11 @@ def write_alternate_review_board_outputs(
                 )
             review_item_id = f"{digest_date}:alt:{record['story_bundle_id']}"
             primary_title = record.get("primary_title") or representative.get("title") or ""
+            syuka_similarity = _syuka_similarity_for_record(
+                record,
+                representative,
+                syuka_similarity_index,
+            )
             row = _bundle_review_row(
                 digest_date=digest_date,
                 registered_at=registered_at_value,
@@ -725,6 +741,7 @@ def write_alternate_review_board_outputs(
                 related_titles=_related_bundle_titles(record),
                 record=record,
                 history_status="alternate_batch",
+                syuka_similarity=syuka_similarity,
             )
             writer.writerow(row)
             metadata = _bundle_review_metadata_row(
@@ -735,6 +752,7 @@ def write_alternate_review_board_outputs(
                 registered_at=registered_at_value,
                 run_date=digest_date,
                 sub_links=str(row.get("서브 링크") or ""),
+                syuka_similarity=syuka_similarity,
             )
             metadata["alternate_selection_reason"] = "excluded_current_or_reviewed_primary_batch"
             metadata["why_not_primary_board"] = _alternate_why_not_primary(
@@ -787,6 +805,135 @@ def _write_bundle_review_metadata(
         json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _default_syuka_similarity_report_path(run_date: str) -> Path:
+    return paths.REPORTS_DIR / f"jibi_syuka_snapshot_matches_{run_date}.json"
+
+
+def _normalize_syuka_similarity_result(result: dict[str, Any]) -> dict[str, Any]:
+    top_match = (result.get("matches") or [{}])[0]
+    return {
+        "story_fingerprint": str(result.get("story_fingerprint") or ""),
+        "query_title": str(result.get("query_title") or ""),
+        "recommendation": str(result.get("recommendation") or "safe_new_angle"),
+        "top_match_title": str(top_match.get("title") or ""),
+        "top_match_score": int(top_match.get("match_score") or 0),
+        "matched_terms": list(top_match.get("matched_terms") or []),
+        "matched_fields": list(top_match.get("matched_fields") or []),
+        "past_video_url": str(top_match.get("url") or ""),
+        "view_count": top_match.get("view_count"),
+        "upload_date": str(top_match.get("upload_date") or ""),
+        "past_video_response_signal": str(
+            result.get("past_video_response_signal") or result.get("recommendation") or ""
+        ),
+    }
+
+
+def _load_syuka_similarity_index(path: Path | None) -> dict[str, dict[str, Any]]:
+    if path is None or not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    index: dict[str, dict[str, Any]] = {}
+    for result in payload.get("results", []):
+        if not isinstance(result, dict):
+            continue
+        normalized = _normalize_syuka_similarity_result(result)
+        for key in [
+            str(result.get("story_fingerprint") or "").strip(),
+            str(result.get("query_title") or "").strip(),
+        ]:
+            if key:
+                index.setdefault(key, normalized)
+    return index
+
+
+def _syuka_similarity_for_record(
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    index: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    for key in [
+        str(record.get("story_fingerprint") or "").strip(),
+        str(record.get("bundle_title") or "").strip(),
+        str(record.get("primary_title") or "").strip(),
+        str(candidate.get("title") or "").strip(),
+    ]:
+        if key and key in index:
+            return index[key]
+    return None
+
+
+def _syuka_similarity_rows(
+    similarities: list[dict[str, Any]],
+    recommendation: str,
+) -> list[str]:
+    rows: list[str] = []
+    for item in similarities:
+        if item.get("recommendation") != recommendation:
+            continue
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(item.get("query_title", "")),
+                    _table_cell(item.get("top_match_title", "")),
+                    str(item.get("top_match_score", 0)),
+                    _table_cell(", ".join(item.get("matched_terms", []))),
+                    _table_cell(", ".join(item.get("matched_fields", []))),
+                    _table_cell(item.get("past_video_response_signal", "")),
+                ]
+            )
+            + " |"
+        )
+    return rows or ["| none | none | 0 | none | none | none |"]
+
+
+def _syuka_similarity_summary_lines(index: dict[str, dict[str, Any]]) -> list[str]:
+    seen: set[tuple[str, str]] = set()
+    similarities: list[dict[str, Any]] = []
+    for item in index.values():
+        key = (
+            str(item.get("story_fingerprint") or ""),
+            str(item.get("query_title") or ""),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        similarities.append(item)
+    counts = Counter(str(item.get("recommendation") or "unknown") for item in similarities)
+    lines = [
+        "- report_status: " + ("available" if similarities else "missing_or_empty"),
+        *[f"- {key}: {value}" for key, value in sorted(counts.items())],
+        "",
+        "### High-confidence Duplicate Rows",
+        "",
+        "| query | top_match | score | terms | fields | response_signal |",
+        "| --- | --- | ---: | --- | --- | --- |",
+        *_syuka_similarity_rows(similarities, "duplicate"),
+        "",
+        "### Adjacent / Context Rows",
+        "",
+        "| query | top_match | score | terms | fields | response_signal |",
+        "| --- | --- | ---: | --- | --- | --- |",
+        *_syuka_similarity_rows(similarities, "adjacent"),
+        "",
+        "### Needs Human Check Rows",
+        "",
+        "| query | top_match | score | terms | fields | response_signal |",
+        "| --- | --- | ---: | --- | --- | --- |",
+        *_syuka_similarity_rows(similarities, "needs_human_check"),
+        "",
+        "### Safe New Angle / No Local Match Rows",
+        "",
+        "| query | top_match | score | terms | fields | response_signal |",
+        "| --- | --- | ---: | --- | --- | --- |",
+        *_syuka_similarity_rows(similarities, "safe_new_angle"),
+    ]
+    return lines
 
 
 def _current_board_exclusion_keys(path: Path) -> set[str]:
@@ -944,9 +1091,10 @@ def _bundle_review_metadata_row(
     registered_at: str,
     run_date: str,
     sub_links: str,
+    syuka_similarity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     so_what = _candidate_so_what(candidate)
-    return {
+    metadata = {
         "ID": review_item_id,
         "review_item_id": review_item_id,
         "registered_at": registered_at,
@@ -983,6 +1131,9 @@ def _bundle_review_metadata_row(
         ],
         "candidate_count": int(record.get("candidate_count") or 0),
     }
+    if syuka_similarity:
+        metadata["syuka_similarity"] = syuka_similarity
+    return metadata
 
 
 def _bundle_judgment(record: dict[str, Any], fit: str) -> str:
@@ -1299,6 +1450,22 @@ def _human_description(
     ).description
 
 
+def _syuka_similarity_annotation(syuka_similarity: dict[str, Any] | None) -> str:
+    if not syuka_similarity:
+        return ""
+    recommendation = str(syuka_similarity.get("recommendation") or "")
+    if recommendation == "duplicate":
+        return (
+            "과거 영상과 강하게 겹칠 수 있습니다. "
+            "새 자료가 기존 이야기의 업데이트인지 확인하세요."
+        )
+    if recommendation == "adjacent":
+        return "관련 과거 영상이 있어 배경자료로 쓸 수 있지만, 새 각도인지 확인이 필요합니다."
+    if recommendation == "needs_human_check":
+        return "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다."
+    return ""
+
+
 def _join_distinct_reason(primary: str, secondary: str) -> str:
     if not secondary or secondary == primary:
         return primary
@@ -1349,21 +1516,26 @@ def _bundle_review_row(
     related_titles: str,
     record: dict[str, Any],
     history_status: str,
+    syuka_similarity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    description = _human_description(
+        candidate=candidate,
+        record=record,
+        jibi_judgment=jibi_judgment,
+        reason=reason,
+        related_titles=related_titles,
+        history_status=history_status,
+    )
+    annotation = _syuka_similarity_annotation(syuka_similarity)
+    if annotation and annotation not in description:
+        description = f"{description} {annotation}".strip()
     return {
         "일시": registered_at,
         "제목": review_title or candidate_title,
         "점수": _score_display(candidate),
         "메인 링크": candidate.get("seed_url", ""),
         "서브 링크": sub_links,
-        "설명": _human_description(
-            candidate=candidate,
-            record=record,
-            jibi_judgment=jibi_judgment,
-            reason=reason,
-            related_titles=related_titles,
-            history_status=history_status,
-        ),
+        "설명": description,
         "리뷰-성원": "",
         "리뷰-동찬": "",
         "리뷰-형찬": "",
@@ -1413,6 +1585,7 @@ def render_daily_digest(
         review_board_limit=resolved_review_board_limit,
         bundle_near_miss_limit=resolved_bundle_near_miss_limit,
         review_history_path=review_history_path,
+        syuka_similarity_report_path=_default_syuka_similarity_report_path(date_value),
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -1421,6 +1594,7 @@ def render_daily_digest(
         limit=limit,
         max_per_source=max_per_source,
         review_history_path=review_history_path,
+        syuka_similarity_report_path=_default_syuka_similarity_report_path(date_value),
     )
     write_syuka_bridge_query_reports(
         run_date=date_value,
@@ -1474,6 +1648,7 @@ def render_alternate_review_board(
         review_history_path=review_history_path,
         current_board_csv_path=current_csv_path,
         include_reviewed=include_reviewed_value,
+        syuka_similarity_report_path=_default_syuka_similarity_report_path(date_value),
     )
 
 
@@ -1485,6 +1660,7 @@ def write_quality_report(
     max_per_source: int = 3,
     min_score: float = DEFAULT_TOP_MIN_SCORE,
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    syuka_similarity_report_path: Path | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     source_counts = Counter(str(item.get("source") or "unknown") for item in top)
@@ -1654,6 +1830,8 @@ def write_quality_report(
     )
     story_bundle_records = _story_bundle_records(candidates, top)
     story_bundle_rows = _story_bundle_review_rows(story_bundle_records)
+    syuka_similarity_index = _load_syuka_similarity_index(syuka_similarity_report_path)
+    syuka_similarity_lines = _syuka_similarity_summary_lines(syuka_similarity_index)
     review_history_index = _load_review_history_index(review_history_path)
     cross_run_story_rows = _cross_run_story_review_rows(
         story_bundle_records,
@@ -1747,6 +1925,10 @@ def write_quality_report(
         "| bundle | primary | supporting/evidence | bundle_type | suggested_action |",
         "| --- | --- | --- | --- | --- |",
         *story_bundle_rows,
+        "",
+        "## Syuka Similarity Summary",
+        "",
+        *syuka_similarity_lines,
         "",
         "## Cross-run Duplicate / Reappearing Story Review",
         "",
@@ -2886,27 +3068,52 @@ def _record_representative_candidate(
     return None
 
 
-def _bridge_query_terms(candidate: dict[str, Any], record: dict[str, Any]) -> list[str]:
+def _dedupe_terms(terms: list[str]) -> list[str]:
+    output: list[str] = []
+    for term in terms:
+        normalized = str(term or "").strip()
+        if normalized and normalized not in output:
+            output.append(normalized)
+    return output
+
+
+def _bridge_query_term_groups(
+    candidate: dict[str, Any],
+    record: dict[str, Any],
+) -> dict[str, list[str]]:
     text = _board_text(record, candidate)
-    terms: list[str] = []
+    core_terms: list[str] = []
+    context_terms: list[str] = []
     if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
-        terms.extend(["쉬었음", "청년 노동시장", "경제활동참가율", "근로소득", "청년"])
+        core_terms.extend(["쉬었음", "비경제활동", "경제활동참가율", "청년 노동시장"])
+        context_terms.extend(["근로소득", "청년"])
     elif any(term in text for term in ("반바지", "폭염", "쿨비즈", "회사 복장")):
-        terms.extend(["반바지", "폭염", "쿨비즈", "회사 복장", "여름"])
+        core_terms.extend(["반바지", "폭염", "쿨비즈", "회사 복장", "여름 근무"])
+        context_terms.extend(["회사", "복장", "전력", "냉방"])
     elif any(term in text for term in ("선불", "충전금", "스타벅스", "환불")):
-        terms.extend(["선불충전금", "환불", "스타벅스", "규제 사각지대", "소비자 자금"])
+        core_terms.extend(["선불충전금", "예치금", "충전금", "환불", "머지포인트"])
+        context_terms.extend(["스타벅스", "규제 사각지대", "소비자 자금"])
     elif _has_tokenization_bridge_signal(text):
-        terms.extend(["자산 토큰화", "RWA", "조각투자", "STO", "CBDC"])
+        core_terms.extend(["자산 토큰화", "RWA", "STO", "조각투자"])
+        context_terms.extend(["CBDC", "디지털 화폐", "토큰증권"])
     elif any(term in text for term in ("공공 ai", "ai 도입", "ai 드론", "ai 노사")):
-        terms.extend(["공공 AI", "AI 도입", "AI 행정", "AI 책임", "AI 노사"])
+        core_terms.extend(["공공 AI", "AI 도입", "AI 행정", "AI 노사"])
+        context_terms.extend(["AI 책임", "보고서", "드론", "직무 전환"])
     else:
         title_terms = re.findall(r"[가-힣A-Za-z0-9]{2,}", str(candidate.get("title") or ""))
-        terms.extend(title_terms[:6])
-    deduped: list[str] = []
-    for term in terms:
-        if term and term not in deduped:
-            deduped.append(term)
-    return deduped
+        core_terms.extend(title_terms[:3])
+        context_terms.extend(title_terms[3:6])
+    core_terms = _dedupe_terms(core_terms)
+    context_terms = [term for term in _dedupe_terms(context_terms) if term not in core_terms]
+    return {
+        "core_terms": core_terms,
+        "context_terms": context_terms,
+        "query_terms": _dedupe_terms([*core_terms, *context_terms]),
+    }
+
+
+def _bridge_query_terms(candidate: dict[str, Any], record: dict[str, Any]) -> list[str]:
+    return _bridge_query_term_groups(candidate, record)["query_terms"]
 
 
 def _has_tokenization_bridge_signal(text: str) -> bool:
@@ -3040,11 +3247,14 @@ def _syuka_bridge_query_records(
             history_rows=history_rows,
         )
         review_excerpt = str(review_context.get("excerpt") or "")
+        term_groups = _bridge_query_term_groups(candidate, record)
         output.append(
             {
                 "story_fingerprint": str(record.get("story_fingerprint") or ""),
                 "title": str(record.get("bundle_title") or candidate.get("title") or ""),
-                "query_terms": _bridge_query_terms(candidate, record),
+                "query_terms": term_groups["query_terms"],
+                "core_terms": term_groups["core_terms"],
+                "context_terms": term_groups["context_terms"],
                 "negative_terms": ["주가", "매수", "매도"]
                 if "investment_advice_risk" in candidate.get("risk_flags", [])
                 else [],
@@ -3131,9 +3341,9 @@ def write_syuka_bridge_query_reports(
         "",
         "## Query Records",
         "",
-        "| priority | trigger | title | query_terms | expected_match_type | "
+        "| priority | trigger | title | core_terms | context_terms | expected_match_type | "
         "why_check_past_video | review_excerpt |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for item in queries:
         lines.append(
@@ -3143,7 +3353,8 @@ def write_syuka_bridge_query_reports(
                     item["priority"],
                     _table_cell(item["trigger"]),
                     _table_cell(item["title"]),
-                    _table_cell(", ".join(item["query_terms"])),
+                    _table_cell(", ".join(item.get("core_terms", []))),
+                    _table_cell(", ".join(item.get("context_terms", []))),
                     item["expected_match_type"],
                     _table_cell(item["why_check_past_video"]),
                     _table_cell(item.get("source_review_note_excerpt", "")),
@@ -3152,7 +3363,7 @@ def write_syuka_bridge_query_reports(
             + " |"
         )
     if not queries:
-        lines.append("| low | heuristic | none | none | analysis | no board rows | none |")
+        lines.append("| low | heuristic | none | none | none | analysis | no board rows | none |")
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     json_path.write_text(
         json.dumps({"run_date": run_date, "queries": queries}, ensure_ascii=False, indent=2)

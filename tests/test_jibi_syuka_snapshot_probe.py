@@ -118,7 +118,8 @@ def test_probe_syuka_snapshot_title_and_analysis_match(tmp_path) -> None:
                 "story_fingerprint": "youth_labor_exit",
                 "title": "청년 노동시장 이탈",
                 "priority": "high",
-                "query_terms": ["쉬었음", "경제활동참가율", "청년 노동시장"],
+                "core_terms": ["쉬었음", "경제활동참가율", "청년 노동시장"],
+                "context_terms": ["청년"],
                 "negative_terms": [],
             }
         ],
@@ -135,7 +136,8 @@ def test_probe_syuka_snapshot_title_and_analysis_match(tmp_path) -> None:
     result = payload["results"][0]
     assert result["matches"][0]["video_id"] == "vid_youth"
     assert "title" in result["matches"][0]["matched_fields"]
-    assert result["matches"][0]["recommendation"] in {"duplicate", "adjacent"}
+    assert result["matches"][0]["recommendation"] == "duplicate"
+    assert result["past_video_response_signal"] == "duplicate_do_not_repeat"
 
 
 def test_probe_syuka_snapshot_transcript_only_needs_human_check(tmp_path) -> None:
@@ -226,3 +228,65 @@ def test_probe_syuka_snapshot_negative_terms_reduce_recommendation(tmp_path) -> 
     match = payload["results"][0]["matches"][0]
     assert match["negative_terms_matched"] == ["쉬었음"]
     assert match["recommendation"] == "needs_human_check"
+
+
+def test_probe_syuka_snapshot_context_only_match_does_not_duplicate(tmp_path) -> None:
+    data_dir = tmp_path / "data" / "db"
+    data_dir.mkdir(parents=True)
+    _make_syuka_db(data_dir / "syuka_ops.db")
+    queries = tmp_path / "queries.json"
+    _write_queries(
+        queries,
+        [
+            {
+                "title": "새로운 청년 이야기",
+                "priority": "high",
+                "core_terms": ["없는핵심"],
+                "context_terms": ["청년 노동시장"],
+                "negative_terms": [],
+            }
+        ],
+    )
+
+    _md, _json, payload = probe_syuka_snapshot(
+        run_date="2026-05-25",
+        queries_json=queries,
+        syuka_data_dir=tmp_path / "data",
+        output_md=tmp_path / "matches.md",
+        output_json=tmp_path / "matches.json",
+    )
+
+    result = payload["results"][0]
+    assert result["matches"][0]["recommendation"] == "adjacent"
+    assert result["recommendation"] == "adjacent"
+
+
+def test_probe_syuka_snapshot_alias_expansion_improves_expected_match(tmp_path) -> None:
+    data_dir = tmp_path / "data" / "db"
+    data_dir.mkdir(parents=True)
+    _make_syuka_db(data_dir / "syuka_ops.db")
+    queries = tmp_path / "queries.json"
+    _write_queries(
+        queries,
+        [
+            {
+                "title": "비경제활동 청년",
+                "priority": "high",
+                "core_terms": ["비경제활동"],
+                "context_terms": [],
+                "negative_terms": [],
+            }
+        ],
+    )
+
+    _md, _json, payload = probe_syuka_snapshot(
+        run_date="2026-05-25",
+        queries_json=queries,
+        syuka_data_dir=tmp_path / "data",
+        output_md=tmp_path / "matches.md",
+        output_json=tmp_path / "matches.json",
+    )
+
+    result = payload["results"][0]
+    assert "쉬었음" in result["effective_core_terms"]
+    assert result["matches"][0]["video_id"] == "vid_youth"

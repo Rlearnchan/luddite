@@ -7,7 +7,7 @@ import re
 import sqlite3
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -85,6 +85,35 @@ GENERIC_QUERY_TERMS = {
     "사상",
     "돌파",
 }
+ALIAS_TERM_GROUPS = [
+    {
+        "쉬었음",
+        "비경제활동",
+        "경제활동참가율",
+        "청년 노동시장",
+    },
+    {
+        "반바지",
+        "폭염",
+        "쿨비즈",
+        "회사 복장",
+        "여름 근무",
+    },
+    {
+        "선불충전금",
+        "예치금",
+        "충전금",
+        "환불",
+        "머지포인트",
+    },
+    {
+        "자산 토큰화",
+        "rwa",
+        "sto",
+        "조각투자",
+        "cbdc",
+    },
+]
 
 
 @dataclass(frozen=True)
@@ -341,6 +370,57 @@ def _usable_query_terms(terms: Iterable[Any]) -> list[str]:
     return list(dict.fromkeys(output))
 
 
+def _expanded_alias_terms(terms: Iterable[Any]) -> list[str]:
+    normalized_terms = [_normalize_term(term) for term in terms]
+    output: list[str] = []
+    for term in normalized_terms:
+        if not term:
+            continue
+        output.append(term)
+        for group in ALIAS_TERM_GROUPS:
+            normalized_group = {_normalize_term(item) for item in group}
+            if term in normalized_group:
+                output.extend(sorted(normalized_group))
+    return list(dict.fromkeys(output))
+
+
+def _term_set_for_query(query: dict[str, Any]) -> dict[str, Any]:
+    raw_core_terms = query.get("core_terms")
+    raw_context_terms = query.get("context_terms")
+    using_groups = raw_core_terms is not None or raw_context_terms is not None
+    if using_groups:
+        core_source = list(raw_core_terms or [])
+        context_source = list(raw_context_terms or [])
+    else:
+        core_source = list(query.get("query_terms") or [])
+        context_source = []
+
+    expanded_core = _expanded_alias_terms(core_source)
+    expanded_context = _expanded_alias_terms(context_source)
+    effective_core = _usable_query_terms(expanded_core)
+    effective_context = [
+        term for term in _usable_query_terms(expanded_context) if term not in effective_core
+    ]
+    effective_terms = list(dict.fromkeys([*effective_core, *effective_context]))
+    raw_terms = [
+        _normalize_term(term)
+        for term in [*core_source, *context_source]
+        if _normalize_term(term)
+    ]
+    filtered_terms = [
+        term
+        for term in raw_terms
+        if term not in effective_terms
+        and term not in _usable_query_terms(_expanded_alias_terms([term]))
+    ]
+    return {
+        "core_terms": effective_core,
+        "context_terms": effective_context,
+        "effective_query_terms": effective_terms,
+        "filtered_query_terms": list(dict.fromkeys(filtered_terms)),
+    }
+
+
 def _contains_term(text: str, term: str) -> bool:
     if not term:
         return False
@@ -370,6 +450,8 @@ def _recommendation(
     match_score: int,
     matched_fields: list[str],
     matched_terms: list[str],
+    matched_core_terms: list[str],
+    matched_context_terms: list[str],
     negative_terms: list[str],
 ) -> str:
     if not matched_terms:
@@ -378,6 +460,8 @@ def _recommendation(
         return "needs_human_check"
     if set(matched_fields) == {"transcript"}:
         return "needs_human_check"
+    if not matched_core_terms:
+        return "adjacent" if match_score >= 4 and matched_context_terms else "needs_human_check"
     if match_score >= 10 and ("title" in matched_fields or "analysis" in matched_fields):
         return "duplicate" if "title" in matched_fields else "adjacent"
     if match_score >= 4:
@@ -385,31 +469,86 @@ def _recommendation(
     return "needs_human_check"
 
 
+def _parse_upload_date(value: Any) -> date | None:
+    text = str(value or "").strip()
+    for fmt in ("%Y%m%d", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _past_video_response_signal(
+    *,
+    recommendation: str,
+    match: dict[str, Any] | None,
+    run_date: str,
+) -> str:
+    if not match:
+        return "safe_new_angle"
+    if recommendation == "needs_human_check":
+        return "needs_human_check"
+    view_count = match.get("view_count")
+    upload_date = _parse_upload_date(match.get("upload_date"))
+    run_dt = _parse_upload_date(run_date)
+    days_old = (run_dt - upload_date).days if upload_date and run_dt else None
+    if recommendation == "duplicate" and days_old is not None and days_old <= 90:
+        return "duplicate_do_not_repeat"
+    if (
+        recommendation in {"duplicate", "adjacent"}
+        and isinstance(view_count, int)
+        and view_count >= 1_000_000
+        and days_old is not None
+        and days_old >= 180
+    ):
+        return "fresh_update_on_popular_topic"
+    if recommendation in {"duplicate", "adjacent"} and isinstance(view_count, int):
+        if view_count >= 1_000_000:
+            return "audience_proven_topic"
+    return recommendation
+
+
 def match_query_to_documents(
     query: dict[str, Any],
     documents: list[VideoDocument],
     *,
     limit: int = DEFAULT_MATCH_LIMIT,
+    run_date: str = "",
 ) -> dict[str, Any]:
-    terms = _usable_query_terms(query.get("query_terms", []))
+    term_sets = _term_set_for_query(query)
+    terms = term_sets["effective_query_terms"]
+    core_terms = term_sets["core_terms"]
+    context_terms = term_sets["context_terms"]
     negative_terms = [
         _normalize_term(term) for term in query.get("negative_terms", []) if _normalize_term(term)
     ]
     matches: list[dict[str, Any]] = []
     for doc in documents:
         field_hits: dict[str, set[str]] = {"title": set(), "analysis": set(), "transcript": set()}
+        core_hits: dict[str, set[str]] = {"title": set(), "analysis": set(), "transcript": set()}
+        context_hits: dict[str, set[str]] = {"title": set(), "analysis": set(), "transcript": set()}
         negative_hits: set[str] = set()
         for field, weight in [("title", 4), ("analysis", 2), ("transcript", 1)]:
             text = doc.fields.get(field, "")
-            for term in terms:
+            for term in core_terms:
                 if _contains_term(text, term):
                     field_hits[field].add(term)
+                    core_hits[field].add(term)
+            for term in context_terms:
+                if _contains_term(text, term):
+                    field_hits[field].add(term)
+                    context_hits[field].add(term)
             for term in negative_terms:
                 if _contains_term(text, term):
                     negative_hits.add(term)
             del weight
         matched_fields = [field for field, hits in field_hits.items() if hits]
         matched_terms = sorted(set().union(*field_hits.values())) if matched_fields else []
+        matched_core_terms = sorted(set().union(*core_hits.values())) if matched_fields else []
+        matched_context_terms = (
+            sorted(set().union(*context_hits.values())) if matched_fields else []
+        )
         raw_score = (
             len(field_hits["title"]) * 4
             + len(field_hits["analysis"]) * 2
@@ -427,6 +566,8 @@ def match_query_to_documents(
             match_score=match_score,
             matched_fields=matched_fields,
             matched_terms=matched_terms,
+            matched_core_terms=matched_core_terms,
+            matched_context_terms=matched_context_terms,
             negative_terms=sorted(negative_hits),
         )
         matches.append(
@@ -437,6 +578,8 @@ def match_query_to_documents(
                 "view_count": doc.view_count,
                 "matched_fields": matched_fields,
                 "matched_terms": matched_terms,
+                "matched_core_terms": matched_core_terms,
+                "matched_context_terms": matched_context_terms,
                 "negative_terms_matched": sorted(negative_hits),
                 "match_score": match_score,
                 "recommendation": recommendation,
@@ -451,16 +594,28 @@ def match_query_to_documents(
             str(item["title"]),
         )
     )
+    top_match = matches[0] if matches else None
+    recommendation = top_match["recommendation"] if top_match else "safe_new_angle"
     return {
         "story_fingerprint": str(query.get("story_fingerprint") or ""),
         "query_title": str(query.get("title") or ""),
         "priority": str(query.get("priority") or "low"),
         "trigger": str(query.get("trigger") or ""),
         "query_terms": query.get("query_terms") or [],
+        "core_terms": query.get("core_terms") or [],
+        "context_terms": query.get("context_terms") or [],
         "effective_query_terms": terms,
+        "effective_core_terms": core_terms,
+        "effective_context_terms": context_terms,
+        "filtered_query_terms": term_sets["filtered_query_terms"],
         "negative_terms": query.get("negative_terms") or [],
         "matches": matches[:limit],
-        "recommendation": matches[0]["recommendation"] if matches else "safe_new_angle",
+        "recommendation": recommendation,
+        "past_video_response_signal": _past_video_response_signal(
+            recommendation=recommendation,
+            match=top_match,
+            run_date=run_date,
+        ),
     }
 
 
@@ -510,7 +665,7 @@ def probe_syuka_snapshot(
     source_run_date, queries = _load_bridge_queries(queries_json)
     documents = load_snapshot_documents(db) if db and db.status == "usable" else []
     results = [
-        match_query_to_documents(query, documents, limit=match_limit)
+        match_query_to_documents(query, documents, limit=match_limit, run_date=run_date)
         for query in queries
     ]
     payload = {
@@ -603,10 +758,15 @@ def _markdown(payload: dict[str, Any]) -> str:
                 f"- priority: {result.get('priority', 'low')}",
                 f"- trigger: {result.get('trigger', '')}",
                 f"- recommendation: {result.get('recommendation', 'safe_new_angle')}",
+                f"- past_video_response_signal: {result.get('past_video_response_signal', '')}",
                 f"- effective_query_terms: {', '.join(result.get('effective_query_terms', []))}",
+                f"- filtered_query_terms: {', '.join(result.get('filtered_query_terms', []))}",
                 "",
-                "| score | recommendation | fields | title | terms | snippet |",
-                "| ---: | --- | --- | --- | --- | --- |",
+                (
+                    "| score | recommendation | fields | title | core_terms | context_terms | "
+                    "snippet |"
+                ),
+                "| ---: | --- | --- | --- | --- | --- | --- |",
             ]
         )
         matches = result.get("matches") or []
@@ -619,14 +779,15 @@ def _markdown(payload: dict[str, Any]) -> str:
                         _table_cell(match.get("recommendation")),
                         _table_cell(", ".join(match.get("matched_fields", []))),
                         _table_cell(match.get("title")),
-                        _table_cell(", ".join(match.get("matched_terms", []))),
+                        _table_cell(", ".join(match.get("matched_core_terms", []))),
+                        _table_cell(", ".join(match.get("matched_context_terms", []))),
                         _table_cell(match.get("snippet")),
                     ]
                 )
                 + " |"
             )
         if not matches:
-            lines.append("| 0 | safe_new_angle | none | none | none | no local match |")
+            lines.append("| 0 | safe_new_angle | none | none | none | none | no local match |")
         lines.append("")
     no_match = [item for item in results if not item.get("matches")]
     no_match_lines = [
