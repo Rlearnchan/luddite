@@ -187,6 +187,11 @@ losing the original auto-generated copy. The metadata sidecar records
 `auto_title`, `auto_description`, `editorial_override_applied`, and
 `editorial_override_reason`.
 
+For the current research-team experiment, treat this Codex editorial pass as a
+default final step before replacing the sheet. The experiment is testing whether
+Jibi's selected candidates are useful in a realistic review-board form, not
+whether the raw rule-based copy is already good enough.
+
 ## Local Syuka Snapshot Probe
 
 Use this only after the Jibi syuka bridge query package exists:
@@ -207,6 +212,16 @@ This is a local snapshot probe only. It reads SQLite files under the provided
 data directory in read-only mode, writes Jibi-side reports, and does not modify
 `syuka-ops`, the Windows Docker server, the syuka DB, Jibi scoring, or the
 visible Google Sheet schema.
+
+The probe only searches Syukaworld videos by default:
+
+```text
+channel_key=syukaworld
+channel_name=슈카월드
+```
+
+Other channels present in the same local snapshot, such as Money Comics, are
+excluded from Jibi similarity annotations.
 
 Inputs:
 
