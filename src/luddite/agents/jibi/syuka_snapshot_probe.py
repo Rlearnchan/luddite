@@ -514,6 +514,53 @@ def _past_video_response_signal(
     return recommendation
 
 
+def _match_display_controls(
+    recommendation: str,
+    match: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not match or recommendation == "safe_new_angle":
+        return {
+            "match_confidence": "low",
+            "match_reason": "no_local_match",
+            "display_on_board": False,
+        }
+    fields = set(match.get("matched_fields") or [])
+    score = int(match.get("match_score") or 0)
+    core_terms = set(match.get("matched_core_terms") or [])
+    context_terms = set(match.get("matched_context_terms") or [])
+    if fields == {"transcript"}:
+        return {
+            "match_confidence": "low",
+            "match_reason": "transcript_only",
+            "display_on_board": False,
+        }
+    if "title" in fields and (core_terms or recommendation == "duplicate"):
+        return {
+            "match_confidence": "high" if recommendation == "duplicate" else "medium",
+            "match_reason": "core_title_match",
+            "display_on_board": recommendation in {"duplicate", "adjacent"},
+        }
+    if "analysis" in fields and (core_terms or recommendation in {"duplicate", "adjacent"}):
+        confidence = "high" if recommendation == "duplicate" and score >= 10 else "medium"
+        return {
+            "match_confidence": confidence,
+            "match_reason": "core_analysis_match",
+            "display_on_board": recommendation in {"duplicate", "adjacent"},
+        }
+    if context_terms or fields:
+        confidence = "medium" if score >= 4 and recommendation == "adjacent" else "low"
+        return {
+            "match_confidence": confidence,
+            "match_reason": "context_only",
+            "display_on_board": confidence == "medium" and recommendation == "adjacent",
+        }
+    return {
+        "match_confidence": "low",
+        "match_reason": "generic_filtered",
+        "display_on_board": False,
+    }
+
+
 def match_query_to_documents(
     query: dict[str, Any],
     documents: list[VideoDocument],
@@ -602,6 +649,7 @@ def match_query_to_documents(
     )
     top_match = matches[0] if matches else None
     recommendation = top_match["recommendation"] if top_match else "safe_new_angle"
+    display_controls = _match_display_controls(recommendation, top_match)
     return {
         "story_fingerprint": str(query.get("story_fingerprint") or ""),
         "query_title": str(query.get("title") or ""),
@@ -617,6 +665,9 @@ def match_query_to_documents(
         "negative_terms": query.get("negative_terms") or [],
         "matches": matches[:limit],
         "recommendation": recommendation,
+        "match_confidence": display_controls["match_confidence"],
+        "match_reason": display_controls["match_reason"],
+        "display_on_board": display_controls["display_on_board"],
         "past_video_response_signal": _past_video_response_signal(
             recommendation=recommendation,
             match=top_match,

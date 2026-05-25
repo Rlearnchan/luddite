@@ -1,6 +1,7 @@
 import csv
 import json
 
+from luddite import paths
 from luddite.agents.jibi.render_daily_digest import (
     render_daily_digest,
     top_candidates,
@@ -9,6 +10,7 @@ from luddite.agents.jibi.render_daily_digest import (
     write_quality_report,
     write_syuka_bridge_query_reports,
 )
+from luddite.agents.jibi.syuka_refresh import refresh_review_board_with_syuka
 from luddite.utils.jsonl import write_jsonl
 
 
@@ -538,6 +540,163 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert metadata["rows"][0]["run_date"] == "2026-05-23"
 
 
+def test_bundle_review_editorial_override_by_id_preserves_auto_copy(tmp_path) -> None:
+    candidate = {
+        "candidate_id": "bok_youth_rest",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "seed_url": "https://www.bok.or.kr/youth",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [candidate],
+        [candidate],
+        "2026-05-23",
+    )
+    metadata_path = csv_path.with_name(f"{csv_path.stem}_metadata.json")
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    review_id = metadata["rows"][0]["ID"]
+    override_path = tmp_path / "overrides.json"
+    override_path.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "editor": "codex",
+                "items": {
+                    review_id: {
+                        "title": "청년 노동시장 밖으로 빠지는 사람들",
+                        "description": "실업률만으로 안 보이는 청년 이탈을 설명하는 후보입니다.",
+                        "reason": "reviewer-facing copy",
+                    }
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [candidate],
+        [candidate],
+        "2026-05-23",
+        editorial_overrides_path=override_path,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert rows[0]["제목"] == "청년 노동시장 밖으로 빠지는 사람들"
+    assert rows[0]["설명"] == "실업률만으로 안 보이는 청년 이탈을 설명하는 후보입니다."
+    assert metadata["rows"][0]["auto_title"] != rows[0]["제목"]
+    assert "실업률만 보면 안 보이는" in metadata["rows"][0]["auto_description"]
+    assert metadata["rows"][0]["editorial_override_applied"] is True
+    assert metadata["rows"][0]["editorial_override_reason"] == "reviewer-facing copy"
+
+
+def test_bundle_review_editorial_override_by_story_fingerprint(tmp_path) -> None:
+    candidate = {
+        "candidate_id": "asset_tokenization",
+        "title": "국내외 자산 토큰화 현황 및 향후 정책 과제",
+        "seed_url": "https://www.bok.or.kr/rwa",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "policy_research_note",
+        "why_interesting": "자산 토큰화 정책 과제",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 75, "broadcast_potential_proxy": 4},
+    }
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    write_bundle_review_sheet_preview(csv_path, [candidate], [candidate], "2026-05-23")
+    metadata = json.loads(
+        csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
+    )
+    story_fingerprint = metadata["rows"][0]["story_fingerprint"]
+    override_path = tmp_path / "overrides.json"
+    override_path.write_text(
+        json.dumps(
+            {
+                "items": {
+                    story_fingerprint: {
+                        "title": "집도, 채권도 쪼개 사고파는 시대",
+                        "description": "RWA가 제도권 금융으로 들어오는 흐름을 보는 후보입니다.",
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [candidate],
+        [candidate],
+        "2026-05-23",
+        editorial_overrides_path=override_path,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert rows[0]["제목"] == "집도, 채권도 쪼개 사고파는 시대"
+    assert rows[0]["설명"] == "RWA가 제도권 금융으로 들어오는 흐름을 보는 후보입니다."
+
+
+def test_bundle_review_missing_editorial_override_is_harmless(tmp_path) -> None:
+    candidate = {
+        "candidate_id": "ocean",
+        "title": "The network watching the world’s oceans",
+        "seed_url": "https://theconversation.com/ocean",
+        "source": "The Conversation",
+        "source_role_class": "academic_explainer",
+        "seed_type": "academic_explainer",
+        "why_interesting": "해양 관측 네트워크 설명",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
+    }
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [candidate],
+        [candidate],
+        "2026-05-23",
+        editorial_overrides_path=tmp_path / "missing.json",
+    )
+
+    metadata = json.loads(
+        csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
+    )
+    assert metadata["visible_columns"] == [
+        "일시",
+        "제목",
+        "점수",
+        "메인 링크",
+        "서브 링크",
+        "설명",
+        "리뷰-성원",
+        "리뷰-동찬",
+        "리뷰-형찬",
+        "ID",
+    ]
+    assert metadata["rows"][0]["editorial_override_applied"] is False
+
+
 def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -> None:
     youth_rest = {
         "candidate_id": "bok_youth_rest",
@@ -618,6 +777,80 @@ def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -
     assert metadata["rows"][0]["syuka_similarity"]["recommendation"] == "duplicate"
     assert metadata["rows"][0]["syuka_similarity"]["top_match_score"] == 12
     assert metadata["rows"][0]["syuka_similarity"]["like_count"] == 32000
+    assert metadata["rows"][0]["syuka_similarity"]["match_confidence"] == "high"
+    assert metadata["rows"][0]["syuka_similarity"]["match_reason"] == "core_title_match"
+    assert metadata["rows"][0]["syuka_similarity"]["display_on_board"] is True
+
+
+def test_bundle_review_keeps_low_confidence_syuka_metrics_out_of_description(
+    tmp_path,
+) -> None:
+    candidate = {
+        "candidate_id": "ai_religion",
+        "title": "AI에게 위로받는 시대",
+        "seed_url": "https://example.com/ai-religion",
+        "source": "The Conversation",
+        "source_role_class": "academic_explainer",
+        "seed_type": "academic_explainer",
+        "why_interesting": "AI와 종교 상담 변화",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
+    }
+    syuka_report = tmp_path / "jibi_syuka_snapshot_matches_2026-05-23.json"
+    syuka_report.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "results": [
+                    {
+                        "story_fingerprint": "story_737f849b3f",
+                        "query_title": "AI에게 위로받는 시대",
+                        "recommendation": "needs_human_check",
+                        "past_video_response_signal": "needs_human_check",
+                        "matches": [
+                            {
+                                "title": "AI가 바꾸는 주식시장",
+                                "match_score": 2,
+                                "matched_terms": ["AI"],
+                                "matched_fields": ["transcript"],
+                                "url": "https://youtu.be/ai",
+                                "view_count": 2000000,
+                                "like_count": 50000,
+                                "upload_date": "20240101",
+                            }
+                        ],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [candidate],
+        [candidate],
+        "2026-05-23",
+        syuka_similarity_report_path=syuka_report,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    metadata = json.loads(
+        csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
+    )
+    assert "과거 영상과 약하게 겹칠 수 있어" in rows[0]["설명"]
+    assert "AI가 바꾸는 주식시장" not in rows[0]["설명"]
+    assert "조회 200만" not in rows[0]["설명"]
+    similarity = metadata["rows"][0]["syuka_similarity"]
+    assert similarity["match_confidence"] == "low"
+    assert similarity["match_reason"] == "transcript_only"
+    assert similarity["display_on_board"] is False
 
 
 def test_bundle_review_does_not_annotate_safe_new_angle(tmp_path) -> None:
@@ -959,6 +1192,62 @@ def test_quality_report_handles_missing_syuka_similarity_report(tmp_path) -> Non
     report = report_path.read_text(encoding="utf-8")
     assert "## Syuka Similarity Summary" in report
     assert "- report_status: missing_or_empty" in report
+
+
+def test_syuka_refresh_writes_manifest_and_operating_log(tmp_path, monkeypatch) -> None:
+    input_path = tmp_path / "scored.jsonl"
+    output_dir = tmp_path / "daily_digest"
+    reports_dir = tmp_path / "reports"
+    overrides_dir = tmp_path / "editorial_overrides"
+    inbox_dir = tmp_path / "inbox"
+    inbox_dir.mkdir()
+    (inbox_dir / "rss_2026-05-25.jsonl").write_text(
+        json.dumps({"url": "https://example.com/youth"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(paths, "REPORTS_DIR", reports_dir)
+    monkeypatch.setattr(paths, "JIBI_EDITORIAL_OVERRIDES_DIR", overrides_dir)
+    monkeypatch.setattr(paths, "ARTICLE_INBOX_DIR", inbox_dir)
+    write_jsonl(
+        input_path,
+        [
+            {
+                "candidate_id": "bok_youth_rest",
+                "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+                "seed_url": "https://www.bok.or.kr/youth",
+                "source": "한국은행",
+                "source_role_class": "research_note",
+                "seed_type": "macro_research_note",
+                "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+                "quality_flags": [],
+                "risk_flags": [],
+                "recommended_action": "gather_more_evidence",
+                "final_grade": "B",
+                "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+            }
+        ],
+    )
+
+    payload = refresh_review_board_with_syuka(
+        run_date="2026-05-25",
+        input_path=input_path,
+        output_dir=output_dir,
+        syuka_data_dir=tmp_path / "missing_syuka",
+        review_history_path=tmp_path / "missing_history.jsonl",
+    )
+
+    assert payload["render_pass_1_status"] == "succeeded"
+    assert payload["render_pass_2_status"] == "succeeded"
+    assert payload["board_row_count"] == 1
+    assert payload["syuka_probe_status"] == "no_db_found"
+    assert payload["sheet_replace_status"] == "not_requested"
+    assert (reports_dir / "jibi_syuka_refresh_2026-05-25.md").exists()
+    log_path = reports_dir / "jibi_operating_experiment_log.jsonl"
+    assert log_path.exists()
+    log = json.loads(log_path.read_text(encoding="utf-8").strip())
+    assert log["rss_raw_count"] == 1
+    assert log["rss_unique_count"] == 1
+    assert log["sheet_mode"] == "none"
 
 
 def test_quality_report_contains_source_mix_review_focus(tmp_path) -> None:

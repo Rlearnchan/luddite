@@ -563,6 +563,7 @@ def write_bundle_review_sheet_preview(
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
     registered_at: str | None = None,
     syuka_similarity_report_path: Path | None = None,
+    editorial_overrides_path: Path | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -573,6 +574,11 @@ def write_bundle_review_sheet_preview(
     }
     history_index = _load_review_history_index(review_history_path)
     syuka_similarity_index = _load_syuka_similarity_index(syuka_similarity_report_path)
+    resolved_editorial_overrides_path = _resolve_editorial_overrides_path(
+        digest_date,
+        editorial_overrides_path,
+    )
+    editorial_overrides = _load_editorial_overrides(resolved_editorial_overrides_path)
     registered_at_value = _review_board_registered_at(registered_at)
     bundle_records = _story_bundle_records(
         candidates,
@@ -635,6 +641,14 @@ def write_bundle_review_sheet_preview(
                 history_status=history_status,
                 syuka_similarity=syuka_similarity,
             )
+            auto_title = str(row.get("제목") or "")
+            auto_description = str(row.get("설명") or "")
+            override = _editorial_override_for_row(
+                editorial_overrides,
+                review_item_id=review_item_id,
+                story_fingerprint=str(record.get("story_fingerprint") or ""),
+            )
+            _apply_editorial_override(row, override)
             writer.writerow(row)
             metadata_rows.append(
                 _bundle_review_metadata_row(
@@ -646,6 +660,9 @@ def write_bundle_review_sheet_preview(
                     run_date=digest_date,
                     sub_links=sub_links,
                     syuka_similarity=syuka_similarity,
+                    auto_title=auto_title,
+                    auto_description=auto_description,
+                    editorial_override=override,
                 )
             )
     _write_bundle_review_metadata(
@@ -653,6 +670,11 @@ def write_bundle_review_sheet_preview(
         rows=metadata_rows,
         digest_date=digest_date,
         registered_at=registered_at_value,
+    )
+    _write_editorial_override_template(
+        _editorial_override_template_path(digest_date),
+        rows=metadata_rows,
+        digest_date=digest_date,
     )
 
 
@@ -811,23 +833,177 @@ def _default_syuka_similarity_report_path(run_date: str) -> Path:
     return paths.REPORTS_DIR / f"jibi_syuka_snapshot_matches_{run_date}.json"
 
 
+def _default_editorial_overrides_path(run_date: str) -> Path:
+    return paths.JIBI_EDITORIAL_OVERRIDES_DIR / f"jibi_review_board_{run_date}.json"
+
+
+def _editorial_override_template_path(run_date: str) -> Path:
+    return paths.JIBI_EDITORIAL_OVERRIDES_DIR / f"jibi_review_board_{run_date}.template.json"
+
+
+def _resolve_editorial_overrides_path(
+    run_date: str,
+    editorial_overrides_path: Path | None,
+) -> Path:
+    if editorial_overrides_path is not None:
+        return editorial_overrides_path
+    env_value = os.environ.get("JIBI_REVIEW_BOARD_EDITORIAL_OVERRIDES")
+    if env_value:
+        return Path(env_value)
+    return _default_editorial_overrides_path(run_date)
+
+
+def _load_editorial_overrides(path: Path | None) -> dict[str, dict[str, Any]]:
+    if path is None or not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    raw_items = payload.get("items", payload)
+    if not isinstance(raw_items, dict):
+        return {}
+    items: dict[str, dict[str, Any]] = {}
+    for key, value in raw_items.items():
+        if isinstance(value, dict):
+            items[str(key)] = value
+    return items
+
+
+def _editorial_override_for_row(
+    overrides: dict[str, dict[str, Any]],
+    *,
+    review_item_id: str,
+    story_fingerprint: str,
+) -> dict[str, Any] | None:
+    for key in [review_item_id, story_fingerprint]:
+        if key and key in overrides:
+            return overrides[key]
+    return None
+
+
+def _apply_editorial_override(
+    row: dict[str, Any],
+    override: dict[str, Any] | None,
+) -> None:
+    if not override:
+        return
+    title = str(override.get("title") or "").strip()
+    description = str(override.get("description") or "").strip()
+    if title:
+        row["제목"] = title
+    if description:
+        row["설명"] = description
+
+
+def _write_editorial_override_template(
+    path: Path,
+    *,
+    rows: list[dict[str, Any]],
+    digest_date: str,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    items: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        review_item_id = str(row.get("review_item_id") or row.get("ID") or "")
+        if not review_item_id:
+            continue
+        items[review_item_id] = {
+            "story_fingerprint": str(row.get("story_fingerprint") or ""),
+            "title": str(row.get("title") or ""),
+            "description": str(row.get("description") or ""),
+            "reason": "",
+        }
+    payload = {
+        "run_date": digest_date,
+        "editor": "codex",
+        "items": items,
+    }
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _normalize_syuka_similarity_result(result: dict[str, Any]) -> dict[str, Any]:
     top_match = (result.get("matches") or [{}])[0]
+    recommendation = str(result.get("recommendation") or "safe_new_angle")
+    display = _syuka_match_display_controls(recommendation, top_match)
+    if result.get("match_confidence"):
+        display = {
+            "match_confidence": str(result.get("match_confidence") or ""),
+            "match_reason": str(result.get("match_reason") or ""),
+            "display_on_board": bool(result.get("display_on_board")),
+        }
     return {
         "story_fingerprint": str(result.get("story_fingerprint") or ""),
         "query_title": str(result.get("query_title") or ""),
-        "recommendation": str(result.get("recommendation") or "safe_new_angle"),
+        "recommendation": recommendation,
         "top_match_title": str(top_match.get("title") or ""),
         "top_match_score": int(top_match.get("match_score") or 0),
         "matched_terms": list(top_match.get("matched_terms") or []),
         "matched_fields": list(top_match.get("matched_fields") or []),
+        "matched_core_terms": list(top_match.get("matched_core_terms") or []),
+        "matched_context_terms": list(top_match.get("matched_context_terms") or []),
         "past_video_url": str(top_match.get("url") or ""),
         "view_count": top_match.get("view_count"),
         "like_count": top_match.get("like_count"),
         "upload_date": str(top_match.get("upload_date") or ""),
+        "match_confidence": display["match_confidence"],
+        "match_reason": display["match_reason"],
+        "display_on_board": display["display_on_board"],
         "past_video_response_signal": str(
             result.get("past_video_response_signal") or result.get("recommendation") or ""
         ),
+    }
+
+
+def _syuka_match_display_controls(
+    recommendation: str,
+    top_match: dict[str, Any],
+) -> dict[str, Any]:
+    fields = set(top_match.get("matched_fields") or [])
+    score = int(top_match.get("match_score") or 0)
+    core_terms = set(top_match.get("matched_core_terms") or [])
+    context_terms = set(top_match.get("matched_context_terms") or [])
+    if recommendation == "safe_new_angle" or not top_match:
+        return {
+            "match_confidence": "low",
+            "match_reason": "no_local_match",
+            "display_on_board": False,
+        }
+    if fields == {"transcript"}:
+        return {
+            "match_confidence": "low",
+            "match_reason": "transcript_only",
+            "display_on_board": False,
+        }
+    if "title" in fields and (core_terms or recommendation == "duplicate"):
+        return {
+            "match_confidence": "high" if recommendation == "duplicate" else "medium",
+            "match_reason": "core_title_match",
+            "display_on_board": recommendation in {"duplicate", "adjacent"},
+        }
+    if "analysis" in fields and (core_terms or recommendation in {"duplicate", "adjacent"}):
+        confidence = "high" if recommendation == "duplicate" and score >= 10 else "medium"
+        return {
+            "match_confidence": confidence,
+            "match_reason": "core_analysis_match",
+            "display_on_board": recommendation in {"duplicate", "adjacent"},
+        }
+    if context_terms or fields:
+        confidence = "medium" if score >= 4 and recommendation == "adjacent" else "low"
+        return {
+            "match_confidence": confidence,
+            "match_reason": "context_only",
+            "display_on_board": confidence == "medium" and recommendation == "adjacent",
+        }
+    return {
+        "match_confidence": "low",
+        "match_reason": "generic_filtered",
+        "display_on_board": False,
     }
 
 
@@ -1093,6 +1269,9 @@ def _bundle_review_metadata_row(
     run_date: str,
     sub_links: str,
     syuka_similarity: dict[str, Any] | None = None,
+    auto_title: str = "",
+    auto_description: str = "",
+    editorial_override: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     so_what = _candidate_so_what(candidate)
     metadata = {
@@ -1103,6 +1282,13 @@ def _bundle_review_metadata_row(
         "story_fingerprint": str(record.get("story_fingerprint") or ""),
         "story_bundle_id": str(record.get("story_bundle_id") or ""),
         "title": str(row.get("제목") or record.get("bundle_title") or ""),
+        "description": str(row.get("설명") or ""),
+        "auto_title": auto_title or str(row.get("제목") or ""),
+        "auto_description": auto_description or str(row.get("설명") or ""),
+        "editorial_override_applied": bool(editorial_override),
+        "editorial_override_reason": (
+            str(editorial_override.get("reason") or "") if editorial_override else ""
+        ),
         "score": row.get("점수", ""),
         "total_score": _total_score(candidate),
         "main_link": str(row.get("메인 링크") or ""),
@@ -1455,18 +1641,28 @@ def _syuka_similarity_annotation(syuka_similarity: dict[str, Any] | None) -> str
     if not syuka_similarity:
         return ""
     recommendation = str(syuka_similarity.get("recommendation") or "")
-    past_video = _past_video_annotation_detail(syuka_similarity)
+    display_on_board = bool(syuka_similarity.get("display_on_board"))
+    match_confidence = str(syuka_similarity.get("match_confidence") or "")
+    past_video = (
+        _past_video_annotation_detail(syuka_similarity)
+        if display_on_board and match_confidence in {"high", "medium"}
+        else ""
+    )
     if recommendation == "duplicate":
         return (
             "과거 영상과 강하게 겹칠 수 있습니다. "
             f"{past_video}새 자료가 업데이트인지, 아니면 반복인지 확인하세요."
         )
     if recommendation == "adjacent":
+        if not display_on_board:
+            return ""
         return (
             "관련 과거 영상이 있어 배경자료로 쓸 수 있지만, "
             f"{past_video}새 각도인지 확인이 필요합니다."
         )
     if recommendation == "needs_human_check":
+        if not display_on_board:
+            return "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다."
         return (
             "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다. "
             f"{past_video}"
@@ -1595,6 +1791,7 @@ def render_daily_digest(
     review_board_limit: int | None = None,
     bundle_near_miss_limit: int | None = None,
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    editorial_overrides_path: Path | None = None,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
     resolved_review_board_limit = (
@@ -1629,6 +1826,7 @@ def render_daily_digest(
         bundle_near_miss_limit=resolved_bundle_near_miss_limit,
         review_history_path=review_history_path,
         syuka_similarity_report_path=_default_syuka_similarity_report_path(date_value),
+        editorial_overrides_path=editorial_overrides_path,
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -4323,6 +4521,13 @@ def main(
             help="Allow already reviewed story fingerprints in the alternate batch.",
         ),
     ] = False,
+    editorial_overrides_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--editorial-overrides",
+            help="Optional bundle review title/description override JSON.",
+        ),
+    ] = None,
 ) -> None:
     if alternate_review_board_only:
         alt_csv_path, metadata_path, report_path = render_alternate_review_board(
@@ -4351,6 +4556,7 @@ def main(
         review_board_limit=review_board_limit,
         bundle_near_miss_limit=bundle_near_miss_limit,
         review_history_path=review_history_path,
+        editorial_overrides_path=editorial_overrides_path,
     )
     bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(

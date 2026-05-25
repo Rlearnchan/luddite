@@ -141,6 +141,9 @@ def test_probe_syuka_snapshot_title_and_analysis_match(tmp_path) -> None:
     assert result["matches"][0]["like_count"] == 32000
     assert "title" in result["matches"][0]["matched_fields"]
     assert result["matches"][0]["recommendation"] == "duplicate"
+    assert result["match_confidence"] == "high"
+    assert result["match_reason"] == "core_title_match"
+    assert result["display_on_board"] is True
     assert result["past_video_response_signal"] == "duplicate_do_not_repeat"
 
 
@@ -173,6 +176,9 @@ def test_probe_syuka_snapshot_transcript_only_needs_human_check(tmp_path) -> Non
     assert match["video_id"] == "vid_transcript"
     assert match["matched_fields"] == ["transcript"]
     assert match["recommendation"] == "needs_human_check"
+    assert payload["results"][0]["match_confidence"] == "low"
+    assert payload["results"][0]["match_reason"] == "transcript_only"
+    assert payload["results"][0]["display_on_board"] is False
 
 
 def test_probe_syuka_snapshot_no_match_is_safe_new_angle(tmp_path) -> None:

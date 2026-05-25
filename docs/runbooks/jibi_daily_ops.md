@@ -144,13 +144,20 @@ otherwise.
 
 Daily flow:
 
-1. Morning: run `make jibi-review-board-replace`.
-2. Research teammates write one-line free-text comments in their reviewer
+1. Run `make jibi-review-board-refresh-with-syuka JIBI_DATE=YYYY-MM-DD`.
+2. Inspect the bundle review CSV, syuka refresh report, and editorial override
+   template.
+3. If the reviewer-facing copy is too stiff, edit
+   `outputs/editorial_overrides/jibi_review_board_YYYY-MM-DD.json` and run:
+   `PYTHONPATH=src .venv/bin/python -m luddite refresh-jibi-review-board-with-syuka --date YYYY-MM-DD`.
+4. When the board is ready, run
+   `make jibi-review-board-replace-with-syuka JIBI_DATE=YYYY-MM-DD`.
+5. Research teammates write one-line free-text comments in their reviewer
    columns.
-3. After comments: run `make jibi-review-feedback JIBI_DATE=YYYY-MM-DD`.
-4. Optional evening: run RSS dry-run/history observation only. Do not replace
+6. After comments: run `make jibi-review-feedback JIBI_DATE=YYYY-MM-DD`.
+7. Optional evening: run RSS dry-run/history observation only. Do not replace
    the visible board after reviewers start writing.
-5. Next morning: read/snapshot feedback before replacing the board.
+8. Next morning: read/snapshot feedback before replacing the board.
 
 Guardrails:
 
@@ -173,6 +180,12 @@ Guardrails:
   writes, retention, or a syuka-ops bridge make SQLite worth the extra shape.
 - Guardian section experiments remain optional and controlled. Do not enable a
   broad Guardian feed by default.
+
+Editorial override files are local operating artifacts. They let Codex/user
+rewrite only the visible `제목` and `설명` without changing the sheet schema or
+losing the original auto-generated copy. The metadata sidecar records
+`auto_title`, `auto_description`, `editorial_override_applied`, and
+`editorial_override_reason`.
 
 ## Local Syuka Snapshot Probe
 
@@ -220,6 +233,31 @@ sidecar records a `syuka_similarity` object. The visible `Jibi` sheet schema doe
 not change. The `설명` cell only gets a short caution sentence for duplicate,
 adjacent, or weak overlap cases; no candidate is removed or promoted by the
 snapshot probe.
+
+For the normal operating experiment, prefer the two-pass wrapper:
+
+```bash
+make jibi-review-board-refresh-with-syuka JIBI_DATE=2026-05-25
+```
+
+It runs the review-board dry-run, creates bridge queries, probes the local syuka
+snapshot, re-renders the board with safer similarity annotations, applies any
+editorial override file, and writes a refresh manifest:
+
+```text
+outputs/reports/jibi_syuka_refresh_YYYY-MM-DD.md
+outputs/reports/jibi_syuka_refresh_YYYY-MM-DD.json
+outputs/reports/jibi_operating_experiment_log.jsonl
+```
+
+The protected replace target keeps the existing review overwrite guard:
+
+```bash
+make jibi-review-board-replace-with-syuka JIBI_DATE=2026-05-25
+```
+
+Use `JIBI_ALLOW_REVIEW_OVERWRITE=1` only after same-day reviewer comments have
+been archived or intentionally discarded.
 
 ## Board Triage And Source Experiments
 
