@@ -1495,11 +1495,7 @@ def _score_display(candidate: dict[str, Any]) -> str:
         return ""
     score = round(_total_score(candidate))
     grade = _compact_text(candidate.get("final_grade")) or "?"
-    action = ACTION_LABELS.get(
-        str(candidate.get("recommended_action") or ""),
-        _compact_text(candidate.get("recommended_action")) or "검토 필요",
-    )
-    return f"{score}점 · {grade} · {action}"
+    return f"{score}({grade})"
 
 
 def _board_text(record: dict[str, Any], candidate: dict[str, Any]) -> str:
