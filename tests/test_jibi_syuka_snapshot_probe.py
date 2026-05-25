@@ -21,6 +21,8 @@ def _make_syuka_db(path):
             upload_date TEXT,
             view_count INTEGER,
             like_count INTEGER,
+            channel_name TEXT,
+            channel_key TEXT,
             source_url TEXT
         )
         """
@@ -43,13 +45,15 @@ def _make_syuka_db(path):
         """
     )
     conn.execute(
-        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             "vid_youth",
             "83~95년생의 삶을 추적해봤습니다 - 청년 노동시장",
             "20260501",
             1500000,
             32000,
+            "슈카월드",
+            "syukaworld",
             "https://youtu.be/youth",
         ),
     )
@@ -66,15 +70,38 @@ def _make_syuka_db(path):
         ("vid_youth", "오늘은 청년 노동시장 이야기를 해보겠습니다."),
     )
     conn.execute(
-        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             "vid_transcript",
             "여름 직장 문화",
             "20260512",
             900000,
             12000,
+            "슈카월드",
+            "syukaworld",
             "https://youtu.be/shorts",
         ),
+    )
+    conn.execute(
+        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "vid_moneycomics",
+            "이시바 총리 확정, 닛케이 숏 칠까요?",
+            "20240928",
+            177943,
+            2800,
+            "머니코믹스",
+            "moneymoneycomics",
+            "https://youtu.be/money",
+        ),
+    )
+    conn.execute(
+        "INSERT INTO video_analysis VALUES (?, ?, ?)",
+        ("vid_moneycomics", "닛케이 일본 증시", '["닛케이", "일본 증시"]'),
+    )
+    conn.execute(
+        "INSERT INTO transcripts VALUES (?, ?)",
+        ("vid_moneycomics", "닛케이와 이시바 총리 이야기입니다."),
     )
     conn.execute(
         "INSERT INTO video_analysis VALUES (?, ?, ?)",
@@ -138,6 +165,7 @@ def test_probe_syuka_snapshot_title_and_analysis_match(tmp_path) -> None:
 
     result = payload["results"][0]
     assert result["matches"][0]["video_id"] == "vid_youth"
+    assert result["matches"][0]["channel_key"] == "syukaworld"
     assert result["matches"][0]["like_count"] == 32000
     assert "title" in result["matches"][0]["matched_fields"]
     assert result["matches"][0]["recommendation"] == "duplicate"
@@ -269,6 +297,36 @@ def test_probe_syuka_snapshot_context_only_match_does_not_duplicate(tmp_path) ->
     result = payload["results"][0]
     assert result["matches"][0]["recommendation"] == "adjacent"
     assert result["recommendation"] == "adjacent"
+
+
+def test_probe_syuka_snapshot_excludes_non_syukaworld_channels(tmp_path) -> None:
+    data_dir = tmp_path / "data" / "db"
+    data_dir.mkdir(parents=True)
+    _make_syuka_db(data_dir / "syuka_ops.db")
+    queries = tmp_path / "queries.json"
+    _write_queries(
+        queries,
+        [
+            {
+                "title": "일본 닛케이 증시",
+                "priority": "high",
+                "core_terms": ["닛케이", "일본 증시"],
+                "negative_terms": [],
+            }
+        ],
+    )
+
+    _md, _json, payload = probe_syuka_snapshot(
+        run_date="2026-05-25",
+        queries_json=queries,
+        syuka_data_dir=tmp_path / "data",
+        output_md=tmp_path / "matches.md",
+        output_json=tmp_path / "matches.json",
+    )
+
+    result = payload["results"][0]
+    assert result["matches"] == []
+    assert result["recommendation"] == "safe_new_angle"
 
 
 def test_probe_syuka_snapshot_alias_expansion_improves_expected_match(tmp_path) -> None:

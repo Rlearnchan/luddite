@@ -948,6 +948,8 @@ def _normalize_syuka_similarity_result(result: dict[str, Any]) -> dict[str, Any]
         "matched_core_terms": list(top_match.get("matched_core_terms") or []),
         "matched_context_terms": list(top_match.get("matched_context_terms") or []),
         "past_video_url": str(top_match.get("url") or ""),
+        "past_video_channel_name": str(top_match.get("channel_name") or ""),
+        "past_video_channel_key": str(top_match.get("channel_key") or ""),
         "view_count": top_match.get("view_count"),
         "like_count": top_match.get("like_count"),
         "upload_date": str(top_match.get("upload_date") or ""),

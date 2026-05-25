@@ -21,6 +21,8 @@ console = Console()
 
 DEFAULT_SYUKA_DATA_DIR = Path("/Users/bae/Documents/code/syuka-ops/data")
 DEFAULT_MATCH_LIMIT = 5
+ALLOWED_SYUKA_CHANNEL_KEYS = {"syukaworld"}
+ALLOWED_SYUKA_CHANNEL_NAMES = {"슈카월드"}
 TEXT_COLUMN_HINTS = {
     "title",
     "summary",
@@ -132,6 +134,8 @@ class VideoDocument:
     upload_date: str
     view_count: int | None
     like_count: int | None
+    channel_name: str
+    channel_key: str
     fields: dict[str, str]
 
 
@@ -242,6 +246,17 @@ def _row_value(row: sqlite3.Row, column: str) -> str:
     return "" if value is None else str(value)
 
 
+def _is_allowed_syuka_channel(row: sqlite3.Row) -> bool:
+    channel_key = _row_value(row, "channel_key").strip().lower()
+    channel_name = _row_value(row, "channel_name").strip()
+    if not channel_key and not channel_name:
+        return True
+    return (
+        channel_key in ALLOWED_SYUKA_CHANNEL_KEYS
+        or channel_name in ALLOWED_SYUKA_CHANNEL_NAMES
+    )
+
+
 def _load_documents_from_standard_schema(
     conn: sqlite3.Connection,
     tables: dict[str, list[str]],
@@ -255,6 +270,8 @@ def _load_documents_from_standard_schema(
         video_id = _row_value(row, "video_id")
         if not video_id:
             continue
+        if not _is_allowed_syuka_channel(row):
+            continue
         docs[video_id] = VideoDocument(
             video_id=video_id,
             title=_row_value(row, "title"),
@@ -262,6 +279,8 @@ def _load_documents_from_standard_schema(
             upload_date=_row_value(row, "upload_date"),
             view_count=_safe_int(row["view_count"]) if "view_count" in row.keys() else None,
             like_count=_safe_int(row["like_count"]) if "like_count" in row.keys() else None,
+            channel_name=_row_value(row, "channel_name"),
+            channel_key=_row_value(row, "channel_key"),
             fields={
                 "title": _row_value(row, "title"),
                 "metadata": " ".join(
@@ -293,6 +312,8 @@ def _load_documents_from_standard_schema(
                 upload_date=docs[video_id].upload_date,
                 view_count=docs[video_id].view_count,
                 like_count=docs[video_id].like_count,
+                channel_name=docs[video_id].channel_name,
+                channel_key=docs[video_id].channel_key,
                 fields=fields,
             )
     if "transcripts" in tables and "video_id" in tables["transcripts"]:
@@ -309,6 +330,8 @@ def _load_documents_from_standard_schema(
                 upload_date=docs[video_id].upload_date,
                 view_count=docs[video_id].view_count,
                 like_count=docs[video_id].like_count,
+                channel_name=docs[video_id].channel_name,
+                channel_key=docs[video_id].channel_key,
                 fields=fields,
             )
     return list(docs.values())
@@ -326,6 +349,8 @@ def _load_documents_from_generic_schema(
         id_column = "video_id" if "video_id" in columns else columns[0]
         title_column = "title" if "title" in columns else text_columns[0]
         for index, row in enumerate(conn.execute(f'SELECT * FROM "{table}"'), start=1):
+            if not _is_allowed_syuka_channel(row):
+                continue
             video_id = _row_value(row, id_column) or f"{table}:{index}"
             fields = {
                 "title": _row_value(row, title_column),
@@ -339,6 +364,12 @@ def _load_documents_from_generic_schema(
                     upload_date=_row_value(row, "upload_date") if "upload_date" in columns else "",
                     view_count=_safe_int(row["view_count"]) if "view_count" in columns else None,
                     like_count=_safe_int(row["like_count"]) if "like_count" in columns else None,
+                    channel_name=_row_value(row, "channel_name")
+                    if "channel_name" in columns
+                    else "",
+                    channel_key=_row_value(row, "channel_key")
+                    if "channel_key" in columns
+                    else "",
                     fields=fields,
                 )
             )
@@ -637,6 +668,8 @@ def match_query_to_documents(
                 "match_score": match_score,
                 "recommendation": recommendation,
                 "url": doc.url,
+                "channel_name": doc.channel_name,
+                "channel_key": doc.channel_key,
                 "snippet": _snippet(doc.fields.get(snippet_field, ""), matched_terms),
             }
         )
