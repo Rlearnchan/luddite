@@ -4,6 +4,7 @@ import json
 from luddite.agents.jibi.render_daily_digest import (
     render_daily_digest,
     top_candidates,
+    write_alternate_review_board_outputs,
     write_bundle_review_sheet_preview,
     write_quality_report,
     write_syuka_bridge_query_reports,
@@ -147,6 +148,7 @@ def test_syuka_bridge_query_report_is_contract_only(tmp_path) -> None:
         candidates=[candidate],
         top=[candidate],
         output_dir=tmp_path,
+        review_history_path=tmp_path / "missing_history.jsonl",
     )
 
     report = md_path.read_text(encoding="utf-8")
@@ -154,6 +156,66 @@ def test_syuka_bridge_query_report_is_contract_only(tmp_path) -> None:
     assert "No syuka-ops DB was queried by luddite." in report
     assert payload["queries"][0]["priority"] == "high"
     assert "쉬었음" in payload["queries"][0]["query_terms"]
+    assert payload["queries"][0]["trigger"] == "heuristic"
+    assert payload["queries"][0]["source_review_note_excerpt"] == ""
+    assert "## Syuka Bridge Handoff Notes" in report
+
+
+def test_alternate_review_board_excludes_current_board_fingerprint(tmp_path) -> None:
+    current = {
+        "candidate_id": "current",
+        "title": "‘쉬었음’ 청년층의 특징 및 평가",
+        "summary": "청년 노동시장과 경제활동참가율 자료",
+        "seed_url": "https://www.bok.or.kr/youth",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "quality_flags": [],
+        "risk_flags": [],
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+    alternate = {
+        "candidate_id": "alternate",
+        "title": "스타벅스 선불충전금 환불 사각지대",
+        "summary": "소비자 선불충전금과 환불 규제 사각지대",
+        "seed_url": "https://www.yna.co.kr/starbucks",
+        "source": "연합뉴스 경제",
+        "source_role_class": "public_wire",
+        "seed_type": "consumer_regulation_gap",
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "quality_flags": [],
+        "risk_flags": [],
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
+    }
+    candidates = [current, alternate]
+    current_csv = tmp_path / "2026-05-25_bundle_review_sheet.csv"
+    write_bundle_review_sheet_preview(
+        current_csv,
+        candidates,
+        [current],
+        "2026-05-25",
+        review_board_limit=1,
+    )
+
+    alt_csv, metadata_path, report_path = write_alternate_review_board_outputs(
+        tmp_path / "2026-05-25_bundle_review_alt_sheet.csv",
+        tmp_path / "jibi_alternate_review_board_2026-05-25.md",
+        candidates,
+        [current],
+        "2026-05-25",
+        review_board_limit=1,
+        current_board_csv_path=current_csv,
+    )
+
+    with alt_csv.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "스타벅스" in rows[0]["제목"]
+    assert metadata_path.exists()
+    assert "live `Jibi` sheet was not replaced" in report_path.read_text(encoding="utf-8")
 
 
 def test_top_candidates_excludes_rejects() -> None:

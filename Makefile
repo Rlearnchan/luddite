@@ -286,6 +286,11 @@ jibi-review-board-replace:
 		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
 		./scripts/run_jibi_manual_update.sh
 
+jibi-review-board-alternate-dry-run:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite render-daily-digest \
+		--date $(JIBI_DATE) \
+		--alternate-review-board-only
+
 jibi-review-feedback:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite summarize-jibi-review-board \
 		--date $(JIBI_DATE)

@@ -31,6 +31,16 @@ history_app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 REVIEW_TAGS = ["seed", "evidence", "merge", "needs", "reject", "unclear", "unlabeled"]
+PRIMARY_INFERRED_LABELS = [
+    "seed",
+    "conditional_seed",
+    "evidence_only",
+    "needs_more_sources",
+    "merge_or_duplicate",
+    "reject",
+    "unclear",
+    "unlabeled",
+]
 INFERRED_LABELS = [
     "seed",
     "conditional_seed",
@@ -41,6 +51,20 @@ INFERRED_LABELS = [
     "reject",
     "unclear",
     "unlabeled",
+]
+REVIEW_MODIFIERS = [
+    "past_topic_overlap",
+    "already_used_live",
+    "bundle_needed",
+    "weak_source",
+    "single_company_case",
+    "promo_or_bulletin",
+    "good_hook",
+    "system_issue",
+    "audience_interest_weak",
+    "evidence_useful",
+    "textbook_explainer_risk",
+    "weak_audience_bridge",
 ]
 TAG_ALIASES = {
     "seed": "seed",
@@ -82,8 +106,7 @@ INFERRED_LABEL_TO_REVIEW_TAG = {
     "unclear": "unclear",
     "unlabeled": "unlabeled",
 }
-PAST_OVERLAP_TERMS = {
-    "이미",
+PAST_OVERLAP_STRONG_TERMS = {
     "과거 영상",
     "다룬 바",
     "겹침",
@@ -91,9 +114,15 @@ PAST_OVERLAP_TERMS = {
     "pptx",
     "라이브 소재",
 }
+PAST_OVERLAP_ALREADY_CONTEXT_TERMS = {
+    "영상",
+    "다룬",
+    "라이브",
+    "주제",
+    "겹침",
+}
 MERGE_TERMS = {"묶", "bundle", "비슷한 사례", "같이", "합치"}
 CONDITIONAL_TERMS = {
-    "다만",
     "가능성 있음",
     "가능성이 있음",
     "조건부",
@@ -102,9 +131,25 @@ CONDITIONAL_TERMS = {
     "단일기업",
     "보강하면",
 }
+SYSTEM_ISSUE_TERMS = {"제도", "규제", "사각지대", "시스템", "구조", "문제"}
+WEAK_SOURCE_TERMS = {"약한 소스", "소스 약", "출처 약", "단문", "자료가 약", "내용도 단문"}
+SINGLE_COMPANY_TERMS = {"단일기업", "단일 기업", "단일 회사", "회사 기사"}
+PROMO_OR_BULLETIN_TERMS = {
+    "홍보성",
+    "공모전",
+    "캠페인",
+    "행사",
+    "회의",
+    "보도자료",
+    "시연",
+}
+GOOD_HOOK_TERMS = {"hook", "후킹", "흥미", "재미", "좋은 소재", "좋은 자료", "가능성"}
+AUDIENCE_WEAK_TERMS = {"안 궁금", "그래서 뭐", "시청자", "생활감 약", "연결 약"}
+TEXTBOOK_RISK_TERMS = {"교과서", "원론", "설명형", "textbook"}
 POSITIVE_TERMS = {
     "좋은 소재",
     "좋은 자료 선정",
+    "좋은 자료",
     "방송에 쓰일",
     "주제로 가능",
     "가능성 있음",
@@ -163,6 +208,104 @@ def _contains_any(text: str, terms: set[str]) -> list[str]:
     return [term for term in terms if term.lower() in text]
 
 
+def _past_overlap_matches(text: str) -> list[str]:
+    matches = _contains_any(text, PAST_OVERLAP_STRONG_TERMS)
+    if "이미" in text:
+        context = _contains_any(text, PAST_OVERLAP_ALREADY_CONTEXT_TERMS)
+        if context:
+            matches.append("이미+" + ",".join(context[:2]))
+    return matches
+
+
+def _review_signal_matches(text: str) -> dict[str, list[str]]:
+    return {
+        "past_topic_overlap": _past_overlap_matches(text),
+        "merge_or_duplicate": _contains_any(text, MERGE_TERMS),
+        "conditional_seed": _contains_any(text, CONDITIONAL_TERMS),
+        "seed": _contains_any(text, POSITIVE_TERMS),
+        "evidence_only": _contains_any(text, EVIDENCE_TERMS),
+        "needs_more_sources": _contains_any(text, NEEDS_TERMS),
+        "reject": _contains_any(text, REJECT_TERMS),
+        "unclear": _contains_any(text, UNCLEAR_TERMS),
+        "system_issue": _contains_any(text, SYSTEM_ISSUE_TERMS),
+        "weak_source": _contains_any(text, WEAK_SOURCE_TERMS),
+        "single_company_case": _contains_any(text, SINGLE_COMPANY_TERMS),
+        "promo_or_bulletin": _contains_any(text, PROMO_OR_BULLETIN_TERMS),
+        "good_hook": _contains_any(text, GOOD_HOOK_TERMS),
+        "audience_interest_weak": _contains_any(text, AUDIENCE_WEAK_TERMS),
+        "textbook_explainer_risk": _contains_any(text, TEXTBOOK_RISK_TERMS),
+    }
+
+
+def _review_modifiers(matches: dict[str, list[str]]) -> list[str]:
+    modifiers: list[str] = []
+    for key in [
+        "past_topic_overlap",
+        "weak_source",
+        "single_company_case",
+        "promo_or_bulletin",
+        "good_hook",
+        "system_issue",
+        "audience_interest_weak",
+        "textbook_explainer_risk",
+    ]:
+        if matches.get(key):
+            modifiers.append(key)
+    if matches.get("past_topic_overlap") and any(
+        term in ",".join(matches["past_topic_overlap"])
+        for term in ("이번 주 라이브", "라이브 소재")
+    ):
+        modifiers.append("already_used_live")
+    if matches.get("merge_or_duplicate") or matches.get("needs_more_sources"):
+        modifiers.append("bundle_needed")
+    if matches.get("evidence_only"):
+        modifiers.append("evidence_useful")
+    if matches.get("audience_interest_weak") or matches.get("weak_source"):
+        modifiers.append("weak_audience_bridge")
+    return list(dict.fromkeys(modifiers))
+
+
+def _primary_label_from_matches(matches: dict[str, list[str]]) -> str:
+    has_seed = bool(matches["seed"])
+    has_conditional = bool(matches["conditional_seed"] or matches["system_issue"])
+    has_evidence = bool(matches["evidence_only"])
+    has_needs = bool(matches["needs_more_sources"])
+    has_merge = bool(matches["merge_or_duplicate"])
+    has_reject = bool(matches["reject"])
+    has_past_overlap = bool(matches["past_topic_overlap"])
+
+    if has_seed and (has_conditional or has_needs or matches["single_company_case"]):
+        return "conditional_seed"
+    if has_seed:
+        return "seed"
+    if has_reject and not (has_evidence or has_conditional or has_merge):
+        return "reject"
+    if has_conditional and (has_evidence or has_needs or matches["good_hook"]):
+        return "conditional_seed"
+    if has_evidence:
+        return "evidence_only"
+    if has_needs:
+        return "needs_more_sources"
+    if has_merge or has_past_overlap:
+        return "merge_or_duplicate"
+    if has_reject:
+        return "reject"
+    if matches["unclear"]:
+        return "unclear"
+    return "unlabeled"
+
+
+def _legacy_inferred_label(primary_label: str, modifiers: list[str]) -> str:
+    if "past_topic_overlap" in modifiers and primary_label in {
+        "seed",
+        "conditional_seed",
+        "merge_or_duplicate",
+        "evidence_only",
+    }:
+        return "past_topic_overlap"
+    return primary_label
+
+
 def infer_review_feedback(note: str) -> dict[str, Any]:
     raw_note = note.strip()
     explicit_tag = parse_review_tag(raw_note)
@@ -171,71 +314,56 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
             "tag": "unlabeled",
             "explicit_tag": "unlabeled",
             "inferred_label": "unlabeled",
+            "primary_inferred_label": "unlabeled",
+            "modifiers": [],
             "inferred_confidence": "low",
             "inference_reasons": [],
             "raw_note": "",
             "note": "",
         }
+    text = raw_note.lower()
+    matches = _review_signal_matches(text)
+    modifiers = _review_modifiers(matches)
     if explicit_tag != "unlabeled":
-        inferred_label = EXPLICIT_TAG_TO_INFERRED_LABEL[explicit_tag]
+        primary_label = EXPLICIT_TAG_TO_INFERRED_LABEL[explicit_tag]
+        inferred_label = _legacy_inferred_label(primary_label, modifiers)
+        reasons = [f"explicit_tag:{explicit_tag}"] + [
+            f"{key}:{','.join(value[:3])}"
+            for key, value in matches.items()
+            if value
+        ]
         return {
             "tag": explicit_tag,
             "explicit_tag": explicit_tag,
             "inferred_label": inferred_label,
+            "primary_inferred_label": primary_label,
+            "modifiers": modifiers,
             "inferred_confidence": "high",
-            "inference_reasons": [f"explicit_tag:{explicit_tag}"],
+            "inference_reasons": reasons,
             "raw_note": raw_note,
             "note": raw_note,
         }
 
-    text = raw_note.lower()
-    matches = {
-        "past_topic_overlap": _contains_any(text, PAST_OVERLAP_TERMS),
-        "merge_or_duplicate": _contains_any(text, MERGE_TERMS),
-        "conditional_seed": _contains_any(text, CONDITIONAL_TERMS),
-        "seed": _contains_any(text, POSITIVE_TERMS),
-        "evidence_only": _contains_any(text, EVIDENCE_TERMS),
-        "needs_more_sources": _contains_any(text, NEEDS_TERMS),
-        "reject": _contains_any(text, REJECT_TERMS),
-        "unclear": _contains_any(text, UNCLEAR_TERMS),
-    }
-    if matches["past_topic_overlap"]:
-        label = "past_topic_overlap"
-    elif matches["conditional_seed"] and (matches["seed"] or matches["evidence_only"]):
-        label = "conditional_seed"
-    elif matches["merge_or_duplicate"] and not matches["reject"]:
-        label = "merge_or_duplicate"
-    elif matches["evidence_only"] and not {"나쁜 선택", "잘못 선정"}.intersection(
-        set(matches["reject"])
-    ):
-        label = "evidence_only"
-    elif matches["needs_more_sources"]:
-        label = "needs_more_sources"
-    elif matches["reject"]:
-        label = "reject"
-    elif matches["seed"]:
-        label = "seed"
-    elif matches["unclear"]:
-        label = "unclear"
-    else:
-        label = "unlabeled"
-
+    primary_label = _primary_label_from_matches(matches)
+    label = _legacy_inferred_label(primary_label, modifiers)
     reasons = [
         f"{key}:{','.join(value[:3])}"
         for key, value in matches.items()
         if value
     ]
-    if label == "unlabeled":
+    if primary_label == "unlabeled":
         confidence = "low"
     elif len([value for value in matches.values() if value]) >= 2:
         confidence = "medium"
     else:
         confidence = "high"
-    tag = INFERRED_LABEL_TO_REVIEW_TAG[label]
+    tag = INFERRED_LABEL_TO_REVIEW_TAG[primary_label]
     return {
         "tag": tag,
         "explicit_tag": "unlabeled",
         "inferred_label": label,
+        "primary_inferred_label": primary_label,
+        "modifiers": modifiers,
         "inferred_confidence": confidence,
         "inference_reasons": reasons,
         "raw_note": raw_note,
@@ -292,6 +420,11 @@ def summarize_review_feedback(
 ) -> dict[str, Any]:
     tag_counts = Counter({tag: 0 for tag in REVIEW_TAGS})
     inferred_label_counts = Counter({label: 0 for label in INFERRED_LABELS})
+    primary_label_counts = Counter({label: 0 for label in PRIMARY_INFERRED_LABELS})
+    modifier_counts = Counter({modifier: 0 for modifier in REVIEW_MODIFIERS})
+    modifier_examples: dict[str, list[dict[str, str]]] = {
+        modifier: [] for modifier in REVIEW_MODIFIERS
+    }
     row_payloads: list[dict[str, Any]] = []
     disagreement_rows: list[dict[str, Any]] = []
     for index, row in enumerate(rows, start=2):
@@ -299,10 +432,22 @@ def summarize_review_feedback(
             column: _note_payload(str(row.get(column, "")))
             for column in REVIEWER_COLUMNS
         }
-        for note in reviewer_notes.values():
+        for reviewer, note in reviewer_notes.items():
             if note["note"]:
                 tag_counts[note["tag"]] += 1
                 inferred_label_counts[note["inferred_label"]] += 1
+                primary_label_counts[note["primary_inferred_label"]] += 1
+                for modifier in note["modifiers"]:
+                    modifier_counts[modifier] += 1
+                    if len(modifier_examples[modifier]) < 5:
+                        modifier_examples[modifier].append(
+                            {
+                                "row": str(index),
+                                "title": str(row.get("제목", "")),
+                                "reviewer": reviewer,
+                                "note": str(note["note"]),
+                            }
+                        )
         tags = {note["tag"] for note in reviewer_notes.values() if note["note"]}
         row_payload = {
             "row": index,
@@ -338,6 +483,9 @@ def summarize_review_feedback(
         "reviewer_completion": _reviewer_completion(rows),
         "tag_counts": dict(tag_counts),
         "inferred_label_counts": dict(inferred_label_counts),
+        "primary_label_counts": dict(primary_label_counts),
+        "modifier_counts": dict(modifier_counts),
+        "modifier_examples": modifier_examples,
         "rows": row_payloads,
         "disagreement_rows": disagreement_rows,
     }
@@ -364,6 +512,26 @@ def _markdown(summary: dict[str, Any]) -> str:
     lines.extend(["", "## Inferred Label Counts", ""])
     for label in INFERRED_LABELS:
         lines.append(f"- {label}: {summary.get('inferred_label_counts', {}).get(label, 0)}")
+    lines.extend(["", "## Primary Label Counts", ""])
+    for label in PRIMARY_INFERRED_LABELS:
+        lines.append(f"- {label}: {summary.get('primary_label_counts', {}).get(label, 0)}")
+    lines.extend(["", "## Modifier Counts", ""])
+    for modifier in REVIEW_MODIFIERS:
+        lines.append(f"- {modifier}: {summary.get('modifier_counts', {}).get(modifier, 0)}")
+    lines.extend(["", "## Examples By Modifier", ""])
+    modifier_examples = summary.get("modifier_examples", {})
+    for modifier in REVIEW_MODIFIERS:
+        examples = modifier_examples.get(modifier) or []
+        if not examples:
+            continue
+        lines.append(f"### {modifier}")
+        lines.append("")
+        for item in examples:
+            lines.append(
+                f"- row {item['row']} {item['title']} / {item['reviewer']}: "
+                f"{item['note']}"
+            )
+        lines.append("")
     lines.extend(["", "## Notes By Row", ""])
     for row in summary["rows"]:
         lines.append(f"### {row['title'] or 'untitled'}")
@@ -376,7 +544,10 @@ def _markdown(summary: dict[str, Any]) -> str:
             note_text = note["note"] or "(blank)"
             lines.append(
                 f"- {reviewer}: explicit=`{note['explicit_tag']}`, "
-                f"inferred=`{note['inferred_label']}`/{note['inferred_confidence']}, "
+                f"primary=`{note['primary_inferred_label']}`, "
+                f"legacy=`{note['inferred_label']}`, "
+                f"modifiers=`{','.join(note['modifiers']) or 'none'}`/"
+                f"{note['inferred_confidence']}, "
                 f"tag=`{note['tag']}` — {note_text}"
             )
         lines.append("")
@@ -569,6 +740,14 @@ def _empty_inferred_label_counter() -> Counter[str]:
     return Counter({label: 0 for label in INFERRED_LABELS})
 
 
+def _empty_primary_label_counter() -> Counter[str]:
+    return Counter({label: 0 for label in PRIMARY_INFERRED_LABELS})
+
+
+def _empty_modifier_counter() -> Counter[str]:
+    return Counter({modifier: 0 for modifier in REVIEW_MODIFIERS})
+
+
 def _dimension_feedback_summary(
     rows: list[dict[str, Any]],
     key_name: str,
@@ -759,6 +938,8 @@ def summarize_review_history_calibration(
 ) -> dict[str, Any]:
     tag_counts = _empty_tag_counter()
     inferred_label_counts = _empty_inferred_label_counter()
+    primary_label_counts = _empty_primary_label_counter()
+    modifier_counts = _empty_modifier_counter()
     reviewer_completion: dict[str, dict[str, int]] = defaultdict(
         lambda: {reviewer: 0 for reviewer in REVIEWER_COLUMNS}
     )
@@ -774,6 +955,9 @@ def summarize_review_history_calibration(
                 reviewer_completion[date_value][reviewer] += 1
                 tag_counts[note["tag"]] += 1
                 inferred_label_counts[note["inferred_label"]] += 1
+                primary_label_counts[note["primary_inferred_label"]] += 1
+                for modifier in note["modifiers"]:
+                    modifier_counts[modifier] += 1
         normalized_rows.append(
             {
                 "date": date_value,
@@ -795,6 +979,8 @@ def summarize_review_history_calibration(
         "reviewer_completion_by_date": dict(sorted(reviewer_completion.items())),
         "tag_counts": dict(tag_counts),
         "inferred_label_counts": dict(inferred_label_counts),
+        "primary_label_counts": dict(primary_label_counts),
+        "modifier_counts": dict(modifier_counts),
         "source_feedback": _dimension_feedback_summary(rows, "source"),
         "source_role_feedback": _dimension_feedback_summary(rows, "source_role"),
         "seed_type_feedback": _dimension_feedback_summary(rows, "seed_type"),
@@ -882,6 +1068,12 @@ def _history_markdown(summary: dict[str, Any]) -> str:
     lines.extend(["", "## Inferred Label Counts", ""])
     for label in INFERRED_LABELS:
         lines.append(f"- {label}: {summary.get('inferred_label_counts', {}).get(label, 0)}")
+    lines.extend(["", "## Primary Label Counts", ""])
+    for label in PRIMARY_INFERRED_LABELS:
+        lines.append(f"- {label}: {summary.get('primary_label_counts', {}).get(label, 0)}")
+    lines.extend(["", "## Modifier Counts", ""])
+    for modifier in REVIEW_MODIFIERS:
+        lines.append(f"- {modifier}: {summary.get('modifier_counts', {}).get(modifier, 0)}")
     for heading, key in [
         ("Source-Level Feedback Summary", "source_feedback"),
         ("Source-Role Feedback Summary", "source_role_feedback"),

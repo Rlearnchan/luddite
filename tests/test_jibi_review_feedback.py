@@ -40,13 +40,19 @@ def test_infer_review_feedback_understands_natural_korean_notes() -> None:
     )
     assert good["explicit_tag"] == "unlabeled"
     assert good["inferred_label"] == "past_topic_overlap"
-    assert good["tag"] == "merge"
+    assert good["primary_inferred_label"] == "seed"
+    assert "past_topic_overlap" in good["modifiers"]
+    assert good["tag"] == "seed"
     assert good["raw_note"].startswith("좋은 자료 선정")
 
     conditional = infer_review_feedback(
         "가능성 있음. 선불충전금 제도의 문제로 풀면 좋지만 단일기업이라 묶으면 좋겠음"
     )
     assert conditional["inferred_label"] == "conditional_seed"
+    assert conditional["primary_inferred_label"] == "conditional_seed"
+    assert {"bundle_needed", "single_company_case", "system_issue"}.issubset(
+        set(conditional["modifiers"])
+    )
     assert conditional["tag"] == "seed"
 
     reject = infer_review_feedback("그래서 뭐? 사람들이 안 궁금해할 것 같고 seed로 약함")
@@ -55,6 +61,9 @@ def test_infer_review_feedback_understands_natural_korean_notes() -> None:
 
     neutral = infer_review_feedback("조금 더 생각해보겠습니다")
     assert neutral["inferred_label"] in {"unlabeled", "unclear"}
+
+    not_overlap = infer_review_feedback("이미 자료를 조금 봤는데 아직 판단은 어려움")
+    assert "past_topic_overlap" not in not_overlap["modifiers"]
 
 
 def test_explicit_tag_wins_over_inferred_review_text() -> None:
@@ -114,6 +123,8 @@ def test_summarize_review_feedback_counts_inferred_disagreements() -> None:
     assert summary["tag_counts"]["reject"] == 1
     assert summary["inferred_label_counts"]["conditional_seed"] == 1
     assert summary["inferred_label_counts"]["reject"] == 1
+    assert summary["primary_label_counts"]["conditional_seed"] == 1
+    assert summary["modifier_counts"]["single_company_case"] >= 1
     assert summary["disagreement_rows"][0]["inferred"] is True
 
 

@@ -69,6 +69,28 @@ STRUCTURAL_TERMS = {
     "market",
     "industry",
 }
+OWNERSHIP_REGULATION_TERMS = {
+    "권리",
+    "조각투자",
+    "sto",
+    "cbdc",
+    "투자자 보호",
+    "소유권",
+    "regulatory",
+}
+CONSEQUENCE_TERMS = {
+    "영향",
+    "부담",
+    "비용",
+    "피해",
+    "환불",
+    "소득",
+    "임금",
+    "물가",
+    "위험",
+    "리스크",
+    "gap",
+}
 EVERYDAY_ANALOGY_TERMS = {
     "반바지",
     "폭염",
@@ -141,6 +163,27 @@ NARROW_MARKET_TERMS = {
 }
 ONE_OFF_TERMS = {"단발", "일회성", "one-off", "single article"}
 TEXTBOOK_TERMS = {"교과서", "textbook", "설명서", "원론"}
+CONCRETE_AUDIENCE_BRIDGE_SIGNALS = {
+    "direct_money_or_household_impact",
+    "job_workplace_labor_change",
+    "consumer_funds_or_regulation_gap",
+    "ai_entering_real_operations",
+    "everyday_analogy_or_life_hook",
+    "ownership_or_regulatory_conflict",
+}
+MECHANISM_SIGNALS = {
+    "distinctive_mechanism",
+    "research_note_structural_depth",
+    "ownership_or_regulatory_conflict",
+    "consequence_or_second_order_effect",
+}
+PROMO_BULLETIN_FLAGS = {
+    "contest_or_campaign_bulletin",
+    "event_or_demonstration_only",
+    "meeting_or_coordination_only",
+    "product_or_certification_promo",
+    "narrow_market_track_record",
+}
 
 
 def _add_unique(values: list[str], value: str) -> None:
@@ -193,6 +236,14 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
     if contains_any(text, STRUCTURAL_TERMS):
         score += 1
         _add_unique(audience_bridge_signals, "distinctive_mechanism")
+    if contains_any(text, {"토큰화", "tokenization", "rwa"}) and contains_any(
+        text,
+        OWNERSHIP_REGULATION_TERMS | {"제도", "규제", "소비자", "투자자", "권리"},
+    ):
+        score += 1
+        _add_unique(audience_bridge_signals, "ownership_or_regulatory_conflict")
+    if contains_any(text, CONSEQUENCE_TERMS):
+        _add_unique(audience_bridge_signals, "consequence_or_second_order_effect")
     if contains_any(text, EVERYDAY_ANALOGY_TERMS):
         score += 1
         _add_unique(audience_bridge_signals, "everyday_analogy_or_life_hook")
@@ -235,21 +286,34 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         _add_unique(weakness_signals, "one_off_article")
     if contains_any(text, TEXTBOOK_TERMS):
         _add_unique(weakness_signals, "textbook_explainer_only")
-    if not audience_bridge_signals or (
-        score <= 2
-        and not contains_any(text, {"규제", "충전금", "청년", "노동", "생활", "가격"})
+
+    concrete_bridge = bool(
+        CONCRETE_AUDIENCE_BRIDGE_SIGNALS.intersection(audience_bridge_signals)
+    )
+    mechanism_or_consequence = bool(MECHANISM_SIGNALS.intersection(audience_bridge_signals))
+    strong_system_issue = (
+        "consumer_funds_or_regulation_gap" in audience_bridge_signals
+        or (
+            contains_any(text, {"제도", "규제", "사각지대", "구조"})
+            and contains_any(text, {"소비자", "청년", "노동", "환불", "충전금", "비용", "가격"})
+        )
+    )
+    if not concrete_bridge or (
+        not mechanism_or_consequence
+        and not strong_system_issue
+        and source_role != "research_note"
     ):
         _add_unique(quality_flags, "weak_audience_bridge")
         _add_unique(weakness_signals, "weak_audience_bridge")
 
+    if PROMO_BULLETIN_FLAGS.intersection(quality_flags) and not strong_system_issue:
+        score = min(score, 1)
+        _add_unique(weakness_signals, "promo_or_bulletin_cap")
+
     score = max(0, min(5, score - min(2, len(weakness_signals) // 2)))
-    if score >= 4 and not {
-        "contest_or_campaign_bulletin",
-        "event_or_demonstration_only",
-        "narrow_market_track_record",
-    }.intersection(quality_flags):
+    if score >= 4 and concrete_bridge and (mechanism_or_consequence or strong_system_issue):
         label = "strong"
-    elif score >= 2:
+    elif score >= 2 and concrete_bridge and (mechanism_or_consequence or strong_system_issue):
         label = "conditional"
     else:
         label = "weak"
@@ -263,10 +327,17 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         weakness_signals=weakness_signals,
         text=text,
     )
+    gap = _so_what_gap(
+        label=label,
+        quality_flags=set(quality_flags) | existing_flags,
+        audience_bridge_signals=audience_bridge_signals,
+        weakness_signals=weakness_signals,
+    )
 
     return {
         "so_what_score": score,
         "so_what_label": label,
+        "so_what_gap": gap,
         "so_what_reasons": [
             *audience_bridge_signals[:4],
             *[f"weakness:{signal}" for signal in weakness_signals[:4]],
@@ -277,6 +348,28 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         "seed_quality_classification": classification["label"],
         "seed_quality_reasons": classification["reasons"],
     }
+
+
+def _so_what_gap(
+    *,
+    label: str,
+    quality_flags: set[str],
+    audience_bridge_signals: list[str],
+    weakness_signals: list[str],
+) -> str:
+    if PROMO_BULLETIN_FLAGS.intersection(quality_flags):
+        return "promo_or_bulletin_needs_stronger_system_issue"
+    if "weak_audience_bridge" in weakness_signals:
+        return "needs_concrete_audience_bridge_plus_mechanism"
+    if "single_company_case_needs_bundle" in quality_flags:
+        return "single_company_case_needs_bundle_or_system_evidence"
+    if label == "conditional":
+        return "conditional_seed_needs_second_source_or_story_bundle"
+    if label == "strong":
+        return "clear_audience_bridge_and_mechanism"
+    if not audience_bridge_signals:
+        return "no_clear_audience_bridge"
+    return "manual_editorial_review_needed"
 
 
 def _seed_quality_classification(
@@ -294,10 +387,35 @@ def _seed_quality_classification(
             "label": "standalone_seed",
             "reasons": ["research_note_with_structural_or_audience_signal"],
         }
+    if (
+        "contest_or_campaign_bulletin" in quality_flags
+        or "event_or_demonstration_only" in quality_flags
+    ):
+        return {"label": "reject_or_downrank", "reasons": ["bulletin_or_event_only"]}
+    if "narrow_market_track_record" in quality_flags:
+        return {"label": "evidence_only", "reasons": ["market_story_context_only"]}
+    if "product_or_certification_promo" in quality_flags:
+        return {
+            "label": "evidence_only",
+            "reasons": ["product_or_certification_needs_larger_industry_story"],
+        }
+    if "meeting_or_coordination_only" in quality_flags:
+        return {
+            "label": "evidence_only",
+            "reasons": ["meeting_or_coordination_evidence_default"],
+        }
     if "consumer_funds_or_regulation_gap" in audience_bridge_signals:
         return {
             "label": "conditional_seed",
             "reasons": ["system_issue_bundle_needed", "single_company_case_needs_context"],
+        }
+    if "single_company_case_needs_bundle" in quality_flags and not contains_any(
+        text,
+        {"규제", "사각지대", "환불", "소비자", "제도", "노동", "가격", "비용"},
+    ):
+        return {
+            "label": "evidence_only",
+            "reasons": ["single_company_case_without_clear_system_issue"],
         }
     if seed_type in {"platform_labor_market", "public_ai_governance", "public_ai_enforcement"}:
         return {"label": "bundle_needed", "reasons": ["public_wire_needs_second_source"]}
@@ -306,18 +424,6 @@ def _seed_quality_classification(
             "label": "bundle_needed",
             "reasons": ["life_hook_needs_climate_workplace_or_power_bundle"],
         }
-    if "narrow_market_track_record" in quality_flags:
-        return {"label": "evidence_only", "reasons": ["market_story_context_only"]}
-    if "product_or_certification_promo" in quality_flags:
-        return {
-            "label": "evidence_only",
-            "reasons": ["product_or_certification_needs_larger_industry_story"],
-        }
-    if (
-        "contest_or_campaign_bulletin" in quality_flags
-        or "event_or_demonstration_only" in quality_flags
-    ):
-        return {"label": "reject_or_downrank", "reasons": ["bulletin_or_event_only"]}
     if source_role == "policy_release":
         return {"label": "evidence_only", "reasons": ["policy_release_evidence_default"]}
     if label == "strong":

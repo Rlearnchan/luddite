@@ -574,14 +574,17 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         so_what = analyze_so_what(candidate)
     else:
         so_what = dict(so_what)
-        if not so_what.get("quality_flags"):
-            inferred = analyze_so_what(candidate)
-            so_what.setdefault("quality_flags", inferred.get("quality_flags", []))
-            so_what.setdefault(
-                "seed_quality_classification",
-                inferred.get("seed_quality_classification"),
-            )
-            so_what.setdefault("seed_quality_reasons", inferred.get("seed_quality_reasons", []))
+        inferred = analyze_so_what(candidate)
+        for key in [
+            "quality_flags",
+            "so_what_gap",
+            "audience_bridge_signals",
+            "weakness_signals",
+            "seed_quality_classification",
+            "seed_quality_reasons",
+        ]:
+            if not so_what.get(key):
+                so_what[key] = inferred.get(key)
     merged_quality_flags = list(candidate.get("quality_flags") or [])
     for flag in so_what.get("quality_flags", []):
         if flag not in merged_quality_flags:

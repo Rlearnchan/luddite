@@ -144,6 +144,13 @@ def _env_int(name: str, default: int) -> int:
     return max(parsed, 0)
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 def _score_band(candidate: dict[str, Any]) -> str:
     return str(candidate.get("final_grade") or "C")
 
@@ -640,6 +647,125 @@ def write_bundle_review_sheet_preview(
     )
 
 
+def write_alternate_review_board_outputs(
+    path: Path,
+    report_path: Path,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    digest_date: str,
+    *,
+    review_board_limit: int = DEFAULT_REVIEW_BOARD_LIMIT,
+    bundle_near_miss_limit: int = 50,
+    review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    current_board_csv_path: Path | None = None,
+    include_reviewed: bool = False,
+    registered_at: str | None = None,
+) -> tuple[Path, Path, Path]:
+    """Write a second review-board batch without touching the live Jibi sheet."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    candidate_by_id = {
+        str(candidate.get("candidate_id")): candidate
+        for candidate in candidates
+        if candidate.get("candidate_id")
+    }
+    history_index = _load_review_history_index(review_history_path)
+    current_csv = current_board_csv_path or path.with_name(
+        f"{digest_date}_bundle_review_sheet.csv"
+    )
+    current_keys = _current_board_exclusion_keys(current_csv)
+    reviewed_keys = set() if include_reviewed else _reviewed_history_exclusion_keys(history_index)
+    registered_at_value = _review_board_registered_at(registered_at)
+    records = _story_bundle_records(
+        candidates,
+        [],
+        near_miss_limit=max(bundle_near_miss_limit, review_board_limit * 5),
+    )
+    selected: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    for record in records:
+        keys = _record_exclusion_keys(record)
+        reasons: list[str] = []
+        if keys.intersection(current_keys):
+            reasons.append("current_board")
+        if keys.intersection(reviewed_keys):
+            reasons.append("reviewed_history")
+        if reasons:
+            skipped.append({"record": record, "reasons": reasons})
+            continue
+        selected.append(record)
+        if len(selected) >= review_board_limit:
+            break
+
+    metadata_rows: list[dict[str, Any]] = []
+    with path.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=BUNDLE_REVIEW_SHEET_COLUMNS)
+        writer.writeheader()
+        for record in selected:
+            representative = _record_representative_candidate(record, candidate_by_id) or {}
+            fit, reason, _action = ("", str(record["why_bundle"]), "")
+            if representative:
+                fit, reason, _action = _storyline_fit_classification(
+                    representative,
+                    candidates,
+                )
+            review_item_id = f"{digest_date}:alt:{record['story_bundle_id']}"
+            primary_title = record.get("primary_title") or representative.get("title") or ""
+            row = _bundle_review_row(
+                digest_date=digest_date,
+                registered_at=registered_at_value,
+                review_item_id=review_item_id,
+                review_title=_human_review_title(record, representative, str(primary_title)),
+                candidate=representative,
+                candidate_title=str(primary_title),
+                jibi_judgment=_bundle_judgment(record, fit),
+                reason=_join_distinct_reason(str(record["why_bundle"]), reason),
+                sub_links=_related_bundle_links(record, candidate_by_id, limit=3),
+                related_titles=_related_bundle_titles(record),
+                record=record,
+                history_status="alternate_batch",
+            )
+            writer.writerow(row)
+            metadata = _bundle_review_metadata_row(
+                row=row,
+                record=record,
+                candidate=representative,
+                review_item_id=review_item_id,
+                registered_at=registered_at_value,
+                run_date=digest_date,
+                sub_links=str(row.get("서브 링크") or ""),
+            )
+            metadata["alternate_selection_reason"] = "excluded_current_or_reviewed_primary_batch"
+            metadata["why_not_primary_board"] = _alternate_why_not_primary(
+                representative,
+                top,
+            )
+            metadata_rows.append(metadata)
+
+    metadata_path = _bundle_review_metadata_path(path)
+    _write_bundle_review_metadata(
+        metadata_path,
+        rows=metadata_rows,
+        digest_date=digest_date,
+        registered_at=registered_at_value,
+    )
+    report_path.write_text(
+        _alternate_review_board_markdown(
+            digest_date=digest_date,
+            selected=selected,
+            skipped=skipped,
+            candidate_by_id=candidate_by_id,
+            top=top,
+            current_keys=current_keys,
+            reviewed_keys=reviewed_keys,
+            include_reviewed=include_reviewed,
+        ),
+        encoding="utf-8",
+    )
+    return path, metadata_path, report_path
+
+
 def _bundle_review_metadata_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}_metadata.json")
 
@@ -661,6 +787,152 @@ def _write_bundle_review_metadata(
         json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _current_board_exclusion_keys(path: Path) -> set[str]:
+    keys: set[str] = set()
+    metadata_path = _bundle_review_metadata_path(path)
+    if metadata_path.exists():
+        try:
+            payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            payload = {}
+        for row in payload.get("rows", []):
+            if not isinstance(row, dict):
+                continue
+            keys.update(
+                str(row.get(key) or "").strip()
+                for key in [
+                    "ID",
+                    "review_item_id",
+                    "story_fingerprint",
+                    "story_bundle_id",
+                    "primary_candidate_id",
+                ]
+            )
+            keys.update(str(item).strip() for item in row.get("supporting_candidate_ids", []))
+            keys.update(str(item).strip() for item in row.get("evidence_candidate_ids", []))
+    if path.exists():
+        with path.open(encoding="utf-8-sig", newline="") as source:
+            for row in csv.DictReader(source):
+                review_id = str(row.get("ID") or "").strip()
+                if review_id:
+                    keys.add(review_id)
+                    keys.add(review_id.rsplit(":", 1)[-1])
+    return {key for key in keys if key}
+
+
+def _reviewed_history_exclusion_keys(
+    history_index: dict[str, list[dict[str, Any]]],
+) -> set[str]:
+    keys: set[str] = set()
+    for key, rows in history_index.items():
+        if any(str(row.get("history_status") or "") != "seen_before" for row in rows):
+            keys.add(key)
+    return keys
+
+
+def _record_exclusion_keys(record: dict[str, Any]) -> set[str]:
+    keys = {
+        str(record.get("story_fingerprint") or "").strip(),
+        str(record.get("story_bundle_id") or "").strip(),
+        str(record.get("primary_candidate_id") or "").strip(),
+    }
+    keys.update(str(item).strip() for item in record.get("supporting_candidate_ids", []))
+    keys.update(str(item).strip() for item in record.get("evidence_candidate_ids", []))
+    return {key for key in keys if key}
+
+
+def _alternate_why_not_primary(
+    candidate: dict[str, Any],
+    top: list[dict[str, Any]],
+) -> str:
+    if not candidate:
+        return "evidence_cluster_or_no_primary_candidate"
+    candidate_id = str(candidate.get("candidate_id") or "")
+    top_ids = {str(item.get("candidate_id") or "") for item in top}
+    if candidate_id in top_ids:
+        return "top_candidate_but_excluded_from_alternate_selection_scope"
+    reasons = _top_exclusion_reasons(
+        candidate,
+        top_ids,
+        Counter(str(item.get("source") or "unknown") for item in top),
+        rendered_top_count=len(top),
+        limit=DEFAULT_REVIEW_BOARD_LIMIT,
+        max_per_source=3,
+        min_score=DEFAULT_TOP_MIN_SCORE,
+    )
+    return ", ".join(reasons) if reasons else "high_score_near_miss_or_story_bundle_backfill"
+
+
+def _alternate_review_board_markdown(
+    *,
+    digest_date: str,
+    selected: list[dict[str, Any]],
+    skipped: list[dict[str, Any]],
+    candidate_by_id: dict[str, dict[str, Any]],
+    top: list[dict[str, Any]],
+    current_keys: set[str],
+    reviewed_keys: set[str],
+    include_reviewed: bool,
+) -> str:
+    lines = [
+        f"# Jibi Alternate Review Board — {digest_date}",
+        "",
+        "Dry-run/report-only alternate batch. The live `Jibi` sheet was not replaced.",
+        "",
+        f"- selected_rows: {len(selected)}",
+        f"- skipped_current_or_reviewed: {len(skipped)}",
+        f"- current_board_exclusion_keys: {len(current_keys)}",
+        f"- reviewed_history_exclusion_keys: {len(reviewed_keys)}",
+        f"- include_reviewed: {str(include_reviewed).lower()}",
+        "",
+        "## Alternate Rows",
+        "",
+        "| title | source | score | bundle_type | why_not_primary_board | suggested_action |",
+        "| --- | --- | ---: | --- | --- | --- |",
+    ]
+    for record in selected:
+        candidate = _record_representative_candidate(record, candidate_by_id) or {}
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(record.get("bundle_title") or candidate.get("title") or ""),
+                    _table_cell(candidate.get("source", "unknown")),
+                    f"{_total_score(candidate):g}",
+                    _table_cell(record.get("bundle_type", "")),
+                    _table_cell(_alternate_why_not_primary(candidate, top)),
+                    _table_cell(record.get("suggested_operator_action", "")),
+                ]
+            )
+            + " |"
+        )
+    if not selected:
+        lines.append("| none | unknown | 0 | none | no alternate candidates | none |")
+    lines.extend(
+        [
+            "",
+            "## Exclusion Notes",
+            "",
+            "- current_board: already visible on the current primary review board.",
+            "- reviewed_history: reviewer comments already exist in local review history.",
+            "",
+            "## Skipped Examples",
+            "",
+            "| title | reasons |",
+            "| --- | --- |",
+        ]
+    )
+    for item in skipped[:20]:
+        record = item["record"]
+        lines.append(
+            f"| {_table_cell(record.get('bundle_title', ''))} | "
+            f"{_table_cell(', '.join(item['reasons']))} |"
+        )
+    if not skipped:
+        lines.append("| none | none |")
+    return "\n".join(lines) + "\n"
 
 
 def _bundle_review_metadata_row(
@@ -1154,8 +1426,55 @@ def render_daily_digest(
         run_date=date_value,
         candidates=candidates,
         top=top,
+        review_history_path=review_history_path,
     )
     return md_path, csv_path, top
+
+
+def render_alternate_review_board(
+    input_path: Path = paths.JIBI_SCORED_CANDIDATES_JSONL,
+    output_dir: Path = paths.DAILY_DIGEST_DIR,
+    digest_date: str | None = None,
+    limit: int = 10,
+    max_per_source: int = 3,
+    review_board_limit: int | None = None,
+    bundle_near_miss_limit: int | None = None,
+    review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    include_reviewed: bool | None = None,
+) -> tuple[Path, Path, Path]:
+    date_value = _digest_date(digest_date)
+    resolved_review_board_limit = (
+        review_board_limit
+        if review_board_limit is not None
+        else _env_int("JIBI_REVIEW_BOARD_LIMIT", DEFAULT_REVIEW_BOARD_LIMIT)
+    )
+    resolved_bundle_near_miss_limit = (
+        bundle_near_miss_limit
+        if bundle_near_miss_limit is not None
+        else _env_int("JIBI_BUNDLE_NEAR_MISS_LIMIT", 50)
+    )
+    include_reviewed_value = (
+        include_reviewed
+        if include_reviewed is not None
+        else _env_bool("JIBI_ALTERNATE_INCLUDE_REVIEWED")
+    )
+    candidates = read_jsonl(input_path) if input_path.exists() else []
+    top = top_candidates(candidates, limit=limit, max_per_source=max_per_source)
+    alt_csv_path = output_dir / f"{date_value}_bundle_review_alt_sheet.csv"
+    report_path = paths.REPORTS_DIR / f"jibi_alternate_review_board_{date_value}.md"
+    current_csv_path = output_dir / f"{date_value}_bundle_review_sheet.csv"
+    return write_alternate_review_board_outputs(
+        alt_csv_path,
+        report_path,
+        candidates,
+        top,
+        date_value,
+        review_board_limit=resolved_review_board_limit,
+        bundle_near_miss_limit=resolved_bundle_near_miss_limit,
+        review_history_path=review_history_path,
+        current_board_csv_path=current_csv_path,
+        include_reviewed=include_reviewed_value,
+    )
 
 
 def write_quality_report(
@@ -1352,6 +1671,23 @@ def write_quality_report(
     so_what_summary = _so_what_summary_lines(candidates, top)
     promo_bulletin_rows = _promo_bulletin_downrank_rows(candidates)
     conditional_seed_rows = _conditional_seed_queue_rows(candidates)
+    weak_audience_rows = _seed_quality_queue_rows(
+        candidates,
+        required_flags={"weak_audience_bridge"},
+    )
+    interesting_not_seed_rows = _seed_quality_queue_rows(
+        candidates,
+        classifications={"reject_or_downrank", "evidence_only"},
+        required_so_what_labels={"conditional", "weak"},
+    )
+    conditional_system_issue_rows = _seed_quality_queue_rows(
+        candidates,
+        classifications={"conditional_seed"},
+    )
+    evidence_only_rows = _seed_quality_queue_rows(
+        candidates,
+        classifications={"evidence_only"},
+    )
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
@@ -1431,11 +1767,39 @@ def write_quality_report(
         "",
         *so_what_summary,
         "",
-        "## Promo/Bulletin Downrank Examples",
+        "## Weak Audience Bridge Examples",
+        "",
+        "| title | source | score | classification | so_what | so_what_gap | "
+        "audience_bridge_signals | quality_flags |",
+        "| --- | --- | ---: | --- | --- | --- | --- | --- |",
+        *weak_audience_rows,
+        "",
+        "## Interesting But Not Seed Queue",
+        "",
+        "| title | source | score | classification | so_what | so_what_gap | "
+        "audience_bridge_signals | quality_flags |",
+        "| --- | --- | ---: | --- | --- | --- | --- | --- |",
+        *interesting_not_seed_rows,
+        "",
+        "## Conditional System-Issue Queue",
+        "",
+        "| title | source | score | classification | so_what | so_what_gap | "
+        "audience_bridge_signals | quality_flags |",
+        "| --- | --- | ---: | --- | --- | --- | --- | --- |",
+        *conditional_system_issue_rows,
+        "",
+        "## Promo-Bulletin Suppression Queue",
         "",
         "| title | source | score | guard_flags | so_what | action |",
         "| --- | --- | ---: | --- | --- | --- |",
         *promo_bulletin_rows,
+        "",
+        "## Evidence-Only Candidate Queue",
+        "",
+        "| title | source | score | classification | so_what | so_what_gap | "
+        "audience_bridge_signals | quality_flags |",
+        "| --- | --- | ---: | --- | --- | --- | --- | --- |",
+        *evidence_only_rows,
         "",
         "## Conditional Seed / Bundle-needed Queue",
         "",
@@ -2083,6 +2447,53 @@ def _conditional_seed_queue_rows(candidates: list[dict[str, Any]]) -> list[str]:
     return rows or ["| none | unknown | 0 | unclear | weak | none | none |"]
 
 
+def _seed_quality_queue_rows(
+    candidates: list[dict[str, Any]],
+    *,
+    classifications: set[str] | None = None,
+    required_flags: set[str] | None = None,
+    required_so_what_labels: set[str] | None = None,
+    limit: int = 10,
+) -> list[str]:
+    rows: list[str] = []
+    for item in sorted(candidates, key=_total_score, reverse=True):
+        so_what = _candidate_so_what(item)
+        classification = str(
+            item.get("seed_quality_classification")
+            or so_what.get("seed_quality_classification")
+            or ""
+        )
+        flags = set(str(flag) for flag in item.get("quality_flags", []))
+        if classifications and classification not in classifications:
+            continue
+        if required_flags and not flags.intersection(required_flags):
+            continue
+        if (
+            required_so_what_labels
+            and str(so_what.get("so_what_label")) not in required_so_what_labels
+        ):
+            continue
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(item.get("title", "")),
+                    _table_cell(item.get("source", "unknown")),
+                    f"{_total_score(item):g}",
+                    _table_cell(classification or "unknown"),
+                    _table_cell(str(so_what.get("so_what_label") or "unknown")),
+                    _table_cell(str(so_what.get("so_what_gap") or "")),
+                    _table_cell(_format_list(so_what.get("audience_bridge_signals") or [])),
+                    _table_cell(_format_list(item.get("quality_flags") or [])),
+                ]
+            )
+            + " |"
+        )
+        if len(rows) >= limit:
+            break
+    return rows or ["| none | unknown | 0 | none | unknown | none | none | none |"]
+
+
 def _story_bundle_hash(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
 
@@ -2484,7 +2895,7 @@ def _bridge_query_terms(candidate: dict[str, Any], record: dict[str, Any]) -> li
         terms.extend(["반바지", "폭염", "쿨비즈", "회사 복장", "여름"])
     elif any(term in text for term in ("선불", "충전금", "스타벅스", "환불")):
         terms.extend(["선불충전금", "환불", "스타벅스", "규제 사각지대", "소비자 자금"])
-    elif any(term in text for term in ("토큰화", "tokenization", "rwa")):
+    elif _has_tokenization_bridge_signal(text):
         terms.extend(["자산 토큰화", "RWA", "조각투자", "STO", "CBDC"])
     elif any(term in text for term in ("공공 ai", "ai 도입", "ai 드론", "ai 노사")):
         terms.extend(["공공 AI", "AI 도입", "AI 행정", "AI 책임", "AI 노사"])
@@ -2498,7 +2909,19 @@ def _bridge_query_terms(candidate: dict[str, Any], record: dict[str, Any]) -> li
     return deduped
 
 
-def _bridge_priority(candidate: dict[str, Any], record: dict[str, Any]) -> str:
+def _has_tokenization_bridge_signal(text: str) -> bool:
+    return (
+        "토큰화" in text
+        or "tokenization" in text
+        or bool(re.search(r"\brwa\b", text, flags=re.IGNORECASE))
+    )
+
+
+def _bridge_priority(candidate: dict[str, Any], record: dict[str, Any], trigger: str) -> str:
+    if trigger.startswith("review_modifier:") or trigger == "already_used_live":
+        return "high"
+    if trigger == "board_reappearance":
+        return "high"
     text = _board_text(record, candidate)
     if any(term in text for term in ("쉬었음", "경제활동참가율", "반바지", "폭염")):
         return "high"
@@ -2510,17 +2933,113 @@ def _bridge_priority(candidate: dict[str, Any], record: dict[str, Any]) -> str:
     return "low"
 
 
+def _history_rows_for_record(
+    record: dict[str, Any],
+    history_index: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for key in [
+        str(record.get("story_fingerprint") or ""),
+        str(record.get("story_bundle_id") or ""),
+    ]:
+        if key:
+            rows.extend(history_index.get(key, []))
+    return rows
+
+
+def _short_review_excerpt(value: str, *, limit: int = 120) -> str:
+    normalized = re.sub(r"\s+", " ", value.strip())
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[: limit - 1].rstrip() + "..."
+
+
+def _bridge_review_context(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    modifiers: list[str] = []
+    excerpt = ""
+    for row in rows:
+        reviewer_payloads = row.get("reviewers")
+        if isinstance(reviewer_payloads, dict):
+            notes = [
+                str(payload.get("raw_note") or payload.get("note") or "").strip()
+                for payload in reviewer_payloads.values()
+                if isinstance(payload, dict)
+            ]
+        else:
+            notes = [str(row.get(reviewer) or "").strip() for reviewer in REVIEWER_COLUMNS]
+        for note in notes:
+            if note:
+                inferred = infer_review_feedback(note)
+                modifiers.extend(str(item) for item in inferred.get("modifiers", []))
+                if not excerpt:
+                    excerpt = _short_review_excerpt(note)
+    return {
+        "modifiers": list(dict.fromkeys(modifiers)),
+        "excerpt": excerpt,
+    }
+
+
+def _bridge_trigger(
+    *,
+    candidate: dict[str, Any],
+    record: dict[str, Any],
+    review_context: dict[str, Any],
+    history_rows: list[dict[str, Any]],
+) -> str:
+    modifiers = set(review_context.get("modifiers") or [])
+    if "already_used_live" in modifiers:
+        return "review_modifier:already_used_live"
+    if "past_topic_overlap" in modifiers:
+        return "review_modifier:past_topic_overlap"
+    if history_rows:
+        return "board_reappearance"
+    text = _board_text(record, candidate)
+    if any(term in text for term in ("쉬었음", "경제활동참가율", "반바지", "폭염")):
+        return "heuristic"
+    return "heuristic"
+
+
+def _bridge_expected_match_type(
+    *,
+    text: str,
+    trigger: str,
+    review_excerpt: str,
+) -> str:
+    if trigger == "review_modifier:already_used_live" or any(
+        term in review_excerpt.lower() for term in ("라이브", "pptx", "대본", "transcript")
+    ):
+        return "transcript"
+    if any(term in text for term in ("쉬었음", "반바지", "폭염")):
+        return "title"
+    return "analysis"
+
+
 def _syuka_bridge_query_records(
     records: list[dict[str, Any]],
     candidates: list[dict[str, Any]],
+    history_index: dict[str, list[dict[str, Any]]] | None = None,
+    review_rows_by_key: dict[str, list[dict[str, Any]]] | None = None,
 ) -> list[dict[str, Any]]:
     candidate_by_id = _candidate_by_id(candidates)
+    history_index = history_index or {}
+    review_rows_by_key = review_rows_by_key or {}
     output: list[dict[str, Any]] = []
     for record in records:
         candidate = _record_representative_candidate(record, candidate_by_id)
         if not candidate:
             continue
         text = _board_text(record, candidate)
+        history_rows = _history_rows_for_record(record, history_index)
+        for key in _record_exclusion_keys(record):
+            history_rows.extend(review_rows_by_key.get(key, []))
+        review_context = _bridge_review_context(history_rows)
+        trigger = _bridge_trigger(
+            candidate=candidate,
+            record=record,
+            review_context=review_context,
+            history_rows=history_rows,
+        )
+        review_excerpt = str(review_context.get("excerpt") or "")
         output.append(
             {
                 "story_fingerprint": str(record.get("story_fingerprint") or ""),
@@ -2534,12 +3053,42 @@ def _syuka_bridge_query_records(
                     if any(term in text for term in ("쉬었음", "경제활동참가율", "반바지", "폭염"))
                     else "compare with past videos before promoting repeated themes"
                 ),
-                "expected_match_type": "title"
-                if any(term in text for term in ("쉬었음", "반바지", "폭염"))
-                else "analysis",
-                "priority": _bridge_priority(candidate, record),
+                "expected_match_type": _bridge_expected_match_type(
+                    text=text,
+                    trigger=trigger,
+                    review_excerpt=review_excerpt,
+                ),
+                "priority": _bridge_priority(candidate, record, trigger),
+                "trigger": trigger,
+                "source_review_note_excerpt": review_excerpt,
             }
         )
+    return output
+
+
+def _load_review_feedback_rows(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    return [row for row in payload.get("rows", []) if isinstance(row, dict)]
+
+
+def _review_feedback_rows_by_key(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    output: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        keys = {
+            str(row.get("id") or "").strip(),
+            str(row.get("story_fingerprint") or "").strip(),
+        }
+        review_id = str(row.get("id") or "").strip()
+        if ":" in review_id:
+            keys.add(review_id.rsplit(":", 1)[-1])
+        for key in keys:
+            if key:
+                output.setdefault(key, []).append(row)
     return output
 
 
@@ -2549,9 +3098,21 @@ def write_syuka_bridge_query_reports(
     candidates: list[dict[str, Any]],
     top: list[dict[str, Any]],
     output_dir: Path = paths.REPORTS_DIR,
+    review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    review_feedback_path: Path | None = None,
 ) -> tuple[Path, Path]:
     records = _story_bundle_records(candidates, top)
-    queries = _syuka_bridge_query_records(records[:DEFAULT_REVIEW_BOARD_LIMIT], candidates)
+    history_index = _load_review_history_index(review_history_path)
+    feedback_path = review_feedback_path or output_dir / f"jibi_review_feedback_{run_date}.json"
+    review_rows_by_key = _review_feedback_rows_by_key(
+        _load_review_feedback_rows(feedback_path)
+    )
+    queries = _syuka_bridge_query_records(
+        records[:DEFAULT_REVIEW_BOARD_LIMIT],
+        candidates,
+        history_index=history_index,
+        review_rows_by_key=review_rows_by_key,
+    )
     md_path = output_dir / f"jibi_syuka_bridge_queries_{run_date}.md"
     json_path = output_dir / f"jibi_syuka_bridge_queries_{run_date}.json"
     md_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2561,8 +3122,18 @@ def write_syuka_bridge_query_reports(
         "Report-only query terms for later Windows Codex / syuka-ops past-video checks.",
         "No syuka-ops DB was queried by luddite.",
         "",
-        "| priority | title | query_terms | expected_match_type | why_check_past_video |",
-        "| --- | --- | --- | --- | --- |",
+        "## Syuka Bridge Handoff Notes",
+        "",
+        "- Send the JSON package to Windows Codex / syuka-ops for read-only past-video checks.",
+        "- Expected downstream labels: duplicate, adjacent, safe_new_angle, needs_human_check.",
+        "- Triggers from reviewer modifiers are high priority; "
+        "luddite still does not inspect the DB.",
+        "",
+        "## Query Records",
+        "",
+        "| priority | trigger | title | query_terms | expected_match_type | "
+        "why_check_past_video | review_excerpt |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for item in queries:
         lines.append(
@@ -2570,16 +3141,18 @@ def write_syuka_bridge_query_reports(
             + " | ".join(
                 [
                     item["priority"],
+                    _table_cell(item["trigger"]),
                     _table_cell(item["title"]),
                     _table_cell(", ".join(item["query_terms"])),
                     item["expected_match_type"],
                     _table_cell(item["why_check_past_video"]),
+                    _table_cell(item.get("source_review_note_excerpt", "")),
                 ]
             )
             + " |"
         )
     if not queries:
-        lines.append("| low | none | none | analysis | no board rows |")
+        lines.append("| low | heuristic | none | none | analysis | no board rows | none |")
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     json_path.write_text(
         json.dumps({"run_date": run_date, "queries": queries}, ensure_ascii=False, indent=2)
@@ -3482,7 +4055,39 @@ def main(
         Path,
         typer.Option("--review-history", help="Local review-board history JSONL."),
     ] = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
+    alternate_review_board_only: Annotated[
+        bool,
+        typer.Option(
+            "--alternate-review-board-only",
+            help="Write alternate review-board CSV/report only; do not touch live sheet.",
+        ),
+    ] = False,
+    alternate_include_reviewed: Annotated[
+        bool,
+        typer.Option(
+            "--alternate-include-reviewed",
+            help="Allow already reviewed story fingerprints in the alternate batch.",
+        ),
+    ] = False,
 ) -> None:
+    if alternate_review_board_only:
+        alt_csv_path, metadata_path, report_path = render_alternate_review_board(
+            input_path=input_path,
+            output_dir=output_dir,
+            digest_date=digest_date,
+            limit=limit,
+            max_per_source=max_per_source,
+            review_board_limit=review_board_limit,
+            bundle_near_miss_limit=bundle_near_miss_limit,
+            review_history_path=review_history_path,
+            include_reviewed=alternate_include_reviewed,
+        )
+        console.print(
+            "[green]Rendered alternate review board to "
+            f"{alt_csv_path}, {metadata_path}, and {report_path}. "
+            "The live Jibi sheet was not replaced.[/green]"
+        )
+        return
     md_path, csv_path, top = render_daily_digest(
         input_path=input_path,
         output_dir=output_dir,
