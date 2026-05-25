@@ -572,6 +572,7 @@ def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -
                                 "matched_fields": ["title", "analysis"],
                                 "url": "https://youtu.be/youth",
                                 "view_count": 1500000,
+                                "like_count": 32000,
                                 "upload_date": "20260501",
                             }
                         ],
@@ -610,8 +611,13 @@ def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -
         "ID",
     ]
     assert "과거 영상과 강하게 겹칠 수 있습니다" in rows[0]["설명"]
+    assert "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?" in rows[0]["설명"]
+    assert "2026-05-01" in rows[0]["설명"]
+    assert "조회 150만" in rows[0]["설명"]
+    assert "좋아요 3.2만" in rows[0]["설명"]
     assert metadata["rows"][0]["syuka_similarity"]["recommendation"] == "duplicate"
     assert metadata["rows"][0]["syuka_similarity"]["top_match_score"] == 12
+    assert metadata["rows"][0]["syuka_similarity"]["like_count"] == 32000
 
 
 def test_bundle_review_does_not_annotate_safe_new_angle(tmp_path) -> None:
@@ -883,6 +889,7 @@ def test_quality_report_includes_syuka_similarity_summary_when_available(tmp_pat
                                 "matched_fields": ["title"],
                                 "url": "https://youtu.be/youth",
                                 "view_count": 1500000,
+                                "like_count": 32000,
                                 "upload_date": "20260501",
                             }
                         ],

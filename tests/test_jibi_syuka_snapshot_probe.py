@@ -20,6 +20,7 @@ def _make_syuka_db(path):
             title TEXT,
             upload_date TEXT,
             view_count INTEGER,
+            like_count INTEGER,
             source_url TEXT
         )
         """
@@ -42,12 +43,13 @@ def _make_syuka_db(path):
         """
     )
     conn.execute(
-        "INSERT INTO videos VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?)",
         (
             "vid_youth",
             "83~95년생의 삶을 추적해봤습니다 - 청년 노동시장",
             "20260501",
             1500000,
+            32000,
             "https://youtu.be/youth",
         ),
     )
@@ -64,12 +66,13 @@ def _make_syuka_db(path):
         ("vid_youth", "오늘은 청년 노동시장 이야기를 해보겠습니다."),
     )
     conn.execute(
-        "INSERT INTO videos VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?)",
         (
             "vid_transcript",
             "여름 직장 문화",
             "20260512",
             900000,
+            12000,
             "https://youtu.be/shorts",
         ),
     )
@@ -135,6 +138,7 @@ def test_probe_syuka_snapshot_title_and_analysis_match(tmp_path) -> None:
 
     result = payload["results"][0]
     assert result["matches"][0]["video_id"] == "vid_youth"
+    assert result["matches"][0]["like_count"] == 32000
     assert "title" in result["matches"][0]["matched_fields"]
     assert result["matches"][0]["recommendation"] == "duplicate"
     assert result["past_video_response_signal"] == "duplicate_do_not_repeat"

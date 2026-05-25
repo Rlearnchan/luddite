@@ -131,6 +131,7 @@ class VideoDocument:
     url: str
     upload_date: str
     view_count: int | None
+    like_count: int | None
     fields: dict[str, str]
 
 
@@ -260,6 +261,7 @@ def _load_documents_from_standard_schema(
             url=_row_value(row, "source_url"),
             upload_date=_row_value(row, "upload_date"),
             view_count=_safe_int(row["view_count"]) if "view_count" in row.keys() else None,
+            like_count=_safe_int(row["like_count"]) if "like_count" in row.keys() else None,
             fields={
                 "title": _row_value(row, "title"),
                 "metadata": " ".join(
@@ -290,6 +292,7 @@ def _load_documents_from_standard_schema(
                 url=docs[video_id].url,
                 upload_date=docs[video_id].upload_date,
                 view_count=docs[video_id].view_count,
+                like_count=docs[video_id].like_count,
                 fields=fields,
             )
     if "transcripts" in tables and "video_id" in tables["transcripts"]:
@@ -305,6 +308,7 @@ def _load_documents_from_standard_schema(
                 url=docs[video_id].url,
                 upload_date=docs[video_id].upload_date,
                 view_count=docs[video_id].view_count,
+                like_count=docs[video_id].like_count,
                 fields=fields,
             )
     return list(docs.values())
@@ -334,6 +338,7 @@ def _load_documents_from_generic_schema(
                     url=_row_value(row, "source_url") if "source_url" in columns else "",
                     upload_date=_row_value(row, "upload_date") if "upload_date" in columns else "",
                     view_count=_safe_int(row["view_count"]) if "view_count" in columns else None,
+                    like_count=_safe_int(row["like_count"]) if "like_count" in columns else None,
                     fields=fields,
                 )
             )
@@ -576,6 +581,7 @@ def match_query_to_documents(
                 "title": doc.title,
                 "upload_date": doc.upload_date,
                 "view_count": doc.view_count,
+                "like_count": doc.like_count,
                 "matched_fields": matched_fields,
                 "matched_terms": matched_terms,
                 "matched_core_terms": matched_core_terms,
@@ -763,10 +769,10 @@ def _markdown(payload: dict[str, Any]) -> str:
                 f"- filtered_query_terms: {', '.join(result.get('filtered_query_terms', []))}",
                 "",
                 (
-                    "| score | recommendation | fields | title | core_terms | context_terms | "
-                    "snippet |"
+                    "| score | recommendation | fields | title | date | views | likes | "
+                    "core_terms | context_terms | snippet |"
                 ),
-                "| ---: | --- | --- | --- | --- | --- | --- |",
+                "| ---: | --- | --- | --- | --- | ---: | ---: | --- | --- | --- |",
             ]
         )
         matches = result.get("matches") or []
@@ -779,6 +785,9 @@ def _markdown(payload: dict[str, Any]) -> str:
                         _table_cell(match.get("recommendation")),
                         _table_cell(", ".join(match.get("matched_fields", []))),
                         _table_cell(match.get("title")),
+                        _table_cell(match.get("upload_date")),
+                        str(match.get("view_count") or ""),
+                        str(match.get("like_count") or ""),
                         _table_cell(", ".join(match.get("matched_core_terms", []))),
                         _table_cell(", ".join(match.get("matched_context_terms", []))),
                         _table_cell(match.get("snippet")),
@@ -787,7 +796,9 @@ def _markdown(payload: dict[str, Any]) -> str:
                 + " |"
             )
         if not matches:
-            lines.append("| 0 | safe_new_angle | none | none | none | none | no local match |")
+            lines.append(
+                "| 0 | safe_new_angle | none | none |  |  |  | none | none | no local match |"
+            )
         lines.append("")
     no_match = [item for item in results if not item.get("matches")]
     no_match_lines = [

@@ -823,6 +823,7 @@ def _normalize_syuka_similarity_result(result: dict[str, Any]) -> dict[str, Any]
         "matched_fields": list(top_match.get("matched_fields") or []),
         "past_video_url": str(top_match.get("url") or ""),
         "view_count": top_match.get("view_count"),
+        "like_count": top_match.get("like_count"),
         "upload_date": str(top_match.get("upload_date") or ""),
         "past_video_response_signal": str(
             result.get("past_video_response_signal") or result.get("recommendation") or ""
@@ -1454,16 +1455,58 @@ def _syuka_similarity_annotation(syuka_similarity: dict[str, Any] | None) -> str
     if not syuka_similarity:
         return ""
     recommendation = str(syuka_similarity.get("recommendation") or "")
+    past_video = _past_video_annotation_detail(syuka_similarity)
     if recommendation == "duplicate":
         return (
             "과거 영상과 강하게 겹칠 수 있습니다. "
-            "새 자료가 업데이트인지, 아니면 반복인지 확인하세요."
+            f"{past_video}새 자료가 업데이트인지, 아니면 반복인지 확인하세요."
         )
     if recommendation == "adjacent":
-        return "관련 과거 영상이 있어 배경자료로 쓸 수 있지만, 새 각도인지 확인이 필요합니다."
+        return (
+            "관련 과거 영상이 있어 배경자료로 쓸 수 있지만, "
+            f"{past_video}새 각도인지 확인이 필요합니다."
+        )
     if recommendation == "needs_human_check":
-        return "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다."
+        return (
+            "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다. "
+            f"{past_video}"
+        ).strip()
     return ""
+
+
+def _past_video_annotation_detail(syuka_similarity: dict[str, Any]) -> str:
+    title = str(syuka_similarity.get("top_match_title") or "").strip()
+    if not title:
+        return ""
+    date_text = _format_video_date(syuka_similarity.get("upload_date"))
+    view_text = _format_metric_count(syuka_similarity.get("view_count"), "조회")
+    like_text = _format_metric_count(syuka_similarity.get("like_count"), "좋아요")
+    metrics = ", ".join(item for item in [date_text, view_text, like_text] if item)
+    if metrics:
+        return f"가장 가까운 과거 영상은 '{title}'({metrics})입니다. "
+    return f"가장 가까운 과거 영상은 '{title}'입니다. "
+
+
+def _format_video_date(value: object) -> str:
+    text = str(value or "").strip()
+    if re.fullmatch(r"\d{8}", text):
+        return f"{text[:4]}-{text[4:6]}-{text[6:]}"
+    return text
+
+
+def _format_metric_count(value: object, label: str) -> str:
+    if value in {None, ""}:
+        return ""
+    try:
+        count = int(value)
+    except (TypeError, ValueError):
+        return ""
+    if count >= 10_000:
+        number = count / 10_000
+        if number >= 100 or number.is_integer():
+            return f"{label} {number:.0f}만"
+        return f"{label} {number:.1f}만"
+    return f"{label} {count:,}"
 
 
 def _join_distinct_reason(primary: str, secondary: str) -> str:
