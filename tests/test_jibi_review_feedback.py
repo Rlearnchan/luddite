@@ -3,6 +3,7 @@ import json
 
 from luddite.agents.jibi.append_to_sheet import BUNDLE_REVIEW_SHEET_COLUMNS
 from luddite.agents.jibi.review_feedback import (
+    infer_review_feedback,
     parse_review_tag,
     render_review_feedback_summary,
     render_review_history_calibration,
@@ -31,6 +32,37 @@ def test_parse_review_tag_accepts_lightweight_aliases() -> None:
     assert parse_review_tag("별로 — 홍보성") == "reject"
     assert parse_review_tag("애매 — 왜 올라왔는지 모르겠음") == "unclear"
     assert parse_review_tag("좋아 보임") == "unlabeled"
+
+
+def test_infer_review_feedback_understands_natural_korean_notes() -> None:
+    good = infer_review_feedback(
+        "좋은 자료 선정. 다만 이미 과거 영상에서 다룬 바 있어 겹침 확인 필요"
+    )
+    assert good["explicit_tag"] == "unlabeled"
+    assert good["inferred_label"] == "past_topic_overlap"
+    assert good["tag"] == "merge"
+    assert good["raw_note"].startswith("좋은 자료 선정")
+
+    conditional = infer_review_feedback(
+        "가능성 있음. 선불충전금 제도의 문제로 풀면 좋지만 단일기업이라 묶으면 좋겠음"
+    )
+    assert conditional["inferred_label"] == "conditional_seed"
+    assert conditional["tag"] == "seed"
+
+    reject = infer_review_feedback("그래서 뭐? 사람들이 안 궁금해할 것 같고 seed로 약함")
+    assert reject["inferred_label"] == "reject"
+    assert reject["tag"] == "reject"
+
+    neutral = infer_review_feedback("조금 더 생각해보겠습니다")
+    assert neutral["inferred_label"] in {"unlabeled", "unclear"}
+
+
+def test_explicit_tag_wins_over_inferred_review_text() -> None:
+    payload = infer_review_feedback("seed — 홍보성이라 약하지만 구조로 풀면 가능")
+
+    assert payload["explicit_tag"] == "seed"
+    assert payload["inferred_label"] == "seed"
+    assert payload["tag"] == "seed"
 
 
 def test_summarize_review_feedback_counts_tags_and_disagreements() -> None:
@@ -63,6 +95,26 @@ def test_summarize_review_feedback_counts_tags_and_disagreements() -> None:
     assert summary["tag_counts"]["needs"] == 1
     assert summary["tag_counts"]["reject"] == 1
     assert summary["disagreement_rows"][0]["reason"] == "seed_vs_reject"
+
+
+def test_summarize_review_feedback_counts_inferred_disagreements() -> None:
+    rows = [
+        {
+            "일시": "2026-05-25 09:30",
+            "제목": "스타벅스 선불충전금",
+            "리뷰-성원": "가능성 있음. 제도의 문제로 풀면 좋은데 단일기업이라 묶으면 좋겠음",
+            "리뷰-형찬": "그래서 뭐? 단발성 회사 기사로는 약함",
+            "ID": "2026-05-25:story_bundle_starbucks",
+        }
+    ]
+
+    summary = summarize_review_feedback(rows, run_date="2026-05-25")
+
+    assert summary["tag_counts"]["seed"] == 1
+    assert summary["tag_counts"]["reject"] == 1
+    assert summary["inferred_label_counts"]["conditional_seed"] == 1
+    assert summary["inferred_label_counts"]["reject"] == 1
+    assert summary["disagreement_rows"][0]["inferred"] is True
 
 
 def test_render_review_feedback_summary_from_local_csv(tmp_path) -> None:

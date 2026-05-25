@@ -31,6 +31,17 @@ history_app = typer.Typer(no_args_is_help=False)
 console = Console()
 
 REVIEW_TAGS = ["seed", "evidence", "merge", "needs", "reject", "unclear", "unlabeled"]
+INFERRED_LABELS = [
+    "seed",
+    "conditional_seed",
+    "evidence_only",
+    "needs_more_sources",
+    "merge_or_duplicate",
+    "past_topic_overlap",
+    "reject",
+    "unclear",
+    "unlabeled",
+]
 TAG_ALIASES = {
     "seed": "seed",
     "방송": "seed",
@@ -51,6 +62,81 @@ TAG_ALIASES = {
     "애매": "unclear",
     "모름": "unclear",
 }
+EXPLICIT_TAG_TO_INFERRED_LABEL = {
+    "seed": "seed",
+    "evidence": "evidence_only",
+    "merge": "merge_or_duplicate",
+    "needs": "needs_more_sources",
+    "reject": "reject",
+    "unclear": "unclear",
+    "unlabeled": "unlabeled",
+}
+INFERRED_LABEL_TO_REVIEW_TAG = {
+    "seed": "seed",
+    "conditional_seed": "seed",
+    "evidence_only": "evidence",
+    "needs_more_sources": "needs",
+    "merge_or_duplicate": "merge",
+    "past_topic_overlap": "merge",
+    "reject": "reject",
+    "unclear": "unclear",
+    "unlabeled": "unlabeled",
+}
+PAST_OVERLAP_TERMS = {
+    "이미",
+    "과거 영상",
+    "다룬 바",
+    "겹침",
+    "이번 주 라이브",
+    "pptx",
+    "라이브 소재",
+}
+MERGE_TERMS = {"묶", "bundle", "비슷한 사례", "같이", "합치"}
+CONDITIONAL_TERMS = {
+    "다만",
+    "가능성 있음",
+    "가능성이 있음",
+    "조건부",
+    "제도의 문제로 풀면",
+    "시스템 문제",
+    "단일기업",
+    "보강하면",
+}
+POSITIVE_TERMS = {
+    "좋은 소재",
+    "좋은 자료 선정",
+    "방송에 쓰일",
+    "주제로 가능",
+    "가능성 있음",
+    "가능성이 있음",
+    "살릴 수",
+    "긍정",
+}
+EVIDENCE_TERMS = {
+    "근거",
+    "자료로",
+    "곁가지",
+    "붙이면",
+    "supporting",
+    "큰 이야기",
+    "맥락",
+}
+NEEDS_TERMS = {"자료 필요", "보강", "추가", "숫자", "독립 출처", "외부 자료"}
+REJECT_TERMS = {
+    "재미가 없",
+    "약함",
+    "seed로 보기에는 약",
+    "나쁜 선택",
+    "잘못 선정",
+    "그래서 뭐",
+    "안 궁금",
+    "단발성",
+    "홍보성",
+    "단문",
+    "부적절",
+    "reject",
+}
+UNCLEAR_TERMS = {"애매", "모르겠", "불분명", "판단 어려"}
 
 
 @dataclass(frozen=True)
@@ -71,6 +157,90 @@ def parse_review_tag(note: str) -> str:
         return "unlabeled"
     token = re.split(r"\s*(?:—|–|-|:)\s*|\s+", text, maxsplit=1)[0].strip()
     return TAG_ALIASES.get(token, "unlabeled")
+
+
+def _contains_any(text: str, terms: set[str]) -> list[str]:
+    return [term for term in terms if term.lower() in text]
+
+
+def infer_review_feedback(note: str) -> dict[str, Any]:
+    raw_note = note.strip()
+    explicit_tag = parse_review_tag(raw_note)
+    if not raw_note:
+        return {
+            "tag": "unlabeled",
+            "explicit_tag": "unlabeled",
+            "inferred_label": "unlabeled",
+            "inferred_confidence": "low",
+            "inference_reasons": [],
+            "raw_note": "",
+            "note": "",
+        }
+    if explicit_tag != "unlabeled":
+        inferred_label = EXPLICIT_TAG_TO_INFERRED_LABEL[explicit_tag]
+        return {
+            "tag": explicit_tag,
+            "explicit_tag": explicit_tag,
+            "inferred_label": inferred_label,
+            "inferred_confidence": "high",
+            "inference_reasons": [f"explicit_tag:{explicit_tag}"],
+            "raw_note": raw_note,
+            "note": raw_note,
+        }
+
+    text = raw_note.lower()
+    matches = {
+        "past_topic_overlap": _contains_any(text, PAST_OVERLAP_TERMS),
+        "merge_or_duplicate": _contains_any(text, MERGE_TERMS),
+        "conditional_seed": _contains_any(text, CONDITIONAL_TERMS),
+        "seed": _contains_any(text, POSITIVE_TERMS),
+        "evidence_only": _contains_any(text, EVIDENCE_TERMS),
+        "needs_more_sources": _contains_any(text, NEEDS_TERMS),
+        "reject": _contains_any(text, REJECT_TERMS),
+        "unclear": _contains_any(text, UNCLEAR_TERMS),
+    }
+    if matches["past_topic_overlap"]:
+        label = "past_topic_overlap"
+    elif matches["conditional_seed"] and (matches["seed"] or matches["evidence_only"]):
+        label = "conditional_seed"
+    elif matches["merge_or_duplicate"] and not matches["reject"]:
+        label = "merge_or_duplicate"
+    elif matches["evidence_only"] and not {"나쁜 선택", "잘못 선정"}.intersection(
+        set(matches["reject"])
+    ):
+        label = "evidence_only"
+    elif matches["needs_more_sources"]:
+        label = "needs_more_sources"
+    elif matches["reject"]:
+        label = "reject"
+    elif matches["seed"]:
+        label = "seed"
+    elif matches["unclear"]:
+        label = "unclear"
+    else:
+        label = "unlabeled"
+
+    reasons = [
+        f"{key}:{','.join(value[:3])}"
+        for key, value in matches.items()
+        if value
+    ]
+    if label == "unlabeled":
+        confidence = "low"
+    elif len([value for value in matches.values() if value]) >= 2:
+        confidence = "medium"
+    else:
+        confidence = "high"
+    tag = INFERRED_LABEL_TO_REVIEW_TAG[label]
+    return {
+        "tag": tag,
+        "explicit_tag": "unlabeled",
+        "inferred_label": label,
+        "inferred_confidence": confidence,
+        "inference_reasons": reasons,
+        "raw_note": raw_note,
+        "note": raw_note,
+    }
 
 
 def _rows_from_values(values: list[list[str]]) -> list[dict[str, str]]:
@@ -100,8 +270,8 @@ def _reviewer_completion(rows: list[dict[str, str]]) -> dict[str, int]:
     }
 
 
-def _note_payload(note: str) -> dict[str, str]:
-    return {"tag": parse_review_tag(note), "note": note.strip()}
+def _note_payload(note: str) -> dict[str, Any]:
+    return infer_review_feedback(note)
 
 
 def _row_registered_at(row: dict[str, Any]) -> str:
@@ -121,6 +291,7 @@ def summarize_review_feedback(
     run_date: str,
 ) -> dict[str, Any]:
     tag_counts = Counter({tag: 0 for tag in REVIEW_TAGS})
+    inferred_label_counts = Counter({label: 0 for label in INFERRED_LABELS})
     row_payloads: list[dict[str, Any]] = []
     disagreement_rows: list[dict[str, Any]] = []
     for index, row in enumerate(rows, start=2):
@@ -131,6 +302,7 @@ def summarize_review_feedback(
         for note in reviewer_notes.values():
             if note["note"]:
                 tag_counts[note["tag"]] += 1
+                inferred_label_counts[note["inferred_label"]] += 1
         tags = {note["tag"] for note in reviewer_notes.values() if note["note"]}
         row_payload = {
             "row": index,
@@ -143,6 +315,12 @@ def summarize_review_feedback(
         }
         row_payloads.append(row_payload)
         if "seed" in tags and "reject" in tags:
+            inferred = any(
+                note["explicit_tag"] == "unlabeled"
+                and note["tag"] not in {"unlabeled", "unclear"}
+                for note in reviewer_notes.values()
+                if note["note"]
+            )
             disagreement_rows.append(
                 {
                     "row": index,
@@ -150,6 +328,7 @@ def summarize_review_feedback(
                     "id": row.get("ID", ""),
                     "tags": sorted(tags),
                     "reason": "seed_vs_reject",
+                    "inferred": inferred,
                 }
             )
     return {
@@ -158,6 +337,7 @@ def summarize_review_feedback(
         "total_rows": len(rows),
         "reviewer_completion": _reviewer_completion(rows),
         "tag_counts": dict(tag_counts),
+        "inferred_label_counts": dict(inferred_label_counts),
         "rows": row_payloads,
         "disagreement_rows": disagreement_rows,
     }
@@ -178,6 +358,12 @@ def _markdown(summary: dict[str, Any]) -> str:
     lines.extend(["", "## Tag Counts", ""])
     for tag in REVIEW_TAGS:
         lines.append(f"- {tag}: {summary['tag_counts'].get(tag, 0)}")
+    lines.extend(["", "## Natural Review Inference Summary", ""])
+    inferred_total = sum(summary.get("inferred_label_counts", {}).values())
+    lines.append(f"- inferred_notes: {inferred_total}")
+    lines.extend(["", "## Inferred Label Counts", ""])
+    for label in INFERRED_LABELS:
+        lines.append(f"- {label}: {summary.get('inferred_label_counts', {}).get(label, 0)}")
     lines.extend(["", "## Notes By Row", ""])
     for row in summary["rows"]:
         lines.append(f"### {row['title'] or 'untitled'}")
@@ -188,14 +374,19 @@ def _markdown(summary: dict[str, Any]) -> str:
         for reviewer in REVIEWER_COLUMNS:
             note = row["reviewers"][reviewer]
             note_text = note["note"] or "(blank)"
-            lines.append(f"- {reviewer}: `{note['tag']}` — {note_text}")
+            lines.append(
+                f"- {reviewer}: explicit=`{note['explicit_tag']}`, "
+                f"inferred=`{note['inferred_label']}`/{note['inferred_confidence']}, "
+                f"tag=`{note['tag']}` — {note_text}"
+            )
         lines.append("")
     lines.extend(["## Disagreement Rows", ""])
     if summary["disagreement_rows"]:
         for row in summary["disagreement_rows"]:
             lines.append(
                 f"- row {row['row']}: {row['title']} "
-                f"({row['id']}) — {', '.join(row['tags'])}"
+                f"({row['id']}) — {', '.join(row['tags'])}; "
+                f"inferred={str(row.get('inferred', False)).lower()}"
             )
     else:
         lines.append("- none")
@@ -374,6 +565,10 @@ def _empty_tag_counter() -> Counter[str]:
     return Counter({tag: 0 for tag in REVIEW_TAGS})
 
 
+def _empty_inferred_label_counter() -> Counter[str]:
+    return Counter({label: 0 for label in INFERRED_LABELS})
+
+
 def _dimension_feedback_summary(
     rows: list[dict[str, Any]],
     key_name: str,
@@ -466,6 +661,12 @@ def _strong_disagreements(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             reason = "evidence_vs_reject"
         else:
             continue
+        inferred = any(
+            note["explicit_tag"] == "unlabeled"
+            and note["tag"] not in {"unlabeled", "unclear"}
+            for note in _review_tags_for_row(row).values()
+            if note["note"]
+        )
         disagreements.append(
             {
                 "date": _row_date(row),
@@ -475,6 +676,7 @@ def _strong_disagreements(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "story_fingerprint": row.get("story_fingerprint", ""),
                 "tags": sorted(tags),
                 "reason": reason,
+                "inferred": inferred,
             }
         )
     return disagreements
@@ -556,6 +758,7 @@ def summarize_review_history_calibration(
     run_date: str,
 ) -> dict[str, Any]:
     tag_counts = _empty_tag_counter()
+    inferred_label_counts = _empty_inferred_label_counter()
     reviewer_completion: dict[str, dict[str, int]] = defaultdict(
         lambda: {reviewer: 0 for reviewer in REVIEWER_COLUMNS}
     )
@@ -570,6 +773,7 @@ def summarize_review_history_calibration(
             if note["note"]:
                 reviewer_completion[date_value][reviewer] += 1
                 tag_counts[note["tag"]] += 1
+                inferred_label_counts[note["inferred_label"]] += 1
         normalized_rows.append(
             {
                 "date": date_value,
@@ -590,6 +794,7 @@ def summarize_review_history_calibration(
         "rows_by_date": dict(sorted(rows_by_date.items())),
         "reviewer_completion_by_date": dict(sorted(reviewer_completion.items())),
         "tag_counts": dict(tag_counts),
+        "inferred_label_counts": dict(inferred_label_counts),
         "source_feedback": _dimension_feedback_summary(rows, "source"),
         "source_role_feedback": _dimension_feedback_summary(rows, "source_role"),
         "seed_type_feedback": _dimension_feedback_summary(rows, "seed_type"),
@@ -671,6 +876,12 @@ def _history_markdown(summary: dict[str, Any]) -> str:
     lines.extend(["", "## Tag Counts", ""])
     for tag in REVIEW_TAGS:
         lines.append(f"- {tag}: {summary['tag_counts'].get(tag, 0)}")
+    lines.extend(["", "## Natural Review Inference Summary", ""])
+    inferred_total = sum(summary.get("inferred_label_counts", {}).values())
+    lines.append(f"- inferred_notes: {inferred_total}")
+    lines.extend(["", "## Inferred Label Counts", ""])
+    for label in INFERRED_LABELS:
+        lines.append(f"- {label}: {summary.get('inferred_label_counts', {}).get(label, 0)}")
     for heading, key in [
         ("Source-Level Feedback Summary", "source_feedback"),
         ("Source-Role Feedback Summary", "source_role_feedback"),
@@ -717,7 +928,8 @@ def _history_markdown(summary: dict[str, Any]) -> str:
         for row in summary["strong_disagreement_rows"]:
             lines.append(
                 f"- {row['date']} `{row['story_fingerprint']}` "
-                f"{row['title']} — {row['reason']} ({', '.join(row['tags'])})"
+                f"{row['title']} — {row['reason']} ({', '.join(row['tags'])}); "
+                f"inferred={str(row.get('inferred', False)).lower()}"
             )
     else:
         lines.append("- none")

@@ -23,6 +23,7 @@ from luddite.agents.jibi.heuristics import (
     infer_seed_type,
     text_blob,
 )
+from luddite.agents.jibi.seed_quality import analyze_so_what
 from luddite.collectors.source_registry import source_by_id
 from luddite.utils.jsonl import read_jsonl, write_jsonl
 from luddite.utils.urls import canonicalize_url
@@ -1293,6 +1294,21 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         why_interesting=why_interesting,
         possible_expansions=possible_expansions,
     )
+    so_what = analyze_so_what(
+        {
+            "title": title,
+            "summary": summary,
+            "why_interesting": why_interesting,
+            "seed_type": seed_type,
+            "source": article["source"],
+            "source_role_class": source_role_class,
+            "quality_flags": quality_flags,
+            "risk_flags": risk_flags,
+        }
+    )
+    for flag in so_what.get("quality_flags", []):
+        if flag not in quality_flags:
+            quality_flags.append(flag)
     return {
         "candidate_id": f"jibi_{article['article_id'].removeprefix('article_')}",
         "article_id": article["article_id"],
@@ -1322,6 +1338,13 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
         "summary": summary,
         "why_interesting": why_interesting,
         "story_specificity": story_specificity,
+        "so_what": {
+            key: value
+            for key, value in so_what.items()
+            if key != "quality_flags"
+        },
+        "seed_quality_classification": so_what.get("seed_quality_classification"),
+        "seed_quality_reasons": so_what.get("seed_quality_reasons", []),
         "score_reason": score_reason,
         "possible_expansions": possible_expansions,
         "korea_bridge": None,

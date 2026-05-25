@@ -27,6 +27,8 @@ from luddite.agents.jibi.review_board_copy import (
     build_review_board_copy,
     review_board_title,
 )
+from luddite.agents.jibi.review_feedback import infer_review_feedback
+from luddite.agents.jibi.seed_quality import analyze_so_what
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -50,6 +52,9 @@ TOP_EXCLUDED_QUALITY_FLAGS = {
     "generic_local_incident",
     "stale_item",
     "policy_release_evidence_default",
+    "contest_or_campaign_bulletin",
+    "event_or_demonstration_only",
+    "narrow_market_track_record",
 }
 DEFAULT_TOP_MIN_SCORE = 35
 DEFAULT_REVIEW_BOARD_LIMIT = 10
@@ -668,6 +673,7 @@ def _bundle_review_metadata_row(
     run_date: str,
     sub_links: str,
 ) -> dict[str, Any]:
+    so_what = _candidate_so_what(candidate)
     return {
         "ID": review_item_id,
         "review_item_id": review_item_id,
@@ -685,6 +691,15 @@ def _bundle_review_metadata_row(
         "source_role": str(candidate.get("source_role_class") or "unknown"),
         "source_role_class": str(candidate.get("source_role_class") or "unknown"),
         "seed_type": str(candidate.get("seed_type") or "unknown"),
+        "so_what": so_what,
+        "seed_quality_classification": str(
+            candidate.get("seed_quality_classification")
+            or so_what.get("seed_quality_classification")
+            or ""
+        ),
+        "seed_quality_reasons": candidate.get("seed_quality_reasons")
+        or so_what.get("seed_quality_reasons")
+        or [],
         "bundle_type": str(record.get("bundle_type") or ""),
         "suggested_operator_action": str(record.get("suggested_operator_action") or ""),
         "primary_candidate_id": str(record.get("primary_candidate_id") or ""),
@@ -1135,6 +1150,11 @@ def render_daily_digest(
         max_per_source=max_per_source,
         review_history_path=review_history_path,
     )
+    write_syuka_bridge_query_reports(
+        run_date=date_value,
+        candidates=candidates,
+        top=top,
+    )
     return md_path, csv_path, top
 
 
@@ -1329,6 +1349,9 @@ def write_quality_report(
         candidates,
         top,
     )
+    so_what_summary = _so_what_summary_lines(candidates, top)
+    promo_bulletin_rows = _promo_bulletin_downrank_rows(candidates)
+    conditional_seed_rows = _conditional_seed_queue_rows(candidates)
     downranked_examples = [
         item for item in candidates if item.get("quality_flags")
     ][:10]
@@ -1403,6 +1426,25 @@ def write_quality_report(
         ),
         "| --- | --- | --- | --- | --- | --- | --- |",
         *storyline_fit_rows,
+        "",
+        "## So-What / Audience Interest Summary",
+        "",
+        *so_what_summary,
+        "",
+        "## Promo/Bulletin Downrank Examples",
+        "",
+        "| title | source | score | guard_flags | so_what | action |",
+        "| --- | --- | ---: | --- | --- | --- |",
+        *promo_bulletin_rows,
+        "",
+        "## Conditional Seed / Bundle-needed Queue",
+        "",
+        (
+            "| title | source | score | classification | so_what | "
+            "audience_bridge_signals | weakness_signals |"
+        ),
+        "| --- | --- | ---: | --- | --- | --- | --- |",
+        *conditional_seed_rows,
         "",
         "## Candidate Funnel",
         "",
@@ -1947,6 +1989,100 @@ def _storyline_fit_audit_rows(
     return rows or ["| none | none | unknown | unknown | demote_or_reject | none | none |"]
 
 
+def _candidate_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
+    so_what = candidate.get("so_what")
+    if isinstance(so_what, dict) and so_what.get("so_what_label"):
+        return so_what
+    return {
+        key: value
+        for key, value in analyze_so_what(candidate).items()
+        if key != "quality_flags"
+    }
+
+
+def _so_what_summary_lines(
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+) -> list[str]:
+    all_counts = Counter(
+        str(_candidate_so_what(item).get("so_what_label") or "unknown")
+        for item in candidates
+    )
+    top_counts = Counter(
+        str(_candidate_so_what(item).get("so_what_label") or "unknown") for item in top
+    )
+    return [
+        "- all_candidates: "
+        + (", ".join(f"{key}={value}" for key, value in all_counts.most_common()) or "none"),
+        "- top_candidates: "
+        + (", ".join(f"{key}={value}" for key, value in top_counts.most_common()) or "none"),
+    ]
+
+
+def _promo_bulletin_downrank_rows(candidates: list[dict[str, Any]]) -> list[str]:
+    promo_flags = {
+        "contest_or_campaign_bulletin",
+        "event_or_demonstration_only",
+        "meeting_or_coordination_only",
+        "product_or_certification_promo",
+        "narrow_market_track_record",
+    }
+    rows: list[str] = []
+    for item in sorted(candidates, key=_total_score, reverse=True):
+        flags = [flag for flag in item.get("quality_flags", []) if flag in promo_flags]
+        if not flags:
+            continue
+        so_what = _candidate_so_what(item)
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(item.get("title", "")),
+                    _table_cell(item.get("source", "unknown")),
+                    f"{_total_score(item):g}",
+                    _table_cell(", ".join(flags)),
+                    _table_cell(str(so_what.get("so_what_label") or "unknown")),
+                    _table_cell(item.get("recommended_action", "")),
+                ]
+            )
+            + " |"
+        )
+        if len(rows) >= 10:
+            break
+    return rows or ["| none | unknown | 0 | none | unknown | none |"]
+
+
+def _conditional_seed_queue_rows(candidates: list[dict[str, Any]]) -> list[str]:
+    rows: list[str] = []
+    for item in sorted(candidates, key=_total_score, reverse=True):
+        classification = str(
+            item.get("seed_quality_classification")
+            or _candidate_so_what(item).get("seed_quality_classification")
+            or ""
+        )
+        if classification not in {"conditional_seed", "bundle_needed", "evidence_only"}:
+            continue
+        so_what = _candidate_so_what(item)
+        rows.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(item.get("title", "")),
+                    _table_cell(item.get("source", "unknown")),
+                    f"{_total_score(item):g}",
+                    classification,
+                    _table_cell(str(so_what.get("so_what_label") or "")),
+                    _table_cell(_format_list(so_what.get("audience_bridge_signals") or [])),
+                    _table_cell(_format_list(so_what.get("weakness_signals") or [])),
+                ]
+            )
+            + " |"
+        )
+        if len(rows) >= 15:
+            break
+    return rows or ["| none | unknown | 0 | unclear | weak | none | none |"]
+
+
 def _story_bundle_hash(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
 
@@ -1978,30 +2114,7 @@ def _story_fingerprint(rule: dict[str, str], primary: dict[str, Any] | None) -> 
 
 
 def _review_history_tag(note: str) -> str:
-    text = note.strip().lower()
-    if not text:
-        return "unlabeled"
-    token = re.split(r"\s*(?:—|–|-|:)\s*|\s+", text, maxsplit=1)[0].strip()
-    return {
-        "seed": "seed",
-        "방송": "seed",
-        "소재": "seed",
-        "evidence": "evidence",
-        "근거": "evidence",
-        "merge": "merge",
-        "묶기": "merge",
-        "중복": "merge",
-        "needs": "needs",
-        "보강": "needs",
-        "자료필요": "needs",
-        "reject": "reject",
-        "기각": "reject",
-        "별로": "reject",
-        "아님": "reject",
-        "unclear": "unclear",
-        "애매": "unclear",
-        "모름": "unclear",
-    }.get(token, "unlabeled")
+    return str(infer_review_feedback(note).get("tag") or "unlabeled")
 
 
 def _history_row_status(row: dict[str, Any]) -> str:
@@ -2360,6 +2473,120 @@ def _record_representative_candidate(
             if candidate:
                 return candidate
     return None
+
+
+def _bridge_query_terms(candidate: dict[str, Any], record: dict[str, Any]) -> list[str]:
+    text = _board_text(record, candidate)
+    terms: list[str] = []
+    if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
+        terms.extend(["쉬었음", "청년 노동시장", "경제활동참가율", "근로소득", "청년"])
+    elif any(term in text for term in ("반바지", "폭염", "쿨비즈", "회사 복장")):
+        terms.extend(["반바지", "폭염", "쿨비즈", "회사 복장", "여름"])
+    elif any(term in text for term in ("선불", "충전금", "스타벅스", "환불")):
+        terms.extend(["선불충전금", "환불", "스타벅스", "규제 사각지대", "소비자 자금"])
+    elif any(term in text for term in ("토큰화", "tokenization", "rwa")):
+        terms.extend(["자산 토큰화", "RWA", "조각투자", "STO", "CBDC"])
+    elif any(term in text for term in ("공공 ai", "ai 도입", "ai 드론", "ai 노사")):
+        terms.extend(["공공 AI", "AI 도입", "AI 행정", "AI 책임", "AI 노사"])
+    else:
+        title_terms = re.findall(r"[가-힣A-Za-z0-9]{2,}", str(candidate.get("title") or ""))
+        terms.extend(title_terms[:6])
+    deduped: list[str] = []
+    for term in terms:
+        if term and term not in deduped:
+            deduped.append(term)
+    return deduped
+
+
+def _bridge_priority(candidate: dict[str, Any], record: dict[str, Any]) -> str:
+    text = _board_text(record, candidate)
+    if any(term in text for term in ("쉬었음", "경제활동참가율", "반바지", "폭염")):
+        return "high"
+    so_what = _candidate_so_what(candidate)
+    if so_what.get("so_what_label") == "strong":
+        return "high"
+    if so_what.get("so_what_label") == "conditional":
+        return "medium"
+    return "low"
+
+
+def _syuka_bridge_query_records(
+    records: list[dict[str, Any]],
+    candidates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    candidate_by_id = _candidate_by_id(candidates)
+    output: list[dict[str, Any]] = []
+    for record in records:
+        candidate = _record_representative_candidate(record, candidate_by_id)
+        if not candidate:
+            continue
+        text = _board_text(record, candidate)
+        output.append(
+            {
+                "story_fingerprint": str(record.get("story_fingerprint") or ""),
+                "title": str(record.get("bundle_title") or candidate.get("title") or ""),
+                "query_terms": _bridge_query_terms(candidate, record),
+                "negative_terms": ["주가", "매수", "매도"]
+                if "investment_advice_risk" in candidate.get("risk_flags", [])
+                else [],
+                "why_check_past_video": (
+                    "review or heuristics suggest possible past-topic overlap"
+                    if any(term in text for term in ("쉬었음", "경제활동참가율", "반바지", "폭염"))
+                    else "compare with past videos before promoting repeated themes"
+                ),
+                "expected_match_type": "title"
+                if any(term in text for term in ("쉬었음", "반바지", "폭염"))
+                else "analysis",
+                "priority": _bridge_priority(candidate, record),
+            }
+        )
+    return output
+
+
+def write_syuka_bridge_query_reports(
+    *,
+    run_date: str,
+    candidates: list[dict[str, Any]],
+    top: list[dict[str, Any]],
+    output_dir: Path = paths.REPORTS_DIR,
+) -> tuple[Path, Path]:
+    records = _story_bundle_records(candidates, top)
+    queries = _syuka_bridge_query_records(records[:DEFAULT_REVIEW_BOARD_LIMIT], candidates)
+    md_path = output_dir / f"jibi_syuka_bridge_queries_{run_date}.md"
+    json_path = output_dir / f"jibi_syuka_bridge_queries_{run_date}.json"
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"# Jibi Syuka Bridge Query Contract — {run_date}",
+        "",
+        "Report-only query terms for later Windows Codex / syuka-ops past-video checks.",
+        "No syuka-ops DB was queried by luddite.",
+        "",
+        "| priority | title | query_terms | expected_match_type | why_check_past_video |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for item in queries:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    item["priority"],
+                    _table_cell(item["title"]),
+                    _table_cell(", ".join(item["query_terms"])),
+                    item["expected_match_type"],
+                    _table_cell(item["why_check_past_video"]),
+                ]
+            )
+            + " |"
+        )
+    if not queries:
+        lines.append("| low | none | none | analysis | no board rows |")
+    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps({"run_date": run_date, "queries": queries}, ensure_ascii=False, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+    return md_path, json_path
 
 
 def _review_board_experiment_snapshot(

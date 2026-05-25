@@ -6,6 +6,7 @@ from luddite.agents.jibi.render_daily_digest import (
     top_candidates,
     write_bundle_review_sheet_preview,
     write_quality_report,
+    write_syuka_bridge_query_reports,
 )
 from luddite.utils.jsonl import write_jsonl
 
@@ -123,6 +124,36 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path, monkeypatch) ->
     assert "story_fit_uncertain" not in bundle_rows[0]["설명"]
     assert "manual_editorial_review" not in bundle_rows[0]["설명"]
     assert "Manual Input의 '전당포 주식회사'" in bundle_rows[0]["설명"]
+
+
+def test_syuka_bridge_query_report_is_contract_only(tmp_path) -> None:
+    candidate = {
+        "candidate_id": "youth",
+        "title": "‘쉬었음’ 청년층의 특징 및 평가",
+        "summary": "청년 노동시장과 경제활동참가율 자료",
+        "seed_url": "https://www.bok.or.kr/youth",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "quality_flags": [],
+        "risk_flags": [],
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+
+    md_path, json_path = write_syuka_bridge_query_reports(
+        run_date="2026-05-25",
+        candidates=[candidate],
+        top=[candidate],
+        output_dir=tmp_path,
+    )
+
+    report = md_path.read_text(encoding="utf-8")
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert "No syuka-ops DB was queried by luddite." in report
+    assert payload["queries"][0]["priority"] == "high"
+    assert "쉬었음" in payload["queries"][0]["query_terms"]
 
 
 def test_top_candidates_excludes_rejects() -> None:

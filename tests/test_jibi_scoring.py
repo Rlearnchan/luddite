@@ -500,3 +500,96 @@ def test_trump_policy_item_has_political_risk() -> None:
     assert scored["recommended_action"] == "editorial_review"
     assert scored["risk_level"] in {"medium", "high"}
     assert "live_news_volatility" in scored["failure_modes"]
+
+
+def test_promo_bulletin_guard_flags_ai_shortform_contest() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_ai_shortform_contest",
+            "title": "중진공, 전 국민 대상 '청렴한 중진공 AI+ 숏폼 공모전'",
+            "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=contest",
+            "source": "정책브리핑",
+            "source_id": "korea_policy_briefing",
+            "published_at": "2026-05-25T00:00:00Z",
+            "collected_at": "2026-05-25T01:00:00+00:00",
+            "raw_summary": "공모전을 개최한다고 밝혔다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert "contest_or_campaign_bulletin" in scored["quality_flags"]
+    assert scored["so_what"]["so_what_label"] == "weak"
+    assert scored["seed_quality_classification"] == "reject_or_downrank"
+    assert scored["recommended_action"] == "keep_for_later"
+
+
+def test_starbucks_prepaid_balance_is_conditional_not_reject() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_starbucks_prepaid",
+            "title": "'환불요구' 스벅 선불충전금…4천200억원 넘어도 규제 사각지대",
+            "url": "https://www.yna.co.kr/view/AKR20260525000100002",
+            "source": "연합뉴스 경제",
+            "source_id": "yonhap_economy",
+            "published_at": "2026-05-25T00:00:00Z",
+            "collected_at": "2026-05-25T01:00:00+00:00",
+            "raw_summary": "소비자 선불충전금과 환불, 규제 사각지대 문제가 제기됐다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert scored["so_what"]["so_what_label"] in {"strong", "conditional"}
+    assert scored["seed_quality_classification"] == "conditional_seed"
+    assert "consumer_funds_or_regulation_gap" in scored["so_what"]["audience_bridge_signals"]
+    assert scored["recommended_action"] != "reject"
+
+
+def test_bok_youth_labor_has_strong_so_what() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_bok_youth",
+            "title": "‘쉬었음’ 청년층의 특징 및 평가",
+            "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=youth",
+            "source": "한국은행",
+            "source_id": "bok",
+            "published_at": "2026-05-25T00:00:00Z",
+            "collected_at": "2026-05-25T01:00:00+00:00",
+            "raw_summary": "청년 노동시장 이탈과 경제활동참가율 변화를 통계로 분석한다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert scored["so_what"]["so_what_label"] == "strong"
+    assert scored["seed_quality_classification"] == "standalone_seed"
+    assert "job_workplace_labor_change" in scored["so_what"]["audience_bridge_signals"]
+
+
+def test_asset_tokenization_is_conditional_audience_bridge() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_bok_tokenization",
+            "title": "국내외 자산 토큰화 현황 및 향후 정책 과제",
+            "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=token",
+            "source": "한국은행",
+            "source_id": "bok",
+            "published_at": "2026-05-25T00:00:00Z",
+            "collected_at": "2026-05-25T01:00:00+00:00",
+            "raw_summary": "현실 자산 권리를 디지털 토큰으로 기록하고 거래하는 제도 과제를 다룬다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert scored["so_what"]["so_what_label"] in {"conditional", "strong"}
+    assert "distinctive_mechanism" in scored["so_what"]["audience_bridge_signals"]

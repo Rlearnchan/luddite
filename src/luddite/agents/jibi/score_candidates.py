@@ -25,6 +25,7 @@ from luddite.agents.jibi.heuristics import (
     text_blob,
 )
 from luddite.agents.jibi.normalize_candidates import infer_story_specificity
+from luddite.agents.jibi.seed_quality import analyze_so_what
 from luddite.agents.jibi.slideability import analyze_slideability
 from luddite.utils.jsonl import read_jsonl, write_jsonl
 from luddite.utils.urls import canonicalize_url
@@ -140,6 +141,12 @@ QUALITY_GATE_FAILURES = {
     "empty_summary": ("thin_evidence", 12, "keep_for_later"),
     "empty_summary_domestic_business": ("thin_evidence", 16, "keep_for_later"),
     "stale_item": ("stale_rss_item", 18, "keep_for_later"),
+    "contest_or_campaign_bulletin": ("contest_or_campaign_bulletin", 22, "keep_for_later"),
+    "event_or_demonstration_only": ("event_or_demonstration_only", 16, "keep_for_later"),
+    "meeting_or_coordination_only": ("meeting_or_coordination_only", 14, "keep_for_later"),
+    "product_or_certification_promo": ("product_or_certification_promo", 18, "keep_for_later"),
+    "narrow_market_track_record": ("narrow_market_track_record", 22, "keep_for_later"),
+    "single_company_case_needs_bundle": ("single_company_case_needs_bundle", 8, "keep_for_later"),
 }
 FALLBACK_EXPANSIONS = {
     "cost_asymmetry": [
@@ -562,7 +569,25 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     blocked_reason = None
     if "political_sensitivity" in risk_flags and _is_direct_domestic_political_evaluation(text):
         blocked_reason = "direct_president_party_evaluation"
-    quality_gate = _quality_gate(candidate, text)
+    so_what = candidate.get("so_what")
+    if not isinstance(so_what, dict):
+        so_what = analyze_so_what(candidate)
+    else:
+        so_what = dict(so_what)
+        if not so_what.get("quality_flags"):
+            inferred = analyze_so_what(candidate)
+            so_what.setdefault("quality_flags", inferred.get("quality_flags", []))
+            so_what.setdefault(
+                "seed_quality_classification",
+                inferred.get("seed_quality_classification"),
+            )
+            so_what.setdefault("seed_quality_reasons", inferred.get("seed_quality_reasons", []))
+    merged_quality_flags = list(candidate.get("quality_flags") or [])
+    for flag in so_what.get("quality_flags", []):
+        if flag not in merged_quality_flags:
+            merged_quality_flags.append(flag)
+    candidate_for_gate = {**candidate, "quality_flags": merged_quality_flags}
+    quality_gate = _quality_gate(candidate_for_gate, text)
     possible_expansions = _concrete_expansions(candidate, text)
     weird_hook = _bounded(1 + count_any(text, WEIRD_TERMS), high=5)
     structural_expansion = _bounded(1 + count_any(text, STRUCTURAL_TERMS), high=5)
@@ -669,7 +694,7 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         }
     )
     failure_modes = _failure_modes(
-        candidate=candidate,
+        candidate=candidate_for_gate,
         risk_flags=risk_flags,
         blocked_reason=blocked_reason,
         evidence_depth=evidence_depth,
@@ -678,6 +703,13 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     )
     scored = {
         **candidate,
+        "so_what": {
+            key: value
+            for key, value in so_what.items()
+            if key != "quality_flags"
+        },
+        "seed_quality_classification": so_what.get("seed_quality_classification"),
+        "seed_quality_reasons": so_what.get("seed_quality_reasons", []),
         "story_specificity": story_specificity,
         "quality_flags": quality_gate["quality_flags"],
         "possible_expansions": possible_expansions,
