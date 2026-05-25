@@ -502,7 +502,7 @@ def _past_video_response_signal(
         and days_old is not None
         and days_old >= 180
     ):
-        return "fresh_update_on_popular_topic"
+        return "popular_topic_update_candidate"
     if recommendation in {"duplicate", "adjacent"} and isinstance(view_count, int):
         if view_count >= 1_000_000:
             return "audience_proven_topic"

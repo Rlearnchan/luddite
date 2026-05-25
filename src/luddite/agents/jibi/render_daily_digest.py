@@ -1457,7 +1457,7 @@ def _syuka_similarity_annotation(syuka_similarity: dict[str, Any] | None) -> str
     if recommendation == "duplicate":
         return (
             "과거 영상과 강하게 겹칠 수 있습니다. "
-            "새 자료가 기존 이야기의 업데이트인지 확인하세요."
+            "새 자료가 업데이트인지, 아니면 반복인지 확인하세요."
         )
     if recommendation == "adjacent":
         return "관련 과거 영상이 있어 배경자료로 쓸 수 있지만, 새 각도인지 확인이 필요합니다."

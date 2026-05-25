@@ -1,0 +1,68 @@
+# Controlled Jibi source experiment pack.
+#
+# This file is not imported by the normal daily RSS run. Copy these entries into
+# a temporary local allowlist when running a one-off experiment, then compare the
+# resulting board against the baseline with `compare-jibi-source-experiment`.
+
+experiment_id: guardian_sections_v1
+default_enabled: false
+guardrails:
+  no_default_allowlist_edit: true
+  no_broad_guardian_feed: true
+  no_auto_promotion: true
+  compare_before_after_review_feedback: true
+
+temporary_allowlist_sources:
+  - source_id: guardian_business
+    collection_enabled: true
+    fetch_limit: 40
+    role_class: section_news
+    reason: controlled_business_section_mix_test
+
+  - source_id: guardian_technology
+    collection_enabled: true
+    fetch_limit: 40
+    role_class: section_news
+    reason: controlled_technology_section_mix_test
+
+  - source_id: guardian_environment
+    collection_enabled: true
+    fetch_limit: 40
+    role_class: section_news
+    reason: controlled_environment_section_mix_test
+
+explicitly_excluded:
+  - source_id: guardian_rss_candidate
+    reason: broad_international_feed_hold
+  - source_id: guardian_world
+    reason: conflict_heavy_or_broad_feed_hold
+  - source_id: guardian_global_development
+    reason: broad_policy_conflict_feed_hold
+  - source_id: guardian_health
+    reason: medical_risk_guarded_hold
+
+manual_probe_sources:
+  - source_id: yougov
+    intake_mode: manual
+    role: survey_signal
+    reason: numbers_hook_and_weird_public_opinion_seed
+  - source_id: pew
+    intake_mode: manual
+    role: survey_signal
+    reason: public_opinion_and_demography_numbers_hook
+  - source_id: gallup
+    intake_mode: manual
+    role: survey_signal
+    reason: public_opinion_numbers_hook
+  - source_id: statista_manual
+    intake_mode: manual
+    role: chart_evidence
+    reason: chart_or_numbers_evidence_not_daily_rss
+  - source_id: our_world_in_data_manual
+    intake_mode: manual
+    role: chart_evidence
+    reason: chart_evidence_and_global_numbers_context
+  - source_id: nikkei_asia_manual
+    intake_mode: subscription_manual
+    role: asia_business_seed
+    reason: high_value_manual_seed_intake_until_terms_or_feed_verified

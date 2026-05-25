@@ -221,6 +221,39 @@ not change. The `설명` cell only gets a short caution sentence for duplicate,
 adjacent, or weak overlap cases; no candidate is removed or promoted by the
 snapshot probe.
 
+## Board Triage And Source Experiments
+
+After review feedback has been summarized, generate the report-only board
+triage:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m luddite summarize-jibi-board-triage \
+  --date 2026-05-25
+```
+
+This writes:
+
+```text
+outputs/reports/jibi_board_triage_YYYY-MM-DD.md
+outputs/reports/jibi_board_triage_YYYY-MM-DD.json
+```
+
+The triage report combines review inference, so-what/seed-quality metadata,
+source role, and syuka similarity. It does not change scores, source allowlists,
+candidate rows, or the visible `Jibi` sheet.
+
+For controlled source trials, keep the default allowlist untouched. Use the
+experiment notes in `docs/integrations/jibi_source_experiment_pack.md` and the
+temporary Guardian section pack in `config/experiments/rss_guardian_sections.yaml`.
+After an experiment board is rendered, compare baseline and experiment metadata:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m luddite compare-jibi-source-experiment \
+  --date 2026-05-25 \
+  --baseline-metadata outputs/daily_digest/2026-05-25_bundle_review_sheet_metadata.json \
+  --experiment-metadata outputs/daily_digest/2026-05-25_guardian_experiment_metadata.json
+```
+
 ## Real Inbox Or RSS Dry-run
 
 Use this when local article inbox files exist under `data/inbox/articles` or
