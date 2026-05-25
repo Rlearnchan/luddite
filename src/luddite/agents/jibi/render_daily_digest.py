@@ -1495,7 +1495,7 @@ def _score_display(candidate: dict[str, Any]) -> str:
         return ""
     score = round(_total_score(candidate))
     grade = _compact_text(candidate.get("final_grade")) or "?"
-    return f"{score}({grade})"
+    return f"{grade} · {score}점"
 
 
 def _board_text(record: dict[str, Any], candidate: dict[str, Any]) -> str:
