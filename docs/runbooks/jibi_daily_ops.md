@@ -174,6 +174,47 @@ Guardrails:
 - Guardian section experiments remain optional and controlled. Do not enable a
   broad Guardian feed by default.
 
+## Local Syuka Snapshot Probe
+
+Use this only after the Jibi syuka bridge query package exists:
+
+```bash
+make jibi-syuka-snapshot-probe JIBI_DATE=2026-05-25
+```
+
+Or pass the path explicitly:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m luddite probe-syuka-snapshot \
+  --date 2026-05-25 \
+  --syuka-data-dir /Users/bae/Documents/code/syuka-ops/data
+```
+
+This is a local snapshot probe only. It reads SQLite files under the provided
+data directory in read-only mode, writes Jibi-side reports, and does not modify
+`syuka-ops`, the Windows Docker server, the syuka DB, Jibi scoring, or the
+visible Google Sheet schema.
+
+Inputs:
+
+```text
+outputs/reports/jibi_syuka_bridge_queries_YYYY-MM-DD.json
+```
+
+Outputs:
+
+```text
+outputs/reports/jibi_syuka_snapshot_matches_YYYY-MM-DD.md
+outputs/reports/jibi_syuka_snapshot_matches_YYYY-MM-DD.json
+```
+
+Use the recommendations as advisory:
+
+- `duplicate`: likely past-topic overlap; inspect before promotion.
+- `adjacent`: useful past context, but a fresh angle may still exist.
+- `needs_human_check`: weak, negative-term, or transcript-only match.
+- `safe_new_angle`: no obvious local snapshot match; not proof of novelty.
+
 ## Real Inbox Or RSS Dry-run
 
 Use this when local article inbox files exist under `data/inbox/articles` or

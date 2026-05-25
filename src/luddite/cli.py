@@ -34,6 +34,7 @@ from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_a
 from luddite.agents.jibi.review_feedback import app as jibi_review_feedback_app
 from luddite.agents.jibi.review_feedback import history_app as jibi_review_history_app
 from luddite.agents.jibi.score_candidates import app as score_candidates_app
+from luddite.agents.jibi.syuka_snapshot_probe import app as syuka_snapshot_probe_app
 from luddite.agents.piti.build_deck_plan_from_storyline import (
     app as build_piti_deck_plan_app,
 )
@@ -124,6 +125,7 @@ app.add_typer(jibi_ops_guard_app, name="jibi-ops-guard")
 app.add_typer(jibi_manual_run_summary_app, name="jibi-manual-run-summary")
 app.add_typer(jibi_review_feedback_app, name="summarize-jibi-review-board")
 app.add_typer(jibi_review_history_app, name="summarize-jibi-review-history")
+app.add_typer(syuka_snapshot_probe_app, name="probe-syuka-snapshot")
 app.add_typer(probe_rss_sources_app, name="probe-rss-sources")
 
 
