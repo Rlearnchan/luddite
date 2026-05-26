@@ -16,7 +16,7 @@
 - Review comments found: False
 - Review comment cells: 0
 - Review overwrite allowed: False
-- Review snapshot path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_snapshot_2026-05-26_142829_005736.json`
+- Review snapshot path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_snapshot_2026-05-26_143833_554833.json`
 - Review history archive path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_history.jsonl`
 - Header status: `ok`
 - Header safe to update: True

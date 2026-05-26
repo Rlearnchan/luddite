@@ -194,8 +194,8 @@ def refresh_review_board_with_syuka(
     support_search: bool = False,
     support_search_categories: list[str] | None = None,
     support_search_results_per_query: int = 5,
-    support_search_max_calls: int = 40,
-    support_links_per_row: int = 5,
+    support_search_max_calls: int = 60,
+    support_links_per_row: int = 1,
 ) -> dict[str, Any]:
     warnings: list[str] = []
     render_daily_digest(
@@ -391,11 +391,11 @@ def main(
     support_search_max_calls: Annotated[
         int,
         typer.Option("--support-search-max-calls", help="Maximum provider calls."),
-    ] = 40,
+    ] = 60,
     support_links_per_row: Annotated[
         int,
         typer.Option("--support-links-per-row", help="Maximum sub links per board row."),
-    ] = 5,
+    ] = 1,
 ) -> None:
     payload = refresh_review_board_with_syuka(
         run_date=run_date,

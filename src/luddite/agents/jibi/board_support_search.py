@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from luddite import paths
 from luddite.agents.jibi.append_to_sheet import BUNDLE_REVIEW_SHEET_COLUMNS
@@ -48,6 +49,39 @@ BOARD_SUPPORT_STOPWORDS = {
     "정책",
     "자료가",
 }
+TRUSTED_SUPPORT_DOMAINS = {
+    "bok.or.kr",
+    "korea.kr",
+    "kdi.re.kr",
+    "yna.co.kr",
+    "newsis.com",
+    "news1.kr",
+    "kbs.co.kr",
+    "ytn.co.kr",
+    "hani.co.kr",
+    "khan.co.kr",
+    "donga.com",
+    "joongang.co.kr",
+    "chosun.com",
+    "mk.co.kr",
+    "hankyung.com",
+    "sedaily.com",
+    "edaily.co.kr",
+    "etnews.com",
+    "zdnet.co.kr",
+    "seoul.co.kr",
+}
+NOISY_SUPPORT_HINTS = {
+    "스포츠",
+    "연예",
+    "맛집",
+    "여행",
+    "쿠폰",
+    "특가",
+    "이벤트",
+    "경품",
+    "운세",
+}
 
 
 @dataclass(frozen=True)
@@ -61,6 +95,8 @@ class SupportSearchResult:
     category: str
     rank: int
     matched_terms: list[str]
+    usefulness_score: int
+    usefulness_reason: str
 
 
 def default_markdown_path(run_date: str) -> Path:
@@ -85,9 +121,9 @@ def enrich_review_board_support_links(
     markdown_path: Path | None = None,
     json_path: Path | None = None,
     categories: list[str] | None = None,
-    max_links_per_row: int = 5,
+    max_links_per_row: int = 1,
     results_per_query: int = 5,
-    max_provider_calls: int = 40,
+    max_provider_calls: int = 60,
 ) -> dict[str, Any]:
     categories = categories or ["news", "webkr"]
     rows = _read_board_rows(board_csv_path)
@@ -102,10 +138,8 @@ def enrich_review_board_support_links(
         row_id = str(row.get("ID") or "").strip()
         metadata = metadata_index.get(row_id, {})
         main_link = str(row.get("메인 링크") or metadata.get("main_link") or "")
-        existing_links = _split_sub_links(row.get("서브 링크"))
         excluded = {
             canonicalize_url(main_link),
-            *[canonicalize_url(link) for link in existing_links],
         }
         excluded = {item for item in excluded if item}
         accepted: list[SupportSearchResult] = []
@@ -113,8 +147,6 @@ def enrich_review_board_support_links(
         query_runs: list[dict[str, Any]] = []
 
         for query_spec in _queries_for_row(row, metadata):
-            if len([*existing_links, *[item.url for item in accepted]]) >= max_links_per_row:
-                break
             query = query_spec["query"]
             query_type = query_spec["query_type"]
             for category in categories:
@@ -137,6 +169,18 @@ def enrich_review_board_support_links(
                         rejected_low_relevance += 1
                         rejected_count += 1
                         continue
+                    score, reason = _support_result_usefulness(
+                        row=row,
+                        metadata=metadata,
+                        result=result,
+                        query=query,
+                        query_type=query_type,
+                        matched_terms=matched_terms,
+                    )
+                    if score < 8:
+                        rejected_low_relevance += 1
+                        rejected_count += 1
+                        continue
                     seen_global.add(canonical)
                     accepted.append(
                         SupportSearchResult(
@@ -149,12 +193,11 @@ def enrich_review_board_support_links(
                             category=category,
                             rank=result.rank,
                             matched_terms=matched_terms,
+                            usefulness_score=score,
+                            usefulness_reason=reason,
                         )
                     )
                     accepted_count += 1
-                    selected_count = len(existing_links) + len(accepted)
-                    if selected_count >= max_links_per_row:
-                        break
                 query_runs.append(
                     {
                         "query": query,
@@ -168,10 +211,11 @@ def enrich_review_board_support_links(
             if calls_used >= max_provider_calls:
                 break
 
-        selected_links = _dedupe_links([*existing_links, *[item.url for item in accepted]])[
-            :max_links_per_row
-        ]
+        selected_items = _best_support_items(accepted, limit=max_links_per_row)
+        selected_links = [item.url for item in selected_items]
         row["서브 링크"] = _format_sub_links(selected_links)
+        if selected_items:
+            row["설명"] = _append_support_reason(row.get("설명"), selected_items[0])
         report_row = {
             "review_item_id": row_id,
             "title": str(row.get("제목") or ""),
@@ -180,6 +224,19 @@ def enrich_review_board_support_links(
             "accepted_count": len(accepted),
             "rejected_low_relevance": rejected_low_relevance,
             "selected_links": selected_links,
+            "selected_link_details": [
+                {
+                    "title": item.title,
+                    "url": item.url,
+                    "source": item.source,
+                    "score": item.usefulness_score,
+                    "reason": item.usefulness_reason,
+                    "query": item.query,
+                    "query_type": item.query_type,
+                    "matched_terms": item.matched_terms,
+                }
+                for item in selected_items
+            ],
             "accepted_links": [
                 {
                     "title": item.title,
@@ -191,6 +248,8 @@ def enrich_review_board_support_links(
                     "category": item.category,
                     "rank": item.rank,
                     "matched_terms": item.matched_terms,
+                    "usefulness_score": item.usefulness_score,
+                    "usefulness_reason": item.usefulness_reason,
                 }
                 for item in accepted
             ],
@@ -293,6 +352,36 @@ def _format_sub_links(links: list[str]) -> str:
     return "\n".join(f"{index}. {link}" for index, link in enumerate(links, start=1))
 
 
+def _best_support_items(
+    items: list[SupportSearchResult],
+    *,
+    limit: int,
+) -> list[SupportSearchResult]:
+    ranked = sorted(
+        items,
+        key=lambda item: (
+            item.usefulness_score,
+            -item.rank,
+            item.query_type == "supporting_context",
+        ),
+        reverse=True,
+    )
+    return ranked[: max(0, limit)]
+
+
+def _append_support_reason(description: object, item: SupportSearchResult) -> str:
+    base = _compact(description)
+    source = _compact(item.source)
+    source_text = f"{source}의 " if source else ""
+    sentence = (
+        f"서브 링크는 {source_text}보강 자료 1개만 남겼습니다. "
+        f"{item.usefulness_reason}"
+    )
+    if sentence in base:
+        return base
+    return f"{base} {sentence}".strip()
+
+
 def _dedupe_links(links: list[str]) -> list[str]:
     seen = set()
     output = []
@@ -303,6 +392,105 @@ def _dedupe_links(links: list[str]) -> list[str]:
         seen.add(canonical)
         output.append(link)
     return output
+
+
+def _support_result_usefulness(
+    *,
+    row: dict[str, str],
+    metadata: dict[str, Any],
+    result: Any,
+    query: str,
+    query_type: str,
+    matched_terms: list[str],
+) -> tuple[int, str]:
+    del metadata
+    score = 0
+    reasons = []
+    title = _compact(result.title)
+    body = _compact(f"{result.title} {result.snippet}")
+    title_matches = _matched_in_text(matched_terms, title)
+    body_matches = _matched_in_text(matched_terms, body)
+    domain = _domain(result.url)
+    if len(matched_terms) >= 3:
+        score += 4
+        reasons.append("핵심어가 여러 개 겹칩니다")
+    elif len(matched_terms) >= 2:
+        score += 2
+        reasons.append("검색어와 직접 관련이 있습니다")
+    if title_matches:
+        score += min(4, len(title_matches) * 2)
+        reasons.append("제목에서 주제어가 확인됩니다")
+    elif len(body_matches) >= 3:
+        score += 2
+        reasons.append("요약에서 보강 맥락이 확인됩니다")
+    if domain in TRUSTED_SUPPORT_DOMAINS or domain.endswith(".go.kr"):
+        score += 4
+        reasons.append("출처 신뢰도가 비교적 높습니다")
+    elif _is_major_domain_family(domain):
+        score += 2
+        reasons.append("대중 매체 보강 자료로 볼 수 있습니다")
+    if query_type == "supporting_context":
+        score += 2
+        reasons.append("메인 링크의 배경을 넓혀줍니다")
+    year = _result_year(result)
+    current_year = datetime.now(UTC).year
+    if year >= current_year - 1:
+        score += 3
+        reasons.append("최근 자료입니다")
+    elif year and year < current_year - 3:
+        score -= 6
+    if int(getattr(result, "rank", 0) or 0) <= 2:
+        score += 1
+    if _has_noisy_hint(title) or _has_noisy_hint(str(getattr(result, "snippet", ""))):
+        score -= 5
+    if _same_topic_as_row(row, result):
+        score += 2
+    if not reasons:
+        reasons.append("보강 자료 후보입니다")
+    return score, "선택 이유: " + ", ".join(dict.fromkeys(reasons)) + "."
+
+
+def _matched_in_text(terms: list[str], text: str) -> list[str]:
+    normalized = re.sub(r"\s+", "", text.lower())
+    matched = []
+    for term in terms:
+        term_normalized = re.sub(r"\s+", "", term.lower())
+        if term_normalized and term_normalized in normalized:
+            matched.append(term)
+    return list(dict.fromkeys(matched))
+
+
+def _domain(url: str) -> str:
+    return urlparse(url).netloc.lower().removeprefix("www.")
+
+
+def _is_major_domain_family(domain: str) -> bool:
+    return any(
+        domain == item or domain.endswith(f".{item}")
+        for item in TRUSTED_SUPPORT_DOMAINS
+    )
+
+
+def _has_noisy_hint(text: str) -> bool:
+    return any(hint in text for hint in NOISY_SUPPORT_HINTS)
+
+
+def _same_topic_as_row(row: dict[str, str], result: Any) -> bool:
+    row_terms = set(_keyword_terms(f"{row.get('제목', '')} {row.get('설명', '')}")[:8])
+    result_terms = set(_keyword_terms(f"{result.title} {result.snippet}")[:12])
+    return len(row_terms & result_terms) >= 2
+
+
+def _result_year(result: Any) -> int:
+    published_at = _compact(getattr(result, "published_at", ""))
+    match = re.search(r"\b(20\d{2})\b", published_at)
+    if match:
+        return int(match.group(1))
+    url = _compact(getattr(result, "url", ""))
+    match = re.search(r"(20\d{2})", url)
+    if match:
+        return int(match.group(1))
+    return 0
 
 
 def _queries_for_row(row: dict[str, str], metadata: dict[str, Any]) -> list[dict[str, str]]:

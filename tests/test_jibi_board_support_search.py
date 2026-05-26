@@ -17,13 +17,22 @@ class FakeProvider:
         if "임금" in query or "통계" in query:
             return [
                 SearchResult(
-                    title="AI 인재 수급과 교육 경로",
-                    url="https://news.example.com/ai-training",
-                    snippet="AI 인재 규모와 교육 경로, 기업 이동성 사례",
-                    source="news.example.com",
+                    title="AI 인재 부족과 임금 프리미엄 분석",
+                    url="https://news.kbs.co.kr/news/pc/view/view.do?ncd=8357774",
+                    snippet="AI 인재 부족, 임금 프리미엄, 기업 이동성 격차를 분석했다.",
+                    source="kbs.co.kr",
                     provider=self.name,
                     category=category,
                     rank=1,
+                ),
+                SearchResult(
+                    title="AI 인재 행사 경품 이벤트",
+                    url="https://promo.example.com/event",
+                    snippet="AI 인재 관련 이벤트와 경품 안내",
+                    source="promo.example.com",
+                    provider=self.name,
+                    category=category,
+                    rank=2,
                 )
             ]
         if "AI 인재" in query:
@@ -99,7 +108,7 @@ def test_enrich_review_board_support_links_updates_csv_and_metadata(tmp_path) ->
         markdown_path=tmp_path / "support.md",
         json_path=tmp_path / "support.json",
         categories=["news"],
-        max_links_per_row=2,
+        max_links_per_row=1,
         max_provider_calls=2,
     )
 
@@ -107,12 +116,19 @@ def test_enrich_review_board_support_links_updates_csv_and_metadata(tmp_path) ->
         rows = list(csv.DictReader(source))
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 
-    assert "https://news.example.com/ai-talent" in rows[0]["서브 링크"]
-    assert "https://news.example.com/ai-training" in rows[0]["서브 링크"]
+    assert rows[0]["서브 링크"].startswith(
+        "1. https://news.kbs.co.kr/news/pc/view/view.do?ncd=8357774"
+    )
+    assert rows[0]["서브 링크"].count("\n") == 0
+    assert "서브 링크는 kbs.co.kr의 보강 자료 1개만 남겼습니다." in rows[0]["설명"]
+    assert "선택 이유:" in rows[0]["설명"]
+    assert "대중 매체 보강 자료" in rows[0]["설명"]
+    assert "news.example.com/ai-talent" not in rows[0]["서브 링크"]
     assert "sports.example.com" not in rows[0]["서브 링크"]
-    assert set(metadata["rows"][0]["sub_links"]) == {
-        "https://news.example.com/ai-talent",
-        "https://news.example.com/ai-training",
-    }
-    assert metadata["rows"][0]["board_support_search"]["accepted_count"] == 2
-    assert payload["selected_links_total"] == 2
+    assert metadata["rows"][0]["sub_links"] == [
+        "https://news.kbs.co.kr/news/pc/view/view.do?ncd=8357774"
+    ]
+    support = metadata["rows"][0]["board_support_search"]
+    assert support["accepted_count"] >= 1
+    assert support["selected_link_details"][0]["score"] >= 8
+    assert payload["selected_links_total"] == 1
