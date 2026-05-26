@@ -133,7 +133,7 @@ def test_local_second_search_short_terms_do_not_match_inside_other_words() -> No
                 "title": "공공 AI 후보",
                 "priority": "high",
                 "actions": ["find_supporting_links"],
-                "topic_terms": ["AI", "유가"],
+                "topic_terms": ["공공 AI", "AI", "유가"],
                 "query_plan": [],
             }
         ],

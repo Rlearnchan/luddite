@@ -270,7 +270,7 @@ def run_local_second_search(
     plan_payload: dict[str, Any],
     article_pool: list[dict[str, Any]],
     per_plan_limit: int = 5,
-    min_score: int = 3,
+    min_score: int = 6,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for plan in plan_payload.get("plans", []):
@@ -459,7 +459,7 @@ def main(
     min_score: Annotated[
         int,
         typer.Option("--min-score", help="Minimum local match score."),
-    ] = 3,
+    ] = 6,
 ) -> None:
     run_date = date or datetime.now().strftime("%Y-%m-%d")
     md_path, json_path, payload = write_local_second_search_results(
