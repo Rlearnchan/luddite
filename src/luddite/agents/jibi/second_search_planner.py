@@ -104,13 +104,15 @@ def _topic_signals(text: str) -> list[str]:
         signals.extend(["청년 쉬었음", "경제활동참가율", "비경제활동인구"])
     if "토큰화" in text or "조각투자" in text or re.search(r"\brwa\b", lower):
         signals.extend(["자산 토큰화", "RWA", "STO", "조각투자"])
-    if "ai" in lower or "인공지능" in text:
+    if re.search(r"\bai\b", lower) or "인공지능" in text:
         signals.extend(["공공 AI", "AI 활용 가이드라인", "AI 책임"])
     if any(term in text for term in ("무료배달", "배달비", "수수료", "플랫폼")):
         signals.extend(["무료배달", "배달앱 수수료", "자영업자 부담"])
     if "양파" in text:
         signals.extend(["양파 산지 가격", "농산물 가격", "소비촉진"])
-    if any(term in text for term in ("유가", "고유가", "에너지")):
+    if re.search(r"(?<![가-힣])유가(?![가-힣])", text) or any(
+        term in text for term in ("고유가", "에너지")
+    ):
         signals.extend(["유가", "에너지 가격", "물류비"])
     if any(term in text for term in ("pf", "프로젝트 파이낸스", "메가뱅크")):
         signals.extend(["프로젝트 파이낸스", "미국 제조업", "데이터센터 투자"])
@@ -361,6 +363,8 @@ def build_second_search_plan(
                 ),
                 "seed_type": compact_text(metadata.get("seed_type")),
                 "story_role": compact_text(metadata.get("story_role")),
+                "main_link": compact_text(metadata.get("main_link")),
+                "sub_links": metadata.get("sub_links", []),
                 "failure_modes": _row_list_field(row, "row_failure_modes"),
                 "positive_signals": _row_list_field(row, "row_positive_signals"),
                 "actions": actions,
