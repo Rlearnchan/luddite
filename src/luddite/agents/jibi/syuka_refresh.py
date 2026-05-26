@@ -21,6 +21,12 @@ from luddite.agents.jibi.append_to_sheet import (
     append_jibi_sheet,
     load_append_config,
 )
+from luddite.agents.jibi.board_support_search import (
+    enrich_review_board_support_links,
+)
+from luddite.agents.jibi.board_support_search import (
+    provider_from_env as board_support_provider_from_env,
+)
 from luddite.agents.jibi.render_daily_digest import render_daily_digest
 from luddite.agents.jibi.syuka_snapshot_probe import (
     DEFAULT_SYUKA_DATA_DIR,
@@ -105,6 +111,11 @@ def _csv_row_count(path: Path) -> int:
         return sum(1 for _row in csv.DictReader(source))
 
 
+def _split_csv(value: str, default: list[str]) -> list[str]:
+    items = [item.strip() for item in value.split(",") if item.strip()]
+    return items or default
+
+
 def _metadata_override_count(path: Path) -> int:
     if not path.exists():
         return 0
@@ -150,6 +161,9 @@ def _write_refresh_report(payload: dict[str, Any]) -> tuple[Path, Path]:
         f"- sheet_mode: `{payload['sheet_mode']}`",
         f"- sheet_replace_status: `{payload['sheet_replace_status']}`",
         f"- overwrite_guard_status: `{payload['overwrite_guard_status']}`",
+        "- board_support_search_status: "
+        f"`{payload.get('board_support_search_status', 'not_requested')}`",
+        f"- board_support_links_total: {payload.get('board_support_links_total', 0)}",
         "",
         "## Warnings",
         "",
@@ -177,6 +191,11 @@ def refresh_review_board_with_syuka(
     review_board_limit: int | None = None,
     replace_sheet: bool = False,
     sheet_name: str = "Jibi",
+    support_search: bool = False,
+    support_search_categories: list[str] | None = None,
+    support_search_results_per_query: int = 5,
+    support_search_max_calls: int = 40,
+    support_links_per_row: int = 5,
 ) -> dict[str, Any]:
     warnings: list[str] = []
     render_daily_digest(
@@ -211,6 +230,32 @@ def refresh_review_board_with_syuka(
 
     board_csv = _board_csv_path(run_date, output_dir)
     metadata_path = _board_metadata_path(run_date, output_dir)
+    support_search_status = "not_requested"
+    support_search_links_total = 0
+    support_search_report_md = ""
+    support_search_report_json = ""
+    if support_search:
+        try:
+            support_provider = board_support_provider_from_env()
+            support_payload = enrich_review_board_support_links(
+                run_date=run_date,
+                board_csv_path=board_csv,
+                metadata_path=metadata_path,
+                provider=support_provider,
+                categories=support_search_categories or ["news"],
+                max_links_per_row=support_links_per_row,
+                results_per_query=support_search_results_per_query,
+                max_provider_calls=support_search_max_calls,
+            )
+        except ValueError as error:
+            support_search_status = "skipped_missing_credentials"
+            warnings.append(str(error))
+        else:
+            support_search_status = "succeeded"
+            support_search_links_total = int(support_payload.get("selected_links_total") or 0)
+            support_search_report_md = str(support_payload.get("markdown_path") or "")
+            support_search_report_json = str(support_payload.get("json_path") or "")
+
     sheet_replace_status = "not_requested"
     overwrite_guard_status = "not_triggered"
     append_errors: list[str] = []
@@ -266,6 +311,10 @@ def refresh_review_board_with_syuka(
         "sheet_mode": "staging_replace" if replace_sheet else "none",
         "sheet_replace_status": sheet_replace_status,
         "overwrite_guard_status": overwrite_guard_status,
+        "board_support_search_status": support_search_status,
+        "board_support_links_total": support_search_links_total,
+        "board_support_search_report_md": support_search_report_md,
+        "board_support_search_report_json": support_search_report_json,
         "feedback_completion_counts": {},
         "triage_label_counts": {},
     }
@@ -324,6 +373,29 @@ def main(
         str,
         typer.Option("--sheet-name", help="Google Sheet tab name."),
     ] = "Jibi",
+    support_search: Annotated[
+        bool,
+        typer.Option(
+            "--support-search/--no-support-search",
+            help="Use Naver Search to fill review-board sub links.",
+        ),
+    ] = False,
+    support_search_categories_csv: Annotated[
+        str,
+        typer.Option("--support-search-categories", help="Comma-separated search categories."),
+    ] = "news,webkr",
+    support_search_results_per_query: Annotated[
+        int,
+        typer.Option("--support-search-results-per-query", help="Search results per query."),
+    ] = 5,
+    support_search_max_calls: Annotated[
+        int,
+        typer.Option("--support-search-max-calls", help="Maximum provider calls."),
+    ] = 40,
+    support_links_per_row: Annotated[
+        int,
+        typer.Option("--support-links-per-row", help="Maximum sub links per board row."),
+    ] = 5,
 ) -> None:
     payload = refresh_review_board_with_syuka(
         run_date=run_date,
@@ -335,6 +407,11 @@ def main(
         review_board_limit=review_board_limit,
         replace_sheet=replace_sheet,
         sheet_name=sheet_name,
+        support_search=support_search,
+        support_search_categories=_split_csv(support_search_categories_csv, ["news"]),
+        support_search_results_per_query=support_search_results_per_query,
+        support_search_max_calls=support_search_max_calls,
+        support_links_per_row=support_links_per_row,
     )
     console.print(
         "[green]Jibi syuka refresh complete "

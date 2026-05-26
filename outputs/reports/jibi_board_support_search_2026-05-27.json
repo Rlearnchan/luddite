@@ -1,0 +1,1345 @@
+{
+  "accepted_links_total": 60,
+  "calls_used": 22,
+  "categories": [
+    "news",
+    "webkr"
+  ],
+  "generated_at": "2026-05-26T14:28:22.288613+00:00",
+  "max_links_per_row": 5,
+  "max_provider_calls": 40,
+  "provider": "naver",
+  "results_per_query": 5,
+  "rows": [
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "생산적",
+            "금융",
+            "기업",
+            "투자",
+            "성장률",
+            "자금",
+            "흐름"
+          ],
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "우리나라 잠재 성장률 하락과 부동산·가계대출 중심 성장의 둔화 및 PF 부실 부작용, AI·반도체 패권 경쟁... 있는 기업 과 산업에 투자 함으로써 생산적 금융 으로의 전환을 완성하는 그림을 그려나가고 있다. 자금 흐름 의...",
+          "source": "ekn.kr",
+          "title": "금융 , ‘전환 엔진’ 가동...150兆 성장펀드로 산업 돈길 만든다 [창간기...",
+          "url": "https://www.ekn.kr/web/view.php?key=20260525024014930"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "생산적",
+            "금융",
+            "기업",
+            "성장률",
+            "자금",
+            "흐름"
+          ],
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "생산적 금융 전략을 앞세워 ‘ 기업 금융 명가 재건’에 나섰다. 가계대출과 주택담보대출 중심의 자금 흐름 ... 이를 통해 기업 금융 중심의 영업구조 전환을 꾀하고 있다. 지난 5년간 4% 수준이던 기업 대출 성장률 을 향후 10...",
+          "source": "etoday.co.kr",
+          "title": "임종룡의 ‘ 기업 금융 명가 재건’…우리 금융 , 체질 전환 속도 [ 생산적 ...",
+          "url": "https://www.etoday.co.kr/news/view/2586366"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "생산적",
+            "금융",
+            "기업",
+            "성장률",
+            "자금",
+            "흐름"
+          ],
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "한국 기업 평가 전문위원, 황준하 금융 감독원 은행리스크감독국장 등이 참석했다. 이항용 한국 금융 연구원장은 개회사에서 \"은행권 자금 을 부가가치가 높은 생산적 부문으로 유도할 수 있다면 성장률 과 장기 지속가능성을...",
+          "source": "sidae.com",
+          "title": "\" 생산적 금융 확대, 규제 완화 아닌 '자본 흐름 설계'가 핵심\"",
+          "url": "https://www.sidae.com/article/2026052015200282276"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "금융",
+            "기업",
+            "자금",
+            "흐름"
+          ],
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "그는 \"여전히 우리 금융 시장은 부동산과 단기 안전자산 중심의 자금 흐름 에서 벗어나지 못하고 있다\"며 \"이로 인해 혁신 벤처 기업 과 지역 산업에 대한 자금 공급이 충분하지 못한 실정\"이라고 진단했다. 김 의원은 미래...",
+          "source": "joongangenews.com",
+          "title": "[2026 중앙이코노미 금융 포럼] 김남근 의원 \" 금융 , 부동산 대신 AI·반도...",
+          "url": "https://www.joongangenews.com/news/articleView.html?idxno=518919"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "생산적",
+            "금융",
+            "기업",
+            "투자",
+            "자금",
+            "흐름"
+          ],
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "벤처 투자 지원 확대를 강조하면서 은행권 역시 생산적 금융 확대 압박을 받고 있다. KB 금융 의 대출 성장 흐름 은 이런 정책 방향과 맞닿아 있다는 평가다. 특히 기업 대출 확대는 단순한 자산 성장보다 산업 자금 공급 기능...",
+          "source": "press9.kr",
+          "title": "KB 금융 지주, 가계대출 줄이고 기업 금융 늘렸다…'부동산 억제· 생산적 금...",
+          "url": "http://www.press9.kr/news/articleView.html?idxno=76321"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "생산적",
+            "금융",
+            "기업",
+            "자금",
+            "흐름"
+          ],
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "[지난 4년간 금융 분야 주요 성과②] 생산적 분야로의 자금흐름 을... 성장 단계에 맞는 자금 조달 ✅가계에서 기업 으로 자금흐름 이동 #국민과_함께 #정부_출범_4주년 #당신_곁에_따뜻한_ 금융 혁신...",
+          "source": "blog.naver.com",
+          "title": "[ 금융 분야 주요 성과②] 생산적 분야로의 자금흐름 을 유도해 나갔습니다.",
+          "url": "https://blog.naver.com/blogfsc/222365762777"
+        }
+      ],
+      "main_link": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10094996&menuNo=200433",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "생산적 금융 기업 투자 성장률 자금 흐름",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_5e2c61b1f8",
+      "selected_links": [
+        "https://www.ekn.kr/web/view.php?key=20260525024014930",
+        "https://www.etoday.co.kr/news/view/2586366",
+        "https://www.sidae.com/article/2026052015200282276",
+        "https://www.joongangenews.com/news/articleView.html?idxno=518919",
+        "http://www.press9.kr/news/articleView.html?idxno=76321"
+      ],
+      "title": "돈은 왜 공장보다 금융시장으로 흐를까"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "인재",
+            "임금",
+            "이동성",
+            "수급",
+            "불균형"
+          ],
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "최고의 인재 들이 한국을 '기회의 땅'으로 보지 않는다는 점이다. 한국은행이 지난 2025년 12월 발표한 「 AI 전문인력 현황과 수급 불균형 : 규모, 임금 및 이동성 분석」보고서에 따르면, 한국의 AI 전문 인력은 양적으로는...",
+          "source": "ifs.or.kr",
+          "title": "두뇌 없는 거인: 전문인력의 공동화(空洞化)",
+          "url": "http://www.ifs.or.kr/bbs/board.php?bo_table=News&wr_id=55567"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "인재",
+            "부족",
+            "이동성",
+            "수급",
+            "불균형"
+          ],
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "AI 인재 수급 은 지속적으로 부족 한 것으로 나타났다.(사진제공=게티이미지뱅크) 인공지능 기술 확산과 함께 AI 전문인력의 양적 성장은 이어지고 있으나 보상 격차와 노동 이동성 확대 속에 국내 AI 인력 수급 불균형 이...",
+          "source": "chungnamilbo.co.kr",
+          "title": "' AI 중요도는 늘고 인재 는 부족 하고'... 국내 AI 인재 수급 불균형 심화",
+          "url": "http://www.chungnamilbo.co.kr/news/articleView.html?idxno=867215"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "인재",
+            "임금",
+            "이동성",
+            "수급",
+            "불균형"
+          ],
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "기회가 인재 유출의 주요 원인으로 지적되고 있다. 해당 기사에 인용된 보고서 원문은 KDI 경제교육 정보센터에서 확인 가능하다. 보고서 명: AI 전문인력 현황과 수급 불균형 : 규모, 임금 이동성 분석 해당 기사는...",
+          "source": "etnews.com",
+          "title": "한국 AI 인력 5.7만 명 시대... 한국은행 \"고학력·고 임금 에도 해외 유출...",
+          "url": "https://www.etnews.com/20251205000333"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "인재",
+            "임금",
+            "수급",
+            "불균형"
+          ],
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "또한 국내 인공지능( AI ) 전문인력이 확대되고 있지만 인력 수급 이나 임금 보상 등은 여전히 세계 주요국에 미치지 못해 수급 불균형 이 심화하고 있다는 분석이 나왔다. 한국은행이 지난 12월 5일 발표한 ' AI 전문인력...",
+          "source": "mhns.co.kr",
+          "title": "[박근종 칼럼] ' AI 고속도로' 질주 가속 페달은 전력 확보· 인재 육성·규...",
+          "url": "https://www.mhns.co.kr/news/articleView.html?idxno=733257"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "부족",
+            "임금",
+            "수급",
+            "불균형"
+          ],
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "현황과 수급 불균형 보고서'에 따르면 지난해 기준 국내 AI 기술 보유 인력은 약 5만7000명으로 지난 2010년보다 2배 넘게 늘었으나 미국(78만명), 영국(11만명) 등 주요국에 비해 부족 한 수준으로 집계됐다. 임금 보상...",
+          "source": "news.tf.co.kr",
+          "title": "한은 \"국내 AI 전문 인력 확대… 수급 불균형 은 심화\"",
+          "url": "https://news.tf.co.kr/read/economy/2269661.htm"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "AI",
+            "임금",
+            "이동성",
+            "수급",
+            "불균형"
+          ],
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "한국은행은 AI 전문인력 현황과 수급 불균형 을 규모 및 임금 이동성 측면에서 분석한 보고서를 발표하였다. - 링크드인(LinkedIn) 기반 온라인 프로필 데이터를 활용하여 국내 AI 전문인력의 규모, 임금 , 노동 이동성 을 종합적으로 분석하였음. 2010~2024년 동안 국내에서 근무한 이력이 있는 약 110만 명의 근로자와 이들의 1,000만 건이...",
+          "source": "eiec.kdi.re.kr",
+          "title": "AI 전문인력 현황과 수급 불균형 : 규모, 임금 이동성 분석 | 국내연구자료",
+          "url": "https://eiec.kdi.re.kr/policy/domesticView.do?ac=0000200880"
+        }
+      ],
+      "main_link": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10094926&menuNo=200433",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "AI 인재 부족 임금 이동성 수급 불균형",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_d58520fd57",
+      "selected_links": [
+        "http://www.ifs.or.kr/bbs/board.php?bo_table=News&wr_id=55567",
+        "http://www.chungnamilbo.co.kr/news/articleView.html?idxno=867215",
+        "https://www.etnews.com/20251205000333",
+        "https://www.mhns.co.kr/news/articleView.html?idxno=733257",
+        "https://news.tf.co.kr/read/economy/2269661.htm"
+      ],
+      "title": "AI 인재 부족은 왜 매번 반복될까"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "상승",
+            "생활수준"
+          ],
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "관세 인상과 유가 상승 에도 불구하고 1분기 미국 경제는 회복 탄력성을 보였다. 경제 전문가들은 그러한... 장기적으로 생산성 증가는 경제 성장과 생활 수준 향상으로 이어진다. 생산성은 대개 노동 생산성을...",
+          "source": "financialpost.co.kr",
+          "title": "[딜로이트 글로벌 경제 리뷰] 생성형 AI와 생산성 수수께끼: 제도와 조직...",
+          "url": "https://www.financialpost.co.kr/news/articleView.html?idxno=259299"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "물가",
+            "임금",
+            "상승",
+            "생활수준"
+          ],
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "전기요금과 물가 가 상승 하고 있다는 비판이 나오고 있다. 빅테크 기업들이 값싼 전기와 세금 혜택을... 생활수준 하락, 주거난, 임금 정체, 공공서비스 붕괴 속에서 노동당이 유권자 분노를 제대로 대변하지...",
+          "source": "newscham.net",
+          "title": "참세상 인터링크 위클리 (2026.05.14)",
+          "url": "https://newscham.net/articles/116358"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "물가",
+            "임금",
+            "상승"
+          ],
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "지난 3월 10일 시행된 노란봉투법(노동조합법 2·3조 개정안)은 하청 근로조건에 대해 실질 적·구체적으로... 지급되고, 임금 등 세부 운영비도 물가 상승 률 수준 만 반영되기 때문이다. 업계는 이번 판정 자체보다 향후...",
+          "source": "dnews.co.kr",
+          "title": "노란봉투법 첫 BTL 교섭 기각…운영사들 “확산 가능성 촉각”",
+          "url": "https://www.dnews.co.kr/uhtml/view.jsp?idxno=202605121336176130404"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "실질임금",
+            "물가",
+            "임금"
+          ],
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "하지만 보고서는 지역별 생활 비 차이를 반영할 경우 캘리포니아의 경제적 위상이 크게 달라진다고 지적했다. 물가 수준 을 고려한 캘리포니아의 실질 임금 순위는 전국 13위로, 명목 순위보다 10단계나 낮은 것으로...",
+          "source": "koreatimes.com",
+          "title": "“월급 남는 게 없다”… 가주민 고 물가 고통",
+          "url": "http://www.koreatimes.com/article/1613102"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "실질임금",
+            "물가",
+            "임금",
+            "상승",
+            "생활수준"
+          ],
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "현재 생활수준 전망과 미래 가계소득 전망도 모두 떨어졌다. 중동 전쟁 이후 에너지 가격 상승 과 환율 불안은... 물가 상승 을 제외한 노동자 실질임금 은 2022년 감소로 전환했고, 2023년에는 1% 넘게 줄었다. 지난해에도...",
+          "source": "huffingtonpost.kr",
+          "title": "[허프 생각] 명품은 어떻게 '불안의 언어'가 되었나, 유통업계 먹여 살...",
+          "url": "https://www.huffingtonpost.kr/article/257167"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "실질임금",
+            "물가",
+            "임금",
+            "상승",
+            "생활수준"
+          ],
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "# 실질임금 #명목 임금 # 물가 상승 률 #경제정책 # 생활수준 실질임금 은 우리의 일상 생활 과 참 밀접한 관계를 맺고 있습니다. 단순히 월급 명목 금액이 올랐다고 해서 진정한 경제적 여유가 생기는 것은 아니죠. 많은...",
+          "source": "blog.naver.com",
+          "title": "실질임금 과 물가 상승 률이 근로자 생활수준 에 미치는 영향",
+          "url": "https://blog.naver.com/ltqxkptof/224039628089"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526122100009",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "실질임금 물가 임금 상승 생활수준",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_84728ca09d",
+      "selected_links": [
+        "https://www.financialpost.co.kr/news/articleView.html?idxno=259299",
+        "https://newscham.net/articles/116358",
+        "https://www.dnews.co.kr/uhtml/view.jsp?idxno=202605121336176130404",
+        "http://www.koreatimes.com/article/1613102",
+        "https://www.huffingtonpost.kr/article/257167"
+      ],
+      "title": "월급은 올랐는데 왜 더 가난해졌을까"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "발사",
+            "실패",
+            "보험"
+          ],
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "보험 , 책임 범위, 발사 실패 시 사후 조치, 주변 해역·공역 통제 절차 등이 명확해야 한다. 기업 입장에서는 절차가 지나치게 복잡하면 사업성이 떨어지고, 반대로 기준이 느슨하면 안전성과 신뢰가 흔들릴 수 있다. 우주 ...",
+          "source": "e-science.co.kr",
+          "title": "나로 우주 센터 민간 개방 준비… 한국 발사 체 산업, '개발'에서 '운용' 단...",
+          "url": "https://www.e-science.co.kr/news/articleView.html?idxno=129596"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "발사",
+            "실패",
+            "위성"
+          ],
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "로켓 발사 과정에서 위성 이 목표 궤도 진입에 실패 하며 폐기된 영향으로 하락했다. 이번 사고로 위성 ... 상대적으로 AST스페이스모바일 비율이 적은 한국 투자신탁운용의 ACE(에이스)미국 우주 테크액티브와...",
+          "source": "sidae.com",
+          "title": "우주 관련 ETF, 종목 비중 따라 출렁…'운용전략'이 수익률 갈랐다",
+          "url": "https://www.sidae.com/article/2026042111162441871"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "발사",
+            "위성"
+          ],
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "이어 장 대표는 한국 노총 서울지역본부를 방문해 '노동 존중 사회'를 위한 적극적인 행보에... 안에 우주 데이터센터 시험 위성 발사 등 가속도를 높여야 한다”고 강조했다. 또한 최...",
+          "source": "breaknews.com",
+          "title": "국민의힘 “이재명발 '세금폭탄'… 부동산시장 초토화·민생파탄”",
+          "url": "http://www.breaknews.com/1202113"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "발사",
+            "위성"
+          ],
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "부스터는 귀환, 위성 은 대기권 소각 운명 뉴글렌 3호기는 미국 현지시각 19일 오전 7시 35분( 한국 시각 오후 9시 35분) 플로리다주 케이프 커내버럴(Cape Canaveral) 우주 군 기지 발사 복합단지 36번 패드에서 이륙했다....",
+          "source": "g-enews.com",
+          "title": "블루오리진 뉴글렌 3호, 부스터 재사용 첫 성공에도 위성 궤도 진입 실...",
+          "url": "https://www.g-enews.com/view.php?ud=2026042020402291972bd56fbc3c_1"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "발사",
+            "위성"
+          ],
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "로켓 발사 증가, 오존층 위협하는 새로운 환경 문제undark 최근 민간 우주 산업 성장으로 로켓 발사 가 급증하면서 배출되는 검댕과 화학물질이 오존층 회복을 늦출 수 있다는 우려가 커지고 있다. 위성 재진입...",
+          "source": "newscham.net",
+          "title": "참세상 인터링크 위클리 (2026.04.09)",
+          "url": "https://newscham.net/articles/116036"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "발사",
+            "실패",
+            "위성",
+            "보험"
+          ],
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "및 우주 발사 체 현황 ○ 인공 위성 의 발사 및 궤도 안착은 실패 ... 2차 발사 2022년 5월 목표 자료: 한국 항공 우주 연구원을 참조 및 재구성함 KIRI 리포트 이슈 분석 17 <그림 1> 위성보험 원수 보험 료 규모 및...",
+          "source": "kiri.or.kr",
+          "title": "국내 위성보험 현황과 시사점",
+          "url": "https://www.kiri.or.kr/report/downloadFile.do?docId=6106"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526102600017",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "우주보험 발사 실패 위성 보험 한국",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_481b19715a",
+      "selected_links": [
+        "https://www.e-science.co.kr/news/articleView.html?idxno=129596",
+        "https://www.sidae.com/article/2026042111162441871",
+        "http://www.breaknews.com/1202113",
+        "https://www.g-enews.com/view.php?ud=2026042020402291972bd56fbc3c_1",
+        "https://newscham.net/articles/116036"
+      ],
+      "title": "우주산업은 왜 보험 없이는 날기 어려울까"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "일자리",
+            "자동화",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "AI 와 로봇은 이미 노동시장 안으로 들어왔다. 이제 남은 질문은 자동화 를 막을 것인가가 아니라, 자동화 이후의 일자리 와 기회를 어떻게 다시 설계할 것인가다. 이 질문에 답하지 못한다면 한국의 미래 세대는 취업도...",
+          "source": "e-science.co.kr",
+          "title": "오사카 쇼룸의 AI 직원 '니나'… 인간 신입사원의 자리를 묻다",
+          "url": "https://www.e-science.co.kr/news/articleView.html?idxno=130007"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "개선, 청년 ·저소득층 국민연금 가입 지원, 퇴직연금 도입 의무화 단계적 추진, 주택연금 활성화 등이 정책과제로 제시됐다. 일자리 창출·지원을 통한 소득 안정도 도모한다. 노동시장 구조 변화와 고용 불안정에 대응해...",
+          "source": "ggilbo.com",
+          "title": "사회보장체계, 선별 보호 넘어 '모두의 복지'로",
+          "url": "https://www.ggilbo.com/news/articleView.html?idxno=1160313"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "청년 도전지원사업 확대, 청년 일자리 도약금, K-뉴딜 아카데미 제공 등을 통해 청년 노동시장 진입과 유지를 지원하고, 구직촉진수당 단계적 인상 등 국민취업지원제도 확대를 통해 고용 안전망을 강화한다. 내일배움카드...",
+          "source": "ablenews.co.kr",
+          "title": "선별적 보호 넘어 '모두의 복지', 이재명정부 사회보장기본계획 수정",
+          "url": "https://www.ablenews.co.kr/news/articleView.html?idxno=231100"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "개선하고 청년 ·저소득층 국민연금 가입을 지원하며 퇴직연금 도입 의무화 단계적 추진, 주택연금 활성화 등 안정적인 노후생활 기반도 마련한다. 노동시장 구조 변화와 고용 불안정에 대응해 일자리 진입·유지와 직업...",
+          "source": "newsis.com",
+          "title": "취약계층서 국민 '모두의 복지'로…李정부, 사회보장계획 확대",
+          "url": "https://www.newsis.com/view/NISX20260526_0003643166"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "AI",
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "청년 도전지원사업과 청년 일자리 도약장려금, K-뉴딜 아카데미 등을 통해 청년 의 노동시장 진입과 고용 유지를 지원하고 구직촉진수당도 단계적으로 인상한다. 여성·중장년·노인 대상 맞춤형 직업훈련과 AI 기반 직업훈련...",
+          "source": "news1.kr",
+          "title": "취약계층 중심서 '전 국민'으로…정부, 2030년까지 '모두의 복지' 전환",
+          "url": "https://www.news1.kr/economy/trend/6177187"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "AI",
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "“이 자료는 고용 노동 부의 보도자료를 전재하여 제공함을... ( 일자리 단계1) 노동시장 진입기 노동시장 에 진입하는 청년 구직자 등을 위해 AI 에 대한 기초 이해 및 직무 활용, 솔루션 개발까지 ‘ AI ...",
+          "source": "korea.kr",
+          "title": "노동시장 의 모두를 위한 「 AI +역량 Up 프로젝트」 추진 - 보도자료 | 브리핑룸",
+          "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156735670"
+        }
+      ],
+      "main_link": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10094258&menuNo=200433",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_6af21b621d",
+      "selected_links": [
+        "https://www.e-science.co.kr/news/articleView.html?idxno=130007",
+        "https://www.ggilbo.com/news/articleView.html?idxno=1160313",
+        "https://www.ablenews.co.kr/news/articleView.html?idxno=231100",
+        "https://www.newsis.com/view/NISX20260526_0003643166",
+        "https://www.news1.kr/economy/trend/6177187"
+      ],
+      "title": "AI는 청년 일자리부터 흔들까"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "비아파트",
+            "공급",
+            "전세사기",
+            "빌라"
+          ],
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "지난 12일 서울 중구 남산에서 빌라 ·다세대·도시형 생활 주택 등 비 아파트 주택 이 보이고 있다. 뉴시스 최근 전세사기 여파와 부동산 프로젝트파이낸싱(PF) 자금 경색으로 공급 위축이 심화된 시장 을 활성화하는 데...",
+          "source": "segye.com",
+          "title": "수도권 비아파트 11만가구 푼다…층수·주차 규제 깨고 금융지원 강화",
+          "url": "https://www.segye.com/newsView/20260526516253?OutUrl=naver"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "비아파트",
+            "공급",
+            "전세사기",
+            "오피스텔",
+            "빌라",
+            "주택시장"
+          ],
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "기존 주택 매입 1만 2000호를 공급 하되 비아파트 공급 이 정상화될 때까지 규제지역은 당초 목표 물량을... 다가구 주택 · 빌라 · 오피스텔 등 비아파트 주택시장 에는 전세사기 꾼들이 판을 쳤고 임대차계약의 신뢰는 땅에...",
+          "source": "ngonews.kr",
+          "title": "경실련, 국토부 비아파트 주택 무제한 매입 계획 중단 촉구···\" 전세 대...",
+          "url": "https://www.ngonews.kr/news/articleView.html?idxno=230261"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "공급",
+            "전세사기",
+            "빌라"
+          ],
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "서울 빌라 (연립·다세대) 준공 물량은 2021년 2만3389가구에서 △2022년 2만219가구 △2023년 1만2868가구 △2024년 5550가구 △지난해 4329가구로 4년 만에 81.5% 감소했다. 전세사기 여파로 민간 임대 시장 이 얼어붙으면서 공급 ...",
+          "source": "etoday.co.kr",
+          "title": "정부, 非아파트 확대 계획⋯전문가들 \"민간 규제 풀어야 진짜 해법\"",
+          "url": "https://www.etoday.co.kr/news/view/2587210"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "비아파트",
+            "전세사기"
+          ],
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "비아파트 시장 의 가장 큰 걸림돌이었던 전세 사기 우려를 공공매입임대 사업이 해결함으로써 수요자들에게 보다 안전한 주거 환경을 제공할 수 있다”고 분석했다. 다만 궁극적으로 비아파트 매입임대 주택 이 주택 ...",
+          "source": "biz.heraldcorp.com",
+          "title": "“빌란데 월세 188만원 달래요” 갈수록 심해지는 전월세난…규제지역...",
+          "url": "https://biz.heraldcorp.com/article/10755132?ref=naver"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "비아파트",
+            "공급",
+            "전세사기",
+            "오피스텔",
+            "빌라"
+          ],
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "전세 수요가 빠르게 월세로 이동하는 가운데, 월세 시장 안정을 위해 해외 기관투자자의 비아파트 임대 주택 ... “ 전세사기 이후 오피스텔 · 빌라 등 비아파트 시장 이 전세 에서 월세 중심으로 재편되고 있지만 공급 구조는...",
+          "source": "edaily.co.kr",
+          "title": "전세사기 끝나니 월세 시대…“월세 안정 답은 기관임대”",
+          "url": "https://www.edaily.co.kr/news/newspath.asp?newsid=02059846645451872"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "비아파트",
+            "전세사기",
+            "오피스텔",
+            "빌라"
+          ],
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "소형 빌라 와 오피스텔 월세가 가파르게 오르고 있는 것으로... 2023년 전세사기 여파로 인한 ‘ 전세 의 월세화’ 현상도 적지 않은 영향을 미쳤다. 빌라 전세 기피 심리로 비아파트 시장 에서 월세 수요가...",
+          "source": "hani.co.kr",
+          "title": "“ 전세 보다 더 올라”…정부 ‘갭투자 차단’ 불똥, 빌라 · 오피스텔 월세로",
+          "url": "https://www.hani.co.kr/arti/economy/economy_general/1241197.html"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526135300003",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "비아파트 공급 전세사기 오피스텔 빌라 주택시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_99dcfcfcf3",
+      "selected_links": [
+        "https://www.segye.com/newsView/20260526516253?OutUrl=naver",
+        "https://www.ngonews.kr/news/articleView.html?idxno=230261",
+        "https://www.etoday.co.kr/news/view/2587210",
+        "https://biz.heraldcorp.com/article/10755132?ref=naver",
+        "https://www.edaily.co.kr/news/newspath.asp?newsid=02059846645451872"
+      ],
+      "title": "아파트 말고 집을 빨리 늘리는 법"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "스타벅스",
+            "선불충전금",
+            "환불",
+            "AI",
+            "책임"
+          ],
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "민형사상 책임 을 묻겠다고 밝혔지만, 이미 내부 통제 실패로 인한 신뢰 훼손은 상당한 상황이다. 한편, 논란 이후 스타벅스 매출 감소가 뚜렷하게 나타났으며, 선불충전금 환불 문제도 본사와 협의 중이다. 신세계 측은...",
+          "source": "dailysportshankook.co.kr",
+          "title": "스타벅스 '탱크데이' 논란, 내부 검증 부재가 만든 조직적 실패",
+          "url": "https://www.dailysportshankook.co.kr/news/articleView.html?idxno=428993"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "스타벅스",
+            "선불충전금",
+            "환불",
+            "AI"
+          ],
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "이날 스타벅스 는 다음 달 1일부터 14일까지 총 200만 원 한도 내에서 선불 충전금 사용 비율과 관계없이 잔액 전액을 환불 받을 수 있도록 관련 규정을 한시적으로 완화하는 조치를 발표했다. 그간 스타벅스 코리아는 약관에...",
+          "source": "sedaily.com",
+          "title": "“탱크데이 고의성 확인땐 해고”…정용진, 광주 찾아 사과도 검토",
+          "url": "https://www.sedaily.com/article/20048361?ref=naver"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "스타벅스",
+            "선불충전금",
+            "환불"
+          ],
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "지금까지 스타벅스 는 스타벅스 카드 이용약관을 기준으로 최종 충전 잔액의 60% 이상 사용하면 40% 이하에 해당하는 잔액을 환불 해 왔다. 전 부사장은 \" 선불충전금 은 상품권 표준약관이 적용되는 선불 형 상품권 성격이라...",
+          "source": "econovill.com",
+          "title": "정용진 신세계 회장, 스타벅스 논란에 \"진심으로 머리 숙여 사죄\"",
+          "url": "https://www.econovill.com/news/articleView.html?idxno=740835"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "스타벅스",
+            "선불충전금",
+            "환불",
+            "AI",
+            "문구"
+          ],
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "논란이 된 '책상에 탁' 문구 는 기존 마케팅 문구 의 운율을 참고하고 생성형 AI 의 추천을 받아 조합한... 요구하는 선불충전금 전액 환불 에 대해 \"시스템 조정 등을 거쳐 조속히 조치하겠다\"고 밝혔으며, 미국 스타벅스 ...",
+          "source": "delighti.co.kr",
+          "title": "신세계 \" 스타벅스 5·18 '탱크데이' 고의성 미확인…실무자 3명 폰 제출...",
+          "url": "https://www.delighti.co.kr/news/articleView.html?idxno=116864"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "스타벅스",
+            "선불충전금",
+            "환불",
+            "AI",
+            "문구"
+          ],
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "이날 사과는 스타벅스 매출 하락과 계열사로 번지는 불매 운동, 4,276억 원에 달하는 선불 충전금 환불 논란... 해당 직원들은 조사에서 \"기존 텀블러 문구 였던 '가방에 쏙'과 라임을 맞추는 데 급급했다\", \" AI 에 물어봤다\", \"(5...",
+          "source": "ekoreanews.co.kr",
+          "title": "정용진 회장 '탱크데이' 논란에 사과, 민주당 '수용' 입장 밝혀",
+          "url": "https://www.ekoreanews.co.kr/news/articleView.html?idxno=86210"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "스타벅스",
+            "환불",
+            "AI"
+          ],
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "정용진 신세계그룹 회장이 26일 서울 강남구 조선팰리스에서 스타벅스 ‘탱크데이’ 논란과 관련해 대국민 사과 기자회견을 하고 있다. 권욱 기자",
+          "source": "sedaily.com",
+          "title": "[영상] “60% 안 써도 된다”… 스타벅스 , 2주간 선불 카드 조건 없이 ‘전액 환불 ’",
+          "url": "https://www.sedaily.com/article/20048325"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526080000704",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "스타벅스 선불충전금 환불 AI 문구 책임",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_8385ead915",
+      "selected_links": [
+        "https://www.dailysportshankook.co.kr/news/articleView.html?idxno=428993",
+        "https://www.sedaily.com/article/20048361?ref=naver",
+        "https://www.econovill.com/news/articleView.html?idxno=740835",
+        "https://www.delighti.co.kr/news/articleView.html?idxno=116864",
+        "https://www.ekoreanews.co.kr/news/articleView.html?idxno=86210"
+      ],
+      "title": "스벅 사태, AI 문구와 책임의 경계"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "페라리",
+            "전기차",
+            "전동화",
+            "슈퍼카",
+            "시장"
+          ],
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "이탈리아의 상징적인 슈퍼카 브랜드 페라리 가 브랜드 역사상 첫 번째 순수 전기차 를 출시했다. 포르쉐... 이유로 전동화 속도를 조절하는 상황에서 고가 럭셔리 전기차 시장 에 승부수를 던졌다. 페라리 는 26일...",
+          "source": "khan.co.kr",
+          "title": "베일 벗은 ‘EV 슈퍼카 ’… 페라리 의 첫 순수 전기차 ‘루체’",
+          "url": "https://www.khan.co.kr/article/202605262032005"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "페라리",
+            "전기차",
+            "가격",
+            "전동화",
+            "슈퍼카",
+            "시장"
+          ],
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "외신들은 루체가 기존 페라리 디자인과 크게 다른 형태를 갖췄고 가격 도 이탈리아 기준 55만유로 수준으로... 페라리 의 첫 전기차 는 고성능차 시장 의 전동화 흐름을 보여주는 상징적 모델이다. 다만 슈퍼카 고객층이...",
+          "source": "it.chosun.com",
+          "title": "페라리 , 1050마력 첫 전기차 '루체' 공개",
+          "url": "https://it.chosun.com/news/articleView.html?idxno=2023092162791"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "페라리",
+            "전기차",
+            "전동화",
+            "슈퍼카",
+            "시장"
+          ],
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "이유로 전동화 전략의 속도를 조절하는 가운데, 페라리 는 오히려 고가 럭셔리 전기차 시장 에 승부수를... 루체는 페라리 의 첫 순수 전기차 이면서 첫 5인승 차량으로 소개됐다. 2인승 슈퍼카 이미지만으로는 전기차 시장 을...",
+          "source": "nownews.seoul.co.kr",
+          "title": "“아이폰 디자이너가 손댔다”… 페라리 첫 전기차 가 삼성 OLED 품은 이유...",
+          "url": "https://nownews.seoul.co.kr/news/newsView.php?id=20260526601032&wlog_tag3=naver"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "페라리",
+            "전기차",
+            "전동화",
+            "슈퍼카",
+            "시장"
+          ],
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "전설적인 슈퍼카 브랜드 페라리 가 자사 최초의 순수 전기차 (EV) ' 페라리 루체(Luce)'를 전격 공개하며 전동화 ... 외신과 업계는 강력한 성능을 무장한 이번 신차가 전통적인 내연기관의 감성을 넘어 초고가 전기차 시장 에...",
+          "source": "kdfnews.com",
+          "title": "페라리 , 첫 순수 전기차 '루체' 전격 공개…9억 원대 슈퍼 EV 시장 정조...",
+          "url": "http://www.kdfnews.com/news/articleView.html?idxno=183567"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "페라리",
+            "전기차",
+            "전동화",
+            "슈퍼카",
+            "시장"
+          ],
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "이탈리아의 상징적인 슈퍼카 브랜드 페라리 가 브랜드 역사상 첫 번째 순수 전기차 를 출시했다. 포르쉐... 페라리 가 전기차 플랫폼( 전동화 아키텍처)을 통해 실용성까지 갖춘 고급 장거리용 고성능 차량(GT) 시장 으로...",
+          "source": "khan.co.kr",
+          "title": "2.5초 만에 시속 100㎞·1050마력 괴물 EV··· 페라리 첫 전기차 ‘루체...",
+          "url": "https://www.khan.co.kr/article/202605261448001"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "페라리",
+            "전기차",
+            "가격",
+            "슈퍼카",
+            "시장"
+          ],
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "전통적인 슈퍼카 브랜드들이 전기차 시장 에서 어떻게 차별화를 꾀할지 관심이 쏠린다. 페라리 의 전기차 는 가격 면에서도 상당한 존재감을 보일 전망이다. 예상 가격 은 50만 유로, 한화로 약 7억 5140만 원에 달하는 수준이다. 이는 페라리 의 전통적인 희소성과 브랜드 가치를 반영한 가격 대로, 타 브랜드의 전기 슈퍼카 보다도 높은 가격 이 책정될 것으로 보인다. 한편, 페라리 는 올...",
+          "source": "econmingle.com",
+          "title": "조용하던 페라리 “역사적 변화 예고”… 새로 출시한다는 신차, 가격 이 ‘무려’",
+          "url": "https://econmingle.com/car/ferrari-launches-first-electric-car/"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526103500009",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "페라리 전기차 가격 전동화 슈퍼카 시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_84cf80a820",
+      "selected_links": [
+        "https://www.khan.co.kr/article/202605262032005",
+        "https://it.chosun.com/news/articleView.html?idxno=2023092162791",
+        "https://nownews.seoul.co.kr/news/newsView.php?id=20260526601032&wlog_tag3=naver",
+        "http://www.kdfnews.com/news/articleView.html?idxno=183567",
+        "https://www.khan.co.kr/article/202605261448001"
+      ],
+      "title": "전기차가 슈퍼카가 되면 뭐가 달라지나"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "news",
+          "matched_terms": [
+            "복장",
+            "규정",
+            "반바지",
+            "쿨비즈"
+          ],
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "복장 에 반바지 와 샌들을 허용한다. 대형 선박과 중장비를 다루는 제조업의 특성상 엄격한 복장 규정 을... HD현대중공업은 지난 16일부터 ‘ 쿨비즈 (Cool-Biz)’ 제도를 도입, 9월 12일까지 시범 운영한다고 밝혔다. 기술직...",
+          "source": "seoul.co.kr",
+          "title": "53년 만에 무너진 금기… 반바지 ·샌들 OK, 레깅스·민소매 NO",
+          "url": "https://www.seoul.co.kr/news/economy/industry/2025/06/17/20250617500178?wlog_tag3=naver"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "폭염",
+            "직장",
+            "복장",
+            "규정",
+            "반바지"
+          ],
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "출퇴근 복장 에 엄격했다. 그러나 MZ세대 직장 인의 요구를 반영한 근무 환경 개선과 유연한 조직 문화 구축, 여름 폭염 대비 등을 위해 규정 을 바꾸는 모습이다. 한편 출퇴근 복장 에 제한을 뒀던 일부 기업들은 조직 문화...",
+          "source": "biz.heraldcorp.com",
+          "title": "“ 반바지 에 샌들도 OK”…창사 53년 만에 ‘파격’ 결단한 대기업",
+          "url": "https://biz.heraldcorp.com/article/10508621?ref=naver"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "복장",
+            "규정",
+            "반바지",
+            "쿨비즈"
+          ],
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "' 쿨비즈 룩' 도입하는 재계...보수끝판왕 포스코도 변화 중 포스코그룹의 경우 지난달 26일부터 자율 복장 제를 시행 중이다. <포스코> 반바지 ·샌들 허용 등 파격적인 복장 규정 을 도입한 곳은 현대차그룹뿐만이 아니다....",
+          "source": "insightkorea.co.kr",
+          "title": "정의선 5년의 '나비 효과'...\" 반바지 에 샌들도 괜찮아요\"",
+          "url": "http://www.insightkorea.co.kr/news/articleView.html?idxno=117463"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "폭염",
+            "직장",
+            "복장",
+            "반바지",
+            "쿨비즈"
+          ],
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "유유제약 직원들은 반바지 에 샌들까지 시원한 옷차림으로 업무를 보고 있다.<유유제약> 역대급 폭염 으로 여름철 가벼운 옷차림을 권장하는 문화가 확산하고 있다. 직장 인 10명 중 9명 정도는 ' 쿨비즈 ( 복장 간소화)'에...",
+          "source": "insightkorea.co.kr",
+          "title": "동아쏘시오·대웅제약 직원은 반바지 에 샌들 신고 출근 한다고?",
+          "url": "http://www.insightkorea.co.kr/news/articleView.html?idxno=117247"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "폭염",
+            "직장",
+            "복장",
+            "규정",
+            "반바지",
+            "쿨비즈"
+          ],
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "올 여름에 폭염 이 지속되면서 재계가 ' 쿨비즈 (시원한 출근 복장 )'를 속속 도입하고 있는 가운데 직장 인... 최근 반바지 ·샌들 허용 등 파격적인 복장 규정 을 잇따라 도입했다. 2012년부터 반바지 문화를 정착시킨...",
+          "source": "inews24.com",
+          "title": "'삼성맨'도 반바지 에 샌들 'OK'… 직장 인 90% \"' 쿨비즈 ' 좋다\"",
+          "url": "http://www.inews24.com/view/1625053"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "폭염",
+            "직장",
+            "복장",
+            "규정",
+            "반바지",
+            "쿨비즈"
+          ],
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "연일 계속되는 폭염 탓에 직장 내 근무 복장 규정 에 불만을 토로하는 직장 인이 늘고 있습니다. 특히... (6~8월)에 반바지 나 샌들 복장 도 허용하는 '슈퍼 쿨비즈 '기간을 지정했습니다. 때로는 무더운 여름날에는...",
+          "source": "blog.naver.com",
+          "title": "아무리 더워도 ' 반바지 '는 안된다는 회사, 법적 근거 있나요?",
+          "url": "https://blog.naver.com/naverlaw/223725330832"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526055900009",
+      "queries": [
+        {
+          "accepted": 5,
+          "category": "news",
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "폭염 직장 복장 규정 반바지 쿨비즈",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_6aaab96a27",
+      "selected_links": [
+        "https://www.seoul.co.kr/news/economy/industry/2025/06/17/20250617500178?wlog_tag3=naver",
+        "https://biz.heraldcorp.com/article/10508621?ref=naver",
+        "http://www.insightkorea.co.kr/news/articleView.html?idxno=117463",
+        "http://www.insightkorea.co.kr/news/articleView.html?idxno=117247",
+        "http://www.inews24.com/view/1625053"
+      ],
+      "title": "폭염이 회사 규칙을 바꾸는 시대"
+    },
+    {
+      "accepted_count": 6,
+      "accepted_links": [
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "AI",
+            "일자리",
+            "자동화",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 2,
+          "snippet": "노동시장 의 맥락에서 인공지능 기술로 인한 직무 자동화 와 일자리 대체... (전문인력 수요 증가가 상쇄되면서) 고용 이나 임금에 미치는 영향은 미미한 것으로 추정되었다. 이러한 실증 결과는 AI 전문인력 채용으",
+          "source": "kdi.re.kr",
+          "title": "인공지능으로 인한 노동시장 의 변화와 정책방향 - KDI 한국개발연구원 - 연구 - 연구 보고서",
+          "url": "https://www.kdi.re.kr/research/reportView?pub_no=18370"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "AI",
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 3,
+          "snippet": "노동시장 핵심과제 중 하나 ○ 고용 상황이 어려울수록 신속한 일자리 매칭 * 을 통한 노동시장 효율성 제고와 구인‧구직에서 소요되는 사회적 비용절감 ** 이 중요 * AI ‧빅데이터 기술을 활용해 국민...",
+          "source": "korea.kr",
+          "title": "고용 AI 로 딱 맞는 ' 일자리 '와 '인재' 찾는다 - 보도자료 | 브리핑룸",
+          "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156726607"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "AI",
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 4,
+          "snippet": "이후 청년 층 고용 이 AI 에 취약한 업종을 중심으로 급격히 줄어든 반면 시니어 일자리 는 오히려 늘어나고 있다는 분석이 나왔다. AI 가 단순.정형화 업무를 빠르게 대처하면서 노동시장 이 ‘연공 편향’...",
+          "source": "magazine.hankyung.com",
+          "title": "신입사원 줄어든다 했더니 AI 탓",
+          "url": "https://magazine.hankyung.com/business/article/202510303831b"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "AI",
+            "청년고용",
+            "일자리",
+            "노동시장"
+          ],
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rank": 5,
+          "snippet": "한국은행이 지난달 발간한 ' AI 확산과 청년 고용 위축, 연공 편향 기술 변화를 중심으로' 보고서에 따르면, 최근 3년간 청년 층(15~29세) 일자리 는 총 21만1천개 줄었고 이 가운데 98.6%에 달하는 20만8천개가 AI 와...",
+          "source": "imaeil.com",
+          "title": "한국도 못 피한 ` AI 發 고용 충격`… 청년 층 일자리 20만개 줄어 [ 노동시장 대전환]",
+          "url": "https://www.imaeil.com/page/view/2025112415085946022"
+        },
+        {
+          "category": "news",
+          "matched_terms": [
+            "청년",
+            "교육",
+            "프로그램",
+            "아카데미"
+          ],
+          "query": "청년 교육 프로그램 취업 연계 K뉴딜 아카데미",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "LG그룹은 청년 직무 교육 프로그램 '렛츠 그로우 위드 LG(Let's Grow with LG)'를 신설해 기업 맞춤형 인재로 키우겠다고 26일 밝혔다. 산업통상부와 고용노동부가 추진하는 ' K - 뉴딜 아카데미 '의 일환이다. LG그룹은 올...",
+          "source": "fnnews.com",
+          "title": "청년 1000명에 LG그룹표 직무 교육",
+          "url": "http://www.fnnews.com/news/202605261818362351"
+        },
+        {
+          "category": "webkr",
+          "matched_terms": [
+            "교육",
+            "아카데미"
+          ],
+          "query": "청년 교육 프로그램 취업 연계 K뉴딜 아카데미",
+          "query_type": "supporting_context",
+          "rank": 1,
+          "snippet": "0513(14조간)산업일자리혁신과, 10대 그룹의 K - 뉴딜 아카데미 약 6800명 교육 직접 교육 훈련!.pdf [264.8 KB]",
+          "source": "motir.go.kr",
+          "title": "10대 그룹, K - 뉴딜 아카데미 약 6,800명 직접 교육 훈련! < 보도·참고자료 < 보도자료 < 알림·뉴스 < 산업통상부",
+          "url": "https://www.motir.go.kr/kor/article/ATCL3f49a5a8c/171825/view"
+        }
+      ],
+      "main_link": "https://www.yna.co.kr/view/AKR20260526066100530",
+      "queries": [
+        {
+          "accepted": 0,
+          "category": "news",
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 4,
+          "category": "webkr",
+          "query": "AI 청년고용 일자리 자동화 노동시장",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "news",
+          "query": "청년 교육 프로그램 취업 연계 K뉴딜 아카데미",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        },
+        {
+          "accepted": 1,
+          "category": "webkr",
+          "query": "청년 교육 프로그램 취업 연계 K뉴딜 아카데미",
+          "query_type": "supporting_context",
+          "rejected_low_relevance": 0,
+          "returned": 5
+        }
+      ],
+      "rejected_low_relevance": 0,
+      "review_item_id": "2026-05-27:story_bundle_1e2fcd6426",
+      "selected_links": [
+        "https://www.kdi.re.kr/research/reportView?pub_no=18370",
+        "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156726607",
+        "https://magazine.hankyung.com/business/article/202510303831b",
+        "https://www.imaeil.com/page/view/2025112415085946022",
+        "http://www.fnnews.com/news/202605261818362351"
+      ],
+      "title": "청년 교육 프로그램은 일자리 해법인가, 기업 홍보인가"
+    }
+  ],
+  "rows_with_support_links": 10,
+  "run_date": "2026-05-27",
+  "selected_links_total": 50
+}

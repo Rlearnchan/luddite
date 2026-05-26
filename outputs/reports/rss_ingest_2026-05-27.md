@@ -18,11 +18,11 @@
 
 ## Article History
 
-- run_id: `rss_2026-05-27_20260526T1416420`
-- previous_run_id: `rss_2026-05-27_20260526T1415586`
+- run_id: `rss_2026-05-27_20260526T1428030`
+- previous_run_id: `rss_2026-05-27_20260526T1426521`
 - current URLs: 457
-- known before: 1392
-- known after: 1392
+- known before: 1397
+- known after: 1397
 - new to history: 0
 - returning known: 457
 - previous run URLs: 457
@@ -180,7 +180,7 @@
 - duplicate_examples:
 - failure_count: 0
 - oldest_published_at: `Wed, 30 Apr 2025 14:04:28 GMT`
-- newest_published_at: `Tue, 26 May 2026 14:05:44 GMT`
+- newest_published_at: `Tue, 26 May 2026 14:20:56 GMT`
 - sample_titles:
   - Sentences of boys spared custody over rape referred to Court of Appeal
   - Iran condemns US strikes as 'gross violation' of ceasefire
@@ -286,8 +286,8 @@
 - newest_published_at: `Tue, 26 May 2026 09:32:50 -0400`
 - sample_titles:
   - Prospects fade for imminent end to Iran war as attacks restart
-  - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
   - Texas GOP voters vote in race that could shape future of the party -- and the Senate
+  - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -536,12 +536,12 @@
   - "서구 선진국 실질임금 감소 시작…인플레 압박 여파" — https://www.yna.co.kr/view/AKR20260526122100009
   - "엔화, 리라화 제치고 최약체 통화"…외환시장 화제 모은 주장 — https://www.yna.co.kr/view/AKR20260526124000073
 - failure_count: 0
-- oldest_published_at: `Tue, 26 May 2026 09:00:33 +0900`
-- newest_published_at: `Tue, 26 May 2026 22:56:24 +0900`
+- oldest_published_at: `Tue, 26 May 2026 09:19:27 +0900`
+- newest_published_at: `Tue, 26 May 2026 23:19:58 +0900`
 - sample_titles:
+  - 이란 대통령, '전시 차단' 인터넷 87일만에 복구 지시(종합)
+  - '키이우 떠나라' 러 위협에…EU, 러 대사대리 불러 항의
   - 쿼드, 호르무즈사태 계기 인태 해양안보 공동감시 추진…中견제(종합)
-  - "극우 이스라엘 장관의 구호선단 활동가 조롱은 국내 정치용"
-  - 뉴욕증시, 美-이란 종전 합의 기대감에 상승 출발
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -599,12 +599,12 @@
 - duplicate_skipped: 0
 - duplicate_examples:
 - failure_count: 0
-- oldest_published_at: `2026-05-26 15:29:58`
-- newest_published_at: `2026-05-26 22:51:03`
+- oldest_published_at: `2026-05-26 15:33:10`
+- newest_published_at: `2026-05-26 23:23:47`
 - sample_titles:
+  - 달러-원, 뉴욕장서 1,505원대 거래
+  - 미 달러화 약세…美·이란 합의 기대감 속 마찰 빚기도
   - 이란 "미국, 여러 차례 이란 상선 위협…명백한 휴전 위반"
-  - 이란 "美와의 MOU 체결 시 동결자산 중 120억달러 곧장 해제 요구"
-  - 국민성장펀드 출시 이틀 만에 97.5% 판매…추가 공급 검토
 - skipped_reason: ``
 - failure_reason: ``
 

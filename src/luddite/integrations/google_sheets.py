@@ -217,7 +217,7 @@ class GoogleSheetsApiClient:
         row_count: int,
         column_count: int,
     ) -> None:
-        column_widths = [90, 280, 120, 190, 190, 560, 180, 180, 180, 230]
+        column_widths = [90, 280, 120, 190, 360, 560, 180, 180, 180, 230]
         requests: list[dict[str, Any]] = [
             {
                 "repeatCell": {
@@ -238,6 +238,23 @@ class GoogleSheetsApiClient:
                         "userEnteredFormat.wrapStrategy,"
                         "userEnteredFormat.verticalAlignment"
                     ),
+                }
+            },
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 1,
+                        "endRowIndex": max(row_count, 1),
+                        "startColumnIndex": 4,
+                        "endColumnIndex": 5,
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "wrapStrategy": "WRAP",
+                        }
+                    },
+                    "fields": "userEnteredFormat.wrapStrategy",
                 }
             },
             {

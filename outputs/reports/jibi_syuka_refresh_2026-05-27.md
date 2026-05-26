@@ -12,6 +12,8 @@
 - sheet_mode: `staging_replace`
 - sheet_replace_status: `succeeded`
 - overwrite_guard_status: `not_triggered`
+- board_support_search_status: `succeeded`
+- board_support_links_total: 50
 
 ## Warnings
 
