@@ -47,11 +47,41 @@ CONTENT_ENRICHMENT_STATUS="not_run"
 APPEND_STATUS="not_run"
 SUMMARY_WRITTEN=0
 LOCK_HELD=0
+PROGRESS_STEP=0
+PROGRESS_TOTAL="${JIBI_PROGRESS_TOTAL:-10}"
+PROGRESS_STARTED_AT=0
 
 mkdir -p "${LOG_DIR}"
 if [[ "${JIBI_DISABLE_LOG_TEE:-0}" != "1" ]]; then
   exec > >(tee -a "${LOG_FILE}") 2> >(tee -a "${ERR_FILE}" >&2)
 fi
+
+progress_enabled() {
+  [[ "${JIBI_PROGRESS:-1}" != "0" && "${JIBI_PROGRESS_ENABLED:-1}" != "0" ]]
+}
+
+progress_start() {
+  local label="$1"
+  if ! progress_enabled; then
+    return
+  fi
+  PROGRESS_STEP=$((PROGRESS_STEP + 1))
+  PROGRESS_STARTED_AT="$(date +%s)"
+  echo ""
+  echo "[$(date '+%H:%M:%S')] Jibi progress ${PROGRESS_STEP}/${PROGRESS_TOTAL}: ${label}"
+}
+
+progress_done() {
+  local status="${1:-done}"
+  local elapsed=0
+  if ! progress_enabled; then
+    return
+  fi
+  if [[ "${PROGRESS_STARTED_AT}" != "0" ]]; then
+    elapsed=$(($(date +%s) - PROGRESS_STARTED_AT))
+  fi
+  echo "[$(date '+%H:%M:%S')] Jibi progress ${PROGRESS_STEP}/${PROGRESS_TOTAL}: ${status} (${elapsed}s)"
+}
 
 write_summary() {
   local command_status="$1"
@@ -110,18 +140,37 @@ echo "preview_csv=${PREVIEW_CSV}"
 echo "log=${LOG_FILE}"
 echo "err_log=${ERR_FILE}"
 
+progress_start "ops safety guard"
 "${VENV_PYTHON}" -m luddite jibi-ops-guard \
   --append-mode "${JIBI_APPEND_MODE}" \
   --target-sheet "${LUDDITE_GOOGLE_TARGET_SHEET}"
+progress_done
 
+progress_start "fetch RSS articles"
 "${VENV_PYTHON}" -m luddite fetch-rss-articles \
   --date "${JIBI_DATE}" \
   --output "${RSS_INBOX}"
+progress_done
+
+progress_start "import date-scoped articles"
 "${VENV_PYTHON}" -m luddite import-articles --input-file "${RSS_INBOX}"
+progress_done
+
+progress_start "normalize Jibi candidates"
 "${VENV_PYTHON}" -m luddite normalize-candidates
+progress_done
+
+progress_start "score candidates"
 "${VENV_PYTHON}" -m luddite score-candidates
+progress_done
+
+progress_start "cluster story candidates"
 "${VENV_PYTHON}" -m luddite cluster-jibi-candidates
+progress_done
+
+progress_start "render daily digest and review board"
 "${VENV_PYTHON}" -m luddite render-daily-digest --date "${JIBI_DATE}"
+progress_done
 
 if [[ ! -f "${PREVIEW_CSV}" ]]; then
   echo "Missing date-specific sheet preview CSV: ${PREVIEW_CSV}" >&2
@@ -129,14 +178,18 @@ if [[ ! -f "${PREVIEW_CSV}" ]]; then
 fi
 echo "Using date-specific preview CSV: ${PREVIEW_CSV}"
 
+progress_start "render content enrichment diagnostics"
 if ! "${VENV_PYTHON}" -m luddite render-jibi-content-enrichment-review \
   --date "${JIBI_DATE}"; then
   echo "WARN: content enrichment review failed; continuing because it is diagnostic only." >&2
   CONTENT_ENRICHMENT_STATUS="failed"
+  progress_done "failed_non_blocking"
 else
   CONTENT_ENRICHMENT_STATUS="succeeded"
+  progress_done
 fi
 
+progress_start "sheet append/replace ${JIBI_APPEND_MODE}"
 case "${JIBI_APPEND_MODE}" in
   dry_run)
     REPLACE_FLAG=()
@@ -181,8 +234,11 @@ case "${JIBI_APPEND_MODE}" in
     exit 1
     ;;
 esac
+progress_done
 
+progress_start "write manual run summary"
 write_summary "success"
+progress_done
 
 echo "== Jibi manual update complete =="
 echo "Daily digest: ${DAILY_DIGEST}"

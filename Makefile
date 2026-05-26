@@ -5,6 +5,7 @@ PYTHONPATH ?= src
 COMPARE_SLIDEABILITY_VISUAL_QA_ARGS ?= --include-direct --direct-run-id live_m132_20260520_all
 JIBI_DATE ?= $(shell date +%F)
 JIBI_RSS_INBOX ?= data/inbox/articles/rss_$(JIBI_DATE).jsonl
+JIBI_LOG_DIR ?= outputs/logs/jibi
 JIBI_SYUKA_DATA_DIR ?= /Users/bae/Documents/code/syuka-ops/data
 JIBI_EDITORIAL_OVERRIDES ?= outputs/editorial_overrides/jibi_review_board_$(JIBI_DATE).json
 JIBI_SHEET_NAME ?= Jibi
@@ -289,22 +290,26 @@ jibi-mvp-rss-dry-run:
 
 jibi-manual-update:
 	JIBI_DATE=$(JIBI_DATE) JIBI_RSS_INBOX=$(JIBI_RSS_INBOX) \
+		JIBI_LOG_DIR=$(JIBI_LOG_DIR) \
 		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
 		./scripts/run_jibi_manual_update.sh
 
 jibi-review-board-dry-run:
 	JIBI_SHEET_SCHEMA=bundle_review JIBI_DATE=$(JIBI_DATE) JIBI_RSS_INBOX=$(JIBI_RSS_INBOX) \
+		JIBI_LOG_DIR=$(JIBI_LOG_DIR) \
 		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
 		./scripts/run_jibi_manual_update.sh
 
 jibi-review-board-replace:
 	JIBI_SHEET_SCHEMA=bundle_review JIBI_APPEND_MODE=staging_replace \
 		JIBI_DATE=$(JIBI_DATE) JIBI_RSS_INBOX=$(JIBI_RSS_INBOX) \
+		JIBI_LOG_DIR=$(JIBI_LOG_DIR) \
 		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
 		./scripts/run_jibi_manual_update.sh
 
 jibi-review-board-refresh-with-syuka:
 	JIBI_SHEET_SCHEMA=bundle_review JIBI_DATE=$(JIBI_DATE) JIBI_RSS_INBOX=$(JIBI_RSS_INBOX) \
+		JIBI_LOG_DIR=$(JIBI_LOG_DIR) \
 		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
 		./scripts/run_jibi_manual_update.sh
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite refresh-jibi-review-board-with-syuka \
@@ -320,6 +325,7 @@ jibi-review-board-refresh-with-syuka:
 
 jibi-review-board-replace-with-syuka:
 	JIBI_SHEET_SCHEMA=bundle_review JIBI_DATE=$(JIBI_DATE) JIBI_RSS_INBOX=$(JIBI_RSS_INBOX) \
+		JIBI_LOG_DIR=$(JIBI_LOG_DIR) \
 		VENV_PYTHON=$(VENV_PYTHON) PYTHONPATH=$(PYTHONPATH) \
 		./scripts/run_jibi_manual_update.sh
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite refresh-jibi-review-board-with-syuka \
