@@ -66,6 +66,46 @@ def test_infer_review_feedback_understands_natural_korean_notes() -> None:
     assert "past_topic_overlap" not in not_overlap["modifiers"]
 
 
+def test_infer_review_feedback_extracts_operator_failure_modes() -> None:
+    needs_links = infer_review_feedback(
+        "이거 하나만 가져오면 자료로 만들 수가 없다. 관련된 실제 사례 중 뭐라도 참신한 것을 가져와야 한다."
+    )
+    assert "needs_supporting_links" in needs_links["failure_modes"]
+    assert "specific_case_needed" in needs_links["positive_signals"]
+    assert needs_links["review_signal"] in {"weak", "conditional"}
+    assert "find_supporting_links" in needs_links["next_research_actions"]
+
+    textbook = infer_review_feedback(
+        "이것만 가져오면 그냥 한국은행 선생님들의 강의가 되어버린다. 교과서같은 이론 공부 말고 최신 기사가 필요하다."
+    )
+    assert "evidence_not_seed" in textbook["failure_modes"]
+    assert "needs_news_hook" in textbook["failure_modes"]
+    assert "find_current_news_hook" in textbook["next_research_actions"]
+
+    concrete = infer_review_feedback(
+        "원인을 두루두루 설명하지 말고 가장 신기한 원인 하나를 뽑아 집중적으로 얘기해줘야 한다."
+    )
+    assert "needs_concrete_question" in concrete["failure_modes"]
+    assert "narrow_to_concrete_question" in concrete["next_research_actions"]
+
+    wrong_frame = infer_review_feedback(
+        "초점은 일본 메가뱅크의 해외 투자가 아니라 미국 제조업 부흥으로 옮겨져야 한다."
+    )
+    assert "wrong_frame" in wrong_frame["failure_modes"]
+    assert "reframe_around_stronger_real_economy_angle" in wrong_frame[
+        "next_research_actions"
+    ]
+
+    good_question = infer_review_feedback(
+        "좋다. 이런 질문거리를 던지는 것이 제일 좋다. GOOD!"
+    )
+    assert "good_question" in good_question["positive_signals"]
+    assert good_question["review_signal"] == "strong"
+    assert "keep_question_as_editorial_anchor" in good_question[
+        "next_research_actions"
+    ]
+
+
 def test_explicit_tag_wins_over_inferred_review_text() -> None:
     payload = infer_review_feedback("seed — 홍보성이라 약하지만 구조로 풀면 가능")
 
@@ -128,6 +168,40 @@ def test_summarize_review_feedback_counts_inferred_disagreements() -> None:
     assert summary["disagreement_rows"][0]["inferred"] is True
 
 
+def test_summarize_review_feedback_adds_row_operator_lessons() -> None:
+    rows = [
+        {
+            "일시": "2026-05-25 21:42",
+            "제목": "전기·가스요금 지원에 72% 찬성",
+            "리뷰-동찬": "좋다. '정부는 요금을 깎아줘야 하나' 이런 질문거리를 던지는 것이 제일 좋다. GOOD!",
+            "리뷰-형찬": "새로운 게 별로 없어보임. 살짝 언급할 정도로 사용?",
+            "ID": "2026-05-25:story_bundle_energy",
+        },
+        {
+            "일시": "2026-05-25 21:42",
+            "제목": "글로벌 PF 대출 5년새 2배",
+            "리뷰-동찬": "초점은 일본 메가뱅크의 해외 투자 아닌 미국 제조업 부흥으로 옮겨져야 한다.",
+            "ID": "2026-05-25:story_bundle_pf",
+        },
+    ]
+
+    summary = summarize_review_feedback(rows, run_date="2026-05-25")
+
+    assert summary["failure_mode_counts"]["wrong_frame"] == 1
+    assert summary["positive_signal_counts"]["good_question"] == 1
+    assert summary["next_research_action_counts"][
+        "reframe_around_stronger_real_economy_angle"
+    ] == 1
+    assert summary["rows"][0]["row_review_signal"] == "conditional"
+    assert "good_question" in summary["rows"][0]["row_positive_signals"]
+    assert "keep_question_as_editorial_anchor" in summary["rows"][0][
+        "row_next_research_actions"
+    ]
+    assert summary["rows"][1]["row_review_signal"] == "weak"
+    assert "wrong_frame" in summary["rows"][1]["row_failure_modes"]
+    assert "초점" in summary["rows"][1]["operator_lesson"]
+
+
 def test_render_review_feedback_summary_from_local_csv(tmp_path) -> None:
     input_csv = tmp_path / "review_board.csv"
     output_md = tmp_path / "feedback.md"
@@ -157,8 +231,13 @@ def test_render_review_feedback_summary_from_local_csv(tmp_path) -> None:
     assert "양파가 너무 많으면 정부는 무엇을 하나" in output_md.read_text(
         encoding="utf-8"
     )
+    report = output_md.read_text(encoding="utf-8")
+    assert "## Operator Lessons" in report
+    assert "## Failure Mode Counts" in report
+    assert "## Next Research Actions" in report
     payload = json.loads(output_json.read_text(encoding="utf-8"))
     assert payload["rows"][0]["id"] == "2026-05-23:story_bundle_onion"
+    assert "row_review_signal" in payload["rows"][0]
 
 
 def test_render_review_feedback_summary_accepts_old_nine_column_board(tmp_path) -> None:

@@ -66,6 +66,35 @@ REVIEW_MODIFIERS = [
     "textbook_explainer_risk",
     "weak_audience_bridge",
 ]
+FAILURE_MODES = [
+    "evidence_not_seed",
+    "needs_news_hook",
+    "too_broad",
+    "too_familiar",
+    "needs_supporting_links",
+    "wrong_frame",
+    "needs_concrete_question",
+    "market_risk",
+    "weak_audience_bridge",
+]
+POSITIVE_SIGNALS = [
+    "good_question",
+    "fresh_angle",
+    "promising_hook",
+    "useful_evidence",
+    "specific_case_needed",
+]
+NEXT_RESEARCH_ACTIONS = [
+    "find_supporting_links",
+    "find_current_news_hook",
+    "narrow_to_concrete_question",
+    "find_specific_case_or_odd_hook",
+    "check_past_topic_differentiation",
+    "reframe_around_stronger_real_economy_angle",
+    "demote_to_evidence_or_background",
+    "avoid_market_advice_frame",
+    "keep_question_as_editorial_anchor",
+]
 TAG_ALIASES = {
     "seed": "seed",
     "방송": "seed",
@@ -182,6 +211,103 @@ REJECT_TERMS = {
     "reject",
 }
 UNCLEAR_TERMS = {"애매", "모르겠", "불분명", "판단 어려"}
+EVIDENCE_NOT_SEED_TERMS = {
+    "자료로 만들 수가 없다",
+    "자료로 만들 수 없다",
+    "이거 하나만 가져오면",
+    "이것만 가져오면",
+    "주제로 할 수가 없",
+    "주제로 할 수 없",
+    "단독 seed",
+    "단독 후보",
+    "단독으로는",
+    "그냥 자료",
+    "1-2 슬라이드",
+    "한두 슬라이드",
+}
+NEEDS_NEWS_HOOK_TERMS = {
+    "최신 기사",
+    "최신 뉴스를",
+    "뉴스가 메인",
+    "hooking 이슈",
+    "후킹 이슈",
+    "교과서",
+    "강의",
+    "원론",
+    "이론 공부",
+    "실생활에 밀접",
+}
+TOO_BROAD_TERMS = {
+    "너무나 거대",
+    "너무 거대",
+    "커다란 이야기",
+    "그래서 어쩌라고",
+    "추상적",
+    "심오한",
+    "두루두루",
+    "현상 소개",
+}
+TOO_FAMILIAR_TERMS = {
+    "뻔하디 뻔",
+    "뻔한",
+    "이미 많이",
+    "많이 했",
+    "100번도 더",
+    "차별점 없",
+    "새로운 게 별로",
+    "새로운 포인트",
+    "맨날 하는",
+    "반복",
+}
+WRONG_FRAME_TERMS = {
+    "초점",
+    "옮겨져야",
+    "잘못",
+    "프레임",
+    "사고방식",
+}
+CONCRETE_QUESTION_TERMS = {
+    "질문거리",
+    "질문거리를",
+    "가장 신기한 원인",
+    "가장 강력한 원인",
+    "가장 웃긴 원인",
+    "한가지",
+    "한 가지",
+    "두가지",
+    "두 가지",
+    "집중적으로",
+}
+MARKET_RISK_TERMS = {
+    "투자",
+    "주가",
+    "지수",
+    "공모주",
+    "업황",
+    "삼성전자",
+    "sk하이닉스",
+    "sk 하이닉스",
+}
+GOOD_QUESTION_TERMS = {
+    "질문거리를 던지는 것이 제일 좋",
+    "질문거리를 던지는 작업",
+    "이런 질문거리",
+    "good",
+    "당면한 현상",
+    "각 경제 주체",
+}
+FRESH_ANGLE_TERMS = {"신선", "참신", "새 각도", "새로운 각도", "몰랐을 법"}
+PROMISING_HOOK_TERMS = {"화두", "가능성", "살릴 수", "좋음", "괜찮음", "재밌"}
+USEFUL_EVIDENCE_TERMS = {"자료로", "근거", "언급할 정도", "보강 링크", "같이 잘 엮"}
+SPECIFIC_CASE_NEEDED_TERMS = {
+    "실제 사례",
+    "구체적인",
+    "구체적",
+    "뭐라도",
+    "한가지",
+    "한 가지",
+    "사례",
+}
 
 
 @dataclass(frozen=True)
@@ -206,6 +332,45 @@ def parse_review_tag(note: str) -> str:
 
 def _contains_any(text: str, terms: set[str]) -> list[str]:
     return [term for term in terms if term.lower() in text]
+
+
+def _failure_mode_matches(text: str) -> dict[str, list[str]]:
+    matches = {
+        "evidence_not_seed": _contains_any(text, EVIDENCE_NOT_SEED_TERMS),
+        "needs_news_hook": _contains_any(text, NEEDS_NEWS_HOOK_TERMS),
+        "too_broad": _contains_any(text, TOO_BROAD_TERMS),
+        "too_familiar": _contains_any(text, TOO_FAMILIAR_TERMS),
+        "needs_supporting_links": _contains_any(text, NEEDS_TERMS)
+        + _contains_any(text, SPECIFIC_CASE_NEEDED_TERMS),
+        "wrong_frame": [],
+        "needs_concrete_question": _contains_any(text, CONCRETE_QUESTION_TERMS),
+        "market_risk": _contains_any(text, MARKET_RISK_TERMS),
+        "weak_audience_bridge": _contains_any(text, AUDIENCE_WEAK_TERMS),
+    }
+    wrong_frame_hits = _contains_any(text, WRONG_FRAME_TERMS)
+    if wrong_frame_hits and any(
+        token in text for token in ("초점", "옮겨", "잘못", "아닌", "사고방식")
+    ):
+        matches["wrong_frame"] = wrong_frame_hits
+    if matches["evidence_not_seed"] or matches["needs_news_hook"]:
+        matches["needs_news_hook"] = list(
+            dict.fromkeys([*matches["needs_news_hook"], "news_hook_needed"])
+        )
+    return {key: value for key, value in matches.items() if value}
+
+
+def _positive_signal_matches(text: str) -> dict[str, list[str]]:
+    return {
+        key: value
+        for key, value in {
+            "good_question": _contains_any(text, GOOD_QUESTION_TERMS),
+            "fresh_angle": _contains_any(text, FRESH_ANGLE_TERMS),
+            "promising_hook": _contains_any(text, PROMISING_HOOK_TERMS),
+            "useful_evidence": _contains_any(text, USEFUL_EVIDENCE_TERMS),
+            "specific_case_needed": _contains_any(text, SPECIFIC_CASE_NEEDED_TERMS),
+        }.items()
+        if value
+    }
 
 
 def _past_overlap_matches(text: str) -> list[str]:
@@ -306,6 +471,96 @@ def _legacy_inferred_label(primary_label: str, modifiers: list[str]) -> str:
     return primary_label
 
 
+def _next_research_actions(
+    failure_modes: list[str],
+    positive_signals: list[str],
+) -> list[str]:
+    actions: list[str] = []
+    if "needs_supporting_links" in failure_modes:
+        actions.append("find_supporting_links")
+    if "needs_news_hook" in failure_modes or "evidence_not_seed" in failure_modes:
+        actions.append("find_current_news_hook")
+    if "too_broad" in failure_modes or "needs_concrete_question" in failure_modes:
+        actions.append("narrow_to_concrete_question")
+    if "specific_case_needed" in positive_signals:
+        actions.append("find_specific_case_or_odd_hook")
+    if "too_familiar" in failure_modes:
+        actions.append("check_past_topic_differentiation")
+    if "wrong_frame" in failure_modes:
+        actions.append("reframe_around_stronger_real_economy_angle")
+    if "evidence_not_seed" in failure_modes:
+        actions.append("demote_to_evidence_or_background")
+    if "market_risk" in failure_modes:
+        actions.append("avoid_market_advice_frame")
+    if "good_question" in positive_signals:
+        actions.append("keep_question_as_editorial_anchor")
+    return [action for action in NEXT_RESEARCH_ACTIONS if action in set(actions)]
+
+
+def _review_signal(
+    primary_label: str,
+    failure_modes: list[str],
+    positive_signals: list[str],
+) -> str:
+    if primary_label == "unlabeled":
+        return "unlabeled"
+    if primary_label == "reject":
+        return "reject"
+    if "good_question" in positive_signals and not {
+        "evidence_not_seed",
+        "wrong_frame",
+        "too_familiar",
+    }.intersection(failure_modes):
+        return "strong"
+    if primary_label == "seed" and not failure_modes:
+        return "strong"
+    if primary_label in {"conditional_seed", "needs_more_sources", "evidence_only"}:
+        return "conditional"
+    if positive_signals and not failure_modes:
+        return "conditional"
+    if failure_modes:
+        return "weak"
+    return "unlabeled"
+
+
+def _review_feedback_base_payload(
+    *,
+    raw_note: str,
+    explicit_tag: str,
+    primary_label: str,
+    inferred_label: str,
+    modifiers: list[str],
+    confidence: str,
+    reasons: list[str],
+    failure_modes: list[str],
+    positive_signals: list[str],
+) -> dict[str, Any]:
+    return {
+        "tag": INFERRED_LABEL_TO_REVIEW_TAG[primary_label]
+        if explicit_tag == "unlabeled"
+        else explicit_tag,
+        "explicit_tag": explicit_tag,
+        "inferred_label": inferred_label,
+        "primary_inferred_label": primary_label,
+        "modifiers": modifiers,
+        "failure_modes": failure_modes,
+        "positive_signals": positive_signals,
+        "review_signal": _review_signal(
+            primary_label,
+            failure_modes,
+            positive_signals,
+        ),
+        "next_research_actions": _next_research_actions(
+            failure_modes,
+            positive_signals,
+        ),
+        "inferred_confidence": confidence,
+        "inference_reasons": reasons,
+        "raw_note": raw_note,
+        "note": raw_note,
+    }
+
+
 def infer_review_feedback(note: str) -> dict[str, Any]:
     raw_note = note.strip()
     explicit_tag = parse_review_tag(raw_note)
@@ -316,6 +571,10 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
             "inferred_label": "unlabeled",
             "primary_inferred_label": "unlabeled",
             "modifiers": [],
+            "failure_modes": [],
+            "positive_signals": [],
+            "review_signal": "unlabeled",
+            "next_research_actions": [],
             "inferred_confidence": "low",
             "inference_reasons": [],
             "raw_note": "",
@@ -324,6 +583,12 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
     text = raw_note.lower()
     matches = _review_signal_matches(text)
     modifiers = _review_modifiers(matches)
+    failure_matches = _failure_mode_matches(text)
+    positive_matches = _positive_signal_matches(text)
+    failure_modes = [mode for mode in FAILURE_MODES if failure_matches.get(mode)]
+    positive_signals = [
+        signal for signal in POSITIVE_SIGNALS if positive_matches.get(signal)
+    ]
     if explicit_tag != "unlabeled":
         primary_label = EXPLICIT_TAG_TO_INFERRED_LABEL[explicit_tag]
         inferred_label = _legacy_inferred_label(primary_label, modifiers)
@@ -332,43 +597,62 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
             for key, value in matches.items()
             if value
         ]
-        return {
-            "tag": explicit_tag,
-            "explicit_tag": explicit_tag,
-            "inferred_label": inferred_label,
-            "primary_inferred_label": primary_label,
-            "modifiers": modifiers,
-            "inferred_confidence": "high",
-            "inference_reasons": reasons,
-            "raw_note": raw_note,
-            "note": raw_note,
-        }
+        reasons.extend(
+            f"failure_mode:{key}:{','.join(value[:3])}"
+            for key, value in failure_matches.items()
+        )
+        reasons.extend(
+            f"positive_signal:{key}:{','.join(value[:3])}"
+            for key, value in positive_matches.items()
+        )
+        return _review_feedback_base_payload(
+            raw_note=raw_note,
+            explicit_tag=explicit_tag,
+            primary_label=primary_label,
+            inferred_label=inferred_label,
+            modifiers=modifiers,
+            confidence="high",
+            reasons=reasons,
+            failure_modes=failure_modes,
+            positive_signals=positive_signals,
+        )
 
     primary_label = _primary_label_from_matches(matches)
+    if primary_label == "unlabeled" and "good_question" in positive_signals:
+        primary_label = "seed"
+    elif primary_label == "unlabeled" and failure_modes:
+        primary_label = "unclear"
     label = _legacy_inferred_label(primary_label, modifiers)
     reasons = [
         f"{key}:{','.join(value[:3])}"
         for key, value in matches.items()
         if value
     ]
+    reasons.extend(
+        f"failure_mode:{key}:{','.join(value[:3])}"
+        for key, value in failure_matches.items()
+    )
+    reasons.extend(
+        f"positive_signal:{key}:{','.join(value[:3])}"
+        for key, value in positive_matches.items()
+    )
     if primary_label == "unlabeled":
         confidence = "low"
     elif len([value for value in matches.values() if value]) >= 2:
         confidence = "medium"
     else:
         confidence = "high"
-    tag = INFERRED_LABEL_TO_REVIEW_TAG[primary_label]
-    return {
-        "tag": tag,
-        "explicit_tag": "unlabeled",
-        "inferred_label": label,
-        "primary_inferred_label": primary_label,
-        "modifiers": modifiers,
-        "inferred_confidence": confidence,
-        "inference_reasons": reasons,
-        "raw_note": raw_note,
-        "note": raw_note,
-    }
+    return _review_feedback_base_payload(
+        raw_note=raw_note,
+        explicit_tag="unlabeled",
+        primary_label=primary_label,
+        inferred_label=label,
+        modifiers=modifiers,
+        confidence=confidence,
+        reasons=reasons,
+        failure_modes=failure_modes,
+        positive_signals=positive_signals,
+    )
 
 
 def _rows_from_values(values: list[list[str]]) -> list[dict[str, str]]:
@@ -398,6 +682,75 @@ def _reviewer_completion(rows: list[dict[str, str]]) -> dict[str, int]:
     }
 
 
+def _row_review_signal(reviewer_notes: dict[str, dict[str, Any]]) -> str:
+    signals = [
+        str(note.get("review_signal") or "")
+        for note in reviewer_notes.values()
+        if note.get("note")
+    ]
+    if not signals:
+        return "unreviewed"
+    decisive = {signal for signal in signals if signal != "unlabeled"}
+    if not decisive:
+        return "unreviewed"
+    if "reject" in decisive and decisive.intersection({"strong", "conditional"}):
+        return "mixed"
+    if "strong" in decisive and decisive.intersection({"weak", "conditional"}):
+        return "conditional"
+    for signal in ["strong", "conditional", "weak", "reject"]:
+        if signal in decisive:
+            return signal
+    return "unreviewed"
+
+
+def _row_signal_values(
+    reviewer_notes: dict[str, dict[str, Any]],
+    field: str,
+    allowed: list[str],
+) -> list[str]:
+    values: list[str] = []
+    for note in reviewer_notes.values():
+        values.extend(str(item) for item in note.get(field, []) if item)
+    present = set(values)
+    return [item for item in allowed if item in present]
+
+
+def _operator_lesson(
+    *,
+    title: str,
+    row_review_signal: str,
+    failure_modes: list[str],
+    positive_signals: list[str],
+    next_actions: list[str],
+) -> str:
+    prefix = f"{title}: " if title else ""
+    if row_review_signal == "unreviewed":
+        return prefix + "리뷰가 아직 없어 판단 보류."
+    if row_review_signal == "mixed":
+        return prefix + "리뷰 판단이 갈립니다. seed 가능성과 탈락 사유를 함께 재검토하세요."
+    if "wrong_frame" in failure_modes:
+        return prefix + "현재 프레임이 빗나갔습니다. 더 강한 실물경제/생활 질문으로 초점을 옮기세요."
+    if {"evidence_not_seed", "needs_news_hook"}.intersection(failure_modes):
+        return prefix + "자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다."
+    if "too_familiar" in failure_modes:
+        return prefix + "이미 익숙한 주제입니다. 새 각도나 차별점이 없으면 낮추세요."
+    if "too_broad" in failure_modes:
+        return prefix + "범위가 너무 큽니다. 구체 사례와 좁은 질문으로 다시 잡으세요."
+    if "needs_supporting_links" in failure_modes:
+        return prefix + "이 자료 하나로는 약합니다. 숫자, 사례, 독립 출처를 보강하세요."
+    if "good_question" in positive_signals:
+        return prefix + "생활 가까운 질문이 잡혀 있습니다. 이 질문을 중심으로 후속 조사를 이어가세요."
+    if "find_supporting_links" in next_actions:
+        return prefix + "보강 링크를 찾은 뒤 seed/evidence 역할을 다시 판정하세요."
+    if row_review_signal == "strong":
+        return prefix + "긍정 신호가 강합니다. 바로 확장 가능한 질문과 보강 자료를 확인하세요."
+    if row_review_signal == "conditional":
+        return prefix + "조건부 후보입니다. 보강 자료나 프레임 조정 후 다시 판단하세요."
+    if row_review_signal == "reject":
+        return prefix + "현재 형태로는 낮추거나 제외하는 편이 안전합니다."
+    return prefix + "추가 판단이 필요합니다."
+
+
 def _note_payload(note: str) -> dict[str, Any]:
     return infer_review_feedback(note)
 
@@ -425,6 +778,11 @@ def summarize_review_feedback(
     modifier_examples: dict[str, list[dict[str, str]]] = {
         modifier: [] for modifier in REVIEW_MODIFIERS
     }
+    failure_mode_counts = Counter({mode: 0 for mode in FAILURE_MODES})
+    positive_signal_counts = Counter({signal: 0 for signal in POSITIVE_SIGNALS})
+    next_research_action_counts = Counter(
+        {action: 0 for action in NEXT_RESEARCH_ACTIONS}
+    )
     row_payloads: list[dict[str, Any]] = []
     disagreement_rows: list[dict[str, Any]] = []
     for index, row in enumerate(rows, start=2):
@@ -437,6 +795,12 @@ def summarize_review_feedback(
                 tag_counts[note["tag"]] += 1
                 inferred_label_counts[note["inferred_label"]] += 1
                 primary_label_counts[note["primary_inferred_label"]] += 1
+                for failure_mode in note.get("failure_modes", []):
+                    failure_mode_counts[failure_mode] += 1
+                for positive_signal in note.get("positive_signals", []):
+                    positive_signal_counts[positive_signal] += 1
+                for action in note.get("next_research_actions", []):
+                    next_research_action_counts[action] += 1
                 for modifier in note["modifiers"]:
                     modifier_counts[modifier] += 1
                     if len(modifier_examples[modifier]) < 5:
@@ -449,6 +813,22 @@ def summarize_review_feedback(
                             }
                         )
         tags = {note["tag"] for note in reviewer_notes.values() if note["note"]}
+        row_failure_modes = _row_signal_values(
+            reviewer_notes,
+            "failure_modes",
+            FAILURE_MODES,
+        )
+        row_positive_signals = _row_signal_values(
+            reviewer_notes,
+            "positive_signals",
+            POSITIVE_SIGNALS,
+        )
+        row_next_research_actions = _row_signal_values(
+            reviewer_notes,
+            "next_research_actions",
+            NEXT_RESEARCH_ACTIONS,
+        )
+        row_review_signal = _row_review_signal(reviewer_notes)
         row_payload = {
             "row": index,
             "date": _row_date(row, run_date),
@@ -457,6 +837,17 @@ def summarize_review_feedback(
             "score": row.get("점수", ""),
             "id": row.get("ID", ""),
             "reviewers": reviewer_notes,
+            "row_review_signal": row_review_signal,
+            "row_failure_modes": row_failure_modes,
+            "row_positive_signals": row_positive_signals,
+            "row_next_research_actions": row_next_research_actions,
+            "operator_lesson": _operator_lesson(
+                title=str(row.get("제목", "")),
+                row_review_signal=row_review_signal,
+                failure_modes=row_failure_modes,
+                positive_signals=row_positive_signals,
+                next_actions=row_next_research_actions,
+            ),
         }
         row_payloads.append(row_payload)
         if "seed" in tags and "reject" in tags:
@@ -486,6 +877,9 @@ def summarize_review_feedback(
         "primary_label_counts": dict(primary_label_counts),
         "modifier_counts": dict(modifier_counts),
         "modifier_examples": modifier_examples,
+        "failure_mode_counts": dict(failure_mode_counts),
+        "positive_signal_counts": dict(positive_signal_counts),
+        "next_research_action_counts": dict(next_research_action_counts),
         "rows": row_payloads,
         "disagreement_rows": disagreement_rows,
     }
@@ -503,6 +897,26 @@ def _markdown(summary: dict[str, Any]) -> str:
     ]
     for reviewer, count in summary["reviewer_completion"].items():
         lines.append(f"- {reviewer}: {count}/{summary['total_rows']}")
+    lines.extend(["", "## Operator Lessons", ""])
+    for row in summary["rows"]:
+        lines.append(
+            f"- row {row['row']} `{row.get('row_review_signal', 'unreviewed')}`: "
+            f"{row.get('operator_lesson', '')}"
+        )
+    lines.extend(["", "## Failure Mode Counts", ""])
+    for mode in FAILURE_MODES:
+        lines.append(f"- {mode}: {summary.get('failure_mode_counts', {}).get(mode, 0)}")
+    lines.extend(["", "## Next Research Actions", ""])
+    for action in NEXT_RESEARCH_ACTIONS:
+        lines.append(
+            f"- {action}: "
+            f"{summary.get('next_research_action_counts', {}).get(action, 0)}"
+        )
+    lines.extend(["", "## Positive Signal Counts", ""])
+    for signal in POSITIVE_SIGNALS:
+        lines.append(
+            f"- {signal}: {summary.get('positive_signal_counts', {}).get(signal, 0)}"
+        )
     lines.extend(["", "## Tag Counts", ""])
     for tag in REVIEW_TAGS:
         lines.append(f"- {tag}: {summary['tag_counts'].get(tag, 0)}")
@@ -539,6 +953,20 @@ def _markdown(summary: dict[str, Any]) -> str:
         lines.append(f"- ID: `{row['id']}`")
         if row.get("score"):
             lines.append(f"- 점수: {row['score']}")
+        lines.append(f"- row_review_signal: `{row.get('row_review_signal', '')}`")
+        lines.append(
+            "- row_failure_modes: `"
+            f"{','.join(row.get('row_failure_modes', [])) or 'none'}`"
+        )
+        lines.append(
+            "- row_positive_signals: `"
+            f"{','.join(row.get('row_positive_signals', [])) or 'none'}`"
+        )
+        lines.append(
+            "- row_next_research_actions: `"
+            f"{','.join(row.get('row_next_research_actions', [])) or 'none'}`"
+        )
+        lines.append(f"- operator_lesson: {row.get('operator_lesson', '')}")
         for reviewer in REVIEWER_COLUMNS:
             note = row["reviewers"][reviewer]
             note_text = note["note"] or "(blank)"
@@ -546,6 +974,9 @@ def _markdown(summary: dict[str, Any]) -> str:
                 f"- {reviewer}: explicit=`{note['explicit_tag']}`, "
                 f"primary=`{note['primary_inferred_label']}`, "
                 f"legacy=`{note['inferred_label']}`, "
+                f"signal=`{note.get('review_signal', 'unlabeled')}`, "
+                f"failures=`{','.join(note.get('failure_modes', [])) or 'none'}`, "
+                f"positives=`{','.join(note.get('positive_signals', [])) or 'none'}`, "
                 f"modifiers=`{','.join(note['modifiers']) or 'none'}`/"
                 f"{note['inferred_confidence']}, "
                 f"tag=`{note['tag']}` — {note_text}"
