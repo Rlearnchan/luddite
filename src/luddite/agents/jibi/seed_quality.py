@@ -184,6 +184,13 @@ PROMO_BULLETIN_FLAGS = {
     "product_or_certification_promo",
     "narrow_market_track_record",
 }
+STANDALONE_RESEARCH_NOTE_SIGNALS = {
+    "direct_money_or_household_impact",
+    "job_workplace_labor_change",
+    "consumer_funds_or_regulation_gap",
+    "ai_entering_real_operations",
+    "everyday_analogy_or_life_hook",
+}
 
 
 def _add_unique(values: list[str], value: str) -> None:
@@ -327,6 +334,13 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         weakness_signals=weakness_signals,
         text=text,
     )
+    story_role = _story_role_from_seed_quality(
+        classification["label"],
+        source_role=source_role,
+        seed_type=seed_type,
+        quality_flags=set(quality_flags) | existing_flags,
+        weakness_signals=weakness_signals,
+    )
     gap = _so_what_gap(
         label=label,
         quality_flags=set(quality_flags) | existing_flags,
@@ -347,6 +361,8 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         "quality_flags": quality_flags,
         "seed_quality_classification": classification["label"],
         "seed_quality_reasons": classification["reasons"],
+        "story_role": story_role["label"],
+        "story_role_reasons": story_role["reasons"],
     }
 
 
@@ -383,6 +399,14 @@ def _seed_quality_classification(
     text: str,
 ) -> dict[str, Any]:
     if source_role == "research_note" and label in {"strong", "conditional"}:
+        if not STANDALONE_RESEARCH_NOTE_SIGNALS.intersection(audience_bridge_signals):
+            return {
+                "label": "conditional_seed",
+                "reasons": [
+                    "research_note_needs_current_news_hook",
+                    "mechanism_or_policy_note_without_direct_audience_bridge",
+                ],
+            }
         return {
             "label": "standalone_seed",
             "reasons": ["research_note_with_structural_or_audience_signal"],
@@ -431,3 +455,39 @@ def _seed_quality_classification(
     if label == "conditional":
         return {"label": "conditional_seed", "reasons": ["conditional_audience_bridge"]}
     return {"label": "reject_or_downrank", "reasons": weakness_signals or ["weak_audience_bridge"]}
+
+
+def _story_role_from_seed_quality(
+    classification: str,
+    *,
+    source_role: str,
+    seed_type: str,
+    quality_flags: set[str],
+    weakness_signals: list[str],
+) -> dict[str, Any]:
+    if classification == "standalone_seed":
+        return {"label": "standalone_seed", "reasons": ["seed_quality_standalone"]}
+    if classification in {"conditional_seed", "bundle_needed"}:
+        reasons = ["seed_needs_supporting_links_or_frame"]
+        if source_role == "research_note":
+            reasons.append("research_note_needs_news_hook_before_board")
+        if source_role == "public_wire":
+            reasons.append("public_wire_needs_second_source")
+        return {"label": "seed_with_supporting_links", "reasons": reasons}
+    if classification == "evidence_only":
+        if "narrow_market_track_record" in quality_flags or seed_type in {
+            "single_company_financing",
+            "market_rate_stress",
+        }:
+            return {
+                "label": "background_reference",
+                "reasons": ["market_or_single_company_context_only"],
+            }
+        return {
+            "label": "evidence_for_larger_story",
+            "reasons": ["seed_quality_evidence_only"],
+        }
+    return {
+        "label": "demote_or_reject",
+        "reasons": weakness_signals or ["seed_quality_reject_or_downrank"],
+    }

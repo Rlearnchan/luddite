@@ -290,6 +290,16 @@ def _top_quality_gate_failures(
         failures.append("single_company_without_broader_bridge")
     if "market_rate_stress" in flags and "broader_macro_angle" not in flags:
         failures.append("market_rate_without_macro_bridge")
+    story_role = str(candidate.get("story_role") or "")
+    if story_role in {
+        "evidence_for_larger_story",
+        "background_reference",
+        "demote_or_reject",
+    }:
+        failures.append(f"story_role_not_top_seed={story_role}")
+    seed_quality = str(candidate.get("seed_quality_classification") or "")
+    if not story_role and seed_quality in {"evidence_only", "reject_or_downrank"}:
+        failures.append(f"seed_quality_not_top_seed={seed_quality}")
     seed_type = str(candidate.get("seed_type") or "other")
     if seed_type not in SPECIFIC_TOP_SEED_TYPES and _has_generic_why(candidate):
         failures.append("generic_why_for_unspecific_seed_type")
@@ -1308,6 +1318,10 @@ def _bundle_review_metadata_row(
         ),
         "seed_quality_reasons": candidate.get("seed_quality_reasons")
         or so_what.get("seed_quality_reasons")
+        or [],
+        "story_role": str(candidate.get("story_role") or so_what.get("story_role") or ""),
+        "story_role_reasons": candidate.get("story_role_reasons")
+        or so_what.get("story_role_reasons")
         or [],
         "bundle_type": str(record.get("bundle_type") or ""),
         "suggested_operator_action": str(record.get("suggested_operator_action") or ""),

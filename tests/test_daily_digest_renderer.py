@@ -376,6 +376,41 @@ def test_top_candidates_backfills_when_role_caps_underfill() -> None:
     ]
 
 
+def test_top_candidates_excludes_evidence_story_roles_from_primary_board() -> None:
+    candidates = [
+        {
+            "candidate_id": "evidence_bok",
+            "title": "BOK 교과서형 자산 토큰화 이슈노트",
+            "source": "한국은행",
+            "source_role_class": "research_note",
+            "seed_type": "policy_research_note",
+            "story_role": "evidence_for_larger_story",
+            "seed_quality_classification": "evidence_only",
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "quality_flags": [],
+            "scores": {"total_score": 99, "broadcast_potential_proxy": 5},
+        },
+        {
+            "candidate_id": "seed_energy",
+            "title": "전기·가스요금 지원과 생활비 정치",
+            "source": "연합뉴스 세계",
+            "source_role_class": "public_wire",
+            "seed_type": "policy_release_seed",
+            "story_role": "seed_with_supporting_links",
+            "seed_quality_classification": "conditional_seed",
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "quality_flags": [],
+            "scores": {"total_score": 60, "broadcast_potential_proxy": 4},
+        },
+    ]
+
+    selected = top_candidates(candidates, limit=1, max_per_source=10)
+
+    assert [candidate["candidate_id"] for candidate in selected] == ["seed_energy"]
+
+
 def test_quality_report_includes_source_role_cap_and_storyline_audit(tmp_path) -> None:
     report_path = tmp_path / "source_role_caps.md"
     candidates = [

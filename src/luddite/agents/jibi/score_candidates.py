@@ -582,6 +582,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
             "weakness_signals",
             "seed_quality_classification",
             "seed_quality_reasons",
+            "story_role",
+            "story_role_reasons",
         ]:
             if not so_what.get(key):
                 so_what[key] = inferred.get(key)
@@ -713,6 +715,8 @@ def score_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
         },
         "seed_quality_classification": so_what.get("seed_quality_classification"),
         "seed_quality_reasons": so_what.get("seed_quality_reasons", []),
+        "story_role": so_what.get("story_role"),
+        "story_role_reasons": so_what.get("story_role_reasons", []),
         "story_specificity": story_specificity,
         "quality_flags": quality_gate["quality_flags"],
         "possible_expansions": possible_expansions,

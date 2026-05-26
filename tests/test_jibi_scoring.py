@@ -570,6 +570,7 @@ def test_bok_youth_labor_has_strong_so_what() -> None:
 
     assert scored["so_what"]["so_what_label"] == "strong"
     assert scored["seed_quality_classification"] == "standalone_seed"
+    assert scored["story_role"] == "standalone_seed"
     assert "job_workplace_labor_change" in scored["so_what"]["audience_bridge_signals"]
 
 
@@ -592,4 +593,7 @@ def test_asset_tokenization_is_conditional_audience_bridge() -> None:
     scored = score_candidate(candidate)
 
     assert scored["so_what"]["so_what_label"] in {"conditional", "strong"}
+    assert scored["seed_quality_classification"] == "conditional_seed"
+    assert scored["story_role"] == "seed_with_supporting_links"
+    assert "research_note_needs_current_news_hook" in scored["seed_quality_reasons"]
     assert "distinctive_mechanism" in scored["so_what"]["audience_bridge_signals"]
