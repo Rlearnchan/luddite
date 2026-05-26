@@ -18,11 +18,11 @@
 
 ## Article History
 
-- run_id: `rss_2026-05-27_20260526T1437595`
-- previous_run_id: `rss_2026-05-27_20260526T1436320`
+- run_id: `rss_2026-05-27_20260526T1441061`
+- previous_run_id: `rss_2026-05-27_20260526T1437595`
 - current URLs: 457
-- known before: 1398
-- known after: 1399
+- known before: 1399
+- known after: 1400
 - new to history: 1
 - returning known: 456
 - previous run URLs: 457
@@ -44,12 +44,12 @@
 
 | source | current | new_to_history | new_since_previous | dropped_since_previous |
 | --- | ---: | ---: | ---: | ---: |
-| BBC News | 20 | 1 | 1 | 1 |
+| BBC News | 20 | 0 | 0 | 0 |
 | NPR | 10 | 0 | 0 | 0 |
 | The Conversation | 20 | 0 | 0 | 0 |
 | 연합뉴스 경제 | 120 | 0 | 0 | 0 |
 | 연합뉴스 산업 | 89 | 0 | 0 | 0 |
-| 연합뉴스 세계 | 118 | 0 | 0 | 0 |
+| 연합뉴스 세계 | 118 | 1 | 1 | 1 |
 | 연합인포맥스 | 20 | 0 | 0 | 0 |
 | 정책브리핑 | 20 | 0 | 0 | 0 |
 | 한국경제 | 20 | 0 | 0 | 0 |
@@ -57,11 +57,11 @@
 
 ### New Since Previous Run Examples
 
-- BBC News | Tue, 26 May 2026 14:11:21 GMT | [Internet starts coming back in Iran after months-long blackout](https://www.bbc.com/news/articles/c1w22y1n74do?at_medium=RSS&at_campaign=rss)
+- 연합뉴스 세계 | Tue, 26 May 2026 23:36:23 +0900 | [미 5월 소비자신뢰지수, 중동전쟁發 고물가 충격에 악화](https://www.yna.co.kr/view/AKR20260526178400072)
 
 ### Dropped Since Previous Run Examples
 
-- BBC News | Tue, 26 May 2026 13:13:33 GMT | [Stepmum guilty of 1978 scalding killing of girl, 5](https://www.bbc.com/news/articles/cn4p2dd5z97o?at_medium=RSS&at_campaign=rss)
+- 연합뉴스 세계 | Tue, 26 May 2026 09:26:24 +0900 | [화웨이 "TSMC와 격차 좁힐 기술 개발…2031년 1.4나노 칩 생산"](https://www.yna.co.kr/view/AKR20260526021000009)
 
 ## Per Source
 
@@ -536,12 +536,12 @@
   - "서구 선진국 실질임금 감소 시작…인플레 압박 여파" — https://www.yna.co.kr/view/AKR20260526122100009
   - "엔화, 리라화 제치고 최약체 통화"…외환시장 화제 모은 주장 — https://www.yna.co.kr/view/AKR20260526124000073
 - failure_count: 0
-- oldest_published_at: `Tue, 26 May 2026 09:26:24 +0900`
-- newest_published_at: `Tue, 26 May 2026 23:22:43 +0900`
+- oldest_published_at: `Tue, 26 May 2026 09:30:12 +0900`
+- newest_published_at: `Tue, 26 May 2026 23:36:23 +0900`
 - sample_titles:
+  - 미 5월 소비자신뢰지수, 중동전쟁發 고물가 충격에 악화
   - '비만치료제 특수' 일라이릴리, 백신개발사 3곳 5조원대 인수
   - 이란 대통령, '전시 차단' 인터넷 87일만에 복구 지시(종합)
-  - '키이우 떠나라' 러 위협에…EU, 러 대사대리 불러 항의
 - skipped_reason: ``
 - failure_reason: ``
 
