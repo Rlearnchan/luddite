@@ -60,6 +60,33 @@ STOPWORDS = {
     "합니다",
     "가능",
     "확인",
+    "넘어도",
+    "넘는데",
+    "넘는",
+    "사례",
+    "통계",
+    "최신",
+    "뉴스",
+    "최근",
+    "영향",
+}
+
+GENERIC_QUERY_TERMS = {
+    "한국",
+    "국내",
+    "통계",
+    "사례",
+    "최신",
+    "뉴스",
+    "최근",
+    "정책",
+    "발표",
+    "영향",
+    "반론",
+    "리스크",
+    "논란",
+    "자료",
+    "구조",
 }
 
 
@@ -100,6 +127,8 @@ def _index_by_id(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 def _topic_signals(text: str) -> list[str]:
     lower = text.lower()
     signals: list[str] = []
+    if any(term in text for term in ("스벅", "스타벅스", "선불충전금", "선불금")):
+        signals.extend(["스타벅스 선불충전금", "환불", "규제 사각지대"])
     if "청년" in text and any(term in text for term in ("쉬었음", "경제활동", "노동시장")):
         signals.extend(["청년 쉬었음", "경제활동참가율", "비경제활동인구"])
     if "토큰화" in text or "조각투자" in text or re.search(r"\brwa\b", lower):
@@ -119,6 +148,59 @@ def _topic_signals(text: str) -> list[str]:
     return list(dict.fromkeys(signals))
 
 
+def _amount_terms(text: str) -> list[str]:
+    pattern = r"\d[\d,]*(?:천\d+)?(?:조|억|만)?(?:원|명|건|개|%)?"
+    return list(
+        dict.fromkeys(
+            term
+            for term in re.findall(pattern, text)
+            if not _is_standalone_year(term) and not _is_low_signal_number(term)
+        )
+    )
+
+
+def _is_standalone_year(term: str) -> bool:
+    normalized = term.replace(",", "")
+    if not re.fullmatch(r"\d{4}", normalized):
+        return False
+    year = int(normalized)
+    return 1900 <= year <= 2099
+
+
+def _is_low_signal_number(term: str) -> bool:
+    normalized = term.replace(",", "")
+    if not re.fullmatch(r"\d+", normalized):
+        return False
+    return int(normalized) < 100
+
+
+def _amount_variants(term: str) -> list[str]:
+    variants = [term]
+    normalized = term.replace(",", "")
+    if normalized != term:
+        variants.append(normalized)
+    match = re.fullmatch(r"(\d+)천(\d+)(억(?:원)?)", normalized)
+    if match:
+        value = int(match.group(1)) * 1000 + int(match.group(2))
+        variants.append(f"{value}{match.group(3)}")
+    return list(dict.fromkeys(variants))
+
+
+def _best_amount_variant(term: str) -> str:
+    variants = _amount_variants(term)
+    for variant in variants:
+        if re.fullmatch(r"\d{3,}(?:조|억|만)?(?:원|명|건|개|%)?", variant):
+            return variant
+    return variants[0]
+
+
+def _alias_terms(text: str) -> list[str]:
+    aliases: list[str] = []
+    if "스벅" in text or "스타벅스" in text:
+        aliases.append("스타벅스")
+    return aliases
+
+
 def _keyword_candidates(text: str) -> list[str]:
     tokens = [
         re.sub(r"^[^\w가-힣]+|[^\w가-힣]+$", "", token)
@@ -130,6 +212,36 @@ def _keyword_candidates(text: str) -> list[str]:
         if len(token) >= 2 and token.lower() not in STOPWORDS and token not in STOPWORDS
     ]
     return list(dict.fromkeys(cleaned))[:6]
+
+
+def _anchor_terms(title: str, terms: list[str]) -> list[str]:
+    candidates: list[str] = []
+    candidates.extend(_alias_terms(title))
+    for term in _amount_terms(title):
+        candidates.append(_best_amount_variant(term))
+    if "선불충전금" in title or "선불금" in title:
+        candidates.append("선불충전금")
+    if "규제" in title and "사각" in title:
+        candidates.append("규제 사각지대")
+    candidates.extend(terms)
+    if len(candidates) < 4:
+        candidates.extend(_keyword_candidates(title))
+    output = []
+    for candidate in candidates:
+        text = compact_text(candidate)
+        if not text or text in GENERIC_QUERY_TERMS:
+            continue
+        if " " in text and all(part in output for part in text.split()):
+            continue
+        output.append(text)
+    return list(dict.fromkeys(output))[:6]
+
+
+def _specific_query(title: str, terms: list[str]) -> str:
+    anchors = _anchor_terms(title, terms)
+    if not anchors:
+        return compact_text(title)
+    return " ".join(anchors[:5])
 
 
 def _topic_terms(row: dict[str, Any], metadata: dict[str, Any]) -> list[str]:
@@ -146,6 +258,8 @@ def _topic_terms(row: dict[str, Any], metadata: dict[str, Any]) -> list[str]:
         ]
     )
     signals = _topic_signals(text)
+    for amount in _amount_terms(title):
+        signals.extend(_amount_variants(amount))
     if signals:
         return signals[:5]
     return _keyword_candidates(title or text)
@@ -161,7 +275,12 @@ def _source_suggestions(metadata: dict[str, Any]) -> list[str]:
     if source_role == "public_wire":
         return ["원문 기관", "두 번째 언론 기사", "통계·보고서", "반대/우려 사례"]
     if source_role == "market_wire" or "market" in seed_type:
-        return ["공시/회사 원자료", "산업 지표", "규제·제도 자료", "개별 종목 판단을 피할 비교 기사"]
+        return [
+            "공시/회사 원자료",
+            "산업 지표",
+            "규제·제도 자료",
+            "개별 종목 판단을 피할 비교 기사",
+        ]
     if source_role == "academic_explainer":
         return ["원문 연구/논문", "최근 뉴스 사례", "한국 연결 자료", "반론 또는 한계"]
     return ["독립 언론 기사", "원자료", "통계 자료", "반대 사례"]
@@ -220,7 +339,10 @@ def _operator_lesson(row: dict[str, Any], title: str) -> str:
     failures = set(_row_list_field(row, "row_failure_modes"))
     positives = set(_row_list_field(row, "row_positive_signals"))
     if "wrong_frame" in failures:
-        return f"{title}: 현재 프레임이 빗나갔습니다. 더 강한 실물경제/생활 질문으로 초점을 옮기세요."
+        return (
+            f"{title}: 현재 프레임이 빗나갔습니다. "
+            "더 강한 실물경제/생활 질문으로 초점을 옮기세요."
+        )
     if failures.intersection({"evidence_not_seed", "needs_news_hook"}):
         return f"{title}: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다."
     if "needs_supporting_links" in failures:
@@ -268,26 +390,33 @@ def _default_actions(row: dict[str, Any], metadata: dict[str, Any]) -> list[str]
 def _query_for_action(action: str, terms: list[str], title: str) -> list[str]:
     topic = terms[0] if terms else title
     secondary = terms[1] if len(terms) > 1 else ""
+    specific = _specific_query(title, terms) or topic
     if action == "find_supporting_links":
         return [
+            specific,
             f"{topic} 통계 사례",
             f"{topic} {secondary} 한국 영향".strip(),
             f"{topic} 반론 리스크",
         ]
     if action == "find_current_news_hook":
-        return [f"{topic} 최신 뉴스", f"{topic} 2026", f"{topic} 최근 정책 발표"]
+        return [
+            f"{specific} 최신 뉴스",
+            f"{topic} 최신 뉴스",
+            f"{topic} 2026",
+            f"{topic} 최근 정책 발표",
+        ]
     if action == "narrow_to_concrete_question":
-        return [f"{topic} 원인 쟁점", f"{topic} 숫자 통계", f"{topic} 사례"]
+        return [f"{specific} 원인 쟁점", f"{topic} 숫자 통계", f"{topic} 사례"]
     if action == "find_specific_case_or_odd_hook":
-        return [f"{topic} 특이 사례", f"{topic} 논란", f"{topic} 현장 사례"]
+        return [f"{specific} 특이 사례", f"{topic} 논란", f"{topic} 현장 사례"]
     if action == "check_past_topic_differentiation":
         return [f"{topic} 슈카월드", f"{topic} 과거 방송", f"{topic} 유사 주제"]
     if action == "reframe_around_stronger_real_economy_angle":
-        return [f"{topic} 실물경제 영향", f"{topic} 생활비 노동 산업", f"{topic} 구조 변화"]
+        return [f"{specific} 실물경제 영향", f"{topic} 생활비 노동 산업", f"{topic} 구조 변화"]
     if action == "avoid_market_advice_frame":
-        return [f"{topic} 산업 구조", f"{topic} 제도 리스크", f"{topic} 시장 전체 영향"]
+        return [f"{specific} 산업 구조", f"{topic} 제도 리스크", f"{topic} 시장 전체 영향"]
     if action == "keep_question_as_editorial_anchor":
-        return [f"{topic} 왜 중요한가", f"{topic} 생활 영향", f"{topic} 숫자"]
+        return [f"{specific} 왜 중요한가", f"{topic} 생활 영향", f"{topic} 숫자"]
     return [topic] if topic else [title]
 
 
@@ -309,7 +438,7 @@ def _query_plan(
                 }
             )
             continue
-        queries = list(dict.fromkeys(_query_for_action(action, terms, title)))[:3]
+        queries = list(dict.fromkeys(_query_for_action(action, terms, title)))[:4]
         tasks.append(
             {
                 "action": action,
@@ -417,7 +546,8 @@ def render_markdown(plan: dict[str, Any]) -> str:
         lines.append("- 추가 검색이 필요한 행이 없습니다.")
     else:
         lines.append(
-            "- 우선순위 high는 바로 보강 검색 대상, medium은 질문/프레임 보존 대상, low는 evidence 보관 또는 후순위입니다."
+            "- 우선순위 high는 바로 보강 검색 대상, medium은 질문/프레임 보존 대상, "
+            "low는 evidence 보관 또는 후순위입니다."
         )
     lines.extend(["", "## Priority Counts", ""])
     for key in ["high", "medium", "low"]:

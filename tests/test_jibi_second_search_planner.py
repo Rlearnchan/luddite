@@ -21,7 +21,9 @@ def _feedback_summary():
                     "find_current_news_hook",
                     "find_supporting_links",
                 ],
-                "operator_lesson": "자산 토큰화: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다.",
+                "operator_lesson": (
+                    "자산 토큰화: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다."
+                ),
             },
             {
                 "id": "2026-05-26:market",
@@ -42,7 +44,10 @@ def _metadata_payload():
             {
                 "ID": "2026-05-26:tokenization",
                 "title": "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화",
-                "description": "핵심 질문은 '코인 가격이 아니라, 집과 채권의 권리를 토큰으로 쪼개면 누가 책임질까?'입니다.",
+                "description": (
+                    "핵심 질문은 '코인 가격이 아니라, "
+                    "집과 채권의 권리를 토큰으로 쪼개면 누가 책임질까?'입니다."
+                ),
                 "source": "한국은행",
                 "source_role": "research_note",
                 "seed_type": "policy_research_note",
@@ -136,7 +141,10 @@ def test_second_search_plan_backfills_old_feedback_json_shape() -> None:
                 "title": "낡은 피드백 형식 후보",
                 "reviewers": {
                     "리뷰-형찬": {
-                        "note": "이거 하나만 가져오면 자료로 만들 수 없다. 최신 뉴스 hook이 필요함.",
+                        "note": (
+                            "이거 하나만 가져오면 자료로 만들 수 없다. "
+                            "최신 뉴스 hook이 필요함."
+                        ),
                         "tag": "unlabeled",
                     }
                 },
@@ -165,3 +173,50 @@ def test_second_search_plan_backfills_old_feedback_json_shape() -> None:
     assert plan["plans"][0]["priority"] == "high"
     assert "find_supporting_links" in plan["plans"][0]["actions"]
     assert "find_current_news_hook" in plan["plans"][0]["actions"]
+
+
+def test_second_search_plan_prefers_specific_terms_for_naver_queries() -> None:
+    feedback = {
+        "run_date": "2026-05-26",
+        "rows": [
+            {
+                "id": "2026-05-26:starbucks",
+                "title": "'환불요구' 스벅 선불충전금…4천200억원 넘어도 규제 사각지대",
+                "row_review_signal": "conditional",
+                "row_failure_modes": ["needs_supporting_links", "needs_news_hook"],
+                "row_positive_signals": [],
+                "row_next_research_actions": [
+                    "find_current_news_hook",
+                    "find_supporting_links",
+                ],
+            }
+        ],
+    }
+    metadata = {
+        "rows": [
+            {
+                "ID": "2026-05-26:starbucks",
+                "title": "'환불요구' 스벅 선불충전금…4천200억원 넘어도 규제 사각지대",
+                "description": "선불충전금 환불과 금융당국 감독 사각지대가 핵심입니다.",
+                "source_role": "public_wire",
+                "seed_type": "consumer_finance_policy",
+            }
+        ]
+    }
+
+    plan = build_second_search_plan(
+        run_date="2026-05-26",
+        feedback_summary=feedback,
+        metadata_payload=metadata,
+    )
+
+    queries = [
+        query
+        for task in plan["plans"][0]["query_plan"]
+        for query in task.get("queries", [])
+    ]
+    joined = "\n".join(queries)
+    assert "스타벅스" in joined
+    assert "선불충전금" in joined
+    assert "4200억원" in joined
+    assert "규제 사각지대" in joined

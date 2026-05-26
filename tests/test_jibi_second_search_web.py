@@ -3,6 +3,7 @@ import json
 from luddite.agents.jibi.second_search_web import (
     NaverSearchProvider,
     SearchResult,
+    load_env_file,
     render_markdown,
     run_web_second_search,
     write_web_second_search_outputs,
@@ -24,6 +25,15 @@ class FakeSearchProvider:
     ) -> list[SearchResult]:
         self.calls.append((query, category, max_results))
         return [
+            SearchResult(
+                title="확률적 생성의 덫 AI 환각 문제 지속",
+                url="https://news.example.com/off-topic-ai",
+                snippet="통계와 사례가 필요하다는 일반론.",
+                source="news.example.com",
+                provider=self.name,
+                category=category,
+                rank=0,
+            ),
             SearchResult(
                 title=f"{query} 보강 기사",
                 url="https://news.example.com/supporting",
@@ -99,6 +109,8 @@ def test_run_web_second_search_uses_high_priority_and_dedupes_results() -> None:
 
     assert provider.calls == [("자산 토큰화 최신 뉴스", "news", 3)]
     assert payload["calls_used"] == 1
+    assert payload["query_runs"][0]["rejected_low_relevance"] == 1
+    assert payload["rejected_low_relevance"] == 1
     assert payload["records_written"] == 1
     assert payload["accepted_by_review_item"] == {"rwa": 1}
     record = payload["records"][0]
@@ -106,6 +118,7 @@ def test_run_web_second_search_uses_high_priority_and_dedupes_results() -> None:
     assert record["review_item_id"] == "rwa"
     assert record["search_query"] == "자산 토큰화 최신 뉴스"
     assert record["source_url_canonical"] == "https://news.example.com/supporting"
+    assert record["search_relevance_terms"] == ["자산", "토큰화"]
     assert "provider:fake" in record["tags"]
 
 
@@ -147,6 +160,32 @@ def test_naver_provider_maps_request_and_items() -> None:
     assert results[0].url == "https://www.example.com/article"
     assert results[0].source == "example.com"
     assert results[0].rank == 1
+
+
+def test_load_env_file_sets_missing_values_without_overriding(tmp_path, monkeypatch) -> None:
+    env_path = tmp_path / ".env.local"
+    env_path.write_text(
+        "NAVER_SEARCH_CLIENT_ID=file-client\n"
+        "NAVER_SEARCH_CLIENT_SECRET='file-secret'\n"
+        "EXISTING=from-file\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("EXISTING", "already-set")
+    monkeypatch.delenv("NAVER_SEARCH_CLIENT_ID", raising=False)
+    monkeypatch.delenv("NAVER_SEARCH_CLIENT_SECRET", raising=False)
+
+    loaded = load_env_file(env_path)
+
+    assert loaded == ["NAVER_SEARCH_CLIENT_ID", "NAVER_SEARCH_CLIENT_SECRET"]
+    assert NaverSearchProvider.from_env().client_id == "file-client"
+    assert NaverSearchProvider.from_env().client_secret == "file-secret"
+    assert loaded_env_value("EXISTING") == "already-set"
+
+
+def loaded_env_value(key: str) -> str:
+    import os
+
+    return os.environ[key]
 
 
 def test_write_web_second_search_outputs(tmp_path) -> None:

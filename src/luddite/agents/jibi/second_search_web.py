@@ -29,6 +29,29 @@ console = Console()
 
 DEFAULT_PRIORITY_FILTER = ["high"]
 DEFAULT_CATEGORIES = ["news"]
+DEFAULT_ENV_FILE = Path(".env.local")
+RELEVANCE_STOPWORDS = {
+    "2026",
+    "case",
+    "news",
+    "latest",
+    "recent",
+    "한국",
+    "국내",
+    "통계",
+    "사례",
+    "최신",
+    "뉴스",
+    "최근",
+    "정책",
+    "발표",
+    "영향",
+    "반론",
+    "리스크",
+    "논란",
+    "자료",
+    "구조",
+}
 NAVER_ENDPOINTS = {
     "news": "https://openapi.naver.com/v1/search/news.json",
     "webkr": "https://openapi.naver.com/v1/search/webkr.json",
@@ -93,6 +116,25 @@ def _domain(value: str) -> str:
 
 def _result_url(item: dict[str, Any]) -> str:
     return compact_text(item.get("originallink") or item.get("link") or item.get("url"))
+
+
+def load_env_file(path: Path | None = DEFAULT_ENV_FILE) -> list[str]:
+    """Load KEY=VALUE pairs without overriding already exported env vars."""
+    if path is None or not path.exists():
+        return []
+    loaded = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        if not key or key in os.environ:
+            continue
+        os.environ[key] = value
+        loaded.append(key)
+    return loaded
 
 
 class MockSearchProvider:
@@ -234,6 +276,78 @@ def _queries_for_plan(plan: dict[str, Any], limit: int) -> list[str]:
     return list(dict.fromkeys(queries))[:limit]
 
 
+def _amount_variants(term: str) -> list[str]:
+    variants = [term]
+    normalized = term.replace(",", "")
+    if normalized != term:
+        variants.append(normalized)
+    match = re.fullmatch(r"(\d+)천(\d+)(억(?:원)?)", normalized)
+    if match:
+        value = int(match.group(1)) * 1000 + int(match.group(2))
+        variants.append(f"{value}{match.group(3)}")
+    reverse = re.fullmatch(r"(\d{4,})(억(?:원)?)", normalized)
+    if reverse:
+        digits = reverse.group(1)
+        variants.append(f"{digits[:-3]}천{int(digits[-3:])}{reverse.group(2)}")
+    return list(dict.fromkeys(variants))
+
+
+def _term_variants(term: str) -> list[str]:
+    text = compact_text(term).strip("\"'‘’“”.,:;()[]{}")
+    if not text:
+        return []
+    variants = [text, re.sub(r"\s+", "", text)]
+    if text == "스벅":
+        variants.append("스타벅스")
+    if text == "스타벅스":
+        variants.append("스벅")
+    variants.extend(_amount_variants(text))
+    return list(dict.fromkeys(item for item in variants if item))
+
+
+def _query_relevance_terms(query: str) -> list[str]:
+    tokens = [
+        token.strip("\"'‘’“”.,:;()[]{}")
+        for token in re.split(r"\s+", compact_text(query))
+    ]
+    terms = []
+    for token in tokens:
+        if not token or token.lower() in RELEVANCE_STOPWORDS or token in RELEVANCE_STOPWORDS:
+            continue
+        if len(token) < 2 and not re.search(r"\d", token):
+            continue
+        terms.append(token)
+    return list(dict.fromkeys(terms))
+
+
+def _match_relevance_terms(result: SearchResult, query: str) -> list[str]:
+    title = compact_text(result.title)
+    body = compact_text(f"{result.title} {result.snippet} {result.source}")
+    title_norm = re.sub(r"\s+", "", title.lower())
+    body_norm = re.sub(r"\s+", "", body.lower())
+    matched = []
+    for term in _query_relevance_terms(query):
+        for variant in _term_variants(term):
+            variant_norm = re.sub(r"\s+", "", variant.lower())
+            if not variant_norm:
+                continue
+            if variant_norm in title_norm or variant_norm in body_norm:
+                matched.append(term)
+                break
+    return list(dict.fromkeys(matched))
+
+
+def _result_is_relevant(result: SearchResult, query: str) -> tuple[bool, list[str]]:
+    terms = _query_relevance_terms(query)
+    if not terms:
+        return True, []
+    matched = _match_relevance_terms(result, query)
+    required = 1 if len(terms) <= 1 else 2
+    if len(matched) >= required:
+        return True, matched
+    return False, matched
+
+
 def _result_id(url: str, query: str) -> str:
     digest = hashlib.sha1(f"{canonicalize_url(url)}|{query}".encode()).hexdigest()[:12]
     return f"article_second_search_{digest}"
@@ -272,6 +386,9 @@ def _article_record(
         "title": result.title,
         "url": url,
         "search_query": query,
+        "search_relevance_terms": result.raw.get("_jibi_relevance_terms", [])
+        if isinstance(result.raw, dict)
+        else [],
         "search_provider": result.provider,
         "search_category": result.category,
         "search_rank": result.rank,
@@ -299,6 +416,7 @@ def run_web_second_search(
     query_runs: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     calls_used = 0
+    rejected_low_relevance = 0
     for plan in plan_payload.get("plans", []):
         if priority_filter and str(plan.get("priority") or "") not in priority_filter:
             continue
@@ -318,14 +436,33 @@ def run_web_second_search(
                 )
                 calls_used += 1
                 accepted = 0
+                rejected_for_relevance = 0
                 for result in results:
                     canonical = canonicalize_url(result.url) or result.url
                     if not canonical or canonical in excluded or canonical in seen_urls:
                         continue
+                    relevant, matched_terms = _result_is_relevant(result, query)
+                    if not relevant:
+                        rejected_for_relevance += 1
+                        rejected_low_relevance += 1
+                        continue
                     seen_urls.add(canonical)
+                    raw = dict(result.raw or {})
+                    raw["_jibi_relevance_terms"] = matched_terms
+                    enriched_result = SearchResult(
+                        title=result.title,
+                        url=result.url,
+                        snippet=result.snippet,
+                        source=result.source,
+                        published_at=result.published_at,
+                        provider=result.provider,
+                        category=result.category,
+                        rank=result.rank,
+                        raw=raw,
+                    )
                     records.append(
                         _article_record(
-                            result=result,
+                            result=enriched_result,
                             query=query,
                             plan=plan,
                             collected_at=collected_at,
@@ -342,6 +479,7 @@ def run_web_second_search(
                         "category": category,
                         "returned": len(results),
                         "accepted": accepted,
+                        "rejected_low_relevance": rejected_for_relevance,
                     }
                 )
             if calls_used >= max_queries:
@@ -358,6 +496,7 @@ def run_web_second_search(
         "results_per_query": results_per_query,
         "max_queries": max_queries,
         "calls_used": calls_used,
+        "rejected_low_relevance": rejected_low_relevance,
         "records_written": len(records),
         "records": records,
         "query_runs": query_runs,
@@ -381,11 +520,12 @@ def render_markdown(payload: dict[str, Any]) -> str:
         f"- Priority filter: `{', '.join(payload['priority_filter'])}`",
         f"- Calls used: {payload['calls_used']}/{payload['max_queries']}",
         f"- Records written: {payload['records_written']}",
+        f"- Rejected low relevance: {payload.get('rejected_low_relevance', 0)}",
         "",
         "## Query Runs",
         "",
-        "| priority | title | query | category | returned | accepted |",
-        "| --- | --- | --- | --- | ---: | ---: |",
+        "| priority | title | query | category | returned | accepted | rejected |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: |",
     ]
     for run in payload["query_runs"]:
         lines.append(
@@ -398,6 +538,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
                     _table_cell(run["category"]),
                     str(run["returned"]),
                     str(run["accepted"]),
+                    str(run.get("rejected_low_relevance", 0)),
                 ]
             )
             + " |"
@@ -411,6 +552,10 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f"[{record['title']}]({record['url']})"
         )
         lines.append(f"  - query: `{record['search_query']}`")
+        if record.get("search_relevance_terms"):
+            lines.append(
+                f"  - matched_terms: `{', '.join(record['search_relevance_terms'])}`"
+            )
         if record.get("published_at"):
             lines.append(f"  - published_at: `{record['published_at']}`")
         if record.get("raw_summary"):
@@ -499,8 +644,13 @@ def main(
         Path | None,
         typer.Option("--json", help="Output JSON path."),
     ] = None,
+    env_file: Annotated[
+        Path | None,
+        typer.Option("--env-file", help="Optional KEY=VALUE env file for provider credentials."),
+    ] = DEFAULT_ENV_FILE,
 ) -> None:
     run_date = date or datetime.now().strftime("%Y-%m-%d")
+    load_env_file(env_file)
     provider = _provider_from_name(provider_name)
     inbox_path, md_path, json_path, payload = write_web_second_search_outputs(
         run_date=run_date,
