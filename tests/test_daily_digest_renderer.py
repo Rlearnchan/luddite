@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 
 from luddite import paths
@@ -1059,6 +1060,167 @@ def test_bundle_review_suppresses_reviewed_story_by_default(tmp_path) -> None:
     assert payload["suppressed"][0]["required_action"] == (
         "use_second_search_or_new_frame_before_reposting"
     )
+    board_score_report = csv_path.parent / "reports" / "jibi_board_score_2026-05-23.json"
+    assert board_score_report.exists()
+    board_payload = json.loads(board_score_report.read_text(encoding="utf-8"))
+    assert board_payload["reviewed_suppressed_count"] == 1
+    assert board_payload["reviewed_candidate_reconsideration_queue"][0][
+        "reconsideration_status"
+    ] == "not_reconsidered_needs_second_search_or_new_hook"
+
+
+def test_bundle_review_board_score_metadata_and_opt_in_selection(tmp_path) -> None:
+    campaign = {
+        "candidate_id": "knewdeal_campaign",
+        "title": "K뉴딜 아카데미 참여청년 모집",
+        "seed_url": "https://example.com/knewdeal",
+        "source": "정책브리핑",
+        "source_role_class": "policy_release",
+        "seed_type": "policy_release_seed",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": ["contest_or_campaign_bulletin", "weak_audience_bridge"],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 82, "broadcast_potential_proxy": 4},
+    }
+    stronger_board_candidate = {
+        "candidate_id": "ai_hospital_ops",
+        "title": "AI가 병원 연락 업무를 바꾸는 이유",
+        "summary": "병원 예약과 상담 업무에 AI가 들어오며 책임과 비용 구조가 바뀐다",
+        "seed_url": "https://example.com/ai-hospital",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "healthcare_operations_ai",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "so_what": {
+            "so_what_label": "strong",
+            "weakness_signals": [],
+            "seed_quality_classification": "standalone_seed",
+            "story_role": "standalone_seed",
+        },
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [campaign, stronger_board_candidate],
+        [campaign, stronger_board_candidate],
+        "2026-05-23",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "AI" in rows[0]["제목"]
+
+    metadata = json.loads(
+        (tmp_path / "2026-05-23_bundle_review_sheet_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert metadata["rows"][0]["board_score"] > metadata["rows"][0]["total_score"]
+    assert any(
+        "strong_so_what" in reason for reason in metadata["rows"][0]["board_score_reasons"]
+    )
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-23.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["use_board_score"] is True
+    assert any(
+        row["title"] == "K뉴딜 아카데미 참여청년 모집"
+        and "board_score_downranked_below_selected_floor" in row["why_excluded"]
+        for row in report["suppressed_high_total_score_candidates"]
+    )
+
+
+def test_bundle_review_mismatch_guard_blocks_override_topic_mismatch(tmp_path) -> None:
+    notion = {
+        "candidate_id": "notion_ai",
+        "title": "[AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화",
+        "summary": "노션이 AI 업무자동화를 위한 개발자 플랫폼을 공개했다",
+        "seed_url": "https://www.yna.co.kr/view/AKR20260526092400017",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "platform_labor_market",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 4},
+    }
+    clean = {
+        "candidate_id": "ai_public",
+        "title": "공공기관 AI 보고서 책임 논란",
+        "summary": "공무원 보고서와 현장 행정에 AI가 들어오며 책임 소재가 쟁점이 됐다",
+        "seed_url": "https://example.com/ai-public",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "public_ai_governance",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+    story_bundle_id = "story_bundle_" + hashlib.sha1(b"candidate_notion_ai").hexdigest()[:10]
+    overrides_path = tmp_path / "overrides.json"
+    overrides_path.write_text(
+        json.dumps(
+            {
+                "items": {
+                    f"2026-05-23:{story_bundle_id}": {
+                        "title": "무료배달은 누가 내나: 배달앱 수수료와 업주 부담",
+                        "description": "무료배달과 수수료 부담을 설명하는 후보",
+                        "reason": "source mismatch warning added for review-board readability",
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [notion, clean],
+        [notion, clean],
+        "2026-05-23",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        editorial_overrides_path=overrides_path,
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "AI" in rows[0]["제목"]
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-23.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["mismatch_guarded_count"] == 1
+    mismatch = report["board_mismatch_guard"][0]
+    assert "무료배달" in mismatch["visible_title"]
+    assert "노션" in mismatch["primary_metadata_title"]
+    assert mismatch["required_action"] == "fix_override_or_suppress"
 
 
 def test_bundle_review_limit_and_near_miss_sublinks(tmp_path) -> None:

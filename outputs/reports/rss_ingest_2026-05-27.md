@@ -6,7 +6,7 @@
 - sources enabled: 10
 - sources fetched: 10
 - sources skipped: 37
-- raw feed items: 704
+- raw feed items: 703
 - unique URLs written: 457
 - items written: 457
 - duplicate URL appearances: 33
@@ -18,11 +18,11 @@
 
 ## Article History
 
-- run_id: `rss_2026-05-27_20260526T1259143`
-- previous_run_id: `rss_2026-05-27_20260526T1257562`
+- run_id: `rss_2026-05-27_20260526T1343435`
+- previous_run_id: `rss_2026-05-27_20260526T1340441`
 - current URLs: 457
-- known before: 1368
-- known after: 1369
+- known before: 1373
+- known after: 1374
 - new to history: 1
 - returning known: 456
 - previous run URLs: 457
@@ -44,12 +44,12 @@
 
 | source | current | new_to_history | new_since_previous | dropped_since_previous |
 | --- | ---: | ---: | ---: | ---: |
-| BBC News | 20 | 0 | 0 | 0 |
+| BBC News | 20 | 1 | 1 | 1 |
 | NPR | 10 | 0 | 0 | 0 |
 | The Conversation | 20 | 0 | 0 | 0 |
 | 연합뉴스 경제 | 120 | 0 | 0 | 0 |
 | 연합뉴스 산업 | 89 | 0 | 0 | 0 |
-| 연합뉴스 세계 | 118 | 1 | 1 | 1 |
+| 연합뉴스 세계 | 118 | 0 | 0 | 0 |
 | 연합인포맥스 | 20 | 0 | 0 | 0 |
 | 정책브리핑 | 20 | 0 | 0 | 0 |
 | 한국경제 | 20 | 0 | 0 | 0 |
@@ -57,11 +57,11 @@
 
 ### New Since Previous Run Examples
 
-- 연합뉴스 세계 | Tue, 26 May 2026 21:56:11 +0900 | [멜로니 웃었다…"집권 우파 연정, 베네치아 시장 선거 승리"](https://www.yna.co.kr/view/AKR20260526172300109)
+- BBC News | Tue, 26 May 2026 13:38:09 GMT | [Iran condemns US strikes as 'gross violation' of ceasefire](https://www.bbc.com/news/articles/c4g44yl7q70o?at_medium=RSS&at_campaign=rss)
 
 ### Dropped Since Previous Run Examples
 
-- 연합뉴스 세계 | Tue, 26 May 2026 08:44:24 +0900 | [MLB 광속구 투수 미저로우스키, 시속 161㎞ 이상 57개 폭격](https://www.yna.co.kr/view/AKR20260526024100007)
+- BBC News | Tue, 26 May 2026 09:44:58 GMT | [US launches new strikes on Iran, targeting missile sites and boats](https://www.bbc.com/news/articles/cvgzzn4y1n8o?at_medium=RSS&at_campaign=rss)
 
 ## Per Source
 
@@ -69,7 +69,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -89,7 +89,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `sheet`
 - fetch_status: `not_fetched`
@@ -109,7 +109,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `sheet`
 - fetch_status: `not_fetched`
@@ -129,7 +129,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -149,7 +149,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_candidate`
 - fetch_status: `not_fetched`
@@ -169,22 +169,22 @@
 
 - feed_url: `https://feeds.bbci.co.uk/news/rss.xml`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `rss_verified`
 - fetch_status: `fetched`
 - parse_status: `parsed`
-- item_count: 34
+- item_count: 33
 - items_written: 20
 - duplicate_skipped: 0
 - duplicate_examples:
 - failure_count: 0
 - oldest_published_at: `Wed, 30 Apr 2025 14:04:28 GMT`
-- newest_published_at: `Tue, 26 May 2026 12:56:08 GMT`
+- newest_published_at: `Tue, 26 May 2026 13:38:09 GMT`
 - sample_titles:
-  - Sentences of boys spared custody over Hampshire rape referred to Court of Appeal, PM says
+  - Sentences of boys spared custody over rape referred to Court of Appeal
   - BP chairman removed over 'serious' conduct concerns
-  - US launches new strikes on Iran, targeting missile sites and boats
+  - Sturgeon showed 'remarkable lack of curiosity' over SNP finances, says former MP
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -192,7 +192,7 @@
 
 - feed_url: `https://www.theguardian.com/international/rss`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -212,7 +212,7 @@
 
 - feed_url: `https://www.theguardian.com/business/rss`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -232,7 +232,7 @@
 
 - feed_url: `https://www.theguardian.com/technology/rss`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -252,7 +252,7 @@
 
 - feed_url: `https://www.theguardian.com/environment/rss`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -272,7 +272,7 @@
 
 - feed_url: `https://feeds.npr.org/1002/rss.xml`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `rss_verified`
 - fetch_status: `fetched`
@@ -285,8 +285,8 @@
 - oldest_published_at: `Mon, 25 May 2026 19:03:41 -0400`
 - newest_published_at: `Tue, 26 May 2026 05:00:00 -0400`
 - sample_titles:
-  - Texas GOP voters vote in race that could shape future of the party -- and the Senate
   - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
+  - Texas GOP voters vote in race that could shape future of the party -- and the Senate
   - In West Texas, an unlikely alliance stands against extending the border wall
 - skipped_reason: ``
 - failure_reason: ``
@@ -295,7 +295,7 @@
 
 - feed_url: `https://www.lemonde.fr/rss/une.xml`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -315,7 +315,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -335,7 +335,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -355,7 +355,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -375,7 +375,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -395,7 +395,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -415,7 +415,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `subscription_manual`
 - fetch_status: `not_fetched`
@@ -435,7 +435,7 @@
 
 - feed_url: `https://www.yna.co.kr/rss/news.xml`
 - section_name: `latest`
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -455,7 +455,7 @@
 
 - feed_url: `https://www.yna.co.kr/rss/international.xml`
 - section_name: `international`
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -536,12 +536,12 @@
   - "서구 선진국 실질임금 감소 시작…인플레 압박 여파" — https://www.yna.co.kr/view/AKR20260526122100009
   - "엔화, 리라화 제치고 최약체 통화"…외환시장 화제 모은 주장 — https://www.yna.co.kr/view/AKR20260526124000073
 - failure_count: 0
-- oldest_published_at: `Tue, 26 May 2026 08:46:32 +0900`
-- newest_published_at: `Tue, 26 May 2026 21:56:11 +0900`
+- oldest_published_at: `Tue, 26 May 2026 08:49:02 +0900`
+- newest_published_at: `Tue, 26 May 2026 22:19:17 +0900`
 - sample_titles:
+  - 체코, '마약 소지 의심' 러 성직자 구금…러 발끈
   - 멜로니 웃었다…"집권 우파 연정, 베네치아 시장 선거 승리"
   - UKMTO "오만 앞바다 유조선, 외부 폭발 신고"
-  - 호주인 IS 가족 19명, 시리아서 추가 귀국…당국 조사
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -589,7 +589,7 @@
 
 - feed_url: `https://news.einfomax.co.kr/rss/allArticle.xml`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `rss_verified`
 - fetch_status: `fetched`
@@ -599,12 +599,12 @@
 - duplicate_skipped: 0
 - duplicate_examples:
 - failure_count: 0
-- oldest_published_at: `2026-05-26 15:14:30`
-- newest_published_at: `2026-05-26 21:16:39`
+- oldest_published_at: `2026-05-26 15:24:45`
+- newest_published_at: `2026-05-26 21:55:44`
 - sample_titles:
+  - 국민성장펀드 출시 이틀 만에 97.5% 판매…추가 공급 검토
   - '최장' 증권신고서 냈지만…금감원, 우리금융에 정정 요구
   - [亞증시-종합] 차익실현에 대부분 하락…홍콩만 혼조
-  - 주식 T+1 결제주기 단축 공감대…"속도보다 충분한 준비 중요"
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -612,7 +612,7 @@
 
 - feed_url: `https://www.hankyung.com/feed/all-news`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `rss_verified`
 - fetch_status: `fetched`
@@ -635,7 +635,7 @@
 
 - feed_url: `https://www.mk.co.kr/rss/30000001/`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -655,7 +655,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -675,7 +675,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -695,7 +695,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -715,7 +715,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -735,7 +735,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -755,7 +755,7 @@
 
 - feed_url: `https://www.bok.or.kr/portal/bbs/P0002353/news.rss?menuNo=200433`
 - section_name: `BOK 이슈노트`
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `official_release`
 - fetch_status: `fetched`
@@ -778,7 +778,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `official_release`
 - fetch_status: `not_fetched`
@@ -798,7 +798,7 @@
 
 - feed_url: `https://www.korea.kr/rss/pressrelease.xml`
 - section_name: `보도자료`
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `official_release`
 - fetch_status: `fetched`
@@ -821,7 +821,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `official_release`
 - fetch_status: `not_fetched`
@@ -841,7 +841,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `official_release`
 - fetch_status: `not_fetched`
@@ -861,7 +861,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `official_release`
 - fetch_status: `not_fetched`
@@ -881,7 +881,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `official_release`
 - fetch_status: `not_fetched`
@@ -901,7 +901,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `official_release`
 - fetch_status: `not_fetched`
@@ -921,7 +921,7 @@
 
 - feed_url: `https://theconversation.com/global/articles.atom`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: True
 - status: `rss_verified`
 - fetch_status: `fetched`
@@ -944,7 +944,7 @@
 
 - feed_url: `https://www.atlasobscura.com/feeds/latest`
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `rss_verified`
 - fetch_status: `not_fetched`
@@ -964,7 +964,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -984,7 +984,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -1004,7 +1004,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `manual`
 - fetch_status: `not_fetched`
@@ -1024,7 +1024,7 @@
 
 - feed_url: ``
 - section_name: ``
-- fetch_limit:
+- fetch_limit: 
 - collection_enabled: False
 - status: `slack`
 - fetch_status: `not_fetched`

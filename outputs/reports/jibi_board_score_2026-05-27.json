@@ -1,0 +1,1475 @@
+{
+  "board_mismatch_guard": [
+    {
+      "mismatch_reason": [
+        "editorial_override_source_mismatch_warning",
+        "visible_primary_topic_mismatch=delivery_fee"
+      ],
+      "primary_metadata_title": "[AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화",
+      "required_action": "fix_override_or_suppress",
+      "source": "연합뉴스 산업",
+      "story_fingerprint": "story_cd55ba3738",
+      "visible_title": "무료배달은 누가 내나: 배달앱 수수료와 업주 부담"
+    }
+  ],
+  "board_score_distribution": {
+    "board_score_top_candidates": [
+      {
+        "board_score": 78.0,
+        "board_score_reasons": [
+          "base_total_score=64",
+          "+8 standalone_seed",
+          "+6 strong_so_what"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "한국은행",
+        "source_role": "research_note",
+        "story_bundle_id": "story_bundle_5e2c61b1f8",
+        "story_fingerprint": "story_1ba23eaa67",
+        "story_role": "standalone_seed",
+        "title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
+        "total_score": 64.0,
+        "visible_title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력"
+      },
+      {
+        "board_score": 75.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+8 standalone_seed",
+          "+6 strong_so_what"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "한국은행",
+        "source_role": "research_note",
+        "story_bundle_id": "story_bundle_d58520fd57",
+        "story_fingerprint": "story_12220a440d",
+        "story_role": "standalone_seed",
+        "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+        "total_score": 61.0,
+        "visible_title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석"
+      },
+      {
+        "board_score": 75.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+8 standalone_seed",
+          "+6 strong_so_what"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "연합뉴스 경제",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_84728ca09d",
+        "story_fingerprint": "story_a6eeebaaa6",
+        "story_role": "standalone_seed",
+        "title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
+        "total_score": 61.0,
+        "visible_title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\""
+      },
+      {
+        "board_score": 75.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+8 standalone_seed",
+          "+6 strong_so_what"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\"",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "연합뉴스 경제",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_481b19715a",
+        "story_fingerprint": "story_98df91e7c5",
+        "story_role": "standalone_seed",
+        "title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\"",
+        "total_score": 61.0,
+        "visible_title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\""
+      },
+      {
+        "board_score": 72.0,
+        "board_score_reasons": [
+          "base_total_score=58",
+          "+8 standalone_seed",
+          "+6 strong_so_what"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "한국은행",
+        "source_role": "research_note",
+        "story_bundle_id": "story_bundle_6af21b621d",
+        "story_fingerprint": "story_8a22f77af8",
+        "story_role": "standalone_seed",
+        "title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
+        "total_score": 58.0,
+        "visible_title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로"
+      },
+      {
+        "board_score": 72.0,
+        "board_score_reasons": [
+          "base_total_score=58",
+          "+8 standalone_seed",
+          "+6 strong_so_what"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "연합뉴스 경제",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_99dcfcfcf3",
+        "story_fingerprint": "story_b833a3ba60",
+        "story_role": "standalone_seed",
+        "title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호",
+        "total_score": 58.0,
+        "visible_title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호"
+      },
+      {
+        "board_score": 63.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+5 seed_with_supporting_links",
+          "+3 conditional_or_bundle_seed",
+          "+2 conditional_so_what",
+          "-8 public_wire_other_needs_clear_system_frame"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "conditional_seed",
+        "source": "연합뉴스 경제",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_8385ead915",
+        "story_fingerprint": "story_6ba3cfc9e6",
+        "story_role": "seed_with_supporting_links",
+        "title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
+        "total_score": 61.0,
+        "visible_title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\""
+      },
+      {
+        "board_score": 58.0,
+        "board_score_reasons": [
+          "base_total_score=67",
+          "+8 standalone_seed",
+          "+6 strong_so_what",
+          "-15 promo_or_announcement_text",
+          "-8 public_wire_other_needs_clear_system_frame"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "연합뉴스 세계",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_84cf80a820",
+        "story_fingerprint": "story_2796a4579a",
+        "story_role": "standalone_seed",
+        "title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원",
+        "total_score": 67.0,
+        "visible_title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원"
+      },
+      {
+        "board_score": 57.4,
+        "board_score_reasons": [
+          "base_total_score=68.4",
+          "+5 seed_with_supporting_links",
+          "+3 conditional_or_bundle_seed",
+          "+6 strong_so_what",
+          "-25 syuka_duplicate"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "bundle_needed",
+        "source": "연합뉴스 세계",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_6aaab96a27",
+        "story_fingerprint": "story_e8401d08bd",
+        "story_role": "seed_with_supporting_links",
+        "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+        "total_score": 68.4,
+        "visible_title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'"
+      },
+      {
+        "board_score": 55.6,
+        "board_score_reasons": [
+          "base_total_score=56.6",
+          "+8 standalone_seed",
+          "+6 strong_so_what",
+          "-15 promo_or_announcement_text"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "연합뉴스 경제",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_1e2fcd6426",
+        "story_fingerprint": "story_05227bed5c",
+        "story_role": "standalone_seed",
+        "title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
+        "total_score": 56.6,
+        "visible_title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개"
+      },
+      {
+        "board_score": 53.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+5 seed_with_supporting_links",
+          "+3 conditional_or_bundle_seed",
+          "+2 syuka_adjacent_context",
+          "-18 weak_audience_bridge"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "＇유망 AI 기술 발굴＇ 대한민국 AI 혁신조달 대전 개최",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "bundle_needed",
+        "source": "연합뉴스 경제",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_7b5d4e352b",
+        "story_fingerprint": "public_ai_adoption",
+        "story_role": "seed_with_supporting_links",
+        "title": "공공/현장 AI 도입과 책임",
+        "total_score": 61.0,
+        "visible_title": "공공/현장 AI 도입과 책임"
+      },
+      {
+        "board_score": 52.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+8 standalone_seed",
+          "+6 strong_so_what",
+          "-15 promo_or_announcement_text",
+          "-8 public_wire_other_needs_clear_system_frame"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "디노티시아, 방산 AI 실무형 인재 양성…창신대와 협력",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "standalone_seed",
+        "source": "연합뉴스 산업",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_bd98a9f561",
+        "story_fingerprint": "story_531826eab0",
+        "story_role": "standalone_seed",
+        "title": "디노티시아, 방산 AI 실무형 인재 양성…창신대와 협력",
+        "total_score": 61.0,
+        "visible_title": "디노티시아, 방산 AI 실무형 인재 양성…창신대와 협력"
+      },
+      {
+        "board_score": 51.0,
+        "board_score_reasons": [
+          "base_total_score=61",
+          "+5 seed_with_supporting_links",
+          "+3 conditional_or_bundle_seed",
+          "-18 weak_audience_bridge"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "AI는 생활필수앱 됐다…OTT는 광고요금제 대세",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "bundle_needed",
+        "source": "연합뉴스 산업",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_2f371c431c",
+        "story_fingerprint": "story_1ca42f049d",
+        "story_role": "seed_with_supporting_links",
+        "title": "AI는 생활필수앱 됐다…OTT는 광고요금제 대세",
+        "total_score": 61.0,
+        "visible_title": "AI는 생활필수앱 됐다…OTT는 광고요금제 대세"
+      },
+      {
+        "board_score": 49.6,
+        "board_score_reasons": [
+          "base_total_score=59.6",
+          "+5 seed_with_supporting_links",
+          "+3 conditional_or_bundle_seed",
+          "-18 weak_audience_bridge"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "동아대, 산자부 '외국인 유학생 지역산업 연계사업' 41억원 확보",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "bundle_needed",
+        "source": "연합뉴스 산업",
+        "source_role": "public_wire",
+        "story_bundle_id": "story_bundle_859be52100",
+        "story_fingerprint": "story_e746adb6ee",
+        "story_role": "seed_with_supporting_links",
+        "title": "동아대, 산자부 '외국인 유학생 지역산업 연계사업' 41억원 확보",
+        "total_score": 59.6,
+        "visible_title": "동아대, 산자부 '외국인 유학생 지역산업 연계사업' 41억원 확보"
+      },
+      {
+        "board_score": 48.4,
+        "board_score_reasons": [
+          "base_total_score=60.4",
+          "+6 strong_so_what",
+          "-18 evidence_only"
+        ],
+        "history_statuses": [],
+        "mismatch_reasons": [],
+        "primary_title": "[국가데이터처]안형준 국가데이터처장， 데이터 전문기업 '엔코아' 방문",
+        "reviewers": [],
+        "second_search_accepted_links_count": 0,
+        "second_search_follow_up_status": "",
+        "second_search_query_types": [],
+        "seed_quality_classification": "evidence_only",
+        "source": "정책브리핑",
+        "source_role": "policy_release",
+        "story_bundle_id": "story_bundle_7e21dd632e",
+        "story_fingerprint": "story_752a5ceaf3",
+        "story_role": "evidence_for_larger_story",
+        "title": "[국가데이터처]안형준 국가데이터처장， 데이터 전문기업 '엔코아' 방문",
+        "total_score": 60.4,
+        "visible_title": "[국가데이터처]안형준 국가데이터처장， 데이터 전문기업 '엔코아' 방문"
+      }
+    ],
+    "eligible_count": 55,
+    "selected_board_score_floor": 55.6,
+    "selected_count": 10,
+    "total_candidate_count": 55,
+    "total_score_top_but_board_score_downranked": []
+  },
+  "hard_blocked_count": 36,
+  "mismatch_guarded_count": 1,
+  "reviewed_candidate_reconsideration_queue": [
+    {
+      "board_score": 22.4,
+      "history_statuses": [
+        "promoted_before"
+      ],
+      "previous_review_dates": [
+        "2026-05-25"
+      ],
+      "reconsideration_status": "not_reconsidered_promoted_before_wait_for_followup_news",
+      "required_action": "avoid_duplicate_review_unless_followup_news_changed",
+      "review_excerpt": "자료는 조금 다르지만 청년 노동시장 주제, 특히 쉬었음 소재는 많이 다룬 바 있음. 최근 영상 제목으로는 \"83~95년생의 삶을 추적해봤습니다.\", \"이제 근로소득으로는 부자가 될 수 없나\" 정도가 있음. 즉, 좋...",
+      "reviewers": [
+        "형찬"
+      ],
+      "run_date": "2026-05-27",
+      "second_search_accepted_links_count": 1,
+      "second_search_query_types": [],
+      "story_bundle_id": "story_bundle_2bdd0b9bb3",
+      "story_fingerprint": "youth_labor_exit",
+      "title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+      "total_score": 68.4
+    },
+    {
+      "board_score": 3.0,
+      "history_statuses": [
+        "rejected_before"
+      ],
+      "previous_review_dates": [
+        "2026-05-25"
+      ],
+      "reconsideration_status": "not_reconsidered_rejected_before_without_new_hook",
+      "required_action": "do_not_repost_without_new_hook_or_explicit_override",
+      "review_excerpt": "이것도 재미가 없을 듯함. seed로 보기에는 약함. 조각투자를 교과서처럼 설명하면, \"그래서 뭐\" 반응이 나올 것임.",
+      "reviewers": [
+        "형찬"
+      ],
+      "run_date": "2026-05-27",
+      "second_search_accepted_links_count": 0,
+      "second_search_query_types": [],
+      "story_bundle_id": "story_bundle_02c86c6679",
+      "story_fingerprint": "story_45dabd9919",
+      "title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+      "total_score": 67.0
+    }
+  ],
+  "reviewed_candidate_suppression": [
+    {
+      "history_statuses": [
+        "promoted_before"
+      ],
+      "previous_review_dates": [
+        "2026-05-25"
+      ],
+      "required_action": "avoid_duplicate_review_unless_followup_news_changed",
+      "review_excerpt": "자료는 조금 다르지만 청년 노동시장 주제, 특히 쉬었음 소재는 많이 다룬 바 있음. 최근 영상 제목으로는 \"83~95년생의 삶을 추적해봤습니다.\", \"이제 근로소득으로는 부자가 될 수 없나\" 정도가 있음. 즉, 좋...",
+      "reviewers": [
+        "형찬"
+      ],
+      "run_date": "2026-05-27",
+      "story_bundle_id": "story_bundle_2bdd0b9bb3",
+      "story_fingerprint": "youth_labor_exit",
+      "title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율"
+    },
+    {
+      "history_statuses": [
+        "rejected_before"
+      ],
+      "previous_review_dates": [
+        "2026-05-25"
+      ],
+      "required_action": "do_not_repost_without_new_hook_or_explicit_override",
+      "review_excerpt": "이것도 재미가 없을 듯함. seed로 보기에는 약함. 조각투자를 교과서처럼 설명하면, \"그래서 뭐\" 반응이 나올 것임.",
+      "reviewers": [
+        "형찬"
+      ],
+      "run_date": "2026-05-27",
+      "story_bundle_id": "story_bundle_02c86c6679",
+      "story_fingerprint": "story_45dabd9919",
+      "title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제"
+    }
+  ],
+  "reviewed_suppressed_count": 2,
+  "run_date": "2026-05-27",
+  "score_rows_count": 55,
+  "selected": [
+    {
+      "board_score": 78.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "+8 standalone_seed",
+        "+6 strong_so_what"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_5e2c61b1f8",
+      "story_fingerprint": "story_1ba23eaa67",
+      "story_role": "standalone_seed",
+      "title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
+      "total_score": 64.0,
+      "visible_title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력"
+    },
+    {
+      "board_score": 75.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "+8 standalone_seed",
+        "+6 strong_so_what"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_d58520fd57",
+      "story_fingerprint": "story_12220a440d",
+      "story_role": "standalone_seed",
+      "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+      "total_score": 61.0,
+      "visible_title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석"
+    },
+    {
+      "board_score": 75.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "+8 standalone_seed",
+        "+6 strong_so_what"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_84728ca09d",
+      "story_fingerprint": "story_a6eeebaaa6",
+      "story_role": "standalone_seed",
+      "title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
+      "total_score": 61.0,
+      "visible_title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\""
+    },
+    {
+      "board_score": 75.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "+8 standalone_seed",
+        "+6 strong_so_what"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\"",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_481b19715a",
+      "story_fingerprint": "story_98df91e7c5",
+      "story_role": "standalone_seed",
+      "title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\"",
+      "total_score": 61.0,
+      "visible_title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\""
+    },
+    {
+      "board_score": 72.0,
+      "board_score_reasons": [
+        "base_total_score=58",
+        "+8 standalone_seed",
+        "+6 strong_so_what"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_6af21b621d",
+      "story_fingerprint": "story_8a22f77af8",
+      "story_role": "standalone_seed",
+      "title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
+      "total_score": 58.0,
+      "visible_title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로"
+    },
+    {
+      "board_score": 72.0,
+      "board_score_reasons": [
+        "base_total_score=58",
+        "+8 standalone_seed",
+        "+6 strong_so_what"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_99dcfcfcf3",
+      "story_fingerprint": "story_b833a3ba60",
+      "story_role": "standalone_seed",
+      "title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호",
+      "total_score": 58.0,
+      "visible_title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호"
+    },
+    {
+      "board_score": 63.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "+5 seed_with_supporting_links",
+        "+3 conditional_or_bundle_seed",
+        "+2 conditional_so_what",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "conditional_seed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_8385ead915",
+      "story_fingerprint": "story_6ba3cfc9e6",
+      "story_role": "seed_with_supporting_links",
+      "title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
+      "total_score": 61.0,
+      "visible_title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\""
+    },
+    {
+      "board_score": 58.0,
+      "board_score_reasons": [
+        "base_total_score=67",
+        "+8 standalone_seed",
+        "+6 strong_so_what",
+        "-15 promo_or_announcement_text",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "연합뉴스 세계",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_84cf80a820",
+      "story_fingerprint": "story_2796a4579a",
+      "story_role": "standalone_seed",
+      "title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원",
+      "total_score": 67.0,
+      "visible_title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원"
+    },
+    {
+      "board_score": 57.4,
+      "board_score_reasons": [
+        "base_total_score=68.4",
+        "+5 seed_with_supporting_links",
+        "+3 conditional_or_bundle_seed",
+        "+6 strong_so_what",
+        "-25 syuka_duplicate"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "bundle_needed",
+      "source": "연합뉴스 세계",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_6aaab96a27",
+      "story_fingerprint": "story_e8401d08bd",
+      "story_role": "seed_with_supporting_links",
+      "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+      "total_score": 68.4,
+      "visible_title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'"
+    },
+    {
+      "board_score": 55.6,
+      "board_score_reasons": [
+        "base_total_score=56.6",
+        "+8 standalone_seed",
+        "+6 strong_so_what",
+        "-15 promo_or_announcement_text"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_1e2fcd6426",
+      "story_fingerprint": "story_05227bed5c",
+      "story_role": "standalone_seed",
+      "title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
+      "total_score": 56.6,
+      "visible_title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개"
+    }
+  ],
+  "selected_count": 10,
+  "suppressed_high_total_score_candidates": [
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=74.4",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "소공연, 28일까지 '로컬 스튜디오' 공모…3곳 뽑아 1억원씩 지원",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_bdf70564f2",
+      "story_fingerprint": "story_e3fa06cd4d",
+      "story_role": "demote_or_reject",
+      "title": "소공연, 28일까지 '로컬 스튜디오' 공모…3곳 뽑아 1억원씩 지원",
+      "total_score": 74.4,
+      "visible_title": "소공연, 28일까지 '로컬 스튜디오' 공모…3곳 뽑아 1억원씩 지원",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 22.4,
+      "board_score_reasons": [
+        "base_total_score=68.4",
+        "+8 standalone_seed",
+        "+6 strong_so_what",
+        "-25 syuka_duplicate",
+        "-35 promoted_before"
+      ],
+      "history_statuses": [
+        "promoted_before"
+      ],
+      "mismatch_reasons": [],
+      "primary_title": "[제2026-3호] '쉬었음' 청년층의 특징 및 평가: 미취업 유형별 비교 분석",
+      "reviewers": [
+        "형찬"
+      ],
+      "second_search_accepted_links_count": 1,
+      "second_search_follow_up_status": "needs_broader_query",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_2bdd0b9bb3",
+      "story_fingerprint": "youth_labor_exit",
+      "story_role": "standalone_seed",
+      "title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+      "total_score": 68.4,
+      "visible_title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+      "why_excluded": [
+        "reviewed_history_suppressed"
+      ]
+    },
+    {
+      "board_score": 3.0,
+      "board_score_reasons": [
+        "base_total_score=67",
+        "+8 standalone_seed",
+        "+6 strong_so_what",
+        "+2 syuka_adjacent_context",
+        "-80 rejected_before"
+      ],
+      "history_statuses": [
+        "rejected_before"
+      ],
+      "mismatch_reasons": [],
+      "primary_title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+      "reviewers": [
+        "형찬"
+      ],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "evidence_only",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_02c86c6679",
+      "story_fingerprint": "story_45dabd9919",
+      "story_role": "standalone_seed",
+      "title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+      "total_score": 67.0,
+      "visible_title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+      "why_excluded": [
+        "reviewed_history_suppressed"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=67",
+        "+2 syuka_adjacent_context",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-15 promo_or_announcement_text",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[AI픽] NHN클라우드, AI 풀스택 '팩토리X' 공개…\"매출 비중 50%까지\"(종합)",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_23955a409f",
+      "story_fingerprint": "story_946aaa5915",
+      "story_role": "demote_or_reject",
+      "title": "[AI픽] NHN클라우드, AI 풀스택 '팩토리X' 공개…\"매출 비중 50%까지\"(종합)",
+      "total_score": 67.0,
+      "visible_title": "기업용 AI 공장 전쟁: 클라우드는 왜 '풀스택'을 팔까",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[제2026-4호] 첨단 바이오헬스 산업 육성방안: 바이오 데이터 활용 기반 구축을 중심으로",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_bc39c2b44c",
+      "story_fingerprint": "story_875145fc17",
+      "story_role": "demote_or_reject",
+      "title": "[제2026-4호] 첨단 바이오헬스 산업 육성방안: 바이오 데이터 활용 기반 구축을 중심으로",
+      "total_score": 64.0,
+      "visible_title": "[제2026-4호] 첨단 바이오헬스 산업 육성방안: 바이오 데이터 활용 기반 구축을 중심으로",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "Inside ATL: how Delta juggles 100,000 bags a day at the world's busiest airport",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "NPR",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_4ac1fa6b2d",
+      "story_fingerprint": "story_aa69ab8a0c",
+      "story_role": "demote_or_reject",
+      "title": "Inside ATL: how Delta juggles 100,000 bags a day at the world's busiest airport",
+      "total_score": 64.0,
+      "visible_title": "세계 최대 공항은 하루 10만 개 가방을 어떻게 굴리나",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "+2 syuka_adjacent_context",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[AI픽] AI 시대 본격화…챗GPT, 세계 6위 웹사이트 올라",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_a85bbfb6cc",
+      "story_fingerprint": "story_27ab7bd981",
+      "story_role": "demote_or_reject",
+      "title": "[AI픽] AI 시대 본격화…챗GPT, 세계 6위 웹사이트 올라",
+      "total_score": 64.0,
+      "visible_title": "챗GPT가 세계 6위 웹사이트가 됐다는 것",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "+5 seed_with_supporting_links",
+        "+3 conditional_or_bundle_seed",
+        "+6 strong_so_what",
+        "+2 syuka_adjacent_context",
+        "-15 promo_or_announcement_text",
+        "-100 source_cluster_title_mismatch"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [
+        "editorial_override_source_mismatch_warning",
+        "visible_primary_topic_mismatch=delivery_fee"
+      ],
+      "primary_title": "[AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "bundle_needed",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_da6bffa4cb",
+      "story_fingerprint": "story_cd55ba3738",
+      "story_role": "seed_with_supporting_links",
+      "title": "[AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화",
+      "total_score": 64.0,
+      "visible_title": "무료배달은 누가 내나: 배달앱 수수료와 업주 부담",
+      "why_excluded": [
+        "editorial_override_source_mismatch_warning",
+        "visible_primary_topic_mismatch=delivery_fee",
+        "source_cluster_title_mismatch"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[게시판] 국립재활원, 'AI와 재활로봇' 워크숍 개최",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_6f30c2fe9e",
+      "story_fingerprint": "story_bd5aa06612",
+      "story_role": "demote_or_reject",
+      "title": "[게시판] 국립재활원, 'AI와 재활로봇' 워크숍 개최",
+      "total_score": 64.0,
+      "visible_title": "[게시판] 국립재활원, 'AI와 재활로봇' 워크숍 개최",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 41.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "+5 seed_with_supporting_links",
+        "+3 conditional_or_bundle_seed",
+        "+2 syuka_adjacent_context",
+        "-18 weak_audience_bridge",
+        "-15 promo_or_announcement_text"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[게시판] 신용회복위원회-NH농협은행, 금융취약계층 금융 지원 MOU",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "bundle_needed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_68d6d53b00",
+      "story_fingerprint": "story_2ca09552e9",
+      "story_role": "seed_with_supporting_links",
+      "title": "[게시판] 신용회복위원회-NH농협은행, 금융취약계층 금융 지원 MOU",
+      "total_score": 64.0,
+      "visible_title": "빚을 갚기 어려운 사람에게 은행은 무엇을 해줄 수 있나",
+      "why_excluded": [
+        "source_role_cap_overflow"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "日, 'AI학습 목적' 개인정보 동의없이 활용 허용…한도는 1천명",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 세계",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_eef148407f",
+      "story_fingerprint": "story_0c941a7bcb",
+      "story_role": "demote_or_reject",
+      "title": "日, 'AI학습 목적' 개인정보 동의없이 활용 허용…한도는 1천명",
+      "total_score": 64.0,
+      "visible_title": "日, 'AI학습 목적' 개인정보 동의없이 활용 허용…한도는 1천명",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "日자민, 3대 안보문서에 'AI·무인기 도입 통한 전투방식' 제안",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 세계",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_cbc9bd3e50",
+      "story_fingerprint": "story_adf43cbbc6",
+      "story_role": "demote_or_reject",
+      "title": "日자민, 3대 안보문서에 'AI·무인기 도입 통한 전투방식' 제안",
+      "total_score": 64.0,
+      "visible_title": "日자민, 3대 안보문서에 'AI·무인기 도입 통한 전투방식' 제안",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-25 syuka_duplicate",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "남부발전, 미국 텍사스주 BESS 시장 진출 본격 추진",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_48c08b7b05",
+      "story_fingerprint": "story_be1b1548b3",
+      "story_role": "demote_or_reject",
+      "title": "남부발전, 미국 텍사스주 BESS 시장 진출 본격 추진",
+      "total_score": 64.0,
+      "visible_title": "배터리 저장장치가 전력망의 새 창고가 되는 이유",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "동부건설, HUG 신용평가 5단계 상승한 'AA등급' 획득",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_28b6adce83",
+      "story_fingerprint": "story_c47abfc397",
+      "story_role": "demote_or_reject",
+      "title": "동부건설, HUG 신용평가 5단계 상승한 'AA등급' 획득",
+      "total_score": 64.0,
+      "visible_title": "동부건설, HUG 신용평가 5단계 상승한 'AA등급' 획득",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "산업연구원, 올해 수출 9천억달러·경제성장률 2.5％ 전망",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_2b4441ae92",
+      "story_fingerprint": "story_f2def91d0d",
+      "story_role": "demote_or_reject",
+      "title": "산업연구원, 올해 수출 9천억달러·경제성장률 2.5％ 전망",
+      "total_score": 64.0,
+      "visible_title": "산업연구원, 올해 수출 9천억달러·경제성장률 2.5％ 전망",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 48.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "+8 standalone_seed",
+        "+6 strong_so_what",
+        "-22 market_or_security_specific_frame",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "삼성운용 \"'삼전닉스' 단일종목 레버리지, 숨겨진 비용 줄여\"(종합)",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "standalone_seed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_46e61d6a76",
+      "story_fingerprint": "story_d391c4d9ef",
+      "story_role": "standalone_seed",
+      "title": "삼성운용 \"'삼전닉스' 단일종목 레버리지, 숨겨진 비용 줄여\"(종합)",
+      "total_score": 64.0,
+      "visible_title": "삼성운용 \"'삼전닉스' 단일종목 레버리지, 숨겨진 비용 줄여\"(종합)",
+      "why_excluded": [
+        "source_role_cap_overflow"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "서울시, 골목형상점가 50곳 공모…최대 4천만원 지원",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_b86a3d9c44",
+      "story_fingerprint": "story_e38739ec83",
+      "story_role": "demote_or_reject",
+      "title": "서울시, 골목형상점가 50곳 공모…최대 4천만원 지원",
+      "total_score": 64.0,
+      "visible_title": "서울시, 골목형상점가 50곳 공모…최대 4천만원 지원",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "첨단산업에 필수 '초순수'…2030년까지 기자재 90% 국산화",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_400f651ef4",
+      "story_fingerprint": "story_a0b8dc6ea9",
+      "story_role": "demote_or_reject",
+      "title": "첨단산업에 필수 '초순수'…2030년까지 기자재 90% 국산화",
+      "total_score": 64.0,
+      "visible_title": "첨단산업에 필수 '초순수'…2030년까지 기자재 90% 국산화",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-15 promo_or_announcement_text",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "페라리, 첫 전기 스포츠카 '루체' 세계 최초 공개",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 산업",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_ffc3c49dad",
+      "story_fingerprint": "story_5426496477",
+      "story_role": "demote_or_reject",
+      "title": "페라리, 첫 전기 스포츠카 '루체' 세계 최초 공개",
+      "total_score": 64.0,
+      "visible_title": "페라리, 첫 전기 스포츠카 '루체' 세계 최초 공개",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=64",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge",
+        "-8 public_wire_other_needs_clear_system_frame"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "한경협, 7월 AI 주제 제주하계포럼…이세돌·백준호 등 강연",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_7e4e629051",
+      "story_fingerprint": "story_12fa7a712e",
+      "story_role": "demote_or_reject",
+      "title": "한경협, 7월 AI 주제 제주하계포럼…이세돌·백준호 등 강연",
+      "total_score": 64.0,
+      "visible_title": "한경협, 7월 AI 주제 제주하계포럼…이세돌·백준호 등 강연",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "Pope Leo warns of AI’s risks to humanity in his first encyclical",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "The Conversation",
+      "source_role": "academic_explainer",
+      "story_bundle_id": "story_bundle_fa3a9f94ab",
+      "story_fingerprint": "story_dbcd5f0adf",
+      "story_role": "demote_or_reject",
+      "title": "Pope Leo warns of AI’s risks to humanity in his first encyclical",
+      "total_score": 61.0,
+      "visible_title": "Pope Leo warns of AI’s risks to humanity in his first encyclical",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "Three ways to avoid being fooled by AI slop",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "The Conversation",
+      "source_role": "academic_explainer",
+      "story_bundle_id": "story_bundle_68a0af9170",
+      "story_fingerprint": "story_d5028cd1b3",
+      "story_role": "demote_or_reject",
+      "title": "Three ways to avoid being fooled by AI slop",
+      "total_score": 61.0,
+      "visible_title": "Three ways to avoid being fooled by AI slop",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "When AI giants go public, will ordinary investors know if they are along for the ride?",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "The Conversation",
+      "source_role": "academic_explainer",
+      "story_bundle_id": "story_bundle_9985826c04",
+      "story_fingerprint": "story_91530c0208",
+      "story_role": "demote_or_reject",
+      "title": "When AI giants go public, will ordinary investors know if they are along for the ride?",
+      "total_score": 61.0,
+      "visible_title": "When AI giants go public, will ordinary investors know if they are along for the ride?",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 0.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "-60 demote_or_reject",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "[제2025-35호] 전력 수급자원을 활용한 제주 재생에너지 출력제한 완화 방안 연구",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "reject_or_downrank",
+      "source": "한국은행",
+      "source_role": "research_note",
+      "story_bundle_id": "story_bundle_a6ed9ef8b9",
+      "story_fingerprint": "story_8b005a7738",
+      "story_role": "demote_or_reject",
+      "title": "[제2025-35호] 전력 수급자원을 활용한 제주 재생에너지 출력제한 완화 방안 연구",
+      "total_score": 61.0,
+      "visible_title": "[제2025-35호] 전력 수급자원을 활용한 제주 재생에너지 출력제한 완화 방안 연구",
+      "why_excluded": [
+        "story_role=demote_or_reject",
+        "seed_quality=reject_or_downrank"
+      ]
+    },
+    {
+      "board_score": 53.0,
+      "board_score_reasons": [
+        "base_total_score=61",
+        "+5 seed_with_supporting_links",
+        "+3 conditional_or_bundle_seed",
+        "+2 syuka_adjacent_context",
+        "-18 weak_audience_bridge"
+      ],
+      "history_statuses": [],
+      "mismatch_reasons": [],
+      "primary_title": "＇유망 AI 기술 발굴＇ 대한민국 AI 혁신조달 대전 개최",
+      "reviewers": [],
+      "second_search_accepted_links_count": 0,
+      "second_search_follow_up_status": "",
+      "second_search_query_types": [],
+      "seed_quality_classification": "bundle_needed",
+      "source": "연합뉴스 경제",
+      "source_role": "public_wire",
+      "story_bundle_id": "story_bundle_7b5d4e352b",
+      "story_fingerprint": "public_ai_adoption",
+      "story_role": "seed_with_supporting_links",
+      "title": "공공/현장 AI 도입과 책임",
+      "total_score": 61.0,
+      "visible_title": "공공/현장 AI 도입과 책임",
+      "why_excluded": [
+        "source_role_cap_overflow"
+      ]
+    }
+  ],
+  "use_board_score": true
+}

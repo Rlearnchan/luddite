@@ -68,6 +68,69 @@ DEFAULT_SOURCE_ROLE_TOP_CAPS = {
     "market_wire": 1,
     "section_news": 3,
 }
+BOARD_SCORE_PROMO_FLAGS = {
+    "contest_or_campaign_bulletin",
+    "event_or_demonstration_only",
+    "meeting_or_coordination_only",
+    "product_or_certification_promo",
+    "narrow_market_track_record",
+    "policy_release_announcement_only",
+}
+BOARD_SCORE_MISMATCH_WARNING_TERMS = {
+    "mismatch",
+    "source mismatch",
+    "cluster mismatch",
+    "매칭이 흔들",
+    "원문 매칭",
+    "source/cluster",
+}
+BOARD_SCORE_TOPIC_GROUPS = {
+    "delivery_fee": {"무료배달", "배달앱", "배달비", "수수료", "업주", "점주"},
+    "notion_ai": {"노션", "notion", "업무자동화", "개발자 플랫폼"},
+    "asset_tokenization": {"자산 토큰화", "토큰화", "rwa", "sto", "조각투자"},
+}
+BOARD_SCORE_MARKET_RISK_TERMS = {
+    "단일종목",
+    "레버리지",
+    "etf",
+    "ipo",
+    "주주배정",
+    "유상증자",
+    "공모주",
+    "수요예측",
+    "상장",
+    "주가",
+}
+BOARD_SCORE_PROMO_TEXT_TERMS = {
+    "모집",
+    "운영계획",
+    "소개",
+    "출시",
+    "공개",
+    "협력",
+    "업무협약",
+    "mou",
+    "양성",
+    "인증",
+    "수상",
+    "신제품",
+}
+BOARD_SCORE_SYSTEM_TOPIC_TERMS = {
+    "고용",
+    "임금",
+    "노동",
+    "보험",
+    "주거",
+    "부동산",
+    "공급",
+    "우주산업",
+    "규제",
+    "사각지대",
+    "물가",
+    "전력",
+    "교육",
+    "의료",
+}
 GENERIC_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
     "공급망, 인프라, 규제, 산업 전환 중 어느 축",
@@ -575,6 +638,7 @@ def write_bundle_review_sheet_preview(
     syuka_similarity_report_path: Path | None = None,
     editorial_overrides_path: Path | None = None,
     allow_reviewed_candidates: bool | None = None,
+    use_board_score: bool | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -589,9 +653,10 @@ def write_bundle_review_sheet_preview(
     )
     history_index = _load_review_history_index(resolved_review_history_path)
     syuka_similarity_index = _load_syuka_similarity_index(syuka_similarity_report_path)
-    resolved_editorial_overrides_path = _resolve_editorial_overrides_path(
-        digest_date,
-        editorial_overrides_path,
+    resolved_editorial_overrides_path = _effective_editorial_overrides_path(
+        board_csv_path=path,
+        run_date=digest_date,
+        editorial_overrides_path=editorial_overrides_path,
     )
     editorial_overrides = _load_editorial_overrides(resolved_editorial_overrides_path)
     registered_at_value = _review_board_registered_at(registered_at)
@@ -600,17 +665,28 @@ def write_bundle_review_sheet_preview(
         if allow_reviewed_candidates is not None
         else _env_bool("JIBI_ALLOW_REVIEWED_CANDIDATES", False)
     )
+    use_board_score_value = (
+        use_board_score
+        if use_board_score is not None
+        else _env_bool("JIBI_USE_BOARD_SCORE", False)
+    )
+    second_search_index = _load_second_search_intake_index(paths.REPORTS_DIR)
     all_bundle_records = _story_bundle_records(
         candidates,
         top,
         near_miss_limit=max(bundle_near_miss_limit, review_board_limit * 5),
     )
-    bundle_records, suppressed_records = _select_review_board_records(
+    bundle_records, suppressed_records, board_selection_report = _select_review_board_records(
         all_bundle_records,
         history_index,
         candidate_by_id=candidate_by_id,
+        editorial_overrides=editorial_overrides,
+        syuka_similarity_index=syuka_similarity_index,
+        second_search_index=second_search_index,
+        digest_date=digest_date,
         review_board_limit=review_board_limit,
         allow_reviewed_candidates=allow_reviewed,
+        use_board_score=use_board_score_value,
     )
     metadata_rows: list[dict[str, Any]] = []
     with path.open("w", encoding="utf-8-sig", newline="") as output:
@@ -653,6 +729,20 @@ def write_bundle_review_sheet_preview(
                 representative,
                 syuka_similarity_index,
             )
+            override = _editorial_override_for_row(
+                editorial_overrides,
+                review_item_id=review_item_id,
+                story_fingerprint=str(record.get("story_fingerprint") or ""),
+            )
+            mismatch_reasons = _board_mismatch_reasons(record, representative, override)
+            board_score = _board_score_info(
+                record=record,
+                representative=representative,
+                history_rows=_reviewed_history_rows_for_record(record, history_index),
+                mismatch_reasons=mismatch_reasons,
+                syuka_similarity=syuka_similarity,
+                second_search=_second_search_for_record(record, second_search_index),
+            )
             row = _bundle_review_row(
                 digest_date=digest_date,
                 registered_at=registered_at_value,
@@ -670,11 +760,6 @@ def write_bundle_review_sheet_preview(
             )
             auto_title = str(row.get("제목") or "")
             auto_description = str(row.get("설명") or "")
-            override = _editorial_override_for_row(
-                editorial_overrides,
-                review_item_id=review_item_id,
-                story_fingerprint=str(record.get("story_fingerprint") or ""),
-            )
             _apply_editorial_override(row, override)
             writer.writerow(row)
             metadata_rows.append(
@@ -690,6 +775,7 @@ def write_bundle_review_sheet_preview(
                     auto_title=auto_title,
                     auto_description=auto_description,
                     editorial_override=override,
+                    board_score=board_score,
                 )
             )
     _write_reviewed_candidate_guard_report(
@@ -699,6 +785,17 @@ def write_bundle_review_sheet_preview(
         allow_reviewed_candidates=allow_reviewed,
         history_index=history_index,
         path=_reviewed_candidate_guard_report_path(path, digest_date),
+    )
+    _write_board_score_report(
+        digest_date=digest_date,
+        selected=bundle_records,
+        candidates=candidates,
+        candidate_by_id=candidate_by_id,
+        selection_report=board_selection_report,
+        history_index=history_index,
+        syuka_similarity_index=syuka_similarity_index,
+        second_search_index=second_search_index,
+        path=_board_score_report_path(path, digest_date),
     )
     _write_bundle_review_metadata(
         _bundle_review_metadata_path(path),
@@ -855,6 +952,14 @@ def _reviewed_candidate_guard_report_path(board_csv_path: Path, digest_date: str
     return paths.REPORTS_DIR / f"jibi_reviewed_candidate_guard_{digest_date}.md"
 
 
+def _board_score_report_path(board_csv_path: Path, digest_date: str) -> Path:
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "reports" / f"jibi_board_score_{digest_date}.md"
+    return paths.REPORTS_DIR / f"jibi_board_score_{digest_date}.md"
+
+
 def _effective_review_history_path(
     *,
     board_csv_path: Path,
@@ -867,6 +972,26 @@ def _effective_review_history_path(
     except ValueError:
         return board_csv_path.parent / "reports" / paths.JIBI_REVIEW_BOARD_HISTORY_JSONL.name
     return review_history_path
+
+
+def _effective_editorial_overrides_path(
+    *,
+    board_csv_path: Path,
+    run_date: str,
+    editorial_overrides_path: Path | None,
+) -> Path:
+    if editorial_overrides_path is not None:
+        return editorial_overrides_path
+    env_value = os.environ.get("JIBI_REVIEW_BOARD_EDITORIAL_OVERRIDES")
+    if env_value:
+        return Path(env_value)
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "editorial_overrides" / (
+            f"jibi_review_board_{run_date}.json"
+        )
+    return _default_editorial_overrides_path(run_date)
 
 
 def _write_bundle_review_metadata(
@@ -1253,29 +1378,104 @@ def _select_review_board_records(
     history_index: dict[str, list[dict[str, Any]]],
     *,
     candidate_by_id: dict[str, dict[str, Any]],
+    editorial_overrides: dict[str, dict[str, Any]],
+    syuka_similarity_index: dict[str, dict[str, Any]],
+    second_search_index: dict[str, dict[str, Any]],
+    digest_date: str,
     review_board_limit: int,
     allow_reviewed_candidates: bool,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    use_board_score: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     selected: list[dict[str, Any]] = []
     selected_ids: set[str] = set()
     suppressed: list[dict[str, Any]] = []
     role_counts: Counter[str] = Counter()
     role_cap_blocked: list[dict[str, Any]] = []
     evidence_backfill: list[dict[str, Any]] = []
+    hard_blocked: list[dict[str, Any]] = []
+    mismatch_blocked: list[dict[str, Any]] = []
+    score_rows: list[dict[str, Any]] = []
+    override_by_record_id: dict[str, dict[str, Any]] = {}
+
+    scored_records: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for record in records:
+        representative = _record_representative_candidate(record, candidate_by_id) or {}
         reviewed_rows = _reviewed_history_rows_for_record(record, history_index)
+        override = _editorial_override_for_row(
+            editorial_overrides,
+            review_item_id=_record_review_item_id(digest_date, record),
+            story_fingerprint=str(record.get("story_fingerprint") or ""),
+        )
+        record_id = str(record.get("story_bundle_id") or "")
+        if override and record_id:
+            override_by_record_id[record_id] = override
+        mismatch_reasons = _board_mismatch_reasons(record, representative, override)
+        syuka_similarity = _syuka_similarity_for_record(
+            record,
+            representative,
+            syuka_similarity_index,
+        )
+        second_search = _second_search_for_record(record, second_search_index)
+        board_score = _board_score_info(
+            record=record,
+            representative=representative,
+            history_rows=reviewed_rows,
+            mismatch_reasons=mismatch_reasons,
+            syuka_similarity=syuka_similarity,
+            second_search=second_search,
+        )
+        scored_records.append((record, board_score))
+        score_rows.append(
+            _board_score_report_row(
+                record=record,
+                representative=representative,
+                board_score=board_score,
+                history_rows=reviewed_rows,
+                mismatch_reasons=mismatch_reasons,
+                second_search=second_search,
+                override=override,
+            )
+        )
+
+    if use_board_score:
+        scored_records.sort(
+            key=lambda item: (
+                float(item[1].get("board_score") or 0),
+                _total_score(_record_representative_candidate(item[0], candidate_by_id) or {}),
+            ),
+            reverse=True,
+        )
+
+    for record, board_score in scored_records:
+        representative = _record_representative_candidate(record, candidate_by_id) or {}
+        reviewed_rows = _reviewed_history_rows_for_record(record, history_index)
+        mismatch_reasons = list(board_score.get("mismatch_reasons") or [])
+        record_id = str(record.get("story_bundle_id") or "")
         if reviewed_rows and not allow_reviewed_candidates:
             suppressed.append(
                 {
                     "record": record,
                     "history_rows": reviewed_rows,
                     "suppressed_reason": "reviewed_history",
+                    "board_score": board_score,
                 }
             )
             continue
-        representative = _record_representative_candidate(record, candidate_by_id) or {}
-        board_status = _record_board_quality_status(record, representative)
+        board_status = _record_board_quality_status(
+            record,
+            representative,
+            mismatch_reasons=mismatch_reasons,
+        )
         if board_status == "hard_blocked":
+            item = {
+                "record": record,
+                "board_score": board_score,
+                "override": override_by_record_id.get(record_id, {}),
+                "reasons": _hard_block_reasons(record, representative, mismatch_reasons),
+            }
+            hard_blocked.append(item)
+            if mismatch_reasons:
+                mismatch_blocked.append(item)
             continue
         if board_status == "evidence_backfill":
             evidence_backfill.append(record)
@@ -1286,7 +1486,7 @@ def _select_review_board_records(
             role_cap_blocked.append(record)
             continue
         selected.append(record)
-        selected_ids.add(str(record.get("story_bundle_id") or ""))
+        selected_ids.add(record_id)
         role_counts[role] += 1
         if len(selected) >= review_board_limit:
             break
@@ -1308,13 +1508,30 @@ def _select_review_board_records(
             selected_ids.add(record_id)
             if len(selected) >= review_board_limit:
                 break
-    return selected, suppressed
+    return selected, suppressed, {
+        "use_board_score": use_board_score,
+        "score_rows": score_rows,
+        "hard_blocked": hard_blocked,
+        "mismatch_blocked": mismatch_blocked,
+        "reviewed_suppressed": suppressed,
+        "role_cap_blocked": role_cap_blocked,
+        "evidence_backfill": evidence_backfill,
+        "selected_ids": [str(record.get("story_bundle_id") or "") for record in selected],
+    }
+
+
+def _record_review_item_id(digest_date: str, record: dict[str, Any]) -> str:
+    return f"{digest_date}:{record['story_bundle_id']}"
 
 
 def _record_board_quality_status(
     record: dict[str, Any],
     representative: dict[str, Any],
+    *,
+    mismatch_reasons: list[str] | None = None,
 ) -> str:
+    if mismatch_reasons:
+        return "hard_blocked"
     title_text = _source_text(representative) + " " + str(record.get("bundle_title") or "")
     if any(term in title_text for term in ("[부고]", "부친상", "모친상", "별세", "씨 별세")):
         return "hard_blocked"
@@ -1325,6 +1542,276 @@ def _record_board_quality_status(
     if story_role == "evidence_for_larger_story" or seed_quality == "evidence_only":
         return "evidence_backfill"
     return "ok"
+
+
+def _hard_block_reasons(
+    record: dict[str, Any],
+    representative: dict[str, Any],
+    mismatch_reasons: list[str],
+) -> list[str]:
+    reasons = list(mismatch_reasons)
+    title_text = _source_text(representative) + " " + str(record.get("bundle_title") or "")
+    if any(term in title_text for term in ("[부고]", "부친상", "모친상", "별세", "씨 별세")):
+        reasons.append("obituary_or_personnel_notice")
+    story_role = str(representative.get("story_role") or "")
+    seed_quality = str(representative.get("seed_quality_classification") or "")
+    if story_role == "demote_or_reject":
+        reasons.append("story_role=demote_or_reject")
+    if seed_quality == "reject_or_downrank":
+        reasons.append("seed_quality=reject_or_downrank")
+    return list(dict.fromkeys(reasons or ["hard_blocked"]))
+
+
+def _board_mismatch_reasons(
+    record: dict[str, Any],
+    representative: dict[str, Any],
+    override: dict[str, Any] | None,
+) -> list[str]:
+    reasons: list[str] = []
+    if not representative:
+        return reasons
+    override_text = " ".join(
+        str((override or {}).get(key) or "")
+        for key in ["title", "description", "reason"]
+    ).lower()
+    if any(term in override_text for term in BOARD_SCORE_MISMATCH_WARNING_TERMS):
+        reasons.append("editorial_override_source_mismatch_warning")
+
+    visible_text = " ".join(
+        [
+            str((override or {}).get("title") or record.get("bundle_title") or ""),
+            str((override or {}).get("description") or record.get("why_bundle") or ""),
+        ]
+    ).lower()
+    source_text = _source_text(representative)
+    for group_name, terms in BOARD_SCORE_TOPIC_GROUPS.items():
+        visible_has_group = any(_topic_term_in_text(term, visible_text) for term in terms)
+        source_has_group = any(_topic_term_in_text(term, source_text) for term in terms)
+        if visible_has_group and not source_has_group:
+            reasons.append(f"visible_primary_topic_mismatch={group_name}")
+    return list(dict.fromkeys(reasons))
+
+
+def _topic_term_in_text(term: str, text: str) -> bool:
+    normalized_term = term.lower().strip()
+    if not normalized_term:
+        return False
+    if re.fullmatch(r"[a-z0-9_+-]+", normalized_term):
+        return bool(
+            re.search(
+                rf"(?<![a-z0-9]){re.escape(normalized_term)}(?![a-z0-9])",
+                text,
+            )
+        )
+    return normalized_term in text
+
+
+def _board_score_info(
+    *,
+    record: dict[str, Any],
+    representative: dict[str, Any],
+    history_rows: list[dict[str, Any]],
+    mismatch_reasons: list[str],
+    syuka_similarity: dict[str, Any] | None,
+    second_search: dict[str, Any] | None,
+) -> dict[str, Any]:
+    total_score = _total_score(representative)
+    score = total_score
+    reasons: list[str] = [f"base_total_score={total_score:g}"]
+
+    story_role = str(representative.get("story_role") or "")
+    seed_quality = str(representative.get("seed_quality_classification") or "")
+    seed_type = str(representative.get("seed_type") or "")
+    source_role = _candidate_role(representative)
+    source_text = _source_text(representative)
+    so_what = _candidate_so_what(representative)
+    so_what_label = str(so_what.get("so_what_label") or "")
+    quality_flags = set(str(flag) for flag in representative.get("quality_flags") or [])
+    weakness = set(str(flag) for flag in so_what.get("weakness_signals") or [])
+
+    if story_role == "standalone_seed" or seed_quality == "standalone_seed":
+        score += 8
+        reasons.append("+8 standalone_seed")
+    if story_role == "seed_with_supporting_links":
+        score += 5
+        reasons.append("+5 seed_with_supporting_links")
+    if seed_quality in {"conditional_seed", "bundle_needed"}:
+        score += 3
+        reasons.append("+3 conditional_or_bundle_seed")
+    if so_what_label == "strong":
+        score += 6
+        reasons.append("+6 strong_so_what")
+    elif so_what_label == "conditional":
+        score += 2
+        reasons.append("+2 conditional_so_what")
+
+    if second_search:
+        accepted_count = len(second_search.get("accepted_links") or [])
+        query_types = {
+            str(link.get("query_type") or "")
+            for link in second_search.get("accepted_links") or []
+            if isinstance(link, dict)
+        }
+        if accepted_count >= 2:
+            score += 5
+            reasons.append("+5 second_search_links>=2")
+        if "broader_system" in query_types:
+            score += 3
+            reasons.append("+3 broader_system_second_search")
+
+    syuka_recommendation = str((syuka_similarity or {}).get("recommendation") or "")
+    if syuka_recommendation == "duplicate":
+        score -= 25
+        reasons.append("-25 syuka_duplicate")
+    elif syuka_recommendation == "adjacent":
+        score += 2
+        reasons.append("+2 syuka_adjacent_context")
+
+    if story_role == "evidence_for_larger_story" or seed_quality == "evidence_only":
+        score -= 18
+        reasons.append("-18 evidence_only")
+    if story_role == "demote_or_reject" or seed_quality == "reject_or_downrank":
+        score -= 60
+        reasons.append("-60 demote_or_reject")
+    if "weak_audience_bridge" in quality_flags or "weak_audience_bridge" in weakness:
+        score -= 18
+        reasons.append("-18 weak_audience_bridge")
+    if quality_flags.intersection(BOARD_SCORE_PROMO_FLAGS):
+        score -= 15
+        reasons.append("-15 promo_or_program_bulletin")
+    if any(_topic_term_in_text(term, source_text) for term in BOARD_SCORE_MARKET_RISK_TERMS):
+        score -= 22
+        reasons.append("-22 market_or_security_specific_frame")
+    if (
+        source_role in {"public_wire", "policy_release"}
+        and any(_topic_term_in_text(term, source_text) for term in BOARD_SCORE_PROMO_TEXT_TERMS)
+    ):
+        score -= 15
+        reasons.append("-15 promo_or_announcement_text")
+    if (
+        source_role == "public_wire"
+        and seed_type == "other"
+        and not any(
+            _topic_term_in_text(term, source_text)
+            for term in BOARD_SCORE_SYSTEM_TOPIC_TERMS
+        )
+    ):
+        score -= 8
+        reasons.append("-8 public_wire_other_needs_clear_system_frame")
+    if "single_company_frame" in quality_flags:
+        score -= 10
+        reasons.append("-10 single_company_frame")
+    if mismatch_reasons:
+        score -= 100
+        reasons.append("-100 source_cluster_title_mismatch")
+
+    history_statuses = {
+        str(row.get("history_status") or "reviewed_before") for row in history_rows
+    }
+    if "rejected_before" in history_statuses:
+        score -= 80
+        reasons.append("-80 rejected_before")
+    elif "promoted_before" in history_statuses:
+        score -= 35
+        reasons.append("-35 promoted_before")
+    elif history_statuses:
+        score -= 25
+        reasons.append("-25 reviewed_before")
+
+    return {
+        "total_score": total_score,
+        "board_score": round(max(0.0, score), 1),
+        "reasons": reasons,
+        "mismatch_reasons": mismatch_reasons,
+        "history_statuses": sorted(history_statuses),
+    }
+
+
+def _board_score_report_row(
+    *,
+    record: dict[str, Any],
+    representative: dict[str, Any],
+    board_score: dict[str, Any],
+    history_rows: list[dict[str, Any]],
+    mismatch_reasons: list[str],
+    second_search: dict[str, Any] | None,
+    override: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    title = str(record.get("bundle_title") or record.get("primary_title") or "")
+    return {
+        "story_bundle_id": str(record.get("story_bundle_id") or ""),
+        "story_fingerprint": str(record.get("story_fingerprint") or ""),
+        "title": title,
+        "visible_title": str((override or {}).get("title") or title),
+        "primary_title": str(representative.get("title") or ""),
+        "source": str(representative.get("source") or ""),
+        "source_role": _candidate_role(representative),
+        "story_role": str(representative.get("story_role") or ""),
+        "seed_quality_classification": str(
+            representative.get("seed_quality_classification") or ""
+        ),
+        "total_score": board_score.get("total_score", 0),
+        "board_score": board_score.get("board_score", 0),
+        "board_score_reasons": board_score.get("reasons", []),
+        "history_statuses": board_score.get("history_statuses", []),
+        "reviewers": list(
+            dict.fromkeys(
+                reviewer for row in history_rows for reviewer in _history_reviewers(row)
+            )
+        ),
+        "mismatch_reasons": mismatch_reasons,
+        "second_search_follow_up_status": str(
+            (second_search or {}).get("follow_up_status") or ""
+        ),
+        "second_search_accepted_links_count": len(
+            (second_search or {}).get("accepted_links") or []
+        ),
+        "second_search_query_types": sorted(
+            {
+                str(link.get("query_type") or "")
+                for link in (second_search or {}).get("accepted_links") or []
+                if isinstance(link, dict) and str(link.get("query_type") or "").strip()
+            }
+        ),
+    }
+
+
+def _load_second_search_intake_index(reports_dir: Path) -> dict[str, dict[str, Any]]:
+    index: dict[str, dict[str, Any]] = {}
+    for path in sorted(reports_dir.glob("jibi_second_search_intake_*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        for row in payload.get("rows", []):
+            if not isinstance(row, dict):
+                continue
+            keys = {
+                str(row.get("review_item_id") or "").strip(),
+                str(row.get("review_title") or "").strip(),
+            }
+            review_id = str(row.get("review_item_id") or "").strip()
+            if ":" in review_id:
+                keys.add(review_id.rsplit(":", 1)[-1])
+            for key in keys:
+                if key:
+                    index.setdefault(key, row)
+    return index
+
+
+def _second_search_for_record(
+    record: dict[str, Any],
+    second_search_index: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    for key in [
+        str(record.get("story_bundle_id") or "").strip(),
+        str(record.get("story_fingerprint") or "").strip(),
+        str(record.get("bundle_title") or "").strip(),
+        str(record.get("primary_title") or "").strip(),
+    ]:
+        if key and key in second_search_index:
+            return second_search_index[key]
+    return None
 
 
 def _record_source_role(
@@ -1537,6 +2024,451 @@ def _write_reviewed_candidate_guard_report(
     return path, json_path
 
 
+def _selection_report_ids(
+    items: list[dict[str, Any]] | list[dict[str, Any] | tuple[Any, ...]],
+) -> set[str]:
+    ids: set[str] = set()
+    for item in items:
+        record = item.get("record") if isinstance(item, dict) else item
+        if isinstance(record, dict):
+            value = str(record.get("story_bundle_id") or "").strip()
+            if value:
+                ids.add(value)
+    return ids
+
+
+def _suppressed_review_payload(
+    *,
+    digest_date: str,
+    suppressed: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in suppressed:
+        record = item.get("record") or {}
+        history_rows = item.get("history_rows") or []
+        rows.append(
+            {
+                "story_bundle_id": str(record.get("story_bundle_id") or ""),
+                "story_fingerprint": str(record.get("story_fingerprint") or ""),
+                "title": str(record.get("bundle_title") or record.get("primary_title") or ""),
+                "previous_review_dates": list(
+                    dict.fromkeys(
+                        value
+                        for row in history_rows
+                        if (value := _history_review_date(row))
+                    )
+                ),
+                "reviewers": list(
+                    dict.fromkeys(
+                        reviewer
+                        for row in history_rows
+                        for reviewer in _history_reviewers(row)
+                    )
+                ),
+                "history_statuses": list(
+                    dict.fromkeys(
+                        str(row.get("history_status") or "reviewed_before")
+                        for row in history_rows
+                    )
+                ),
+                "review_excerpt": _history_review_excerpt(history_rows[0])
+                if history_rows
+                else "",
+                "required_action": _guard_followup_action(history_rows),
+                "run_date": digest_date,
+            }
+        )
+    return rows
+
+
+def _record_from_selection_item(item: dict[str, Any]) -> dict[str, Any]:
+    record = item.get("record")
+    return record if isinstance(record, dict) else {}
+
+
+def _selection_reason_index(selection_report: dict[str, Any]) -> dict[str, list[str]]:
+    reasons: dict[str, list[str]] = {}
+    for item in selection_report.get("hard_blocked", []):
+        record = _record_from_selection_item(item)
+        record_id = str(record.get("story_bundle_id") or "")
+        if not record_id:
+            continue
+        reasons.setdefault(record_id, []).extend(
+            str(reason) for reason in item.get("reasons", []) if str(reason).strip()
+        )
+    for item in selection_report.get("mismatch_blocked", []):
+        record = _record_from_selection_item(item)
+        record_id = str(record.get("story_bundle_id") or "")
+        if record_id:
+            reasons.setdefault(record_id, []).append("source_cluster_title_mismatch")
+    for item in selection_report.get("reviewed_suppressed", []):
+        record = _record_from_selection_item(item)
+        record_id = str(record.get("story_bundle_id") or "")
+        if record_id:
+            reasons.setdefault(record_id, []).append("reviewed_history_suppressed")
+    for record in selection_report.get("role_cap_blocked", []):
+        if isinstance(record, dict):
+            record_id = str(record.get("story_bundle_id") or "")
+            if record_id:
+                reasons.setdefault(record_id, []).append("source_role_cap_overflow")
+    for record in selection_report.get("evidence_backfill", []):
+        if isinstance(record, dict):
+            record_id = str(record.get("story_bundle_id") or "")
+            if record_id:
+                reasons.setdefault(record_id, []).append("evidence_or_background_backfill")
+    return {key: list(dict.fromkeys(value)) for key, value in reasons.items()}
+
+
+def _reconsideration_status(
+    row: dict[str, Any],
+    suppressed_row: dict[str, Any],
+) -> str:
+    statuses = set(suppressed_row.get("history_statuses") or row.get("history_statuses") or [])
+    accepted_count = int(row.get("second_search_accepted_links_count") or 0)
+    query_types = set(row.get("second_search_query_types") or [])
+    if "rejected_before" in statuses and accepted_count < 2:
+        return "not_reconsidered_rejected_before_without_new_hook"
+    if accepted_count >= 2 and "broader_system" in query_types:
+        return "reconsideration_candidate_report_only"
+    if accepted_count >= 2:
+        return "possible_reconsideration_needs_new_frame"
+    if "promoted_before" in statuses:
+        return "not_reconsidered_promoted_before_wait_for_followup_news"
+    return "not_reconsidered_needs_second_search_or_new_hook"
+
+
+def _write_board_score_report(
+    *,
+    digest_date: str,
+    selected: list[dict[str, Any]],
+    candidates: list[dict[str, Any]],
+    candidate_by_id: dict[str, dict[str, Any]],
+    selection_report: dict[str, Any],
+    history_index: dict[str, list[dict[str, Any]]],
+    syuka_similarity_index: dict[str, dict[str, Any]],
+    second_search_index: dict[str, dict[str, Any]],
+    path: Path,
+) -> tuple[Path, Path]:
+    del candidates, candidate_by_id, history_index, syuka_similarity_index, second_search_index
+    score_rows = list(selection_report.get("score_rows") or [])
+    selected_ids = {
+        str(record.get("story_bundle_id") or "")
+        for record in selected
+        if record.get("story_bundle_id")
+    }
+    score_by_id = {str(row.get("story_bundle_id") or ""): row for row in score_rows}
+    selected_rows = [
+        score_by_id.get(str(record.get("story_bundle_id") or ""), {})
+        for record in selected
+    ]
+    selected_rows = [row for row in selected_rows if row]
+    reason_index = _selection_reason_index(selection_report)
+    suppressed_review_rows = _suppressed_review_payload(
+        digest_date=digest_date,
+        suppressed=list(selection_report.get("reviewed_suppressed") or []),
+    )
+    selected_board_floor = min(
+        (float(row.get("board_score") or 0) for row in selected_rows),
+        default=0,
+    )
+    high_total_rows: list[dict[str, Any]] = []
+    sorted_score_rows = sorted(
+        score_rows,
+        key=lambda item: float(item.get("total_score") or 0),
+        reverse=True,
+    )
+    for row in sorted_score_rows:
+        record_id = str(row.get("story_bundle_id") or "")
+        if record_id in selected_ids:
+            continue
+        reasons = list(reason_index.get(record_id) or [])
+        if row.get("mismatch_reasons"):
+            reasons.append("source_cluster_title_mismatch")
+        if not reasons and float(row.get("board_score") or 0) < selected_board_floor:
+            reasons.append("board_score_downranked_below_selected_floor")
+        if not reasons:
+            reasons.append("outside_review_board_limit")
+        high_total_rows.append({**row, "why_excluded": list(dict.fromkeys(reasons))})
+    mismatch_by_id: dict[str, dict[str, Any]] = {}
+    for item in selection_report.get("mismatch_blocked", []):
+        record = _record_from_selection_item(item)
+        override = item.get("override") if isinstance(item.get("override"), dict) else {}
+        row = score_by_id.get(str(record.get("story_bundle_id") or ""), {})
+        record_id = str(record.get("story_bundle_id") or "")
+        mismatch_by_id[record_id] = {
+            "visible_title": str(
+                row.get("visible_title")
+                or override.get("title")
+                or record.get("bundle_title")
+                or ""
+            ),
+            "primary_metadata_title": str(row.get("primary_title") or ""),
+            "source": str(row.get("source") or ""),
+            "story_fingerprint": str(record.get("story_fingerprint") or ""),
+            "mismatch_reason": list(
+                dict.fromkeys(
+                    [
+                        *[str(reason) for reason in item.get("reasons", [])],
+                        *[str(reason) for reason in row.get("mismatch_reasons", [])],
+                    ]
+                )
+            ),
+            "required_action": "fix_override_or_suppress",
+        }
+    for row in score_rows:
+        if not row.get("mismatch_reasons"):
+            continue
+        record_id = str(row.get("story_bundle_id") or "")
+        mismatch_by_id.setdefault(
+            record_id,
+            {
+                "visible_title": str(row.get("visible_title") or row.get("title") or ""),
+                "primary_metadata_title": str(row.get("primary_title") or ""),
+                "source": str(row.get("source") or ""),
+                "story_fingerprint": str(row.get("story_fingerprint") or ""),
+                "mismatch_reason": list(row.get("mismatch_reasons") or []),
+                "required_action": "fix_override_or_suppress",
+            },
+        )
+    mismatch_rows = list(mismatch_by_id.values())
+    reconsideration_rows = []
+    for row in suppressed_review_rows:
+        score_row = score_by_id.get(str(row.get("story_bundle_id") or ""), {})
+        reconsideration_rows.append(
+            {
+                **row,
+                "board_score": score_row.get("board_score", 0),
+                "total_score": score_row.get("total_score", 0),
+                "second_search_accepted_links_count": score_row.get(
+                    "second_search_accepted_links_count", 0
+                ),
+                "second_search_query_types": score_row.get("second_search_query_types", []),
+                "reconsideration_status": _reconsideration_status(score_row, row),
+            }
+        )
+    top_board_score_rows = sorted(
+        score_rows,
+        key=lambda item: float(item.get("board_score") or 0),
+        reverse=True,
+    )[:15]
+    downranked_rows = [
+        row
+        for row in high_total_rows
+        if "board_score_downranked_below_selected_floor" in row.get("why_excluded", [])
+    ][:15]
+    payload = {
+        "run_date": digest_date,
+        "use_board_score": bool(selection_report.get("use_board_score")),
+        "selected_count": len(selected_rows),
+        "score_rows_count": len(score_rows),
+        "mismatch_guarded_count": len(mismatch_rows),
+        "reviewed_suppressed_count": len(suppressed_review_rows),
+        "hard_blocked_count": len(selection_report.get("hard_blocked") or []),
+        "selected": selected_rows,
+        "suppressed_high_total_score_candidates": high_total_rows[:25],
+        "reviewed_candidate_suppression": suppressed_review_rows,
+        "reviewed_candidate_reconsideration_queue": reconsideration_rows,
+        "board_mismatch_guard": mismatch_rows,
+        "board_score_distribution": {
+            "total_candidate_count": len(score_rows),
+            "eligible_count": len(score_rows),
+            "selected_count": len(selected_rows),
+            "selected_board_score_floor": selected_board_floor,
+            "board_score_top_candidates": top_board_score_rows,
+            "total_score_top_but_board_score_downranked": downranked_rows,
+        },
+    }
+    json_path = path.with_suffix(".json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    lines = [
+        f"# Jibi Board Score Report — {digest_date}",
+        "",
+        "Report-only review-board scoring layer. This does not change the visible sheet schema.",
+        "",
+        f"- use_board_score: {str(payload['use_board_score']).lower()}",
+        f"- selected_count: {payload['selected_count']}",
+        f"- mismatch_guarded_count: {payload['mismatch_guarded_count']}",
+        f"- reviewed_suppressed_count: {payload['reviewed_suppressed_count']}",
+        f"- hard_blocked_count: {payload['hard_blocked_count']}",
+        "",
+        "## Selected Board Candidates",
+        "",
+        (
+            "| title | total_score | board_score | source_role | story_role | "
+            "seed_quality | selected reasons | risks |"
+        ),
+        "| --- | ---: | ---: | --- | --- | --- | --- | --- |",
+    ]
+    for row in selected_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('total_score') or 0):g}",
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(row.get("source_role", "")),
+                    _table_cell(row.get("story_role", "")),
+                    _table_cell(row.get("seed_quality_classification", "")),
+                    _table_cell("; ".join(row.get("board_score_reasons", [])[:6])),
+                    _table_cell("; ".join(row.get("mismatch_reasons", [])) or "-"),
+                ]
+            )
+            + " |"
+        )
+    if not selected_rows:
+        lines.append("| none | 0 | 0 | none | none | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Suppressed High Total Score Candidates",
+            "",
+            "| title | total_score | board_score | why excluded | reviewed history |",
+            "| --- | ---: | ---: | --- | --- |",
+        ]
+    )
+    for row in high_total_rows[:20]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('total_score') or 0):g}",
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(", ".join(row.get("why_excluded", []))),
+                    _table_cell(", ".join(row.get("history_statuses", [])) or "-"),
+                ]
+            )
+            + " |"
+        )
+    if not high_total_rows:
+        lines.append("| none | 0 | 0 | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Reviewed Candidate Suppression",
+            "",
+            "| title | previous date | status | reviewers | required action | excerpt |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in suppressed_review_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(", ".join(row.get("previous_review_dates", [])) or "unknown"),
+                    _table_cell(", ".join(row.get("history_statuses", [])) or "reviewed_before"),
+                    _table_cell(", ".join(row.get("reviewers", [])) or "unknown"),
+                    _table_cell(row.get("required_action", "")),
+                    _table_cell(row.get("review_excerpt", "")),
+                ]
+            )
+            + " |"
+        )
+    if not suppressed_review_rows:
+        lines.append("| none | none | none | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Reviewed Candidate Reconsideration Queue",
+            "",
+            "| title | total_score | board_score | second-search links | query types | status |",
+            "| --- | ---: | ---: | ---: | --- | --- |",
+        ]
+    )
+    for row in reconsideration_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('total_score') or 0):g}",
+                    f"{float(row.get('board_score') or 0):g}",
+                    str(row.get("second_search_accepted_links_count", 0)),
+                    _table_cell(", ".join(row.get("second_search_query_types", [])) or "-"),
+                    _table_cell(row.get("reconsideration_status", "")),
+                ]
+            )
+            + " |"
+        )
+    if not reconsideration_rows:
+        lines.append("| none | 0 | 0 | 0 | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Board Mismatch Guard",
+            "",
+            (
+                "| visible title | primary metadata title | source | story_fingerprint | "
+                "mismatch reason | required action |"
+            ),
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in mismatch_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("visible_title", "")),
+                    _table_cell(row.get("primary_metadata_title", "")),
+                    _table_cell(row.get("source", "")),
+                    _table_cell(row.get("story_fingerprint", "")),
+                    _table_cell(", ".join(row.get("mismatch_reason", []))),
+                    _table_cell(row.get("required_action", "")),
+                ]
+            )
+            + " |"
+        )
+    if not mismatch_rows:
+        lines.append("| none | none | none | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Board Score Distribution",
+            "",
+            f"- total_candidate_count: {len(score_rows)}",
+            f"- eligible_count: {len(score_rows)}",
+            f"- selected_count: {len(selected_rows)}",
+            f"- selected_board_score_floor: {selected_board_floor:g}",
+            "",
+            "### Top Board Score Candidates",
+            "",
+            "| title | total_score | board_score | reasons |",
+            "| --- | ---: | ---: | --- |",
+        ]
+    )
+    for row in top_board_score_rows[:10]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('total_score') or 0):g}",
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell("; ".join(row.get("board_score_reasons", [])[:5])),
+                ]
+            )
+            + " |"
+        )
+    if not top_board_score_rows:
+        lines.append("| none | 0 | 0 | none |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path, json_path
+
+
 def _alternate_why_not_primary(
     candidate: dict[str, Any],
     top: list[dict[str, Any]],
@@ -1642,6 +2574,7 @@ def _bundle_review_metadata_row(
     auto_title: str = "",
     auto_description: str = "",
     editorial_override: dict[str, Any] | None = None,
+    board_score: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     so_what = _candidate_so_what(candidate)
     metadata = {
@@ -1692,6 +2625,10 @@ def _bundle_review_metadata_row(
         ],
         "candidate_count": int(record.get("candidate_count") or 0),
     }
+    if board_score:
+        metadata["board_score"] = board_score.get("board_score")
+        metadata["board_score_base"] = board_score.get("total_score")
+        metadata["board_score_reasons"] = board_score.get("reasons", [])
     if syuka_similarity:
         metadata["syuka_similarity"] = syuka_similarity
     return metadata
@@ -2163,6 +3100,7 @@ def render_daily_digest(
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
     editorial_overrides_path: Path | None = None,
     allow_reviewed_candidates: bool | None = None,
+    use_board_score: bool | None = None,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
     resolved_review_board_limit = (
@@ -2199,6 +3137,7 @@ def render_daily_digest(
         syuka_similarity_report_path=_default_syuka_similarity_report_path(date_value),
         editorial_overrides_path=editorial_overrides_path,
         allow_reviewed_candidates=allow_reviewed_candidates,
+        use_board_score=use_board_score,
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -4907,6 +5846,13 @@ def main(
             help="Allow candidates that already have local human review comments.",
         ),
     ] = None,
+    use_board_score: Annotated[
+        bool | None,
+        typer.Option(
+            "--use-board-score/--use-total-score-order",
+            help="Use internal review-board score ordering for bundle review rows.",
+        ),
+    ] = None,
 ) -> None:
     if alternate_review_board_only:
         alt_csv_path, metadata_path, report_path = render_alternate_review_board(
@@ -4937,6 +5883,7 @@ def main(
         review_history_path=review_history_path,
         editorial_overrides_path=editorial_overrides_path,
         allow_reviewed_candidates=allow_reviewed_candidates,
+        use_board_score=use_board_score,
     )
     bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(

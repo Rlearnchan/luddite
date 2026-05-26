@@ -6,7 +6,7 @@
 - syuka_probe_status: `usable`
 - render_pass_2_status: `succeeded`
 - editorial_override_path: `outputs/editorial_overrides/jibi_review_board_2026-05-27.json`
-- editorial_override_count: 2
+- editorial_override_count: 0
 - board_csv_path: `/Users/bae/Documents/code/luddite/outputs/daily_digest/2026-05-27_bundle_review_sheet.csv`
 - board_metadata_path: `/Users/bae/Documents/code/luddite/outputs/daily_digest/2026-05-27_bundle_review_sheet_metadata.json`
 - sheet_mode: `none`

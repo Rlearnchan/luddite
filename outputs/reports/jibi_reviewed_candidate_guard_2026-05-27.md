@@ -10,16 +10,16 @@ Report-only guard for suppressing candidates that already received human review.
 
 | title | story_fingerprint | history_status |
 | --- | --- | --- |
-| [제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로 | story_8a22f77af8 | new |
-| [제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석 | story_12220a440d | new |
 | [제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력 | story_1ba23eaa67 | new |
-| 공공/현장 AI 도입과 책임 | public_ai_adoption | new |
+| [제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석 | story_12220a440d | new |
 | "서구 선진국 실질임금 감소 시작…인플레 압박 여파" | story_a6eeebaaa6 | new |
-| 'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개 | story_05227bed5c | new |
-| AI는 생활필수앱 됐다…OTT는 광고요금제 대세 | story_1ca42f049d | new |
-| [AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화 | story_cd55ba3738 | new |
-| [게시판] 신용회복위원회-NH농협은행, 금융취약계층 금융 지원 MOU | story_2ca09552e9 | new |
+| 해외보험에 기댄 K우주산업…정부 "시장 키운다" | story_98df91e7c5 | new |
+| [제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로 | story_8a22f77af8 | new |
+| 공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호 | story_b833a3ba60 | new |
 | [영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…"문구는 AI 참고" | story_6ba3cfc9e6 | new |
+| 페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원 | story_2796a4579a | new |
+| 日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상' | story_e8401d08bd | new |
+| 'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개 | story_05227bed5c | new |
 
 ## Suppressed Reviewed Candidates
 
