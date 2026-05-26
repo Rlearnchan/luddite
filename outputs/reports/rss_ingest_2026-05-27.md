@@ -18,18 +18,18 @@
 
 ## Article History
 
-- run_id: `rss_2026-05-27_20260526T1343435`
-- previous_run_id: `rss_2026-05-27_20260526T1340441`
+- run_id: `rss_2026-05-27_20260526T1407177`
+- previous_run_id: `rss_2026-05-27_20260526T1406327`
 - current URLs: 457
-- known before: 1373
-- known after: 1374
-- new to history: 1
-- returning known: 456
+- known before: 1392
+- known after: 1392
+- new to history: 0
+- returning known: 457
 - previous run URLs: 457
-- new since previous run: 1
-- dropped since previous run: 1
-- percent new since previous run: 0.22%
-- percent dropped since previous run: 0.22%
+- new since previous run: 0
+- dropped since previous run: 0
+- percent new since previous run: 0.00%
+- percent dropped since previous run: 0.00%
 - churn label: `low_churn`
 - history ledger: `/Users/bae/Documents/code/luddite/data/candidates/jibi_article_history.jsonl`
 - run ledger: `/Users/bae/Documents/code/luddite/data/candidates/jibi_article_runs.jsonl`
@@ -44,7 +44,7 @@
 
 | source | current | new_to_history | new_since_previous | dropped_since_previous |
 | --- | ---: | ---: | ---: | ---: |
-| BBC News | 20 | 1 | 1 | 1 |
+| BBC News | 20 | 0 | 0 | 0 |
 | NPR | 10 | 0 | 0 | 0 |
 | The Conversation | 20 | 0 | 0 | 0 |
 | 연합뉴스 경제 | 120 | 0 | 0 | 0 |
@@ -57,11 +57,11 @@
 
 ### New Since Previous Run Examples
 
-- BBC News | Tue, 26 May 2026 13:38:09 GMT | [Iran condemns US strikes as 'gross violation' of ceasefire](https://www.bbc.com/news/articles/c4g44yl7q70o?at_medium=RSS&at_campaign=rss)
+- none
 
 ### Dropped Since Previous Run Examples
 
-- BBC News | Tue, 26 May 2026 09:44:58 GMT | [US launches new strikes on Iran, targeting missile sites and boats](https://www.bbc.com/news/articles/cvgzzn4y1n8o?at_medium=RSS&at_campaign=rss)
+- none
 
 ## Per Source
 
@@ -180,11 +180,11 @@
 - duplicate_examples:
 - failure_count: 0
 - oldest_published_at: `Wed, 30 Apr 2025 14:04:28 GMT`
-- newest_published_at: `Tue, 26 May 2026 13:38:09 GMT`
+- newest_published_at: `Tue, 26 May 2026 14:05:13 GMT`
 - sample_titles:
   - Sentences of boys spared custody over rape referred to Court of Appeal
-  - BP chairman removed over 'serious' conduct concerns
-  - Sturgeon showed 'remarkable lack of curiosity' over SNP finances, says former MP
+  - Iran condemns US strikes as 'gross violation' of ceasefire
+  - 'Bullying' and 'overbearing' behaviour behind abrupt BP chairman removal
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -282,12 +282,12 @@
 - duplicate_skipped: 0
 - duplicate_examples:
 - failure_count: 0
-- oldest_published_at: `Mon, 25 May 2026 19:03:41 -0400`
-- newest_published_at: `Tue, 26 May 2026 05:00:00 -0400`
+- oldest_published_at: `Mon, 25 May 2026 21:51:45 -0400`
+- newest_published_at: `Tue, 26 May 2026 09:32:50 -0400`
 - sample_titles:
-  - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
+  - Prospects fade for imminent end to Iran war as attacks restart
   - Texas GOP voters vote in race that could shape future of the party -- and the Senate
-  - In West Texas, an unlikely alliance stands against extending the border wall
+  - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -536,12 +536,12 @@
   - "서구 선진국 실질임금 감소 시작…인플레 압박 여파" — https://www.yna.co.kr/view/AKR20260526122100009
   - "엔화, 리라화 제치고 최약체 통화"…외환시장 화제 모은 주장 — https://www.yna.co.kr/view/AKR20260526124000073
 - failure_count: 0
-- oldest_published_at: `Tue, 26 May 2026 08:49:02 +0900`
-- newest_published_at: `Tue, 26 May 2026 22:19:17 +0900`
+- oldest_published_at: `Tue, 26 May 2026 09:00:33 +0900`
+- newest_published_at: `Tue, 26 May 2026 22:56:24 +0900`
 - sample_titles:
-  - 체코, '마약 소지 의심' 러 성직자 구금…러 발끈
-  - 멜로니 웃었다…"집권 우파 연정, 베네치아 시장 선거 승리"
-  - UKMTO "오만 앞바다 유조선, 외부 폭발 신고"
+  - 쿼드, 호르무즈사태 계기 인태 해양안보 공동감시 추진…中견제(종합)
+  - "극우 이스라엘 장관의 구호선단 활동가 조롱은 국내 정치용"
+  - 뉴욕증시, 美-이란 종전 합의 기대감에 상승 출발
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -599,12 +599,12 @@
 - duplicate_skipped: 0
 - duplicate_examples:
 - failure_count: 0
-- oldest_published_at: `2026-05-26 15:24:45`
-- newest_published_at: `2026-05-26 21:55:44`
+- oldest_published_at: `2026-05-26 15:29:58`
+- newest_published_at: `2026-05-26 22:51:03`
 - sample_titles:
+  - 이란 "미국, 여러 차례 이란 상선 위협…명백한 휴전 위반"
+  - 이란 "美와의 MOU 체결 시 동결자산 중 120억달러 곧장 해제 요구"
   - 국민성장펀드 출시 이틀 만에 97.5% 판매…추가 공급 검토
-  - '최장' 증권신고서 냈지만…금감원, 우리금융에 정정 요구
-  - [亞증시-종합] 차익실현에 대부분 하락…홍콩만 혼조
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -622,12 +622,12 @@
 - duplicate_skipped: 0
 - duplicate_examples:
 - failure_count: 0
-- oldest_published_at: `Tue, 26 May 2026 18:25:12 +0900`
-- newest_published_at: `Tue, 26 May 2026 21:38:02 +0900`
+- oldest_published_at: `Tue, 26 May 2026 18:29:40 +0900`
+- newest_published_at: `Tue, 26 May 2026 22:48:19 +0900`
 - sample_titles:
-  - '10만명' 피해 홍수 최전선서 도왔는데…네티즌, '금귀걸이'만 봤다
-  - 징역 13년도 모자랐나…전청조, 옥살이 10개월 늘어난 이유
-  - "위스키 지고 백주 뜬다"…양하주창, 신제품 앞세워 韓 공략
+  - 美와 협상중인 이란, 240억弗 동결자산 해제 요구
+  - 예능 '진짜 사나이'도 발칵…"탁 치면 억" 자막 재조명
+  - UBS "메모리칩 장기계약 수혜"…마이크론 목표가 2배 넘게 올려
 - skipped_reason: ``
 - failure_reason: ``
 

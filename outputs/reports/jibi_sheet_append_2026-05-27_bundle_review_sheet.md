@@ -7,22 +7,22 @@
 - Rows read: 10
 - Rows appended: 10
 - Duplicates skipped: 0
-- Dry run: True
+- Dry run: False
 - Replace existing sheet values: True
 - Sheet replace planned: True
-- Sheet replaced: False
-- Styling applied: False
+- Sheet replaced: True
+- Styling applied: True
 - Sheet created: False
 - Review comments found: True
 - Review comment cells: 20
-- Review overwrite allowed: False
-- Review snapshot path: ``
-- Review history archive path: ``
+- Review overwrite allowed: True
+- Review snapshot path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_snapshot_2026-05-26_140737_055265.json`
+- Review history archive path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_history.jsonl`
 - Header status: `ok`
 - Header safe to update: True
 - Header reason: `ok`
-- Header update planned: True
-- Header updated: False
+- Header update planned: False
+- Header updated: True
 - Header created: False
 - Errors: 0
 

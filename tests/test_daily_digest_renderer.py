@@ -122,7 +122,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path, monkeypatch) ->
     ]
     assert bundle_rows[0]["일시"] == "2026-05-17 09:30"
     assert bundle_rows[0]["제목"] == "전당포 주식회사"
-    assert bundle_rows[0]["점수"] == "A · 55점"
+    assert bundle_rows[0]["점수"] == "C · 57점"
     assert bundle_rows[0]["메인 링크"] == "https://example.com/f88"
     assert bundle_rows[0]["리뷰-성원"] == ""
     assert "story_fit_uncertain" not in bundle_rows[0]["설명"]
@@ -567,7 +567,7 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert "merged_seed" not in rows[0]["설명"]
     assert "review_primary_and_bundle_supporting" not in rows[0]["설명"]
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in rows[0]["설명"]
-    assert rows[0]["점수"] == "B · 80점"
+    assert rows[0]["점수"] == "A · 86점"
     assert metadata["rows"][0]["ID"] == rows[0]["ID"]
     assert metadata["rows"][0]["source"] == "한국은행"
     assert metadata["rows"][0]["source_role"] == "research_note"

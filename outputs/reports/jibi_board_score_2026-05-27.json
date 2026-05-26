@@ -36,7 +36,7 @@
         "story_role": "standalone_seed",
         "title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
         "total_score": 64.0,
-        "visible_title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력"
+        "visible_title": "돈은 왜 공장보다 금융시장으로 흐를까"
       },
       {
         "board_score": 75.0,
@@ -60,7 +60,7 @@
         "story_role": "standalone_seed",
         "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
         "total_score": 61.0,
-        "visible_title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석"
+        "visible_title": "AI 인재 부족은 왜 매번 반복될까"
       },
       {
         "board_score": 75.0,
@@ -84,7 +84,7 @@
         "story_role": "standalone_seed",
         "title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
         "total_score": 61.0,
-        "visible_title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\""
+        "visible_title": "월급은 올랐는데 왜 더 가난해졌을까"
       },
       {
         "board_score": 75.0,
@@ -108,7 +108,7 @@
         "story_role": "standalone_seed",
         "title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\"",
         "total_score": 61.0,
-        "visible_title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\""
+        "visible_title": "우주산업은 왜 보험 없이는 날기 어려울까"
       },
       {
         "board_score": 72.0,
@@ -132,7 +132,7 @@
         "story_role": "standalone_seed",
         "title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
         "total_score": 58.0,
-        "visible_title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로"
+        "visible_title": "AI는 청년 일자리부터 흔들까"
       },
       {
         "board_score": 72.0,
@@ -156,7 +156,7 @@
         "story_role": "standalone_seed",
         "title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호",
         "total_score": 58.0,
-        "visible_title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호"
+        "visible_title": "아파트 말고 집을 빨리 늘리는 법"
       },
       {
         "board_score": 63.0,
@@ -182,7 +182,7 @@
         "story_role": "seed_with_supporting_links",
         "title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
         "total_score": 61.0,
-        "visible_title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\""
+        "visible_title": "스벅 사태, AI 문구와 책임의 경계"
       },
       {
         "board_score": 58.0,
@@ -208,7 +208,7 @@
         "story_role": "standalone_seed",
         "title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원",
         "total_score": 67.0,
-        "visible_title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원"
+        "visible_title": "전기차가 슈퍼카가 되면 뭐가 달라지나"
       },
       {
         "board_score": 57.4,
@@ -234,7 +234,7 @@
         "story_role": "seed_with_supporting_links",
         "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
         "total_score": 68.4,
-        "visible_title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'"
+        "visible_title": "폭염이 회사 규칙을 바꾸는 시대"
       },
       {
         "board_score": 55.6,
@@ -259,7 +259,7 @@
         "story_role": "standalone_seed",
         "title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
         "total_score": 56.6,
-        "visible_title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개"
+        "visible_title": "청년 교육 프로그램은 일자리 해법인가, 기업 홍보인가"
       },
       {
         "board_score": 53.0,
@@ -504,7 +504,7 @@
       "story_role": "standalone_seed",
       "title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
       "total_score": 64.0,
-      "visible_title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력"
+      "visible_title": "돈은 왜 공장보다 금융시장으로 흐를까"
     },
     {
       "board_score": 75.0,
@@ -528,7 +528,7 @@
       "story_role": "standalone_seed",
       "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
       "total_score": 61.0,
-      "visible_title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석"
+      "visible_title": "AI 인재 부족은 왜 매번 반복될까"
     },
     {
       "board_score": 75.0,
@@ -552,7 +552,7 @@
       "story_role": "standalone_seed",
       "title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
       "total_score": 61.0,
-      "visible_title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\""
+      "visible_title": "월급은 올랐는데 왜 더 가난해졌을까"
     },
     {
       "board_score": 75.0,
@@ -576,7 +576,7 @@
       "story_role": "standalone_seed",
       "title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\"",
       "total_score": 61.0,
-      "visible_title": "해외보험에 기댄 K우주산업…정부 \"시장 키운다\""
+      "visible_title": "우주산업은 왜 보험 없이는 날기 어려울까"
     },
     {
       "board_score": 72.0,
@@ -600,7 +600,7 @@
       "story_role": "standalone_seed",
       "title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
       "total_score": 58.0,
-      "visible_title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로"
+      "visible_title": "AI는 청년 일자리부터 흔들까"
     },
     {
       "board_score": 72.0,
@@ -624,7 +624,7 @@
       "story_role": "standalone_seed",
       "title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호",
       "total_score": 58.0,
-      "visible_title": "공공·민간 '쌍끌이'…시장에 비아파트 단기 신속 공급 신호"
+      "visible_title": "아파트 말고 집을 빨리 늘리는 법"
     },
     {
       "board_score": 63.0,
@@ -650,7 +650,7 @@
       "story_role": "seed_with_supporting_links",
       "title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
       "total_score": 61.0,
-      "visible_title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\""
+      "visible_title": "스벅 사태, AI 문구와 책임의 경계"
     },
     {
       "board_score": 58.0,
@@ -676,7 +676,7 @@
       "story_role": "standalone_seed",
       "title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원",
       "total_score": 67.0,
-      "visible_title": "페라리, 첫 순수 전기차 '루체' 공개…가격 9.6억원"
+      "visible_title": "전기차가 슈퍼카가 되면 뭐가 달라지나"
     },
     {
       "board_score": 57.4,
@@ -702,7 +702,7 @@
       "story_role": "seed_with_supporting_links",
       "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
       "total_score": 68.4,
-      "visible_title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'"
+      "visible_title": "폭염이 회사 규칙을 바꾸는 시대"
     },
     {
       "board_score": 55.6,
@@ -727,7 +727,7 @@
       "story_role": "standalone_seed",
       "title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
       "total_score": 56.6,
-      "visible_title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개"
+      "visible_title": "청년 교육 프로그램은 일자리 해법인가, 기업 홍보인가"
     }
   ],
   "selected_count": 10,

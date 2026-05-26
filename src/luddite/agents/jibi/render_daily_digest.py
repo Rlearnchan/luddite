@@ -131,6 +131,11 @@ BOARD_SCORE_SYSTEM_TOPIC_TERMS = {
     "교육",
     "의료",
 }
+BOARD_SCORE_GRADE_CUTS = {
+    "A": 80,
+    "B": 60,
+    "C": 40,
+}
 GENERIC_WHY_PATTERNS = {
     "수동 후보로 들어온 소재",
     "공급망, 인프라, 규제, 산업 전환 중 어느 축",
@@ -757,6 +762,7 @@ def write_bundle_review_sheet_preview(
                 record=record,
                 history_status=history_status,
                 syuka_similarity=syuka_similarity,
+                board_score=board_score,
             )
             auto_title = str(row.get("제목") or "")
             auto_description = str(row.get("설명") or "")
@@ -2799,11 +2805,29 @@ def _source_cue(candidate: dict[str, Any]) -> str:
     return ""
 
 
-def _score_display(candidate: dict[str, Any]) -> str:
+def _board_score_grade(score: float) -> str:
+    if score >= BOARD_SCORE_GRADE_CUTS["A"]:
+        return "A"
+    if score >= BOARD_SCORE_GRADE_CUTS["B"]:
+        return "B"
+    if score >= BOARD_SCORE_GRADE_CUTS["C"]:
+        return "C"
+    return "D"
+
+
+def _score_display(
+    candidate: dict[str, Any],
+    *,
+    board_score: dict[str, Any] | None = None,
+) -> str:
     if not candidate:
         return ""
+    if board_score:
+        score = round(float(board_score.get("board_score") or 0))
+        grade = _board_score_grade(score)
+        return f"{grade} · {score}점"
     score = round(_total_score(candidate))
-    grade = _compact_text(candidate.get("final_grade")) or "?"
+    grade = _compact_text(candidate.get("final_grade")) or _board_score_grade(score)
     return f"{grade} · {score}점"
 
 
@@ -3063,6 +3087,7 @@ def _bundle_review_row(
     record: dict[str, Any],
     history_status: str,
     syuka_similarity: dict[str, Any] | None = None,
+    board_score: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     description = _human_description(
         candidate=candidate,
@@ -3078,7 +3103,7 @@ def _bundle_review_row(
     return {
         "일시": registered_at,
         "제목": review_title or candidate_title,
-        "점수": _score_display(candidate),
+        "점수": _score_display(candidate, board_score=board_score),
         "메인 링크": candidate.get("seed_url", ""),
         "서브 링크": sub_links,
         "설명": description,
