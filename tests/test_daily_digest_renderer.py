@@ -979,11 +979,86 @@ def test_bundle_review_marks_reappearing_story_from_history(tmp_path) -> None:
         [youth_rest],
         "2026-05-23",
         review_history_path=history_path,
+        allow_reviewed_candidates=True,
     )
 
     with csv_path.open(encoding="utf-8-sig", newline="") as source:
         rows = list(csv.DictReader(source))
     assert "이전에 reject 의견" in rows[0]["설명"]
+
+
+def test_bundle_review_suppresses_reviewed_story_by_default(tmp_path) -> None:
+    history_path = tmp_path / "jibi_review_board_history.jsonl"
+    history_path.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-22",
+                "rows": [
+                    {
+                        "ID": "2026-05-22:story_bundle_2bdd0b9bb3",
+                        "제목": "청년 노동시장",
+                        "리뷰-동찬": "이미 많이 다룬 소재라 최신 hook 필요",
+                        "story_fingerprint": "youth_labor_exit",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    reviewed = {
+        "candidate_id": "bok_youth_rest",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "seed_url": "https://www.bok.or.kr/youth",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+    fresh = {
+        "candidate_id": "airport_bags",
+        "title": "세계 최대 공항은 하루 10만 개 가방을 어떻게 굴리나",
+        "seed_url": "https://www.npr.org/airport-baggage",
+        "source": "NPR",
+        "source_role_class": "public_wire",
+        "seed_type": "logistics_automation",
+        "why_interesting": "공항 수하물 물류 자동화",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 4},
+    }
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [reviewed, fresh],
+        [reviewed, fresh],
+        "2026-05-23",
+        review_history_path=history_path,
+        review_board_limit=1,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "공항" in rows[0]["제목"]
+    guard_report = csv_path.parent / "reports" / "jibi_reviewed_candidate_guard_2026-05-23.json"
+    assert guard_report.exists()
+    payload = json.loads(guard_report.read_text(encoding="utf-8"))
+    assert payload["selected_count"] == 1
+    assert payload["suppressed_count"] == 1
+    assert payload["suppressed"][0]["story_fingerprint"] == "youth_labor_exit"
+    assert payload["suppressed"][0]["required_action"] == (
+        "use_second_search_or_new_frame_before_reposting"
+    )
 
 
 def test_bundle_review_limit_and_near_miss_sublinks(tmp_path) -> None:

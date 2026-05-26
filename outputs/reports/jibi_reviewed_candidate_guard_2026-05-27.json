@@ -1,0 +1,104 @@
+{
+  "run_date": "2026-05-27",
+  "allow_reviewed_candidates": false,
+  "selected_count": 10,
+  "suppressed_count": 2,
+  "selected": [
+    {
+      "story_bundle_id": "story_bundle_6af21b621d",
+      "story_fingerprint": "story_8a22f77af8",
+      "title": "[제2025-30호] AI 확산과 청년고용 위축: 연공편향(seniority-biased) 기술변화를 중심으로",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_d58520fd57",
+      "story_fingerprint": "story_12220a440d",
+      "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_5e2c61b1f8",
+      "story_fingerprint": "story_1ba23eaa67",
+      "title": "[제2025-37호] 생산 부문으로의 자금 흐름 전환과 성장 활력",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_7b5d4e352b",
+      "story_fingerprint": "public_ai_adoption",
+      "title": "공공/현장 AI 도입과 책임",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_84728ca09d",
+      "story_fingerprint": "story_a6eeebaaa6",
+      "title": "\"서구 선진국 실질임금 감소 시작…인플레 압박 여파\"",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_1e2fcd6426",
+      "story_fingerprint": "story_05227bed5c",
+      "title": "'K뉴딜 아카데미' 참여청년 모집…10대 그룹들 운영계획 소개",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_2f371c431c",
+      "story_fingerprint": "story_1ca42f049d",
+      "title": "AI는 생활필수앱 됐다…OTT는 광고요금제 대세",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_da6bffa4cb",
+      "story_fingerprint": "story_cd55ba3738",
+      "title": "[AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_68d6d53b00",
+      "story_fingerprint": "story_2ca09552e9",
+      "title": "[게시판] 신용회복위원회-NH농협은행, 금융취약계층 금융 지원 MOU",
+      "history_status": "new"
+    },
+    {
+      "story_bundle_id": "story_bundle_8385ead915",
+      "story_fingerprint": "story_6ba3cfc9e6",
+      "title": "[영상] '스벅 사태' 일부 담당자, 휴대폰 제출 거부…\"문구는 AI 참고\"",
+      "history_status": "new"
+    }
+  ],
+  "suppressed": [
+    {
+      "story_bundle_id": "story_bundle_2bdd0b9bb3",
+      "story_fingerprint": "youth_labor_exit",
+      "title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+      "suppressed_reason": "reviewed_history",
+      "previous_review_dates": [
+        "2026-05-25"
+      ],
+      "reviewers": [
+        "형찬"
+      ],
+      "history_statuses": [
+        "promoted_before"
+      ],
+      "review_excerpt": "자료는 조금 다르지만 청년 노동시장 주제, 특히 쉬었음 소재는 많이 다룬 바 있음. 최근 영상 제목으로는 \"83~95년생의 삶을 추적해봤습니다.\", \"이제 근로소득으로는 부자가 될 수 없나\" 정도가 있음. 즉, 좋...",
+      "required_action": "avoid_duplicate_review_unless_followup_news_changed"
+    },
+    {
+      "story_bundle_id": "story_bundle_02c86c6679",
+      "story_fingerprint": "story_45dabd9919",
+      "title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+      "suppressed_reason": "reviewed_history",
+      "previous_review_dates": [
+        "2026-05-25"
+      ],
+      "reviewers": [
+        "형찬"
+      ],
+      "history_statuses": [
+        "rejected_before"
+      ],
+      "review_excerpt": "이것도 재미가 없을 듯함. seed로 보기에는 약함. 조각투자를 교과서처럼 설명하면, \"그래서 뭐\" 반응이 나올 것임.",
+      "required_action": "do_not_repost_without_new_hook_or_explicit_override"
+    }
+  ]
+}

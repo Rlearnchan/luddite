@@ -574,6 +574,7 @@ def write_bundle_review_sheet_preview(
     registered_at: str | None = None,
     syuka_similarity_report_path: Path | None = None,
     editorial_overrides_path: Path | None = None,
+    allow_reviewed_candidates: bool | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -582,7 +583,11 @@ def write_bundle_review_sheet_preview(
         for candidate in candidates
         if candidate.get("candidate_id")
     }
-    history_index = _load_review_history_index(review_history_path)
+    resolved_review_history_path = _effective_review_history_path(
+        board_csv_path=path,
+        review_history_path=review_history_path,
+    )
+    history_index = _load_review_history_index(resolved_review_history_path)
     syuka_similarity_index = _load_syuka_similarity_index(syuka_similarity_report_path)
     resolved_editorial_overrides_path = _resolve_editorial_overrides_path(
         digest_date,
@@ -590,11 +595,23 @@ def write_bundle_review_sheet_preview(
     )
     editorial_overrides = _load_editorial_overrides(resolved_editorial_overrides_path)
     registered_at_value = _review_board_registered_at(registered_at)
-    bundle_records = _story_bundle_records(
+    allow_reviewed = (
+        allow_reviewed_candidates
+        if allow_reviewed_candidates is not None
+        else _env_bool("JIBI_ALLOW_REVIEWED_CANDIDATES", False)
+    )
+    all_bundle_records = _story_bundle_records(
         candidates,
         top,
-        near_miss_limit=bundle_near_miss_limit,
-    )[:review_board_limit]
+        near_miss_limit=max(bundle_near_miss_limit, review_board_limit * 5),
+    )
+    bundle_records, suppressed_records = _select_review_board_records(
+        all_bundle_records,
+        history_index,
+        candidate_by_id=candidate_by_id,
+        review_board_limit=review_board_limit,
+        allow_reviewed_candidates=allow_reviewed,
+    )
     metadata_rows: list[dict[str, Any]] = []
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -675,6 +692,14 @@ def write_bundle_review_sheet_preview(
                     editorial_override=override,
                 )
             )
+    _write_reviewed_candidate_guard_report(
+        digest_date=digest_date,
+        selected=bundle_records,
+        suppressed=suppressed_records,
+        allow_reviewed_candidates=allow_reviewed,
+        history_index=history_index,
+        path=_reviewed_candidate_guard_report_path(path, digest_date),
+    )
     _write_bundle_review_metadata(
         _bundle_review_metadata_path(path),
         rows=metadata_rows,
@@ -818,6 +843,30 @@ def write_alternate_review_board_outputs(
 
 def _bundle_review_metadata_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}_metadata.json")
+
+
+def _reviewed_candidate_guard_report_path(board_csv_path: Path, digest_date: str) -> Path:
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "reports" / (
+            f"jibi_reviewed_candidate_guard_{digest_date}.md"
+        )
+    return paths.REPORTS_DIR / f"jibi_reviewed_candidate_guard_{digest_date}.md"
+
+
+def _effective_review_history_path(
+    *,
+    board_csv_path: Path,
+    review_history_path: Path,
+) -> Path:
+    if review_history_path != paths.JIBI_REVIEW_BOARD_HISTORY_JSONL:
+        return review_history_path
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "reports" / paths.JIBI_REVIEW_BOARD_HISTORY_JSONL.name
+    return review_history_path
 
 
 def _write_bundle_review_metadata(
@@ -1177,6 +1226,315 @@ def _record_exclusion_keys(record: dict[str, Any]) -> set[str]:
     keys.update(str(item).strip() for item in record.get("supporting_candidate_ids", []))
     keys.update(str(item).strip() for item in record.get("evidence_candidate_ids", []))
     return {key for key in keys if key}
+
+
+def _reviewed_history_rows_for_record(
+    record: dict[str, Any],
+    history_index: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    reviewed_rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for key in _record_exclusion_keys(record):
+        for row in history_index.get(key, []):
+            status = str(row.get("history_status") or "seen_before")
+            if status == "seen_before":
+                continue
+            row_id = str(row.get("ID") or row.get("id") or "")
+            marker = (key, row_id or str(id(row)))
+            if marker in seen:
+                continue
+            seen.add(marker)
+            reviewed_rows.append(row)
+    return reviewed_rows
+
+
+def _select_review_board_records(
+    records: list[dict[str, Any]],
+    history_index: dict[str, list[dict[str, Any]]],
+    *,
+    candidate_by_id: dict[str, dict[str, Any]],
+    review_board_limit: int,
+    allow_reviewed_candidates: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    selected: list[dict[str, Any]] = []
+    selected_ids: set[str] = set()
+    suppressed: list[dict[str, Any]] = []
+    role_counts: Counter[str] = Counter()
+    role_cap_blocked: list[dict[str, Any]] = []
+    evidence_backfill: list[dict[str, Any]] = []
+    for record in records:
+        reviewed_rows = _reviewed_history_rows_for_record(record, history_index)
+        if reviewed_rows and not allow_reviewed_candidates:
+            suppressed.append(
+                {
+                    "record": record,
+                    "history_rows": reviewed_rows,
+                    "suppressed_reason": "reviewed_history",
+                }
+            )
+            continue
+        representative = _record_representative_candidate(record, candidate_by_id) or {}
+        board_status = _record_board_quality_status(record, representative)
+        if board_status == "hard_blocked":
+            continue
+        if board_status == "evidence_backfill":
+            evidence_backfill.append(record)
+            continue
+        role = _record_source_role(record, candidate_by_id)
+        cap = DEFAULT_SOURCE_ROLE_TOP_CAPS.get(role)
+        if cap is not None and role_counts[role] >= cap:
+            role_cap_blocked.append(record)
+            continue
+        selected.append(record)
+        selected_ids.add(str(record.get("story_bundle_id") or ""))
+        role_counts[role] += 1
+        if len(selected) >= review_board_limit:
+            break
+    if len(selected) < review_board_limit:
+        for record in role_cap_blocked:
+            record_id = str(record.get("story_bundle_id") or "")
+            if record_id in selected_ids:
+                continue
+            selected.append(record)
+            selected_ids.add(record_id)
+            if len(selected) >= review_board_limit:
+                break
+    if len(selected) < review_board_limit:
+        for record in evidence_backfill:
+            record_id = str(record.get("story_bundle_id") or "")
+            if record_id in selected_ids:
+                continue
+            selected.append(record)
+            selected_ids.add(record_id)
+            if len(selected) >= review_board_limit:
+                break
+    return selected, suppressed
+
+
+def _record_board_quality_status(
+    record: dict[str, Any],
+    representative: dict[str, Any],
+) -> str:
+    title_text = _source_text(representative) + " " + str(record.get("bundle_title") or "")
+    if any(term in title_text for term in ("[부고]", "부친상", "모친상", "별세", "씨 별세")):
+        return "hard_blocked"
+    story_role = str(representative.get("story_role") or "")
+    seed_quality = str(representative.get("seed_quality_classification") or "")
+    if story_role == "demote_or_reject" or seed_quality == "reject_or_downrank":
+        return "hard_blocked"
+    if story_role == "evidence_for_larger_story" or seed_quality == "evidence_only":
+        return "evidence_backfill"
+    return "ok"
+
+
+def _record_source_role(
+    record: dict[str, Any],
+    candidate_by_id: dict[str, dict[str, Any]],
+) -> str:
+    representative = _record_representative_candidate(record, candidate_by_id)
+    if representative:
+        return _candidate_role(representative)
+    return "unknown"
+
+
+def _history_reviewers(row: dict[str, Any]) -> list[str]:
+    reviewers: list[str] = []
+    reviewer_payloads = row.get("reviewers")
+    if isinstance(reviewer_payloads, dict):
+        for reviewer, payload in reviewer_payloads.items():
+            if isinstance(payload, dict) and str(payload.get("raw_note") or "").strip():
+                reviewers.append(str(reviewer))
+    for column in REVIEWER_COLUMNS:
+        if str(row.get(column) or "").strip():
+            reviewers.append(column.replace("리뷰-", ""))
+    return list(dict.fromkeys(reviewers))
+
+
+def _history_review_excerpt(row: dict[str, Any]) -> str:
+    reviewer_payloads = row.get("reviewers")
+    if isinstance(reviewer_payloads, dict):
+        for payload in reviewer_payloads.values():
+            if isinstance(payload, dict):
+                note = str(payload.get("raw_note") or payload.get("note") or "").strip()
+                if note:
+                    return _short_review_excerpt(note)
+    for column in REVIEWER_COLUMNS:
+        note = str(row.get(column) or "").strip()
+        if note:
+            return _short_review_excerpt(note)
+    return ""
+
+
+def _history_review_date(row: dict[str, Any]) -> str:
+    for key in ["run_date", "date", "_snapshot_created_at", "created_at"]:
+        value = str(row.get(key) or "").strip()
+        if value:
+            return value[:10]
+    review_id = str(row.get("ID") or row.get("id") or "").strip()
+    if ":" in review_id:
+        return review_id.split(":", 1)[0]
+    return ""
+
+
+def _guard_followup_action(history_rows: list[dict[str, Any]]) -> str:
+    statuses = {str(row.get("history_status") or "") for row in history_rows}
+    if "rejected_before" in statuses:
+        return "do_not_repost_without_new_hook_or_explicit_override"
+    if "promoted_before" in statuses:
+        return "avoid_duplicate_review_unless_followup_news_changed"
+    return "use_second_search_or_new_frame_before_reposting"
+
+
+def _guard_report_payload(
+    *,
+    digest_date: str,
+    selected: list[dict[str, Any]],
+    suppressed: list[dict[str, Any]],
+    allow_reviewed_candidates: bool,
+    history_index: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    selected_rows = []
+    for record in selected:
+        history_rows = _reviewed_history_rows_for_record(record, history_index)
+        selected_rows.append(
+            {
+                "story_bundle_id": str(record.get("story_bundle_id") or ""),
+                "story_fingerprint": str(record.get("story_fingerprint") or ""),
+                "title": str(record.get("bundle_title") or record.get("primary_title") or ""),
+                "history_status": "reviewed_allowed" if history_rows else "new",
+            }
+        )
+    suppressed_rows = []
+    for item in suppressed:
+        record = item["record"]
+        history_rows = item["history_rows"]
+        suppressed_rows.append(
+            {
+                "story_bundle_id": str(record.get("story_bundle_id") or ""),
+                "story_fingerprint": str(record.get("story_fingerprint") or ""),
+                "title": str(record.get("bundle_title") or record.get("primary_title") or ""),
+                "suppressed_reason": item.get("suppressed_reason", "reviewed_history"),
+                "previous_review_dates": list(
+                    dict.fromkeys(
+                        date
+                        for row in history_rows
+                        if (date := _history_review_date(row))
+                    )
+                ),
+                "reviewers": list(
+                    dict.fromkeys(
+                        reviewer
+                        for row in history_rows
+                        for reviewer in _history_reviewers(row)
+                    )
+                ),
+                "history_statuses": list(
+                    dict.fromkeys(
+                        str(row.get("history_status") or "reviewed_before")
+                        for row in history_rows
+                    )
+                ),
+                "review_excerpt": _history_review_excerpt(history_rows[0])
+                if history_rows
+                else "",
+                "required_action": _guard_followup_action(history_rows),
+            }
+        )
+    return {
+        "run_date": digest_date,
+        "allow_reviewed_candidates": allow_reviewed_candidates,
+        "selected_count": len(selected_rows),
+        "suppressed_count": len(suppressed_rows),
+        "selected": selected_rows,
+        "suppressed": suppressed_rows,
+    }
+
+
+def _write_reviewed_candidate_guard_report(
+    *,
+    digest_date: str,
+    selected: list[dict[str, Any]],
+    suppressed: list[dict[str, Any]],
+    allow_reviewed_candidates: bool,
+    history_index: dict[str, list[dict[str, Any]]],
+    path: Path,
+) -> tuple[Path, Path]:
+    payload = _guard_report_payload(
+        digest_date=digest_date,
+        selected=selected,
+        suppressed=suppressed,
+        allow_reviewed_candidates=allow_reviewed_candidates,
+        history_index=history_index,
+    )
+    json_path = path.with_suffix(".json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+    lines = [
+        f"# Jibi Reviewed Candidate Guard — {digest_date}",
+        "",
+        "Report-only guard for suppressing candidates that already received human review.",
+        "",
+        f"- allow_reviewed_candidates: {str(allow_reviewed_candidates).lower()}",
+        f"- selected_count: {payload['selected_count']}",
+        f"- suppressed_count: {payload['suppressed_count']}",
+        "",
+        "## New Candidates",
+        "",
+        "| title | story_fingerprint | history_status |",
+        "| --- | --- | --- |",
+    ]
+    for row in payload["selected"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row["title"]),
+                    _table_cell(row["story_fingerprint"]),
+                    _table_cell(row["history_status"]),
+                ]
+            )
+            + " |"
+        )
+    if not payload["selected"]:
+        lines.append("| none | none | none |")
+    lines.extend(
+        [
+            "",
+            "## Suppressed Reviewed Candidates",
+            "",
+            "| title | previous_review_dates | reviewers | status | required_action | excerpt |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in payload["suppressed"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row["title"]),
+                    _table_cell(", ".join(row["previous_review_dates"]) or "unknown"),
+                    _table_cell(", ".join(row["reviewers"]) or "unknown"),
+                    _table_cell(", ".join(row["history_statuses"]) or "reviewed_before"),
+                    _table_cell(row["required_action"]),
+                    _table_cell(row["review_excerpt"]),
+                ]
+            )
+            + " |"
+        )
+    if not payload["suppressed"]:
+        lines.append("| none | none | none | none | none | none |")
+    lines.extend(
+        [
+            "",
+            "## Reconsideration Rule",
+            "",
+            "- Default: reviewed candidates are excluded from the next visible Jibi board.",
+            "- Override only with `JIBI_ALLOW_REVIEWED_CANDIDATES=1` after a new hook, "
+            "new supporting links, or a clearly changed frame exists.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path, json_path
 
 
 def _alternate_why_not_primary(
@@ -1804,6 +2162,7 @@ def render_daily_digest(
     bundle_near_miss_limit: int | None = None,
     review_history_path: Path = paths.JIBI_REVIEW_BOARD_HISTORY_JSONL,
     editorial_overrides_path: Path | None = None,
+    allow_reviewed_candidates: bool | None = None,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
     resolved_review_board_limit = (
@@ -1839,6 +2198,7 @@ def render_daily_digest(
         review_history_path=review_history_path,
         syuka_similarity_report_path=_default_syuka_similarity_report_path(date_value),
         editorial_overrides_path=editorial_overrides_path,
+        allow_reviewed_candidates=allow_reviewed_candidates,
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -4540,6 +4900,13 @@ def main(
             help="Optional bundle review title/description override JSON.",
         ),
     ] = None,
+    allow_reviewed_candidates: Annotated[
+        bool | None,
+        typer.Option(
+            "--allow-reviewed-candidates/--suppress-reviewed-candidates",
+            help="Allow candidates that already have local human review comments.",
+        ),
+    ] = None,
 ) -> None:
     if alternate_review_board_only:
         alt_csv_path, metadata_path, report_path = render_alternate_review_board(
@@ -4569,6 +4936,7 @@ def main(
         bundle_near_miss_limit=bundle_near_miss_limit,
         review_history_path=review_history_path,
         editorial_overrides_path=editorial_overrides_path,
+        allow_reviewed_candidates=allow_reviewed_candidates,
     )
     bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(

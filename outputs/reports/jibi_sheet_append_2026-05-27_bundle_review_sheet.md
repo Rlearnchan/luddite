@@ -7,7 +7,7 @@
 - Rows read: 10
 - Rows appended: 10
 - Duplicates skipped: 0
-- Dry run: False
+- Dry run: True
 - Replace existing sheet values: True
 - Sheet replace planned: True
 - Sheet replaced: False
@@ -16,15 +16,15 @@
 - Review comments found: True
 - Review comment cells: 20
 - Review overwrite allowed: False
-- Review snapshot path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_snapshot_2026-05-26_124144_316623.json`
-- Review history archive path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_history.jsonl`
+- Review snapshot path: ``
+- Review history archive path: ``
 - Header status: `ok`
 - Header safe to update: True
 - Header reason: `ok`
-- Header update planned: False
+- Header update planned: True
 - Header updated: False
 - Header created: False
-- Errors: 1
+- Errors: 0
 
 ## Duplicate keys skipped
 
@@ -32,4 +32,4 @@
 
 ## Errors
 
-- Existing Jibi review comments found; refusing to replace the bundle review board. Set JIBI_ALLOW_REVIEW_OVERWRITE=1 or pass --allow-review-overwrite after snapshotting/reviewing the board.
+- none

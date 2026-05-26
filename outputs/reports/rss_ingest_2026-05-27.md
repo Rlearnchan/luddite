@@ -18,18 +18,18 @@
 
 ## Article History
 
-- run_id: `rss_2026-05-27_20260526T1241243`
-- previous_run_id: `rss_2026-05-27_20260526T1240238`
+- run_id: `rss_2026-05-27_20260526T1259143`
+- previous_run_id: `rss_2026-05-27_20260526T1257562`
 - current URLs: 457
-- known before: 1363
-- known after: 1365
-- new to history: 2
-- returning known: 455
+- known before: 1368
+- known after: 1369
+- new to history: 1
+- returning known: 456
 - previous run URLs: 457
-- new since previous run: 2
-- dropped since previous run: 2
-- percent new since previous run: 0.44%
-- percent dropped since previous run: 0.44%
+- new since previous run: 1
+- dropped since previous run: 1
+- percent new since previous run: 0.22%
+- percent dropped since previous run: 0.22%
 - churn label: `low_churn`
 - history ledger: `/Users/bae/Documents/code/luddite/data/candidates/jibi_article_history.jsonl`
 - run ledger: `/Users/bae/Documents/code/luddite/data/candidates/jibi_article_runs.jsonl`
@@ -52,18 +52,16 @@
 | 연합뉴스 세계 | 118 | 1 | 1 | 1 |
 | 연합인포맥스 | 20 | 0 | 0 | 0 |
 | 정책브리핑 | 20 | 0 | 0 | 0 |
-| 한국경제 | 20 | 1 | 1 | 1 |
+| 한국경제 | 20 | 0 | 0 | 0 |
 | 한국은행 | 20 | 0 | 0 | 0 |
 
 ### New Since Previous Run Examples
 
-- 한국경제 | Tue, 26 May 2026 21:38:02 +0900 | ['10만명' 피해 홍수 최전선서 도왔는데…네티즌, '금귀걸이'만 봤다](https://www.hankyung.com/article/2026052602877)
-- 연합뉴스 세계 | Tue, 26 May 2026 21:33:15 +0900 | [UKMTO "오만 앞바다 유조선, 외부 폭발 신고"](https://www.yna.co.kr/view/AKR20260526173000085)
+- 연합뉴스 세계 | Tue, 26 May 2026 21:56:11 +0900 | [멜로니 웃었다…"집권 우파 연정, 베네치아 시장 선거 승리"](https://www.yna.co.kr/view/AKR20260526172300109)
 
 ### Dropped Since Previous Run Examples
 
-- 한국경제 | Tue, 26 May 2026 19:23:29 +0900 | [세무사회, 정부에 서학개미 과세이연 등 세제개선 건의](https://www.hankyung.com/article/202605260191i)
-- 연합뉴스 세계 | Tue, 26 May 2026 08:40:51 +0900 | [캐나다 총리, 앨버타 분리시도에 브렉시트 소환…"위험한 허세"](https://www.yna.co.kr/view/AKR20260526020900009)
+- 연합뉴스 세계 | Tue, 26 May 2026 08:44:24 +0900 | [MLB 광속구 투수 미저로우스키, 시속 161㎞ 이상 57개 폭격](https://www.yna.co.kr/view/AKR20260526024100007)
 
 ## Per Source
 
@@ -182,7 +180,7 @@
 - duplicate_examples:
 - failure_count: 0
 - oldest_published_at: `Wed, 30 Apr 2025 14:04:28 GMT`
-- newest_published_at: `Tue, 26 May 2026 12:39:29 GMT`
+- newest_published_at: `Tue, 26 May 2026 12:56:08 GMT`
 - sample_titles:
   - Sentences of boys spared custody over Hampshire rape referred to Court of Appeal, PM says
   - BP chairman removed over 'serious' conduct concerns
@@ -289,7 +287,7 @@
 - sample_titles:
   - Texas GOP voters vote in race that could shape future of the party -- and the Senate
   - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
-  - Inside ATL: how Delta juggles 100,000 bags a day at the world's busiest airport
+  - In West Texas, an unlikely alliance stands against extending the border wall
 - skipped_reason: ``
 - failure_reason: ``
 
@@ -538,12 +536,12 @@
   - "서구 선진국 실질임금 감소 시작…인플레 압박 여파" — https://www.yna.co.kr/view/AKR20260526122100009
   - "엔화, 리라화 제치고 최약체 통화"…외환시장 화제 모은 주장 — https://www.yna.co.kr/view/AKR20260526124000073
 - failure_count: 0
-- oldest_published_at: `Tue, 26 May 2026 08:44:24 +0900`
-- newest_published_at: `Tue, 26 May 2026 21:33:15 +0900`
+- oldest_published_at: `Tue, 26 May 2026 08:46:32 +0900`
+- newest_published_at: `Tue, 26 May 2026 21:56:11 +0900`
 - sample_titles:
+  - 멜로니 웃었다…"집권 우파 연정, 베네치아 시장 선거 승리"
   - UKMTO "오만 앞바다 유조선, 외부 폭발 신고"
   - 호주인 IS 가족 19명, 시리아서 추가 귀국…당국 조사
-  - 해임 4일 만에 '의회 수장' 된 세네갈 전 총리
 - skipped_reason: ``
 - failure_reason: ``
 
