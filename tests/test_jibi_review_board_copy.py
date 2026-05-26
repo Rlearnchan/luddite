@@ -27,6 +27,7 @@ def test_review_board_copy_youth_labor_matches_editorial_baseline() -> None:
     )
 
     assert copy.title == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
+    assert copy.description.startswith("핵심 질문은")
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in copy.description
     assert "경제활동참가율" in copy.description
 
@@ -120,6 +121,44 @@ def test_review_board_copy_does_not_treat_underwater_as_rwa() -> None:
     assert copy.title == "The network watching the world’s oceans is under pressure"
     assert "자산 토큰화" not in copy.title
     assert "부동산·채권" not in copy.description
+
+
+def test_review_board_copy_makes_tokenization_question_first() -> None:
+    copy = _copy(
+        {"bundle_title": "국내외 자산 토큰화 현황 및 향후 정책 과제"},
+        {
+            "title": "[제2026-11호] 국내외 자산 토큰화 현황 및 향후 정책 과제",
+            "source": "한국은행",
+            "source_role_class": "research_note",
+            "seed_type": "policy_research_note",
+            "story_role": "seed_with_supporting_links",
+            "why_interesting": "RWA와 STO 제도권 금융 인프라",
+        },
+    )
+
+    assert copy.title == "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
+    assert copy.description.startswith("핵심 질문은")
+    assert "누가 책임질까" in copy.description
+    assert "최신 뉴스 hook" in copy.description
+    assert "BOK는 핵심 근거" in copy.description
+
+
+def test_review_board_copy_fallback_uses_story_role_research_action() -> None:
+    copy = _copy(
+        {
+            "bundle_title": "낯선 정책 후보",
+            "suggested_operator_action": "collect_second_source",
+        },
+        {
+            "title": "새로운 생활 규제 후보",
+            "source": "연합뉴스 경제",
+            "story_role": "seed_with_supporting_links",
+        },
+    )
+
+    assert copy.description.startswith("핵심 질문은")
+    assert "최신 뉴스와 두 번째 출처" in copy.description
+    assert "두 번째 출처와 숫자" in copy.description
 
 
 def test_review_board_copy_excludes_internal_labels() -> None:
