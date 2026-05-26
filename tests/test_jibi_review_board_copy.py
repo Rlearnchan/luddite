@@ -27,7 +27,7 @@ def test_review_board_copy_youth_labor_matches_editorial_baseline() -> None:
     )
 
     assert copy.title == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
-    assert copy.description.startswith("핵심 질문은")
+    assert copy.description.startswith("'청년 실업률이 낮아도")
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in copy.description
     assert "경제활동참가율" in copy.description
 
@@ -137,7 +137,7 @@ def test_review_board_copy_makes_tokenization_question_first() -> None:
     )
 
     assert copy.title == "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
-    assert copy.description.startswith("핵심 질문은")
+    assert copy.description.startswith("'코인 가격이 아니라")
     assert "누가 책임질까" in copy.description
     assert "최신 뉴스 hook" in copy.description
     assert "BOK는 핵심 근거" in copy.description
@@ -156,7 +156,7 @@ def test_review_board_copy_fallback_uses_story_role_research_action() -> None:
         },
     )
 
-    assert copy.description.startswith("핵심 질문은")
+    assert copy.description.startswith("'이 후보를 단독 주제로")
     assert "최신 뉴스와 두 번째 출처" in copy.description
     assert "두 번째 출처와 숫자" in copy.description
 

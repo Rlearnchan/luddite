@@ -158,12 +158,14 @@ def _question_first_description(
     verdict: str = "",
 ) -> str:
     next_text = compact_text(next_step)
-    if next_text and next_text[-1] in ".?!。！？":
-        next_sentence = f"다음 조사는 {next_text}"
+    if next_text.startswith(("리서치 포인트", "확인할 지점", "확인할 것은")):
+        next_sentence = _sentence(next_text)
+    elif next_text and next_text[-1] in ".?!。！？":
+        next_sentence = next_text
     else:
-        next_sentence = f"다음 조사는 {next_text}입니다."
+        next_sentence = f"더 볼 지점은 {next_text}입니다."
     parts = [
-        f"핵심 질문은 '{compact_text(question)}'입니다.",
+        f"'{compact_text(question)}' 이 질문으로 열면 시청자가 바로 따라올 수 있습니다.",
         _sentence(reason),
         next_sentence,
     ]

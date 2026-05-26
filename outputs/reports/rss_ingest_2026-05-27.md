@@ -18,8 +18,8 @@
 
 ## Article History
 
-- run_id: `rss_2026-05-27_20260526T1407177`
-- previous_run_id: `rss_2026-05-27_20260526T1406327`
+- run_id: `rss_2026-05-27_20260526T1416420`
+- previous_run_id: `rss_2026-05-27_20260526T1415586`
 - current URLs: 457
 - known before: 1392
 - known after: 1392
@@ -180,7 +180,7 @@
 - duplicate_examples:
 - failure_count: 0
 - oldest_published_at: `Wed, 30 Apr 2025 14:04:28 GMT`
-- newest_published_at: `Tue, 26 May 2026 14:05:13 GMT`
+- newest_published_at: `Tue, 26 May 2026 14:05:44 GMT`
 - sample_titles:
   - Sentences of boys spared custody over rape referred to Court of Appeal
   - Iran condemns US strikes as 'gross violation' of ceasefire
@@ -286,8 +286,8 @@
 - newest_published_at: `Tue, 26 May 2026 09:32:50 -0400`
 - sample_titles:
   - Prospects fade for imminent end to Iran war as attacks restart
-  - Texas GOP voters vote in race that could shape future of the party -- and the Senate
   - Therapists are using AI to take notes. Is it a useful tool or a breach of trust?
+  - Texas GOP voters vote in race that could shape future of the party -- and the Senate
 - skipped_reason: ``
 - failure_reason: ``
 

@@ -818,6 +818,83 @@ def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -
     assert metadata["rows"][0]["syuka_similarity"]["display_on_board"] is True
 
 
+def test_bundle_review_editorial_override_keeps_syuka_annotation(tmp_path) -> None:
+    youth_rest = {
+        "candidate_id": "bok_youth_rest",
+        "title": "BOK '쉬었음' 청년층의 특징 및 평가",
+        "seed_url": "https://www.bok.or.kr/youth",
+        "source": "한국은행",
+        "source_role_class": "research_note",
+        "seed_type": "macro_research_note",
+        "why_interesting": "청년 노동시장 밖 인구를 설명하는 연구노트",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 80, "broadcast_potential_proxy": 5},
+    }
+    syuka_report = tmp_path / "jibi_syuka_snapshot_matches_2026-05-23.json"
+    syuka_report.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "results": [
+                    {
+                        "story_fingerprint": "youth_labor_exit",
+                        "query_title": "청년 노동시장 이탈 / 쉬었음 / 경제활동참가율",
+                        "recommendation": "duplicate",
+                        "matches": [
+                            {
+                                "title": "청년 노동시장 이탈을 다룬 과거 영상",
+                                "match_score": 12,
+                                "matched_terms": ["쉬었음", "경제활동참가율"],
+                                "matched_fields": ["title", "analysis"],
+                                "url": "https://youtu.be/youth",
+                                "view_count": 1500000,
+                                "like_count": 32000,
+                                "upload_date": "20260501",
+                            }
+                        ],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    override_path = tmp_path / "overrides.json"
+    override_path.write_text(
+        json.dumps(
+            {
+                "items": {
+                    "youth_labor_exit": {
+                        "description": "사람이 보기 좋게 다시 쓴 설명입니다."
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    csv_path = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [youth_rest],
+        [youth_rest],
+        "2026-05-23",
+        editorial_overrides_path=override_path,
+        syuka_similarity_report_path=syuka_report,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+
+    assert rows[0]["설명"].startswith("사람이 보기 좋게 다시 쓴 설명입니다.")
+    assert "과거 영상과 강하게 겹칠 수 있습니다" in rows[0]["설명"]
+    assert "청년 노동시장 이탈을 다룬 과거 영상" in rows[0]["설명"]
+
+
 def test_bundle_review_keeps_low_confidence_syuka_metrics_out_of_description(
     tmp_path,
 ) -> None:

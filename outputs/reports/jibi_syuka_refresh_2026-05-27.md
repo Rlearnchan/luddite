@@ -11,7 +11,7 @@
 - board_metadata_path: `/Users/bae/Documents/code/luddite/outputs/daily_digest/2026-05-27_bundle_review_sheet_metadata.json`
 - sheet_mode: `staging_replace`
 - sheet_replace_status: `succeeded`
-- overwrite_guard_status: `overwritten_after_explicit_allow`
+- overwrite_guard_status: `not_triggered`
 
 ## Warnings
 

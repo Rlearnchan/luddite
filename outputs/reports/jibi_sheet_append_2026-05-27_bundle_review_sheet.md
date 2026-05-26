@@ -13,10 +13,10 @@
 - Sheet replaced: True
 - Styling applied: True
 - Sheet created: False
-- Review comments found: True
-- Review comment cells: 20
-- Review overwrite allowed: True
-- Review snapshot path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_snapshot_2026-05-26_140737_055265.json`
+- Review comments found: False
+- Review comment cells: 0
+- Review overwrite allowed: False
+- Review snapshot path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_snapshot_2026-05-26_141701_541068.json`
 - Review history archive path: `/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_board_history.jsonl`
 - Header status: `ok`
 - Header safe to update: True

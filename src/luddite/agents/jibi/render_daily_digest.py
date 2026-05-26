@@ -767,6 +767,9 @@ def write_bundle_review_sheet_preview(
             auto_title = str(row.get("제목") or "")
             auto_description = str(row.get("설명") or "")
             _apply_editorial_override(row, override)
+            annotation = _syuka_similarity_annotation(syuka_similarity)
+            if annotation and annotation not in str(row.get("설명") or ""):
+                row["설명"] = f"{row.get('설명', '')} {annotation}".strip()
             writer.writerow(row)
             metadata_rows.append(
                 _bundle_review_metadata_row(
