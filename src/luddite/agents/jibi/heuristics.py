@@ -148,9 +148,15 @@ def _term_in_text(lowered_text: str, term: str) -> bool:
 
 def infer_seed_type(title: str, summary: str | None = None, tags: list[str] | None = None) -> str:
     text = text_blob(title, summary, " ".join(tags or []))
-    if contains_any(text, {"하마", "공룡", "돼지", "전당포", "hippo", "dinosaur", "pawn"}):
+    if (
+        contains_any(text, {"돼지", "hippo", "dinosaur"})
+        or ("하마" in text and contains_any(text, {"코카인", "에스코바르", "콜롬비아"}))
+        or ("공룡" in text and contains_any(text, {"인기", "취향", "설문", "티라노"}))
+        or ("전당포" in text and contains_any(text, {"베트남", "f88", "상장", "hose"}))
+        or ("pawn" in text and contains_any(text, {"f88", "vietnam", "listing"}))
+    ):
         return "absurd_foreign"
-    if contains_any(text, {"반바지", "폭염", "회사", "학교", "생활", "heat", "office"}):
+    if contains_any(text, {"반바지", "쿨비즈", "폭염", "불볕더위", "열사병", "heatwave"}):
         return "life_change"
     if contains_any(text, COST_ASYMMETRY_TERMS) and (
         contains_any(text, {"드론", "drone", "공격", "attack"})

@@ -613,13 +613,13 @@ def _template_insights(seed_type: str) -> tuple[str, list[str]]:
         ),
         "life_change": (
             (
-                "날씨/생활 체감에서 출발해 제도, 복장, 직장문화 변화와 "
-                "한국 회사식 회수로 이어질 수 있음"
+                "날씨/생활 체감에서 출발해 제도, 비용, 일하는 방식, 안전 규칙 변화로 "
+                "이어질 수 있음"
             ),
             [
                 "폭염과 계절 감각 변화",
-                "에너지 가격과 오피스 복장 변화",
-                "한국 기업 쿨비즈/반바지 문화",
+                "에너지 비용과 생활 규칙 변화",
+                "현장 안전·근무 방식·공간 사용 변화",
             ],
         ),
         "absurd_foreign": (
@@ -1024,7 +1024,7 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "레이저/전자전/그물총 같은 저비용 대응책 경쟁",
             ],
         )
-    if any(term in text for term in ["반바지", "폭염", "heatwave", "shorts"]):
+    if any(term in text for term in ["반바지", "쿨비즈", "shorts", "스노우피크"]):
         return (
             (
                 "5월 폭염이 단순 날씨 뉴스가 아니라 회사 복장 규정, 전력 수요, "
@@ -1036,7 +1036,22 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "한국 기업 쿨비즈/반바지 문화",
             ],
         )
-    if any(term in text for term in ["공룡", "티라노", "t-rex", "dinosaur"]):
+    if any(term in text for term in ["폭염", "불볕더위", "열사병", "heatwave", "heatstroke"]):
+        return (
+            (
+                "폭염이 단순 날씨 뉴스가 아니라 산업현장 안전, 작업 시간, "
+                "휴식·냉방 설비, 기업의 예방 의무로 이어지는 문제를 보여줌"
+            ),
+            [
+                "일본 산업현장 열사병 대책",
+                "폭염과 산재·작업중지권",
+                "냉방·휴식·현장 안전 규정",
+            ],
+        )
+    if any(term in text for term in ["공룡", "티라노", "t-rex", "dinosaur"]) and contains_any(
+        text,
+        {"인기", "취향", "설문", "좋아", "favorite", "popular", "popularity"},
+    ):
         return (
             (
                 "공룡 취향이라는 가벼운 질문에서 어른들의 낭만, 과학 대중문화, "
@@ -1046,6 +1061,18 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "T-Rex가 공룡 대표 이미지가 된 문화적 배경",
                 "어른이 되며 사라지는 취향/낭만 설문",
                 "영화/완구/박물관이 만든 공룡 인기 지도",
+            ],
+        )
+    if any(term in text for term in ["공룡", "티라노", "t-rex", "dinosaur"]):
+        return (
+            (
+                "공룡 관련 소재지만 인기투표 hook이 아니라면 화석 발견, 연구 방법, "
+                "박물관/과학 교육 같은 원문 맥락을 먼저 확인해야 함"
+            ),
+            [
+                "원문이 화석/연구/전시 중 어디에 가까운지 확인",
+                "새 발견의 과학적 의미",
+                "대중문화 hook이 아니라 과학 설명으로 살릴 수 있는지 검토",
             ],
         )
     if ("영국" in text or "britain" in text or "uk" in text) and (
@@ -1063,7 +1090,7 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "노동자 계층 이동과 이민 이슈",
             ],
         )
-    if "f88" in text or "전당포" in text:
+    if "f88" in text:
         return (
             (
                 "베트남 전당포 F88의 상장 도전에서 시작해 한국의 전당포 이미지, "
@@ -1076,7 +1103,22 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "제도권화와 추심 리스크",
             ],
         )
-    if "하마" in text or "hippo" in text:
+    if "전당포" in text or "pawnshop" in text or "pawn shop" in text:
+        return (
+            (
+                "전당포나 담보대출 소재는 급전 수요, 금융 접근성, 담보 평가, 추심 리스크를 "
+                "먼저 확인해야 하며 특정 해외 기업 서사로 바로 확정하면 안 됨"
+            ),
+            [
+                "급전 수요와 담보대출 구조",
+                "한국/현지 전당포 이미지와 제도 변화",
+                "제도권화와 소비자 보호 리스크",
+            ],
+        )
+    if ("하마" in text or "hippo" in text) and contains_any(
+        text,
+        {"코카인", "에스코바르", "콜롬비아", "암바니", "릴라이언스", "cocaine", "escobar"},
+    ):
         return (
             (
                 "파블로 에스코바르의 코카인 하마라는 강한 hook에서 처리 난점, "
@@ -1087,6 +1129,18 @@ def _specific_insights(title: str, summary: str) -> tuple[str, list[str]] | None
                 "콜롬비아의 처리 난점과 안락사 논란",
                 "암바니 가문의 동물센터 제안",
                 "릴라이언스/캄파콜라/인도 소비재 시장으로 확장",
+            ],
+        )
+    if "하마" in text or "hippo" in text:
+        return (
+            (
+                "하마 소재는 이색 hook일 수 있지만 특정 과거 덱의 소비재 서사로 바로 "
+                "넘어가지 말고 원문의 동물 관리, 지역 갈등, 관광/보전 맥락을 먼저 확인해야 함"
+            ),
+            [
+                "동물 관리와 지역 안전 문제",
+                "보전·관광·주민 갈등 맥락",
+                "해외 이색 뉴스로 끝나는지 구조적 배경이 있는지 확인",
             ],
         )
     if "ai 미사용" in text or "ai 슬롭" in text:

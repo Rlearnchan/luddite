@@ -551,6 +551,92 @@ def test_yonhap_public_wire_product_launch_does_not_get_ai_template() -> None:
     }
 
 
+def test_heatstroke_article_does_not_import_office_shorts_frame() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_yonhap_heatstroke",
+            "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+            "url": "https://www.yna.co.kr/view/AKR20260526055900009",
+            "source": "연합뉴스 세계",
+            "source_id": "yonhap_international",
+            "published_at": "2026-05-26T00:00:00Z",
+            "collected_at": "2026-05-26T01:00:00+00:00",
+            "raw_summary": "일본 정부와 기업들이 폭염 속 산업현장 열사병 예방 대책을 강화한다.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    combined = " ".join(
+        [
+            str(candidate.get("why_interesting") or ""),
+            " ".join(candidate.get("possible_expansions") or []),
+        ]
+    )
+    assert "열사병" in combined
+    assert "산업현장" in combined
+    assert "반바지" not in combined
+    assert "쿨비즈" not in combined
+
+
+def test_broad_ppt_terms_do_not_import_specific_past_deck_frames() -> None:
+    dinosaur = normalize_article(
+        {
+            "article_id": "article_dinosaur_fossil",
+            "title": "신종 공룡 화석 발견…백악기 생태계 단서",
+            "url": "https://example.com/dinosaur-fossil",
+            "source": "manual",
+            "published_at": "2026-05-26T00:00:00Z",
+            "collected_at": "2026-05-26T01:00:00+00:00",
+            "raw_summary": "연구진이 새 공룡 화석을 분석해 이동 방식과 생태를 설명했다.",
+            "collector": "manual",
+            "tags": [],
+        }
+    )
+    hippo = normalize_article(
+        {
+            "article_id": "article_hippo_zoo",
+            "title": "동물원 하마, 새 보전센터로 이송",
+            "url": "https://example.com/hippo-zoo",
+            "source": "manual",
+            "published_at": "2026-05-26T00:00:00Z",
+            "collected_at": "2026-05-26T01:00:00+00:00",
+            "raw_summary": "동물원이 하마 복지와 시설 개선을 위해 이송 계획을 밝혔다.",
+            "collector": "manual",
+            "tags": [],
+        }
+    )
+    pawnshop = normalize_article(
+        {
+            "article_id": "article_pawnshop_local",
+            "title": "불황에 전당포 이용 늘어…소액 담보대출 주의",
+            "url": "https://example.com/pawnshop-local",
+            "source": "manual",
+            "published_at": "2026-05-26T00:00:00Z",
+            "collected_at": "2026-05-26T01:00:00+00:00",
+            "raw_summary": "소비자단체가 담보 평가와 연체 수수료 문제를 지적했다.",
+            "collector": "manual",
+            "tags": [],
+        }
+    )
+
+    dinosaur_text = " ".join(
+        [str(dinosaur.get("why_interesting") or ""), *dinosaur.get("possible_expansions", [])]
+    )
+    hippo_text = " ".join(
+        [str(hippo.get("why_interesting") or ""), *hippo.get("possible_expansions", [])]
+    )
+    pawnshop_text = " ".join(
+        [str(pawnshop.get("why_interesting") or ""), *pawnshop.get("possible_expansions", [])]
+    )
+    assert "취향" not in dinosaur_text
+    assert "T-Rex가 공룡 대표 이미지" not in dinosaur_text
+    assert "코카인" not in hippo_text
+    assert "암바니" not in hippo_text
+    assert "F88" not in pawnshop_text
+    assert "베트남" not in pawnshop_text
+
+
 def test_yonhap_accident_only_public_safety_story_stays_guarded() -> None:
     candidate = normalize_article(
         {

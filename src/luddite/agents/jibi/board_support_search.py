@@ -538,7 +538,10 @@ def _topic_query_specs(
         specs.append(("supporting_context", "스타벅스 선불충전금 환불 AI 문구 책임"))
     if "페라리" in text or "슈퍼카" in text:
         specs.append(("supporting_context", "페라리 전기차 가격 전동화 슈퍼카 시장"))
-    if "폭염" in text or "반바지" in text:
+    heat_safety_terms = ("열사병", "산업현장", "작업중지권", "노동안전")
+    if ("폭염" in text and any(term in text for term in heat_safety_terms)) or "열사병" in text:
+        specs.append(("supporting_context", "폭염 산업현장 열사병 대책 노동 안전 작업중지권"))
+    elif "폭염" in text or "반바지" in text:
         specs.append(("supporting_context", "폭염 직장 복장 규정 반바지 쿨비즈"))
     if "교육 프로그램" in text or "아카데미" in text:
         specs.append(("supporting_context", "청년 교육 프로그램 취업 연계 K뉴딜 아카데미"))

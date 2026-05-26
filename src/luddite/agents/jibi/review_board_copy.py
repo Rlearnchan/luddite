@@ -55,6 +55,25 @@ def _copy_text(record: dict[str, Any], candidate: dict[str, Any], candidate_titl
     ).lower()
 
 
+def _direct_copy_text(
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    candidate_title: str,
+) -> str:
+    """Text safe for template triggers; exclude generated why copy to avoid overfitting loops."""
+    return " ".join(
+        [
+            str(record.get("bundle_title") or ""),
+            str(candidate_title or ""),
+            str(candidate.get("title") or ""),
+            str(candidate.get("summary") or ""),
+            str(candidate.get("seed_type") or ""),
+            str(candidate.get("source_role_class") or ""),
+            str(candidate.get("source") or ""),
+        ]
+    ).lower()
+
+
 def _source_cue(candidate: dict[str, Any]) -> str:
     source = compact_text(candidate.get("source"))
     title = clean_review_title(candidate.get("title"))
@@ -81,13 +100,26 @@ def _has_tokenization_signal(text: str) -> bool:
     )
 
 
+def _has_delivery_platform_signal(text: str) -> bool:
+    return (
+        "무료배달" in text
+        or "배달비" in text
+        or "배달앱" in text
+        or ("배달" in text and _has_any(text, ("수수료", "점주", "라이더", "자영업")))
+    )
+
+
+def _has_energy_support_signal(text: str) -> bool:
+    return "고유가" in text or "유가" in text or ("피해지원금" in text and "에너지" in text)
+
+
 def review_board_title(
     record: dict[str, Any],
     candidate: dict[str, Any],
     candidate_title: str,
 ) -> str:
     raw_title = str(record.get("bundle_title") or candidate_title or candidate.get("title") or "")
-    text = _copy_text(record, candidate, candidate_title)
+    text = _direct_copy_text(record, candidate, candidate_title)
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
     if _has_tokenization_signal(text):
@@ -104,16 +136,18 @@ def review_board_title(
         ),
     ):
         return "AI가 공무원 보고서와 현장 치안에 들어올 때"
-    if _has_any(text, ("무료배달", "배달비", "수수료", "플랫폼")):
+    if _has_delivery_platform_signal(text):
         return "무료배달은 누가 내나: 배달앱 수수료와 업주 부담"
     if "양파" in text:
         return "양파가 너무 많으면 정부는 무엇을 하나"
-    if _has_any(text, ("고유가", "유가", "피해지원금", "지원금")):
+    if _has_energy_support_signal(text):
         return "고유가 지원금 현황으로 보는 에너지 가격 충격"
     if _has_any(text, ("spacex", "starship", "스타십")):
         return "스페이스X 스타십: 민간 우주개발의 돈과 환경 갈등"
     if _has_any(text, ("반바지", "cool biz", "쿨비즈", "스노우피크")):
         return "반바지가 복지가 되는 시대: 폭염과 회사 복장문화"
+    if _has_any(text, ("열사병", "불볕더위", "산업현장", "작업중지권")) and "폭염" in text:
+        return "폭염은 산업현장의 새 안전 규칙이 될까"
     if _has_any(text, ("개발제한구역", "그린벨트", "greenbelt")):
         return "그린벨트에 사는 사람들은 왜 생활비 보조를 받나"
     if _has_any(text, ("글로벌 pf", "project finance", "메가뱅크")):
@@ -207,7 +241,7 @@ def _fallback_question(
     candidate: dict[str, Any],
     candidate_title: str,
 ) -> str:
-    text = _copy_text(record, candidate, candidate_title)
+    text = _direct_copy_text(record, candidate, candidate_title)
     story_role = str(candidate.get("story_role") or record.get("story_role") or "")
     source_role = str(candidate.get("source_role_class") or record.get("source_role") or "")
     if story_role in {"evidence_for_larger_story", "background_reference"}:
@@ -233,7 +267,7 @@ def _template_description(
     related_titles: str,
     history_status: str,
 ) -> str | None:
-    text = _copy_text(record, candidate, candidate_title)
+    text = _direct_copy_text(record, candidate, candidate_title)
     source = _source_cue(candidate)
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return _question_first_description(
@@ -267,7 +301,7 @@ def _template_description(
             ),
             next_step="AI 활용 가이드라인, 오판 사례, 공공기관 도입 통계를 붙여 Top seed로 승격 가능한지 보는 것",
         )
-    if _has_any(text, ("무료배달", "배달비", "수수료", "플랫폼")):
+    if _has_delivery_platform_signal(text):
         return _question_first_description(
             question="무료배달 비용은 소비자·점주·플랫폼 중 누가 내고 있나?",
             reason=(
@@ -285,7 +319,7 @@ def _template_description(
             ),
             next_step="최근 양파 산지 가격, 평년 대비 생산량, 소비촉진 예산, 농민과 소비자의 이해관계가 갈리는 지점을 붙여 '농산물 가격은 시장인가 정책인가'로 키울 수 있는지 보는 것",
         )
-    if _has_any(text, ("고유가", "유가", "피해지원금", "지원금")):
+    if _has_energy_support_signal(text):
         return _question_first_description(
             question="유가가 오르면 정부 지원은 어디까지 생활비를 막아줄 수 있나?",
             reason=(
@@ -313,6 +347,16 @@ def _template_description(
             ),
             next_step="기상청 폭염 데이터, 전력 피크, 기업 복장 규정 사례를 붙여 생활 변화 소재로 살아나는지 확인하는 것",
             verdict="좋은 seed라기보다 약한 hook 검사용이며 자료가 붙지 않으면 reject하는 편이 맞습니다",
+        )
+    if _has_any(text, ("열사병", "불볕더위", "산업현장", "작업중지권")) and "폭염" in text:
+        return _question_first_description(
+            question="폭염이 심해지면 현장 노동의 규칙은 어디까지 바뀌어야 하나?",
+            reason=(
+                "원문은 일본의 역대급 불볕더위와 산업현장 열사병 대책을 다룬 기사입니다. "
+                "사무실 복장문화보다, 폭염이 산재 예방 의무·작업 시간 조정·휴식과 냉방 설비·기업 책임을 어떻게 바꾸는지 보는 편이 원문에 맞습니다."
+            ),
+            next_step="일본의 열사병 통계, 산업현장 규제, 한국의 폭염 산재 인정 사례와 작업중지권 논의를 붙이는 것",
+            verdict="생활 hook은 있지만 단독 seed보다는 노동안전/기후적응 자료가 붙을 때 살아나는 후보입니다",
         )
     if _has_any(text, ("개발제한구역", "그린벨트", "greenbelt")):
         return _question_first_description(

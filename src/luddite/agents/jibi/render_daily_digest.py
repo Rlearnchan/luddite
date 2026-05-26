@@ -4667,7 +4667,13 @@ def _bridge_query_term_groups(
     if "청년" in text and any(term in text for term in ("쉬었음", "경제활동참가율", "노동시장")):
         core_terms.extend(["쉬었음", "비경제활동", "경제활동참가율", "청년 노동시장"])
         context_terms.extend(["근로소득", "청년"])
-    elif any(term in text for term in ("반바지", "폭염", "쿨비즈", "회사 복장")):
+    elif (
+        any(term in text for term in ("열사병", "불볕더위", "산업현장", "작업중지권"))
+        and "폭염" in text
+    ):
+        core_terms.extend(["폭염", "열사병", "산업현장", "작업중지권", "노동안전"])
+        context_terms.extend(["휴식", "냉방", "산재", "기업 책임"])
+    elif any(term in text for term in ("반바지", "쿨비즈", "회사 복장", "여름 근무")):
         core_terms.extend(["반바지", "폭염", "쿨비즈", "회사 복장", "여름 근무"])
         context_terms.extend(["회사", "복장", "전력", "냉방"])
     elif any(term in text for term in ("선불", "충전금", "스타벅스", "환불")):

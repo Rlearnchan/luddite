@@ -98,6 +98,17 @@ def test_review_board_copy_handles_editorial_override_story_types() -> None:
             "반바지가 복지가 되는 시대: 폭염과 회사 복장문화",
             "홍보성 리스크",
         ),
+        (
+            {"bundle_title": "candidate"},
+            {
+                "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+                "summary": "일본 정부와 기업들이 폭염 속 산업현장 열사병 예방 대책을 강화한다.",
+                "source": "연합뉴스 세계",
+                "possible_expansions": ["일본 산업현장 열사병 대책", "폭염과 산재·작업중지권"],
+            },
+            "폭염은 산업현장의 새 안전 규칙이 될까",
+            "사무실 복장문화보다",
+        ),
     ]
 
     for record, candidate, expected_title, expected_phrase in examples:
@@ -121,6 +132,53 @@ def test_review_board_copy_does_not_treat_underwater_as_rwa() -> None:
     assert copy.title == "The network watching the world’s oceans is under pressure"
     assert "자산 토큰화" not in copy.title
     assert "부동산·채권" not in copy.description
+
+
+def test_review_board_copy_ignores_generated_why_for_template_triggers() -> None:
+    copy = _copy(
+        {"bundle_title": "candidate"},
+        {
+            "title": "日, 역대급 불볕더위 앞두고 산업현장 열사병 대책 '비상'",
+            "summary": "일본 정부와 기업들이 폭염 속 산업현장 열사병 예방 대책을 강화한다.",
+            "why_interesting": "한국 기업 쿨비즈/반바지 문화로 이어질 수 있음",
+            "source": "연합뉴스 세계",
+            "seed_type": "life_change",
+        },
+    )
+
+    assert copy.title == "폭염은 산업현장의 새 안전 규칙이 될까"
+    assert "반바지" not in copy.title
+    assert "반바지" not in copy.description
+
+
+def test_review_board_copy_does_not_treat_generic_platform_as_delivery() -> None:
+    copy = _copy(
+        {"bundle_title": "candidate"},
+        {
+            "title": "[AI픽] 노션, 개발자 플랫폼 공개…AI 업무자동화 본격화",
+            "summary": "노션이 개발자 플랫폼을 공개하고 업무자동화 기능을 강화했다.",
+            "source": "연합뉴스 산업",
+            "seed_type": "industry_disruption",
+        },
+    )
+
+    assert "무료배달" not in copy.title
+    assert "배달앱" not in copy.description
+
+
+def test_review_board_copy_does_not_treat_generic_support_as_oil_support() -> None:
+    copy = _copy(
+        {"bundle_title": "candidate"},
+        {
+            "title": "청년 월세 지원금 신청 시작",
+            "summary": "지자체가 청년 주거비 부담을 줄이기 위한 지원금을 접수한다.",
+            "source": "연합뉴스 사회",
+            "seed_type": "policy_release_evidence",
+        },
+    )
+
+    assert "고유가" not in copy.title
+    assert "에너지 가격" not in copy.description
 
 
 def test_review_board_copy_makes_tokenization_question_first() -> None:
