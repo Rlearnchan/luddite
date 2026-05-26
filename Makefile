@@ -18,8 +18,12 @@ JIBI_BOARD_SUPPORT_SEARCH_CATEGORIES ?= news,webkr
 JIBI_BOARD_SUPPORT_SEARCH_MAX_CALLS ?= 60
 JIBI_BOARD_SUPPORT_SEARCH_RESULTS_PER_QUERY ?= 5
 JIBI_BOARD_SUPPORT_LINKS_PER_ROW ?= 1
+JIBI_HIDDEN_SUPPORT_SEARCH_CATEGORIES ?= news,webkr
+JIBI_HIDDEN_SUPPORT_SEARCH_MAX_CALLS ?= 60
+JIBI_HIDDEN_SUPPORT_SEARCH_RESULTS_PER_QUERY ?= 5
+JIBI_HIDDEN_SUPPORT_LINKS_PER_ROW ?= 3
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa render-pptx-contact-sheet summarize-pptx-contact-sheet-review check-pptx-contact-sheet-backend compare-slideability-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest jibi-mvp-rss-dry-run jibi-manual-update jibi-review-board-dry-run jibi-review-board-replace jibi-review-board-refresh-with-syuka jibi-review-board-replace-with-syuka jibi-review-board-alternate-dry-run jibi-syuka-snapshot-probe jibi-source-experiment-guardian jibi-review-feedback jibi-second-search-plan jibi-second-search-local jibi-second-search-web jibi-second-search-intake jibi-review-feedback-loop jibi-review-history-feedback jibi-content-enrichment-review append-jibi-sheet append-jibi-bundle-review-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa render-pptx-contact-sheet summarize-pptx-contact-sheet-review check-pptx-contact-sheet-backend compare-slideability-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest jibi-mvp-rss-dry-run jibi-manual-update jibi-review-board-dry-run jibi-review-board-replace jibi-review-board-refresh-with-syuka jibi-review-board-replace-with-syuka jibi-review-board-alternate-dry-run jibi-syuka-snapshot-probe jibi-source-experiment-guardian jibi-review-feedback jibi-second-search-plan jibi-second-search-local jibi-second-search-web jibi-second-search-intake jibi-hidden-support-search jibi-review-feedback-loop jibi-review-history-feedback jibi-content-enrichment-review append-jibi-sheet append-jibi-bundle-review-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -369,6 +373,15 @@ jibi-second-search-web:
 jibi-second-search-intake:
 	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite.agents.jibi.second_search_intake \
 		--date $(JIBI_DATE)
+
+jibi-hidden-support-search:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite.agents.jibi.hidden_support_search \
+		--date $(JIBI_DATE) \
+		--provider $(JIBI_SEARCH_PROVIDER) \
+		--categories $(JIBI_HIDDEN_SUPPORT_SEARCH_CATEGORIES) \
+		--max-calls $(JIBI_HIDDEN_SUPPORT_SEARCH_MAX_CALLS) \
+		--results-per-query $(JIBI_HIDDEN_SUPPORT_SEARCH_RESULTS_PER_QUERY) \
+		--max-links-per-row $(JIBI_HIDDEN_SUPPORT_LINKS_PER_ROW)
 
 jibi-review-feedback-loop: jibi-review-feedback jibi-second-search-plan jibi-second-search-local
 
