@@ -819,6 +819,28 @@ def test_normalize_specific_editorial_categories() -> None:
     assert "지식기관" in ai["why_interesting"]
 
 
+def test_normalize_guardian_technology_product_review_is_flagged() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_guardian_sony_review",
+            "title": (
+                "Sony 1000XX the Collexion headphones review: supreme comfort "
+                "and quiet luxury for your ears"
+            ),
+            "url": "https://www.theguardian.com/technology/2026/may/27/sony-headphones-review",
+            "source": "The Guardian Technology",
+            "source_id": "guardian_technology",
+            "published_at": "2026-05-27T00:00:00Z",
+            "collected_at": "2026-05-27T01:00:00+00:00",
+            "raw_summary": "A product review of premium headphones.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    assert "product_or_certification_promo" in candidate["quality_flags"]
+
+
 def test_normalize_candidates_writes_jsonl(tmp_path) -> None:
     input_path = tmp_path / "raw_articles.jsonl"
     output_path = tmp_path / "candidates.jsonl"

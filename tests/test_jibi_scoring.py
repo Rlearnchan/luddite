@@ -597,3 +597,57 @@ def test_asset_tokenization_is_conditional_audience_bridge() -> None:
     assert scored["story_role"] == "seed_with_supporting_links"
     assert "research_note_needs_current_news_hook" in scored["seed_quality_reasons"]
     assert "distinctive_mechanism" in scored["so_what"]["audience_bridge_signals"]
+
+
+def test_guardian_global_story_bridge_can_clear_weak_audience_bridge() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_guardian_datacentres",
+            "title": "Scotland's green datacentres policy ignores emissions impact of AI",
+            "url": "https://www.theguardian.com/technology/2026/may/26/scotland-green-datacentres-ai-emissions",
+            "source": "The Guardian Technology",
+            "source_id": "guardian_technology",
+            "published_at": "2026-05-26T00:00:00Z",
+            "collected_at": "2026-05-27T01:00:00+00:00",
+            "raw_summary": (
+                "AI datacentres increase electricity demand, emissions, "
+                "energy pressure and climate policy tension."
+            ),
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert "global_story_bridge" in scored["so_what"]["audience_bridge_signals"]
+    assert "korea_bridge" not in scored["so_what"]["audience_bridge_signals"]
+    assert "weak_audience_bridge" not in scored["quality_flags"]
+    assert scored["seed_quality_classification"] in {"conditional_seed", "standalone_seed"}
+
+
+def test_guardian_product_review_is_evidence_only() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_guardian_sony_review",
+            "title": (
+                "Sony 1000XX the Collexion headphones review: supreme comfort "
+                "and quiet luxury for your ears"
+            ),
+            "url": "https://www.theguardian.com/technology/2026/may/27/sony-headphones-review",
+            "source": "The Guardian Technology",
+            "source_id": "guardian_technology",
+            "published_at": "2026-05-27T00:00:00Z",
+            "collected_at": "2026-05-27T01:00:00+00:00",
+            "raw_summary": "A product review of premium headphones.",
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert "product_or_certification_promo" in scored["quality_flags"]
+    assert scored["seed_quality_classification"] == "evidence_only"
+    assert scored["story_role"] == "evidence_for_larger_story"
+    assert scored["recommended_action"] == "keep_for_later"

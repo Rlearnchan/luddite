@@ -101,6 +101,31 @@ EVERYDAY_ANALOGY_TERMS = {
     "마트",
     "농산물",
 }
+GLOBAL_STORY_BRIDGE_TERMS = {
+    "ai",
+    "artificial intelligence",
+    "automation",
+    "climate",
+    "heatwave",
+    "energy",
+    "electricity",
+    "datacentre",
+    "datacenter",
+    "data centre",
+    "emissions",
+    "housing",
+    "rent",
+    "worklessness",
+    "zero-hours",
+    "work placements",
+    "delivery robots",
+    "factory farming",
+    "pfas",
+    "copyright",
+    "supply chain",
+    "industrial policy",
+    "tariff",
+}
 WEIRD_BUT_EXPANDABLE_TERMS = {
     "마른논",
     "써레질",
@@ -170,6 +195,7 @@ CONCRETE_AUDIENCE_BRIDGE_SIGNALS = {
     "ai_entering_real_operations",
     "everyday_analogy_or_life_hook",
     "ownership_or_regulatory_conflict",
+    "global_story_bridge",
 }
 MECHANISM_SIGNALS = {
     "distinctive_mechanism",
@@ -216,6 +242,12 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         candidate.get("source"),
         " ".join(candidate.get("quality_flags") or []),
     )
+    primary_text = text_blob(
+        candidate.get("title"),
+        candidate.get("summary"),
+        candidate.get("seed_type"),
+        candidate.get("source"),
+    )
     source_role = str(candidate.get("source_role_class") or "")
     seed_type = str(candidate.get("seed_type") or "")
     existing_flags = set(str(flag) for flag in candidate.get("quality_flags") or [])
@@ -254,7 +286,10 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
     if contains_any(text, EVERYDAY_ANALOGY_TERMS):
         score += 1
         _add_unique(audience_bridge_signals, "everyday_analogy_or_life_hook")
-    if "한국" in text or source_role in {"research_note", "policy_release", "public_wire"}:
+    if source_role == "section_news" and contains_any(text, GLOBAL_STORY_BRIDGE_TERMS):
+        score += 1
+        _add_unique(audience_bridge_signals, "global_story_bridge")
+    if "한국" in primary_text or source_role in {"research_note", "policy_release", "public_wire"}:
         score += 1
         _add_unique(audience_bridge_signals, "korea_bridge")
     if source_role == "research_note" and audience_bridge_signals:

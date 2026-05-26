@@ -1180,6 +1180,8 @@ def _rss_quality_hints(
         quality_flags.append("accident_single_event")
     if source_id == "atlas_obscura" and contains_any(text, PLACE_LISTING_TERMS):
         quality_flags.append("pure_place_listing")
+    if source_id == "guardian_technology" and _guardian_product_review_like(text):
+        quality_flags.append("product_or_certification_promo")
     if source_role_class == SOURCE_ROLE_POLICY_RELEASE and seed_type == "policy_release_evidence":
         quality_flags.append("policy_release_evidence_default")
     if source_role_class == SOURCE_ROLE_POLICY_RELEASE:
@@ -1232,6 +1234,29 @@ def _rss_quality_hints(
         "low" if quality_flags else "medium",
         quality_flags,
         risk_flags,
+    )
+
+
+def _guardian_product_review_like(text: str) -> bool:
+    if "review" not in text:
+        return False
+    return contains_any(
+        text,
+        {
+            "headphones",
+            "earbuds",
+            "smartphone",
+            "android",
+            "iphone",
+            "galaxy",
+            "macbook",
+            "laptop",
+            "tablet",
+            "camera",
+            "speaker",
+            "console",
+            "watch",
+        },
     )
 
 

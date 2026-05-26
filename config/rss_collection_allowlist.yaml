@@ -58,16 +58,19 @@ sources:
     reason: broad_international_feed_hold_use_section_feeds
 
   - source_id: guardian_business
-    collection_enabled: false
-    reason: verified_section_feed_hold_until_guardian_mix_test
+    collection_enabled: true
+    fetch_limit: 40
+    reason: guardian_section_business_enabled_after_mix_test
 
   - source_id: guardian_technology
-    collection_enabled: false
-    reason: verified_section_feed_hold_until_guardian_mix_test
+    collection_enabled: true
+    fetch_limit: 40
+    reason: guardian_section_technology_enabled_with_product_review_guard
 
   - source_id: guardian_environment
-    collection_enabled: false
-    reason: verified_section_feed_hold_until_guardian_mix_test
+    collection_enabled: true
+    fetch_limit: 40
+    reason: guardian_section_environment_enabled_after_mix_test
 
   - source_id: npr_rss_candidate
     collection_enabled: true
