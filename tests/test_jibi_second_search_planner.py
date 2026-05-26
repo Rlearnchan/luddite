@@ -125,3 +125,43 @@ def test_write_second_search_plan_outputs_markdown_and_json(tmp_path) -> None:
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["planned_rows"] == 2
     assert payload["priority_counts"]["high"] == 1
+
+
+def test_second_search_plan_backfills_old_feedback_json_shape() -> None:
+    feedback = {
+        "run_date": "2026-05-26",
+        "rows": [
+            {
+                "id": "2026-05-26:old",
+                "title": "낡은 피드백 형식 후보",
+                "reviewers": {
+                    "리뷰-형찬": {
+                        "note": "이거 하나만 가져오면 자료로 만들 수 없다. 최신 뉴스 hook이 필요함.",
+                        "tag": "unlabeled",
+                    }
+                },
+            }
+        ],
+    }
+    metadata = {
+        "rows": [
+            {
+                "ID": "2026-05-26:old",
+                "title": "낡은 피드백 형식 후보",
+                "source": "한국은행",
+                "source_role": "research_note",
+                "seed_type": "policy_research_note",
+            }
+        ]
+    }
+
+    plan = build_second_search_plan(
+        run_date="2026-05-26",
+        feedback_summary=feedback,
+        metadata_payload=metadata,
+    )
+
+    assert plan["planned_rows"] == 1
+    assert plan["plans"][0]["priority"] == "high"
+    assert "find_supporting_links" in plan["plans"][0]["actions"]
+    assert "find_current_news_hook" in plan["plans"][0]["actions"]

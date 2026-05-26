@@ -13,6 +13,7 @@ import typer
 from rich.console import Console
 
 from luddite import paths
+from luddite.agents.jibi.review_feedback import infer_review_feedback
 
 app = typer.Typer(no_args_is_help=False)
 console = Console()
@@ -164,11 +165,81 @@ def _source_suggestions(metadata: dict[str, Any]) -> list[str]:
     return ["독립 언론 기사", "원자료", "통계 자료", "반대 사례"]
 
 
+def _reviewer_payloads(row: dict[str, Any]) -> list[dict[str, Any]]:
+    reviewers = row.get("reviewers")
+    if not isinstance(reviewers, dict):
+        return []
+    payloads: list[dict[str, Any]] = []
+    for payload in reviewers.values():
+        if not isinstance(payload, dict):
+            continue
+        note = compact_text(payload.get("raw_note") or payload.get("note"))
+        if note:
+            payloads.append(infer_review_feedback(note))
+    return payloads
+
+
+def _row_signal(row: dict[str, Any]) -> str:
+    direct = compact_text(row.get("row_review_signal"))
+    if direct:
+        return direct
+    signals = [
+        compact_text(payload.get("review_signal"))
+        for payload in _reviewer_payloads(row)
+        if compact_text(payload.get("review_signal")) != "unlabeled"
+    ]
+    if not signals:
+        return "unreviewed"
+    decisive = set(signals)
+    if "reject" in decisive and decisive.intersection({"strong", "conditional"}):
+        return "mixed"
+    if "strong" in decisive and decisive.intersection({"weak", "conditional"}):
+        return "conditional"
+    for signal in ["strong", "conditional", "weak", "reject"]:
+        if signal in decisive:
+            return signal
+    return "unreviewed"
+
+
+def _row_list_field(row: dict[str, Any], field: str) -> list[str]:
+    direct = row.get(field)
+    if isinstance(direct, list):
+        return [str(item) for item in direct if str(item).strip()]
+    values: list[str] = []
+    for payload in _reviewer_payloads(row):
+        values.extend(str(item) for item in payload.get(field.replace("row_", ""), []))
+    return list(dict.fromkeys(value for value in values if value))
+
+
+def _operator_lesson(row: dict[str, Any], title: str) -> str:
+    direct = compact_text(row.get("operator_lesson"))
+    if direct:
+        return direct
+    failures = set(_row_list_field(row, "row_failure_modes"))
+    positives = set(_row_list_field(row, "row_positive_signals"))
+    if "wrong_frame" in failures:
+        return f"{title}: 현재 프레임이 빗나갔습니다. 더 강한 실물경제/생활 질문으로 초점을 옮기세요."
+    if failures.intersection({"evidence_not_seed", "needs_news_hook"}):
+        return f"{title}: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다."
+    if "needs_supporting_links" in failures:
+        return f"{title}: 이 자료 하나로는 약합니다. 숫자, 사례, 독립 출처를 보강하세요."
+    if "too_broad" in failures:
+        return f"{title}: 범위가 너무 큽니다. 구체 사례와 좁은 질문으로 다시 잡으세요."
+    if "good_question" in positives:
+        return f"{title}: 좋은 질문이 잡혀 있습니다. 이 질문을 중심으로 후속 조사를 이어가세요."
+    signal = _row_signal(row)
+    if signal == "reject":
+        return f"{title}: 현재 형태로는 낮추거나 제외하는 편이 안전합니다."
+    if signal in {"strong", "conditional", "mixed"}:
+        return f"{title}: 리뷰 신호가 있습니다. 보강 검색 후 seed/evidence 역할을 다시 판단하세요."
+    return ""
+
+
 def _priority(row: dict[str, Any]) -> str:
-    signal = compact_text(row.get("row_review_signal"))
-    failures = set(row.get("row_failure_modes") or [])
-    positives = set(row.get("row_positive_signals") or [])
-    actions = set(row.get("row_next_research_actions") or [])
+    signal = _row_signal(row)
+    failures = set(_row_list_field(row, "row_failure_modes"))
+    positives = set(_row_list_field(row, "row_positive_signals"))
+    actions = set(_row_list_field(row, "row_next_research_actions"))
     if signal == "reject" and "good_question" not in positives:
         return "low"
     if failures.intersection({"needs_supporting_links", "needs_news_hook", "wrong_frame"}):
@@ -181,7 +252,7 @@ def _priority(row: dict[str, Any]) -> str:
 
 
 def _default_actions(row: dict[str, Any], metadata: dict[str, Any]) -> list[str]:
-    actions = [str(item) for item in row.get("row_next_research_actions", []) if item]
+    actions = _row_list_field(row, "row_next_research_actions")
     story_role = compact_text(metadata.get("story_role"))
     if not actions and story_role == "seed_with_supporting_links":
         actions = ["find_supporting_links", "find_current_news_hook"]
@@ -249,7 +320,7 @@ def _query_plan(
 
 
 def _why_search(row: dict[str, Any], metadata: dict[str, Any], actions: list[str]) -> str:
-    lesson = compact_text(row.get("operator_lesson"))
+    lesson = _operator_lesson(row, compact_text(row.get("title") or metadata.get("title")))
     if lesson:
         return lesson
     if metadata.get("story_role") == "seed_with_supporting_links":
@@ -283,13 +354,15 @@ def build_second_search_plan(
                 "id": row_id,
                 "title": title,
                 "priority": _priority(row),
-                "review_signal": compact_text(row.get("row_review_signal")),
+                "review_signal": _row_signal(row),
                 "source": compact_text(metadata.get("source")),
-                "source_role": compact_text(metadata.get("source_role")),
+                "source_role": compact_text(
+                    metadata.get("source_role") or metadata.get("source_role_class")
+                ),
                 "seed_type": compact_text(metadata.get("seed_type")),
                 "story_role": compact_text(metadata.get("story_role")),
-                "failure_modes": row.get("row_failure_modes", []),
-                "positive_signals": row.get("row_positive_signals", []),
+                "failure_modes": _row_list_field(row, "row_failure_modes"),
+                "positive_signals": _row_list_field(row, "row_positive_signals"),
                 "actions": actions,
                 "topic_terms": terms,
                 "source_suggestions": _source_suggestions(metadata),

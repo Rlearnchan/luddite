@@ -335,12 +335,19 @@ def _contains_any(text: str, terms: set[str]) -> list[str]:
 
 
 def _failure_mode_matches(text: str) -> dict[str, list[str]]:
+    supporting_link_terms = {
+        "이거 하나만 가져오면",
+        "이것만 가져오면",
+        "자료로 만들 수 없다",
+        "자료로 만들 수가 없다",
+    }
     matches = {
         "evidence_not_seed": _contains_any(text, EVIDENCE_NOT_SEED_TERMS),
         "needs_news_hook": _contains_any(text, NEEDS_NEWS_HOOK_TERMS),
         "too_broad": _contains_any(text, TOO_BROAD_TERMS),
         "too_familiar": _contains_any(text, TOO_FAMILIAR_TERMS),
         "needs_supporting_links": _contains_any(text, NEEDS_TERMS)
+        + _contains_any(text, supporting_link_terms)
         + _contains_any(text, SPECIFIC_CASE_NEEDED_TERMS),
         "wrong_frame": [],
         "needs_concrete_question": _contains_any(text, CONCRETE_QUESTION_TERMS),
