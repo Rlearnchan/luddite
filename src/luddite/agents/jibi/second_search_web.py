@@ -255,16 +255,17 @@ def _split_csv(value: str, default: list[str]) -> list[str]:
     return items or list(default)
 
 
-def _queries_for_plan(plan: dict[str, Any], limit: int) -> list[str]:
-    queries: list[str] = []
+def _query_specs_for_plan(plan: dict[str, Any], limit: int) -> list[dict[str, str]]:
+    queries: list[dict[str, str]] = []
     for task in plan.get("query_plan", []):
         action = str(task.get("action") or "")
         if action == "demote_to_evidence_or_background":
             continue
+        query_type = compact_text(task.get("query_type")) or "fallback"
         for query in task.get("queries", []) or []:
             query_text = compact_text(query)
             if query_text:
-                queries.append(query_text)
+                queries.append({"query": query_text, "query_type": query_type})
     if not queries:
         topic_terms = [
             compact_text(item)
@@ -272,8 +273,35 @@ def _queries_for_plan(plan: dict[str, Any], limit: int) -> list[str]:
             if compact_text(item)
         ]
         if topic_terms:
-            queries.append(" ".join(topic_terms[:3]))
-    return list(dict.fromkeys(queries))[:limit]
+            queries.append(
+                {
+                    "query": " ".join(topic_terms[:3]),
+                    "query_type": "fallback",
+                }
+            )
+    deduped: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for item in queries:
+        key = (item["query"], item["query_type"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    selected: list[dict[str, str]] = []
+    for query_type in ["precision", "broader_system", "fallback"]:
+        for item in deduped:
+            if item["query_type"] != query_type or item in selected:
+                continue
+            selected.append(item)
+            break
+    for item in deduped:
+        if item not in selected:
+            selected.append(item)
+    return selected[:limit]
+
+
+def _queries_for_plan(plan: dict[str, Any], limit: int) -> list[str]:
+    return [item["query"] for item in _query_specs_for_plan(plan, limit)]
 
 
 def _amount_variants(term: str) -> list[str]:
@@ -357,6 +385,7 @@ def _article_record(
     *,
     result: SearchResult,
     query: str,
+    query_type: str,
     plan: dict[str, Any],
     collected_at: str,
 ) -> dict[str, Any]:
@@ -367,6 +396,7 @@ def _article_record(
         "collected_at": collected_at,
         "collector": "second_search_web",
         "duplicate_key": article_id.removeprefix("article_"),
+        "evidence_role": "supporting_link_candidate",
         "language": "ko" if result.category in {"news", "webkr"} else None,
         "published_at": result.published_at,
         "raw_summary": result.snippet,
@@ -386,6 +416,11 @@ def _article_record(
         "title": result.title,
         "url": url,
         "search_query": query,
+        "query_type": query_type,
+        "matched_terms": result.raw.get("_jibi_relevance_terms", [])
+        if isinstance(result.raw, dict)
+        else [],
+        "relevance_status": "accepted",
         "search_relevance_terms": result.raw.get("_jibi_relevance_terms", [])
         if isinstance(result.raw, dict)
         else [],
@@ -425,7 +460,9 @@ def run_web_second_search(
             *[canonicalize_url(str(item)) for item in plan.get("sub_links", []) or []],
         }
         excluded = {url for url in excluded if url}
-        for query in _queries_for_plan(plan, queries_per_plan):
+        for query_spec in _query_specs_for_plan(plan, queries_per_plan):
+            query = query_spec["query"]
+            query_type = query_spec["query_type"]
             for category in categories:
                 if calls_used >= max_queries:
                     break
@@ -464,6 +501,7 @@ def run_web_second_search(
                         _article_record(
                             result=enriched_result,
                             query=query,
+                            query_type=query_type,
                             plan=plan,
                             collected_at=collected_at,
                         )
@@ -475,6 +513,7 @@ def run_web_second_search(
                         "review_title": plan.get("title", ""),
                         "priority": plan.get("priority", ""),
                         "query": query,
+                        "query_type": query_type,
                         "provider": provider.name,
                         "category": category,
                         "returned": len(results),
@@ -524,8 +563,8 @@ def render_markdown(payload: dict[str, Any]) -> str:
         "",
         "## Query Runs",
         "",
-        "| priority | title | query | category | returned | accepted | rejected |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: |",
+        "| priority | title | query_type | query | category | returned | accepted | rejected |",
+        "| --- | --- | --- | --- | --- | ---: | ---: | ---: |",
     ]
     for run in payload["query_runs"]:
         lines.append(
@@ -534,6 +573,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
                 [
                     _table_cell(run["priority"]),
                     _table_cell(run["review_title"]),
+                    _table_cell(run.get("query_type", "fallback")),
                     _table_cell(run["query"]),
                     _table_cell(run["category"]),
                     str(run["returned"]),
@@ -552,6 +592,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f"[{record['title']}]({record['url']})"
         )
         lines.append(f"  - query: `{record['search_query']}`")
+        lines.append(f"  - query_type: `{record.get('query_type', 'fallback')}`")
         if record.get("search_relevance_terms"):
             lines.append(
                 f"  - matched_terms: `{', '.join(record['search_relevance_terms'])}`"

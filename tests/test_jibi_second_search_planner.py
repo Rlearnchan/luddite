@@ -78,6 +78,9 @@ def test_build_second_search_plan_prioritizes_news_hook_and_supporting_links() -
     assert first["priority"] == "high"
     assert "자산 토큰화" in first["topic_terms"]
     assert "연합뉴스" in first["source_suggestions"]
+    query_types = [task.get("query_type") for task in first["query_plan"]]
+    assert "precision" in query_types
+    assert "broader_system" in query_types
     queries = [
         query
         for task in first["query_plan"]
@@ -220,3 +223,13 @@ def test_second_search_plan_prefers_specific_terms_for_naver_queries() -> None:
     assert "선불충전금" in joined
     assert "4200억원" in joined
     assert "규제 사각지대" in joined
+    query_types = [task.get("query_type") for task in plan["plans"][0]["query_plan"]]
+    assert "precision" in query_types
+    assert "broader_system" in query_types
+    broader_queries = [
+        query
+        for task in plan["plans"][0]["query_plan"]
+        if task.get("query_type") == "broader_system"
+        for query in task.get("queries", [])
+    ]
+    assert "선불충전금 환불 규제 사각지대 소비자 보호" in broader_queries

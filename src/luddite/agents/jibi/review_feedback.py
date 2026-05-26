@@ -736,7 +736,10 @@ def _operator_lesson(
     if row_review_signal == "mixed":
         return prefix + "리뷰 판단이 갈립니다. seed 가능성과 탈락 사유를 함께 재검토하세요."
     if "wrong_frame" in failure_modes:
-        return prefix + "현재 프레임이 빗나갔습니다. 더 강한 실물경제/생활 질문으로 초점을 옮기세요."
+        return (
+            prefix
+            + "현재 프레임이 빗나갔습니다. 더 강한 실물경제/생활 질문으로 초점을 옮기세요."
+        )
     if {"evidence_not_seed", "needs_news_hook"}.intersection(failure_modes):
         return prefix + "자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다."
     if "too_familiar" in failure_modes:
@@ -746,7 +749,10 @@ def _operator_lesson(
     if "needs_supporting_links" in failure_modes:
         return prefix + "이 자료 하나로는 약합니다. 숫자, 사례, 독립 출처를 보강하세요."
     if "good_question" in positive_signals:
-        return prefix + "생활 가까운 질문이 잡혀 있습니다. 이 질문을 중심으로 후속 조사를 이어가세요."
+        return (
+            prefix
+            + "생활 가까운 질문이 잡혀 있습니다. 이 질문을 중심으로 후속 조사를 이어가세요."
+        )
     if "find_supporting_links" in next_actions:
         return prefix + "보강 링크를 찾은 뒤 seed/evidence 역할을 다시 판정하세요."
     if row_review_signal == "strong":

@@ -24,6 +24,11 @@ class FakeSearchProvider:
         max_results: int,
     ) -> list[SearchResult]:
         self.calls.append((query, category, max_results))
+        supporting_url = (
+            "https://news.example.com/supporting-broader"
+            if "투자자 보호" in query
+            else "https://news.example.com/supporting"
+        )
         return [
             SearchResult(
                 title="확률적 생성의 덫 AI 환각 문제 지속",
@@ -36,7 +41,7 @@ class FakeSearchProvider:
             ),
             SearchResult(
                 title=f"{query} 보강 기사",
-                url="https://news.example.com/supporting",
+                url=supporting_url,
                 snippet="방송 seed로 쓰려면 추가 근거가 필요하다는 내용.",
                 source="news.example.com",
                 published_at="Tue, 26 May 2026 09:00:00 +0900",
@@ -54,7 +59,7 @@ class FakeSearchProvider:
             ),
             SearchResult(
                 title="중복 링크는 한 번만",
-                url="https://news.example.com/supporting",
+                url=supporting_url,
                 source="news.example.com",
                 provider=self.name,
                 category=category,
@@ -78,7 +83,13 @@ def _plan_payload():
                 "query_plan": [
                     {
                         "action": "find_current_news_hook",
+                        "query_type": "precision",
                         "queries": ["자산 토큰화 최신 뉴스", "자산 토큰화 사례"],
+                    },
+                    {
+                        "action": "find_current_news_hook",
+                        "query_type": "broader_system",
+                        "queries": ["토큰화 증권 제도 투자자 보호 금융 인프라"],
                     }
                 ],
             },
@@ -102,22 +113,31 @@ def test_run_web_second_search_uses_high_priority_and_dedupes_results() -> None:
         plan_payload=_plan_payload(),
         provider=provider,
         categories=["news"],
-        queries_per_plan=1,
+        queries_per_plan=2,
         results_per_query=3,
         max_queries=10,
     )
 
-    assert provider.calls == [("자산 토큰화 최신 뉴스", "news", 3)]
-    assert payload["calls_used"] == 1
+    assert provider.calls == [
+        ("자산 토큰화 최신 뉴스", "news", 3),
+        ("토큰화 증권 제도 투자자 보호 금융 인프라", "news", 3),
+    ]
+    assert payload["calls_used"] == 2
     assert payload["query_runs"][0]["rejected_low_relevance"] == 1
-    assert payload["rejected_low_relevance"] == 1
-    assert payload["records_written"] == 1
-    assert payload["accepted_by_review_item"] == {"rwa": 1}
+    assert payload["query_runs"][0]["query_type"] == "precision"
+    assert payload["query_runs"][1]["query_type"] == "broader_system"
+    assert payload["rejected_low_relevance"] == 2
+    assert payload["records_written"] == 2
+    assert payload["accepted_by_review_item"] == {"rwa": 2}
     record = payload["records"][0]
     assert record["collector"] == "second_search_web"
+    assert record["evidence_role"] == "supporting_link_candidate"
     assert record["review_item_id"] == "rwa"
     assert record["search_query"] == "자산 토큰화 최신 뉴스"
+    assert record["query_type"] == "precision"
+    assert record["relevance_status"] == "accepted"
     assert record["source_url_canonical"] == "https://news.example.com/supporting"
+    assert record["matched_terms"] == ["자산", "토큰화"]
     assert record["search_relevance_terms"] == ["자산", "토큰화"]
     assert "provider:fake" in record["tags"]
 

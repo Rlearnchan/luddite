@@ -50,11 +50,9 @@ STOPWORDS = {
     "전체",
     "제도",
     "규제",
-    "정책",
     "비용",
     "개최",
     "줄이는",
-    "영향",
     "생활비",
     "실물경제",
     "자료",
@@ -241,7 +239,9 @@ def _score_match(
         else:
             score += 1
     source = compact_text(record.get("source"))
-    if source and any(source in preferred or preferred in source for preferred in preferred_sources):
+    if source and any(
+        source in preferred or preferred in source for preferred in preferred_sources
+    ):
         score += 2
     if record.get("published_at"):
         score += 1
@@ -249,7 +249,11 @@ def _score_match(
 
 
 def _snippet(record: dict[str, Any], matches: list[str]) -> str:
-    text = compact_text(record.get("summary") or record.get("raw_summary") or record.get("why_interesting"))
+    text = compact_text(
+        record.get("summary")
+        or record.get("raw_summary")
+        or record.get("why_interesting")
+    )
     if not text:
         text = compact_text(record.get("title"))
     if len(text) <= 220:
@@ -294,6 +298,11 @@ def run_local_second_search(
                 continue
             matches.append(
                 {
+                    "collector": "second_search_local",
+                    "evidence_role": "supporting_link_candidate",
+                    "review_item_id": plan.get("id", ""),
+                    "review_title": plan.get("title", ""),
+                    "relevance_status": "accepted_local_match",
                     "match_score": score,
                     "matched_terms": matched_terms,
                     "title": compact_text(article.get("title")),

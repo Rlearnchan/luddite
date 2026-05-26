@@ -35,7 +35,12 @@ def _plan_payload():
                 "priority": "low",
                 "actions": ["find_supporting_links"],
                 "topic_terms": ["희귀한없는단어"],
-                "query_plan": [{"action": "find_supporting_links", "queries": ["희귀한없는단어 사례"]}],
+                "query_plan": [
+                    {
+                        "action": "find_supporting_links",
+                        "queries": ["희귀한없는단어 사례"],
+                    }
+                ],
             },
         ],
     }
@@ -81,6 +86,10 @@ def test_run_local_second_search_matches_supporting_articles_and_excludes_self()
     assert first["id"] == "tokenization"
     assert first["match_count"] == 1
     assert first["top_matches"][0]["title"] == "금융위, 자산 토큰화 제도 개선 논의"
+    assert first["top_matches"][0]["collector"] == "second_search_local"
+    assert first["top_matches"][0]["evidence_role"] == "supporting_link_candidate"
+    assert first["top_matches"][0]["review_item_id"] == "tokenization"
+    assert first["top_matches"][0]["relevance_status"] == "accepted_local_match"
     assert "자산 토큰화" in first["top_matches"][0]["matched_terms"]
 
 

@@ -244,6 +244,33 @@ def _specific_query(title: str, terms: list[str]) -> str:
     return " ".join(anchors[:5])
 
 
+def _broader_system_queries(title: str, terms: list[str]) -> list[str]:
+    text = " ".join([title, " ".join(terms)])
+    topic = terms[0] if terms else compact_text(title)
+    queries: list[str] = []
+    if any(term in text for term in ("스타벅스", "스벅", "선불충전금", "선불금")):
+        queries.extend(
+            [
+                "선불충전금 환불 규제 사각지대 소비자 보호",
+                "선불충전금 고객 예치금 소비자 보호",
+            ]
+        )
+    if "토큰화" in text or "RWA" in text or "STO" in text:
+        queries.extend(
+            [
+                "토큰화 증권 제도 투자자 보호 금융 인프라",
+                "RWA 제도 금융 규제 투자자 보호",
+            ]
+        )
+    if "공공 AI" in text or "인공지능" in text:
+        queries.extend(["공공 AI 활용 가이드라인 책임", "AI 행정 공공서비스 책임"])
+    if "양파" in text or "농산물" in text:
+        queries.extend(["농산물 가격 소비촉진 산지 가격", "양파 가격 정부 소비촉진"])
+    if not queries and topic:
+        queries.extend([f"{topic} 제도 구조", f"{topic} 시장 구조 규제"])
+    return list(dict.fromkeys(compact_text(query) for query in queries if compact_text(query)))[:2]
+
+
 def _topic_terms(row: dict[str, Any], metadata: dict[str, Any]) -> list[str]:
     title = compact_text(row.get("title") or metadata.get("title"))
     text = " ".join(
@@ -424,6 +451,8 @@ def _query_plan(
     actions: list[str],
     terms: list[str],
     title: str,
+    *,
+    priority: str,
 ) -> list[dict[str, Any]]:
     tasks: list[dict[str, Any]] = []
     for action in actions:
@@ -439,14 +468,31 @@ def _query_plan(
             )
             continue
         queries = list(dict.fromkeys(_query_for_action(action, terms, title)))[:4]
+        query_type = "precision" if _anchor_terms(title, terms) else "fallback"
         tasks.append(
             {
                 "action": action,
+                "query_type": query_type,
                 "purpose": ACTION_PURPOSES.get(action, action),
                 "queries": queries,
                 "expected_evidence": ACTION_EXPECTED_EVIDENCE.get(action, "보강 자료"),
             }
         )
+        if priority == "high":
+            broader_queries = _broader_system_queries(title, terms)
+            if broader_queries:
+                tasks.append(
+                    {
+                        "action": action,
+                        "query_type": "broader_system",
+                        "purpose": ACTION_PURPOSES.get(action, action),
+                        "queries": broader_queries,
+                        "expected_evidence": ACTION_EXPECTED_EVIDENCE.get(
+                            action,
+                            "보강 자료",
+                        ),
+                    }
+                )
     return tasks
 
 
@@ -479,12 +525,13 @@ def build_second_search_plan(
             continue
         title = compact_text(row.get("title") or metadata.get("title"))
         terms = _topic_terms(row, metadata)
-        query_plan = _query_plan(actions, terms, title)
+        priority = _priority(row)
+        query_plan = _query_plan(actions, terms, title, priority=priority)
         plans.append(
             {
                 "id": row_id,
                 "title": title,
-                "priority": _priority(row),
+                "priority": priority,
                 "review_signal": _row_signal(row),
                 "source": compact_text(metadata.get("source")),
                 "source_role": compact_text(
@@ -589,7 +636,7 @@ def render_markdown(plan: dict[str, Any]) -> str:
         lines.append(f"- topic_terms: `{', '.join(item['topic_terms']) or 'none'}`")
         lines.append(f"- why_search: {item['why_search']}")
         for task in item["query_plan"]:
-            lines.append(f"- {task['purpose']}:")
+            lines.append(f"- {task['purpose']} (`{task.get('query_type', 'fallback')}`):")
             if task.get("queries"):
                 for query in task["queries"]:
                     lines.append(f"  - `{query}`")

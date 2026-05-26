@@ -1,0 +1,23 @@
+{
+  "append_dry_run": true,
+  "append_mode": "dry_run",
+  "append_status": "dry_run_completed",
+  "command_status": "success",
+  "content_enrichment_json_path": "outputs/reports/jibi_content_enrichment_2026-05-27.json",
+  "content_enrichment_report_path": "outputs/reports/jibi_content_enrichment_2026-05-27.md",
+  "content_enrichment_status": "succeeded",
+  "created_at": "2026-05-26T12:41:30.859956+00:00",
+  "daily_digest_path": "outputs/daily_digest/2026-05-27.md",
+  "err_log_file_path": "/Users/bae/Library/Logs/luddite/jibi_manual_2026-05-27.err.log",
+  "log_file_path": "/Users/bae/Library/Logs/luddite/jibi_manual_2026-05-27.log",
+  "manual_summary_json_path": "outputs/reports/jibi_manual_update_2026-05-27.json",
+  "manual_summary_md_path": "outputs/reports/jibi_manual_update_2026-05-27.md",
+  "preview_csv_path": "outputs/daily_digest/2026-05-27_bundle_review_sheet.csv",
+  "quality_report_path": "outputs/reports/jibi_quality_2026-05-27.md",
+  "replace_existing": false,
+  "rss_inbox_path": "data/inbox/articles/rss_2026-05-27.jsonl",
+  "run_date": "2026-05-27",
+  "sheet_append_report_path": "outputs/reports/jibi_sheet_append_2026-05-27_bundle_review_sheet.md",
+  "sheet_schema": "bundle_review",
+  "target_sheet_name": "Jibi"
+}

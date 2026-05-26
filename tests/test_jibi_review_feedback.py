@@ -68,7 +68,8 @@ def test_infer_review_feedback_understands_natural_korean_notes() -> None:
 
 def test_infer_review_feedback_extracts_operator_failure_modes() -> None:
     needs_links = infer_review_feedback(
-        "이거 하나만 가져오면 자료로 만들 수가 없다. 관련된 실제 사례 중 뭐라도 참신한 것을 가져와야 한다."
+        "이거 하나만 가져오면 자료로 만들 수가 없다. "
+        "관련된 실제 사례 중 뭐라도 참신한 것을 가져와야 한다."
     )
     assert "needs_supporting_links" in needs_links["failure_modes"]
     assert "specific_case_needed" in needs_links["positive_signals"]
@@ -76,7 +77,8 @@ def test_infer_review_feedback_extracts_operator_failure_modes() -> None:
     assert "find_supporting_links" in needs_links["next_research_actions"]
 
     textbook = infer_review_feedback(
-        "이것만 가져오면 그냥 한국은행 선생님들의 강의가 되어버린다. 교과서같은 이론 공부 말고 최신 기사가 필요하다."
+        "이것만 가져오면 그냥 한국은행 선생님들의 강의가 되어버린다. "
+        "교과서같은 이론 공부 말고 최신 기사가 필요하다."
     )
     assert "evidence_not_seed" in textbook["failure_modes"]
     assert "needs_news_hook" in textbook["failure_modes"]
@@ -173,14 +175,19 @@ def test_summarize_review_feedback_adds_row_operator_lessons() -> None:
         {
             "일시": "2026-05-25 21:42",
             "제목": "전기·가스요금 지원에 72% 찬성",
-            "리뷰-동찬": "좋다. '정부는 요금을 깎아줘야 하나' 이런 질문거리를 던지는 것이 제일 좋다. GOOD!",
+            "리뷰-동찬": (
+                "좋다. '정부는 요금을 깎아줘야 하나' "
+                "이런 질문거리를 던지는 것이 제일 좋다. GOOD!"
+            ),
             "리뷰-형찬": "새로운 게 별로 없어보임. 살짝 언급할 정도로 사용?",
             "ID": "2026-05-25:story_bundle_energy",
         },
         {
             "일시": "2026-05-25 21:42",
             "제목": "글로벌 PF 대출 5년새 2배",
-            "리뷰-동찬": "초점은 일본 메가뱅크의 해외 투자 아닌 미국 제조업 부흥으로 옮겨져야 한다.",
+            "리뷰-동찬": (
+                "초점은 일본 메가뱅크의 해외 투자 아닌 미국 제조업 부흥으로 옮겨져야 한다."
+            ),
             "ID": "2026-05-25:story_bundle_pf",
         },
     ]

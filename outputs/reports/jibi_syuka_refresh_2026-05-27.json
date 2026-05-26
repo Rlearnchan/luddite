@@ -1,0 +1,31 @@
+{
+  "board_csv_path": "/Users/bae/Documents/code/luddite/outputs/daily_digest/2026-05-27_bundle_review_sheet.csv",
+  "board_metadata_path": "/Users/bae/Documents/code/luddite/outputs/daily_digest/2026-05-27_bundle_review_sheet_metadata.json",
+  "board_row_count": 10,
+  "bridge_query_path": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_syuka_bridge_queries_2026-05-27.json",
+  "command": "jibi-review-board-replace-with-syuka",
+  "editorial_override_count": 6,
+  "editorial_override_path": "outputs/editorial_overrides/jibi_review_board_2026-05-27.json",
+  "feedback_completion_counts": {},
+  "git_commit": "ee0a224",
+  "mode": "replace",
+  "operating_log_path": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_operating_experiment_log.jsonl",
+  "overwrite_guard_status": "blocked_existing_reviews",
+  "registered_at": "2026-05-26T12:41:44.323283+00:00",
+  "render_pass_1_status": "succeeded",
+  "render_pass_2_status": "succeeded",
+  "rss_raw_count": 457,
+  "rss_unique_count": 457,
+  "run_date": "2026-05-27",
+  "sheet_mode": "staging_replace",
+  "sheet_replace_status": "blocked",
+  "syuka_adjacent_count": 6,
+  "syuka_duplicate_count": 3,
+  "syuka_probe_status": "usable",
+  "syuka_report_json_path": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_syuka_snapshot_matches_2026-05-27.json",
+  "syuka_report_md_path": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_syuka_snapshot_matches_2026-05-27.md",
+  "triage_label_counts": {},
+  "warnings": [
+    "Existing Jibi review comments found; refusing to replace the bundle review board. Set JIBI_ALLOW_REVIEW_OVERWRITE=1 or pass --allow-review-overwrite after snapshotting/reviewing the board."
+  ]
+}

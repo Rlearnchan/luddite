@@ -1,0 +1,734 @@
+{
+  "run_date": "2026-05-25",
+  "generated_at": "2026-05-26T12:37:23.877201+00:00",
+  "input_status": {
+    "feedback": "loaded",
+    "plan": "loaded",
+    "local": "loaded",
+    "web": "loaded",
+    "web_inbox": "loaded"
+  },
+  "row_count": 10,
+  "follow_up_status_counts": {
+    "evidence_only": 4,
+    "enough_supporting_links": 2,
+    "still_needs_sources": 2,
+    "needs_broader_query": 2
+  },
+  "rows": [
+    {
+      "review_item_id": "2026-05-25:story_bundle_d768083e24",
+      "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+      "priority": "high",
+      "original_review_lesson": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다.",
+      "actions": [
+        "find_supporting_links",
+        "find_current_news_hook",
+        "find_specific_case_or_odd_hook",
+        "check_past_topic_differentiation",
+        "demote_to_evidence_or_background"
+      ],
+      "local_supporting_matches_count": 3,
+      "web_supporting_matches_count": 9,
+      "accepted_links": [
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "서울시, 정보화사업 21단계 절차 안내하는 AI비서 '잇비' 도입",
+          "source": "연합뉴스 산업",
+          "url": "https://www.yna.co.kr/view/AKR20260524014400004",
+          "matched_terms": [
+            "공공",
+            "AI"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 6
+        },
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+          "source": "한국은행",
+          "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10094926&menuNo=200433",
+          "matched_terms": [
+            "AI",
+            "활용"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 6
+        },
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "[제2026-4호] 첨단 바이오헬스 산업 육성방안: 바이오 데이터 활용 기반 구축을 중심으로",
+          "source": "한국은행",
+          "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10096398&menuNo=200433",
+          "matched_terms": [
+            "AI",
+            "활용"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 6
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "[병원계 소식] 5월 26일",
+          "source": "doctorstimes.com",
+          "url": "http://www.doctorstimes.com/news/articleView.html?idxno=238213",
+          "search_query": "공공 AI AI 활용 가이드라인 AI 책임 AI에게 위로받는",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인",
+            "책임"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 1
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "[병원계 소식] 4월 30일",
+          "source": "doctorstimes.com",
+          "url": "http://www.doctorstimes.com/news/articleView.html?idxno=237880",
+          "search_query": "공공 AI AI 활용 가이드라인 AI 책임 AI에게 위로받는",
+          "query_type": "precision",
+          "matched_terms": [
+            "공공",
+            "가이드라인",
+            "책임"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 2
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "행안부 \"정부시스템, 설계 단계부터 AI 전제로\"",
+          "source": "sisajournal-e.com",
+          "url": "https://www.sisajournal-e.com/news/articleView.html?idxno=420697",
+          "search_query": "공공 AI AI 활용 가이드라인 AI 책임 AI에게 위로받는",
+          "query_type": "precision",
+          "matched_terms": [
+            "공공",
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 3
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "[병원계 소식] 4월 23일",
+          "source": "doctorstimes.com",
+          "url": "http://www.doctorstimes.com/news/articleView.html?idxno=237774",
+          "search_query": "공공 AI AI 활용 가이드라인 AI 책임 AI에게 위로받는",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 4
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "[기업家] 셀트리온 ㅣ 신약·생산·글로벌 확장 '전방위 질주'",
+          "source": "cbci.co.kr",
+          "url": "https://www.cbci.co.kr/news/articleView.html?idxno=563272",
+          "search_query": "공공 AI AI 활용 가이드라인 AI 책임 AI에게 위로받는",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 5
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "\"지자체 협력 2배 확대\" 코트라, ' AI 무역 지원센터' 가동해 지역 기업 ...",
+          "source": "cstimes.com",
+          "url": "https://www.cstimes.com/news/articleView.html?idxno=707243",
+          "search_query": "공공 AI 활용 가이드라인 책임",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 1
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "해킹 대중화 시대…“ AI 손흥민보다 AI 김민재 키워야”(종합)",
+          "source": "edaily.co.kr",
+          "url": "https://www.edaily.co.kr/news/newspath.asp?newsid=04450966645452856",
+          "search_query": "공공 AI 활용 가이드라인 책임",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "공공",
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 2
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "'해킹하는 AI ' 공포에 ' AI 방패' 구축..금융당국 '망 분리' 빗장 푼다",
+          "source": "kpenews.com",
+          "url": "https://kpenews.com/View.aspx?No=4089665",
+          "search_query": "공공 AI 활용 가이드라인 책임",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "공공",
+            "AI",
+            "가이드라인",
+            "책임"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 4
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_d768083e24",
+          "review_title": "AI에게 위로받는 시대: 종교와 상담은 무엇이 달라지나",
+          "title": "\"GPU 보다 데이터 부족이 더 심각\"…정부 부처간 칸막이·규제 여전, AI ...",
+          "source": "ddaily.co.kr",
+          "url": "https://www.ddaily.co.kr/page/view/2026051517203309169",
+          "search_query": "공공 AI 활용 가이드라인 책임",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "공공",
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 5
+        }
+      ],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 10,
+      "follow_up_status": "evidence_only"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_fe0d4f8f75",
+      "review_title": "K-농기계는 왜 중남미로 가나: 농업도 수출산업이 될까",
+      "priority": "high",
+      "original_review_lesson": "K-농기계는 왜 중남미로 가나: 농업도 수출산업이 될까: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다.",
+      "actions": [
+        "find_supporting_links",
+        "find_current_news_hook",
+        "check_past_topic_differentiation",
+        "demote_to_evidence_or_background"
+      ],
+      "local_supporting_matches_count": 0,
+      "web_supporting_matches_count": 0,
+      "accepted_links": [],
+      "rejected_low_relevance_count": 10,
+      "web_returned_count": 10,
+      "follow_up_status": "evidence_only"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_93d7592d3f",
+      "review_title": "글로벌 PF 대출 5년새 2배: 일본 메가뱅크는 왜 큰손이 됐나",
+      "priority": "high",
+      "original_review_lesson": "글로벌 PF 대출 5년새 2배: 일본 메가뱅크는 왜 큰손이 됐나: 현재 프레임이 빗나갔습니다. 더 강한 실물경제/생활 질문으로 초점을 옮기세요.",
+      "actions": [
+        "reframe_around_stronger_real_economy_angle",
+        "avoid_market_advice_frame"
+      ],
+      "local_supporting_matches_count": 1,
+      "web_supporting_matches_count": 3,
+      "accepted_links": [
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_93d7592d3f",
+          "review_title": "글로벌 PF 대출 5년새 2배: 일본 메가뱅크는 왜 큰손이 됐나",
+          "title": "美-이란 종전 합의 기대감에 '리스크온'…주가↑ 유가↓ 달러↓",
+          "source": "연합인포맥스",
+          "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4416554",
+          "matched_terms": [
+            "유가",
+            "미국"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 6
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_93d7592d3f",
+          "review_title": "글로벌 PF 대출 5년새 2배: 일본 메가뱅크는 왜 큰손이 됐나",
+          "title": "[임재현 칼럼] 에너지 지정학 시대, 한국의 생존 전략은 무엇인가",
+          "source": "ksmnews.co.kr",
+          "url": "https://www.ksmnews.co.kr/news/view.php?idx=606566",
+          "search_query": "유가 제도 구조",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "유가",
+            "제도"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 2
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_93d7592d3f",
+          "review_title": "글로벌 PF 대출 5년새 2배: 일본 메가뱅크는 왜 큰손이 됐나",
+          "title": "블룸버그 \"반도체 보너스, 한국 물가와 주택 시장 압박\" 경고",
+          "source": "hankyung.com",
+          "url": "https://www.hankyung.com/article/202605260254i",
+          "search_query": "유가 제도 구조",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "유가",
+            "제도"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 3
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_93d7592d3f",
+          "review_title": "글로벌 PF 대출 5년새 2배: 일본 메가뱅크는 왜 큰손이 됐나",
+          "title": "단일종목 레버리지 ETF 출격…삼성·미래에셋, 전략은",
+          "source": "bizwnews.com",
+          "url": "http://www.bizwnews.com/news/articleView.html?idxno=137444",
+          "search_query": "유가 제도 구조",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "유가",
+            "제도"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 4
+        }
+      ],
+      "rejected_low_relevance_count": 2,
+      "web_returned_count": 5,
+      "follow_up_status": "enough_supporting_links"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+      "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+      "priority": "high",
+      "original_review_lesson": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다.",
+      "actions": [
+        "find_current_news_hook",
+        "check_past_topic_differentiation",
+        "demote_to_evidence_or_background",
+        "avoid_market_advice_frame"
+      ],
+      "local_supporting_matches_count": 3,
+      "web_supporting_matches_count": 5,
+      "accepted_links": [
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "[제2026-4호] 첨단 바이오헬스 산업 육성방안: 바이오 데이터 활용 기반 구축을 중심으로",
+          "source": "한국은행",
+          "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10096398&menuNo=200433",
+          "matched_terms": [
+            "7%",
+            "AI",
+            "활용"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 7
+        },
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "서울시, 정보화사업 21단계 절차 안내하는 AI비서 '잇비' 도입",
+          "source": "연합뉴스 산업",
+          "url": "https://www.yna.co.kr/view/AKR20260524014400004",
+          "matched_terms": [
+            "공공",
+            "AI"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 6
+        },
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "[제2025-36호] AI 전문인력 현황과 수급 불균형: 규모, 임금, 이동성 분석",
+          "source": "한국은행",
+          "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10094926&menuNo=200433",
+          "matched_terms": [
+            "AI",
+            "활용"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 6
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "[증권 뉴스 브리핑] 증권사 유동성 규제 개정 추진/작년 증권사 해외점포...",
+          "source": "asiatime.co.kr",
+          "url": "https://www.asiatime.co.kr/article/20260518500402",
+          "search_query": "7% 공공 AI AI 활용 가이드라인 AI 책임 최신 뉴스",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 1
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "[증권 뉴스 브리핑] 대법 \"옵티머스펀드 판매 NH증권, JYP에 15억원 배상...",
+          "source": "asiatime.co.kr",
+          "url": "https://www.asiatime.co.kr/article/20260513500286",
+          "search_query": "7% 공공 AI AI 활용 가이드라인 AI 책임 최신 뉴스",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 2
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "[AP 미디어동향 8월 2~3주] MBC, 한국을 움직이는 언론 1위",
+          "source": "apnews.kr",
+          "url": "https://www.apnews.kr/news/articleView.html?idxno=3038800",
+          "search_query": "7% 공공 AI AI 활용 가이드라인 AI 책임 최신 뉴스",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 3
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "[연말기획] 주요 이슈와 사건·사고로 살펴본 2024 대한민국 보안시장③",
+          "source": "boannews.com",
+          "url": "http://www.boannews.com/media/view.asp?idx=134812&kind=",
+          "search_query": "7% 공공 AI AI 활용 가이드라인 AI 책임 최신 뉴스",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 4
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_eb289ed1ab",
+          "review_title": "낸드 매출 83.7%↑: 메모리 사이클은 다시 도는가",
+          "title": "\"생성 AI , 발전 무궁무진···통합 플랫폼 갖춰 추진해야\"",
+          "source": "zdnet.co.kr",
+          "url": "https://zdnet.co.kr/view/?no=20240523141451",
+          "search_query": "7% 공공 AI AI 활용 가이드라인 AI 책임 최신 뉴스",
+          "query_type": "precision",
+          "matched_terms": [
+            "AI",
+            "활용",
+            "가이드라인",
+            "책임"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 5
+        }
+      ],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 10,
+      "follow_up_status": "evidence_only"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_273275065d",
+      "review_title": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나",
+      "priority": "high",
+      "original_review_lesson": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나: 이미 익숙한 주제입니다. 새 각도나 차별점이 없으면 낮추세요.",
+      "actions": [
+        "find_supporting_links",
+        "narrow_to_concrete_question",
+        "find_specific_case_or_odd_hook",
+        "check_past_topic_differentiation"
+      ],
+      "local_supporting_matches_count": 3,
+      "web_supporting_matches_count": 2,
+      "accepted_links": [
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_273275065d",
+          "review_title": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나",
+          "title": "[도쿄증시-마감] 닛케이 65,000대…장중·종가 역대 최고",
+          "source": "연합인포맥스",
+          "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4416563",
+          "matched_terms": [
+            "65,000",
+            "닛케이",
+            "65,000선",
+            "일본"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 12
+        },
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_273275065d",
+          "review_title": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나",
+          "title": "日닛케이지수 65,000 돌파…장중 최고치 연달아 경신(종합)",
+          "source": "연합뉴스 세계",
+          "url": "https://www.yna.co.kr/view/AKR20260525016151073",
+          "matched_terms": [
+            "65,000",
+            "닛케이",
+            "일본"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 10
+        },
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_273275065d",
+          "review_title": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나",
+          "title": "日 닛케이, 첫 64,000 돌파…美·이란 협상 기대(상보)",
+          "source": "연합인포맥스",
+          "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4416548",
+          "matched_terms": [
+            "65,000",
+            "닛케이",
+            "65,000선",
+            "일본"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 10
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_273275065d",
+          "review_title": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나",
+          "title": "유가 폭등에도 비트코인만 사는 월가 큰손들… 알트코인 쳐다보지도 않...",
+          "source": "coinreaders.com",
+          "url": "http://coinreaders.com/222834",
+          "search_query": "65,000 제도 구조",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "65,000",
+            "제도"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 3
+        },
+        {
+          "collector": "second_search_web",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_273275065d",
+          "review_title": "닛케이 65,000선: 일본 증시는 왜 다시 뜨거워졌나",
+          "title": "인도네시아 MZ를 사로잡은 두쫀쿠와 K-디저트",
+          "source": "dream.kotra.or.kr",
+          "url": "http://dream.kotra.or.kr/kotranews/cms/news/actionKotraBoardDetail.do?SITE_NO=3&MENU_ID=180&CONTENTS_NO=1&bbsGbn=243&bbsSn=243&pNttSn=239457",
+          "search_query": "65,000 제도 구조",
+          "query_type": "broader_system",
+          "matched_terms": [
+            "65,000",
+            "제도"
+          ],
+          "relevance_status": "accepted",
+          "search_rank": 4
+        }
+      ],
+      "rejected_low_relevance_count": 3,
+      "web_returned_count": 5,
+      "follow_up_status": "enough_supporting_links"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_c2b03bc6e8",
+      "review_title": "바다의 변화를 누가 측정하나: 해양 관측망 위기",
+      "priority": "high",
+      "original_review_lesson": "바다의 변화를 누가 측정하나: 해양 관측망 위기: 이미 익숙한 주제입니다. 새 각도나 차별점이 없으면 낮추세요.",
+      "actions": [
+        "find_supporting_links",
+        "narrow_to_concrete_question",
+        "find_specific_case_or_odd_hook",
+        "check_past_topic_differentiation"
+      ],
+      "local_supporting_matches_count": 0,
+      "web_supporting_matches_count": 0,
+      "accepted_links": [],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 0,
+      "follow_up_status": "still_needs_sources"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_2bdd0b9bb3",
+      "review_title": "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학",
+      "priority": "high",
+      "original_review_lesson": "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다.",
+      "actions": [
+        "find_current_news_hook"
+      ],
+      "local_supporting_matches_count": 1,
+      "web_supporting_matches_count": 0,
+      "accepted_links": [
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_2bdd0b9bb3",
+          "review_title": "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학",
+          "title": "[제2026-2호] 청년세대 노동시장 진입 지연과 주거비 부담의 생애영향 평가",
+          "source": "한국은행",
+          "url": "https://www.bok.or.kr/portal/bbs/P0002353/view.do?nttId=10095691&menuNo=200433",
+          "matched_terms": [
+            "경제활동참가율",
+            "청년"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 9
+        }
+      ],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 0,
+      "follow_up_status": "needs_broader_query"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_02c86c6679",
+      "review_title": "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화",
+      "priority": "high",
+      "original_review_lesson": "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화: 자료 자체보다 최신 뉴스나 현상 hook을 먼저 찾아야 합니다.",
+      "actions": [
+        "find_supporting_links",
+        "find_current_news_hook",
+        "find_specific_case_or_odd_hook",
+        "demote_to_evidence_or_background"
+      ],
+      "local_supporting_matches_count": 0,
+      "web_supporting_matches_count": 0,
+      "accepted_links": [],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 0,
+      "follow_up_status": "evidence_only"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_def76071a3",
+      "review_title": "빈집 철거 신청이 온라인으로 간다는 것: 지방 소멸의 행정 버전",
+      "priority": "medium",
+      "original_review_lesson": "빈집 철거 신청이 온라인으로 간다는 것: 지방 소멸의 행정 버전: 이미 익숙한 주제입니다. 새 각도나 차별점이 없으면 낮추세요.",
+      "actions": [
+        "check_past_topic_differentiation"
+      ],
+      "local_supporting_matches_count": 1,
+      "web_supporting_matches_count": 0,
+      "accepted_links": [
+        {
+          "collector": "second_search_local",
+          "evidence_role": "supporting_link_candidate",
+          "review_item_id": "2026-05-25:story_bundle_def76071a3",
+          "review_title": "빈집 철거 신청이 온라인으로 간다는 것: 지방 소멸의 행정 버전",
+          "title": "[국토교통부]빈집 철거 신청, 이제 온라인으로 간편하게 하세요",
+          "source": "정책브리핑",
+          "url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156763359&call_from=rsslink",
+          "matched_terms": [
+            "빈집",
+            "철거",
+            "온라인으로"
+          ],
+          "relevance_status": "accepted_local_match",
+          "match_score": 13
+        }
+      ],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 0,
+      "follow_up_status": "needs_broader_query"
+    },
+    {
+      "review_item_id": "2026-05-25:story_bundle_cd1a6d39ab",
+      "review_title": "전기·가스요금 지원에 72% 찬성: 일본의 생활비 정치",
+      "priority": "medium",
+      "original_review_lesson": "전기·가스요금 지원에 72% 찬성: 일본의 생활비 정치: 이미 익숙한 주제입니다. 새 각도나 차별점이 없으면 낮추세요.",
+      "actions": [
+        "narrow_to_concrete_question",
+        "check_past_topic_differentiation",
+        "keep_question_as_editorial_anchor"
+      ],
+      "local_supporting_matches_count": 0,
+      "web_supporting_matches_count": 0,
+      "accepted_links": [],
+      "rejected_low_relevance_count": 0,
+      "web_returned_count": 0,
+      "follow_up_status": "still_needs_sources"
+    }
+  ],
+  "paths": {
+    "feedback": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_review_feedback_2026-05-25.json",
+    "plan": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_second_search_plan_2026-05-25.json",
+    "local": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_second_search_results_2026-05-25.json",
+    "web": "/Users/bae/Documents/code/luddite/outputs/reports/jibi_second_search_web_2026-05-25.json",
+    "web_inbox": "/Users/bae/Documents/code/luddite/data/inbox/articles/second_search_2026-05-25.jsonl"
+  }
+}
