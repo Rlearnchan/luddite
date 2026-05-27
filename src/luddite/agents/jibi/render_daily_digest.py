@@ -131,6 +131,42 @@ BOARD_SCORE_SYSTEM_TOPIC_TERMS = {
     "교육",
     "의료",
 }
+BOARD_SCORE_SPORTS_PRIMARY_TERMS = {
+    "스포츠",
+    "축구",
+    "야구",
+    "농구",
+    "월드컵",
+    "올림픽",
+    "챔피언스리그",
+    "epl",
+}
+BOARD_SCORE_SPORTS_HOOK_TERMS = {
+    "가격",
+    "티켓",
+    "중계권",
+    "광고",
+    "스폰서",
+    "수수료",
+    "이벤트",
+    "관광",
+    "도시",
+    "경제",
+}
+BOARD_SCORE_AI_GRAND_DISCOURSE_TERMS = {
+    "ai 저작권",
+    "저작권 논쟁",
+    "허위 정보",
+    "허위정보",
+    "거대 담론",
+    "거대담론",
+}
+BOARD_SCORE_CASUAL_AI_TERMS = {
+    "방구석 여행",
+    "여행 브이로그",
+    "편하게 즐",
+    "ai 영상",
+}
 BOARD_SCORE_GRADE_CUTS = {
     "A": 80,
     "B": 60,
@@ -1621,6 +1657,116 @@ def _topic_term_in_text(term: str, text: str) -> bool:
     return normalized_term in text
 
 
+def _history_review_context(history_rows: list[dict[str, Any]]) -> dict[str, list[str]]:
+    adjustments: list[str] = []
+    roles: list[str] = []
+    failure_modes: list[str] = []
+    positive_signals: list[str] = []
+    for row in history_rows:
+        for column in REVIEWER_COLUMNS:
+            note = str(row.get(column) or "").strip()
+            if not note:
+                continue
+            payload = infer_review_feedback(note)
+            adjustments.extend(str(item) for item in payload.get("review_adjustments", []))
+            roles.append(str(payload.get("editorial_role") or ""))
+            failure_modes.extend(str(item) for item in payload.get("failure_modes", []))
+            positive_signals.extend(str(item) for item in payload.get("positive_signals", []))
+    return {
+        "review_adjustments": sorted({item for item in adjustments if item}),
+        "review_editorial_roles": sorted({item for item in roles if item}),
+        "review_failure_modes": sorted({item for item in failure_modes if item}),
+        "review_positive_signals": sorted({item for item in positive_signals if item}),
+    }
+
+
+def _board_score_review_lesson_adjustments(
+    *,
+    source_text: str,
+    seed_type: str,
+    quality_flags: set[str],
+    review_context: dict[str, list[str]],
+) -> tuple[float, list[str], list[str], list[str]]:
+    score_delta = 0.0
+    reasons: list[str] = []
+    adjustments = set(review_context.get("review_adjustments") or [])
+    roles = set(review_context.get("review_editorial_roles") or [])
+    failure_modes = set(review_context.get("review_failure_modes") or [])
+    positive_signals = set(review_context.get("review_positive_signals") or [])
+
+    sports_primary = (
+        "sports_primary_downrank" in adjustments
+        or "sports_only" in quality_flags
+        or seed_type == "sports"
+        or (
+            any(_topic_term_in_text(term, source_text) for term in BOARD_SCORE_SPORTS_PRIMARY_TERMS)
+            and not any(
+                _topic_term_in_text(term, source_text)
+                for term in BOARD_SCORE_SPORTS_HOOK_TERMS
+            )
+        )
+    )
+    sports_hook = sports_primary and any(
+        _topic_term_in_text(term, source_text) for term in BOARD_SCORE_SPORTS_HOOK_TERMS
+    )
+    if sports_primary:
+        adjustments.add("sports_primary_downrank")
+        if sports_hook or roles.intersection({"hook_only", "sub_block"}):
+            roles.add("hook_only")
+            score_delta -= 12
+            reasons.append("-12 review_sports_hook_only_not_primary")
+        else:
+            roles.add("suppress")
+            score_delta -= 35
+            reasons.append("-35 review_sports_primary_downrank")
+
+    ai_grand = "ai_grand_discourse_downrank" in adjustments or any(
+        _topic_term_in_text(term, source_text)
+        for term in BOARD_SCORE_AI_GRAND_DISCOURSE_TERMS
+    )
+    casual_ai = "casual_ai_use_case_bonus" in adjustments or any(
+        _topic_term_in_text(term, source_text)
+        for term in BOARD_SCORE_CASUAL_AI_TERMS
+    )
+    if ai_grand:
+        adjustments.add("ai_grand_discourse_downrank")
+        score_delta -= 18
+        reasons.append("-18 review_ai_grand_discourse_downrank")
+    if casual_ai:
+        adjustments.add("casual_ai_use_case_bonus")
+        roles.add("sub_block")
+        score_delta += 8
+        reasons.append("+8 review_casual_ai_use_case_sub_block")
+
+    if "past_topic_overlap_downrank" in adjustments or "too_familiar" in failure_modes:
+        adjustments.add("past_topic_overlap_downrank")
+        score_delta -= 25
+        reasons.append("-25 review_past_topic_overlap")
+    if "needs_new_angle" in adjustments:
+        score_delta -= 12
+        reasons.append("-12 review_needs_new_angle")
+
+    if "hook_only" in adjustments or "hook_only" in roles:
+        roles.add("hook_only")
+        score_delta -= 10
+        reasons.append("-10 review_hook_only_not_primary")
+    elif "sub_block" in adjustments or "sub_block" in roles:
+        roles.add("sub_block")
+        score_delta -= 6
+        reasons.append("-6 review_sub_block_not_primary")
+
+    if "specific_case_needed" in positive_signals and "sub_block" in roles:
+        score_delta += 2
+        reasons.append("+2 review_specific_case_sub_block")
+
+    return (
+        score_delta,
+        reasons,
+        sorted(adjustments),
+        sorted(item for item in roles if item),
+    )
+
+
 def _board_score_info(
     *,
     record: dict[str, Any],
@@ -1643,6 +1789,7 @@ def _board_score_info(
     so_what_label = str(so_what.get("so_what_label") or "")
     quality_flags = set(str(flag) for flag in representative.get("quality_flags") or [])
     weakness = set(str(flag) for flag in so_what.get("weakness_signals") or [])
+    review_context = _history_review_context(history_rows)
 
     if story_role == "standalone_seed" or seed_quality == "standalone_seed":
         score += 8
@@ -1720,6 +1867,18 @@ def _board_score_info(
         score -= 100
         reasons.append("-100 source_cluster_title_mismatch")
 
+    review_delta, review_reasons, review_adjustments, review_editorial_roles = (
+        _board_score_review_lesson_adjustments(
+            source_text=source_text,
+            seed_type=seed_type,
+            quality_flags=quality_flags,
+            review_context=review_context,
+        )
+    )
+    if review_delta:
+        score += review_delta
+    reasons.extend(review_reasons)
+
     history_statuses = {
         str(row.get("history_status") or "reviewed_before") for row in history_rows
     }
@@ -1739,6 +1898,10 @@ def _board_score_info(
         "reasons": reasons,
         "mismatch_reasons": mismatch_reasons,
         "history_statuses": sorted(history_statuses),
+        "review_adjustments": review_adjustments,
+        "review_editorial_roles": review_editorial_roles,
+        "review_failure_modes": review_context.get("review_failure_modes", []),
+        "review_positive_signals": review_context.get("review_positive_signals", []),
     }
 
 
@@ -1768,6 +1931,10 @@ def _board_score_report_row(
         "total_score": board_score.get("total_score", 0),
         "board_score": board_score.get("board_score", 0),
         "board_score_reasons": board_score.get("reasons", []),
+        "review_adjustments": board_score.get("review_adjustments", []),
+        "review_editorial_roles": board_score.get("review_editorial_roles", []),
+        "review_failure_modes": board_score.get("review_failure_modes", []),
+        "review_positive_signals": board_score.get("review_positive_signals", []),
         "history_statuses": board_score.get("history_statuses", []),
         "reviewers": list(
             dict.fromkeys(
@@ -2271,6 +2438,38 @@ def _write_board_score_report(
         for row in high_total_rows
         if "board_score_downranked_below_selected_floor" in row.get("why_excluded", [])
     ][:15]
+    review_adjustment_rows = [
+        row
+        for row in score_rows
+        if row.get("review_adjustments") or row.get("review_editorial_roles")
+    ]
+    hook_subblock_rows = [
+        row
+        for row in review_adjustment_rows
+        if set(row.get("review_editorial_roles") or []).intersection(
+            {"hook_only", "sub_block"}
+        )
+        or set(row.get("review_adjustments") or []).intersection({"hook_only", "sub_block"})
+    ]
+    do_not_rescue_rows = [
+        row
+        for row in review_adjustment_rows
+        if set(row.get("review_adjustments") or []).intersection(
+            {
+                "sports_primary_downrank",
+                "ai_grand_discourse_downrank",
+                "past_topic_overlap_downrank",
+            }
+        )
+        or set(row.get("review_failure_modes") or []).intersection(
+            {"weak_audience_bridge", "too_familiar"}
+        )
+    ]
+    needs_new_angle_rows = [
+        row
+        for row in review_adjustment_rows
+        if "needs_new_angle" in set(row.get("review_adjustments") or [])
+    ]
     payload = {
         "run_date": digest_date,
         "use_board_score": bool(selection_report.get("use_board_score")),
@@ -2284,6 +2483,10 @@ def _write_board_score_report(
         "reviewed_candidate_suppression": suppressed_review_rows,
         "reviewed_candidate_reconsideration_queue": reconsideration_rows,
         "board_mismatch_guard": mismatch_rows,
+        "review_derived_board_adjustments": review_adjustment_rows[:25],
+        "hook_subblock_queue": hook_subblock_rows[:25],
+        "do_not_rescue_with_links": do_not_rescue_rows[:25],
+        "needs_new_angle": needs_new_angle_rows[:25],
         "board_score_distribution": {
             "total_candidate_count": len(score_rows),
             "eligible_count": len(score_rows),
@@ -2448,6 +2651,114 @@ def _write_board_score_report(
         )
     if not mismatch_rows:
         lines.append("| none | none | none | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Review-Derived Board Adjustments",
+            "",
+            "| title | total_score | board_score | roles | adjustments | reasons |",
+            "| --- | ---: | ---: | --- | --- | --- |",
+        ]
+    )
+    for row in review_adjustment_rows[:20]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('total_score') or 0):g}",
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(", ".join(row.get("review_editorial_roles", [])) or "-"),
+                    _table_cell(", ".join(row.get("review_adjustments", [])) or "-"),
+                    _table_cell("; ".join(row.get("board_score_reasons", [])[-5:])),
+                ]
+            )
+            + " |"
+        )
+    if not review_adjustment_rows:
+        lines.append("| none | 0 | 0 | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Hook/Sub-block Queue",
+            "",
+            "| title | board_score | role | suggested use |",
+            "| --- | ---: | --- | --- |",
+        ]
+    )
+    for row in hook_subblock_rows[:20]:
+        roles = set(row.get("review_editorial_roles") or [])
+        suggested = "opening_hook_only" if "hook_only" in roles else "one_page_sub_block"
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(", ".join(row.get("review_editorial_roles", [])) or "-"),
+                    suggested,
+                ]
+            )
+            + " |"
+        )
+    if not hook_subblock_rows:
+        lines.append("| none | 0 | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Do Not Rescue With Links",
+            "",
+            "| title | board_score | reason |",
+            "| --- | ---: | --- |",
+        ]
+    )
+    for row in do_not_rescue_rows[:20]:
+        reason = ", ".join(
+            [
+                *[str(item) for item in row.get("review_adjustments", [])],
+                *[str(item) for item in row.get("review_failure_modes", [])],
+            ]
+        )
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(reason or "review_downrank"),
+                ]
+            )
+            + " |"
+        )
+    if not do_not_rescue_rows:
+        lines.append("| none | 0 | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Needs New Angle",
+            "",
+            "| title | board_score | action |",
+            "| --- | ---: | --- |",
+        ]
+    )
+    for row in needs_new_angle_rows[:20]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                    "find_new_angle_before_reposting",
+                ]
+            )
+            + " |"
+        )
+    if not needs_new_angle_rows:
+        lines.append("| none | 0 | none |")
 
     lines.extend(
         [

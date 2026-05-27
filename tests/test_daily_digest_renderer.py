@@ -1198,6 +1198,134 @@ def test_bundle_review_board_score_metadata_and_opt_in_selection(tmp_path) -> No
     )
 
 
+def test_bundle_review_board_score_uses_review_derived_adjustments(tmp_path) -> None:
+    history_path = tmp_path / "jibi_review_board_history.jsonl"
+    history_path.write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-26",
+                "rows": [
+                    {
+                        "ID": "2026-05-26:sports_worldcup",
+                        "제목": "월드컵 경기 운영권",
+                        "리뷰-형찬": (
+                            "스포츠는 되도록 가져오지 말자. "
+                            "축구 관심 없는 사람에게는 조회수 나쁜 편."
+                        ),
+                    },
+                    {
+                        "ID": "2026-05-26:ai_video_trip",
+                        "제목": "AI 여행 영상",
+                        "리뷰-동찬": (
+                            "AI 거대담론으로 몰고가지 말고 "
+                            "그냥 편하게 즐긴다 사례로 한 페이지 예시."
+                        ),
+                    },
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    sports = {
+        "candidate_id": "sports_worldcup",
+        "title": "월드컵 경기 운영권이 비싸지는 이유",
+        "summary": "월드컵 축구 중계권과 경기 운영권 이슈",
+        "seed_url": "https://example.com/sports",
+        "source": "BBC Sport",
+        "source_role_class": "section_news",
+        "seed_type": "sports",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": ["sports_only"],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 95, "broadcast_potential_proxy": 5},
+    }
+    ai_video = {
+        "candidate_id": "ai_video_trip",
+        "title": "AI 영상으로 방구석 여행을 즐기는 사람들",
+        "summary": "AI 영상 여행 브이로그를 편하게 소비하는 이용 사례",
+        "seed_url": "https://example.com/ai-video",
+        "source": "The Guardian",
+        "source_role_class": "section_news",
+        "seed_type": "ai_consumer_use_case",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "so_what": {
+            "so_what_label": "strong",
+            "weakness_signals": [],
+            "seed_quality_classification": "standalone_seed",
+            "story_role": "standalone_seed",
+        },
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 85, "broadcast_potential_proxy": 5},
+    }
+    clean = {
+        "candidate_id": "ai_public_ops",
+        "title": "AI가 병원과 공공 현장 업무를 바꾸는 이유",
+        "summary": "AI가 병원 연락과 공공 현장 업무에 들어오며 책임과 비용 구조가 바뀐다",
+        "seed_url": "https://example.com/ai-public-ops",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "healthcare_operations_ai",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "so_what": {
+            "so_what_label": "strong",
+            "weakness_signals": [],
+            "seed_quality_classification": "standalone_seed",
+            "story_role": "standalone_seed",
+        },
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 76, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [sports, ai_video, clean],
+        [sports, ai_video, clean],
+        "2026-05-27",
+        review_history_path=history_path,
+        review_board_limit=1,
+        allow_reviewed_candidates=True,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "공무원" in rows[0]["제목"] or "현장" in rows[0]["제목"]
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    sports_row = next(
+        row for row in report["review_derived_board_adjustments"] if row["title"] == sports["title"]
+    )
+    assert "sports_primary_downrank" in sports_row["review_adjustments"]
+    assert sports_row["board_score"] < sports_row["total_score"]
+    assert any(
+        row["title"] == sports["title"] for row in report["do_not_rescue_with_links"]
+    )
+    assert any(
+        row["title"] == ai_video["title"]
+        and "sub_block" in row["review_editorial_roles"]
+        for row in report["hook_subblock_queue"]
+    )
+
+
 def test_bundle_review_mismatch_guard_blocks_override_topic_mismatch(tmp_path) -> None:
     notion = {
         "candidate_id": "notion_ai",

@@ -67,6 +67,22 @@ REVIEW_MODIFIERS = [
     "textbook_explainer_risk",
     "weak_audience_bridge",
 ]
+EDITORIAL_ROLES = [
+    "main_seed",
+    "sub_block",
+    "hook_only",
+    "background_evidence",
+    "suppress",
+]
+REVIEW_ADJUSTMENTS = [
+    "sports_primary_downrank",
+    "ai_grand_discourse_downrank",
+    "casual_ai_use_case_bonus",
+    "past_topic_overlap_downrank",
+    "needs_new_angle",
+    "hook_only",
+    "sub_block",
+]
 FAILURE_MODES = [
     "evidence_not_seed",
     "needs_news_hook",
@@ -176,6 +192,72 @@ PROMO_OR_BULLETIN_TERMS = {
 GOOD_HOOK_TERMS = {"hook", "후킹", "흥미", "재미", "좋은 소재", "좋은 자료", "가능성"}
 AUDIENCE_WEAK_TERMS = {"안 궁금", "그래서 뭐", "시청자", "생활감 약", "연결 약"}
 TEXTBOOK_RISK_TERMS = {"교과서", "원론", "설명형", "textbook"}
+HOOK_ONLY_TERMS = {
+    "초반 후킹",
+    "후킹용",
+    "도입 후킹",
+    "도입",
+    "hooking",
+}
+SUB_BLOCK_TERMS = {
+    "한 단 정도",
+    "한 단",
+    "한 페이지",
+    "한두슬라이드",
+    "한두 슬라이드",
+    "예시로",
+    "예시",
+    "서브",
+    "곁가지",
+    "붙이면",
+    "같이 엮",
+    "엮는",
+}
+NOT_BAD_TERMS = {
+    "나쁘지 않",
+    "괜찮",
+    "좋다",
+    "좋은",
+    "신선",
+    "참신",
+    "기사 자체는 나쁘지",
+}
+SPORTS_PRIMARY_RISK_TERMS = {
+    "스포츠는 되도록",
+    "스포츠 주제 조회수",
+    "스포츠를 소재로",
+    "주구장창 스포츠",
+    "축구에 관심",
+    "축구 관심",
+    "조회수 나쁜 편",
+    "스포츠만",
+}
+AI_GRAND_DISCOURSE_RISK_TERMS = {
+    "ai 시대의 저작권 논쟁",
+    "저작권 논쟁",
+    "거대 담론",
+    "거대담론",
+    "허위 정보 논쟁",
+    "허위정보 논쟁",
+}
+CASUAL_AI_USE_CASE_TERMS = {
+    "편하게 즐긴",
+    "방구석 여행",
+    "여행 브이로그",
+    "활용할 수",
+    "반대 시선",
+    "ai 영상의 장점",
+}
+PAST_TOPIC_NEEDS_NEW_ANGLE_TERMS = {
+    "뒷북",
+    "이미 했던",
+    "철지난",
+    "철 지났",
+    "조회수 폭망",
+    "novelty",
+    "참신하지 않",
+    "차별점 없",
+}
 POSITIVE_TERMS = {
     "좋은 소재",
     "좋은 자료 선정",
@@ -364,6 +446,16 @@ def _failure_mode_matches(text: str) -> dict[str, list[str]]:
         matches["needs_news_hook"] = list(
             dict.fromkeys([*matches["needs_news_hook"], "news_hook_needed"])
         )
+    sports_hits = _contains_any(text, SPORTS_PRIMARY_RISK_TERMS)
+    if sports_hits:
+        matches["weak_audience_bridge"] = list(
+            dict.fromkeys([*matches["weak_audience_bridge"], *sports_hits])
+        )
+    past_hits = _contains_any(text, PAST_TOPIC_NEEDS_NEW_ANGLE_TERMS)
+    if past_hits:
+        matches["too_familiar"] = list(
+            dict.fromkeys([*matches["too_familiar"], *past_hits])
+        )
     return {key: value for key, value in matches.items() if value}
 
 
@@ -373,7 +465,8 @@ def _positive_signal_matches(text: str) -> dict[str, list[str]]:
         for key, value in {
             "good_question": _contains_any(text, GOOD_QUESTION_TERMS),
             "fresh_angle": _contains_any(text, FRESH_ANGLE_TERMS),
-            "promising_hook": _contains_any(text, PROMISING_HOOK_TERMS),
+            "promising_hook": _contains_any(text, PROMISING_HOOK_TERMS)
+            + _contains_any(text, NOT_BAD_TERMS),
             "useful_evidence": _contains_any(text, USEFUL_EVIDENCE_TERMS),
             "specific_case_needed": _contains_any(text, SPECIFIC_CASE_NEEDED_TERMS),
         }.items()
@@ -381,8 +474,77 @@ def _positive_signal_matches(text: str) -> dict[str, list[str]]:
     }
 
 
+def _review_adjustment_matches(text: str) -> dict[str, list[str]]:
+    return {
+        key: value
+        for key, value in {
+            "sports_primary_downrank": _contains_any(
+                text,
+                SPORTS_PRIMARY_RISK_TERMS,
+            ),
+            "ai_grand_discourse_downrank": _contains_any(
+                text,
+                AI_GRAND_DISCOURSE_RISK_TERMS,
+            ),
+            "casual_ai_use_case_bonus": _contains_any(
+                text,
+                CASUAL_AI_USE_CASE_TERMS,
+            ),
+            "past_topic_overlap_downrank": _contains_any(
+                text,
+                PAST_TOPIC_NEEDS_NEW_ANGLE_TERMS,
+            ),
+            "needs_new_angle": _contains_any(
+                text,
+                PAST_TOPIC_NEEDS_NEW_ANGLE_TERMS | {"새 각도", "차별점"},
+            ),
+            "hook_only": _contains_any(text, HOOK_ONLY_TERMS),
+            "sub_block": _contains_any(
+                text,
+                SUB_BLOCK_TERMS,
+            ),
+        }.items()
+        if value
+    }
+
+
+def _editorial_role_from_review(
+    *,
+    primary_label: str,
+    failure_modes: list[str],
+    positive_signals: list[str],
+    adjustments: list[str],
+) -> str:
+    adjustment_set = set(adjustments)
+    failure_set = set(failure_modes)
+    positive_set = set(positive_signals)
+    if (
+        "sports_primary_downrank" in adjustment_set
+        and not adjustment_set.intersection({"hook_only", "sub_block"})
+    ) or primary_label == "reject":
+        return "suppress"
+    if "hook_only" in adjustment_set:
+        return "hook_only"
+    if "sub_block" in adjustment_set or "casual_ai_use_case_bonus" in adjustment_set:
+        return "sub_block"
+    if positive_set.intersection(
+        {"promising_hook", "specific_case_needed"}
+    ):
+        return "sub_block"
+    if primary_label == "evidence_only" or "evidence_not_seed" in failure_set:
+        return "background_evidence"
+    if primary_label in {"seed", "conditional_seed"} and not failure_set.intersection(
+        {"too_familiar", "weak_audience_bridge"}
+    ):
+        return "main_seed"
+    if failure_set:
+        return "suppress"
+    return "background_evidence"
+
+
 def _past_overlap_matches(text: str) -> list[str]:
     matches = _contains_any(text, PAST_OVERLAP_STRONG_TERMS)
+    matches.extend(_contains_any(text, PAST_TOPIC_NEEDS_NEW_ANGLE_TERMS))
     if "이미" in text:
         context = _contains_any(text, PAST_OVERLAP_ALREADY_CONTEXT_TERMS)
         if context:
@@ -404,7 +566,7 @@ def _review_signal_matches(text: str) -> dict[str, list[str]]:
         "weak_source": _contains_any(text, WEAK_SOURCE_TERMS),
         "single_company_case": _contains_any(text, SINGLE_COMPANY_TERMS),
         "promo_or_bulletin": _contains_any(text, PROMO_OR_BULLETIN_TERMS),
-        "good_hook": _contains_any(text, GOOD_HOOK_TERMS),
+        "good_hook": _contains_any(text, GOOD_HOOK_TERMS | HOOK_ONLY_TERMS | SUB_BLOCK_TERMS),
         "audience_interest_weak": _contains_any(text, AUDIENCE_WEAK_TERMS),
         "textbook_explainer_risk": _contains_any(text, TEXTBOOK_RISK_TERMS),
     }
@@ -466,6 +628,20 @@ def _primary_label_from_matches(matches: dict[str, list[str]]) -> str:
     if matches["unclear"]:
         return "unclear"
     return "unlabeled"
+
+
+def _raise_label_for_hook_review(
+    primary_label: str,
+    adjustments: list[str],
+    positive_signals: list[str],
+) -> str:
+    if primary_label != "unlabeled":
+        return primary_label
+    if {"hook_only", "sub_block", "casual_ai_use_case_bonus"}.intersection(adjustments):
+        return "conditional_seed"
+    if set(positive_signals).intersection({"fresh_angle", "promising_hook"}):
+        return "conditional_seed"
+    return primary_label
 
 
 def _legacy_inferred_label(primary_label: str, modifiers: list[str]) -> str:
@@ -542,6 +718,8 @@ def _review_feedback_base_payload(
     reasons: list[str],
     failure_modes: list[str],
     positive_signals: list[str],
+    review_adjustments: list[str],
+    editorial_role: str,
 ) -> dict[str, Any]:
     return {
         "tag": INFERRED_LABEL_TO_REVIEW_TAG[primary_label]
@@ -553,6 +731,8 @@ def _review_feedback_base_payload(
         "modifiers": modifiers,
         "failure_modes": failure_modes,
         "positive_signals": positive_signals,
+        "review_adjustments": review_adjustments,
+        "editorial_role": editorial_role,
         "review_signal": _review_signal(
             primary_label,
             failure_modes,
@@ -581,6 +761,8 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
             "modifiers": [],
             "failure_modes": [],
             "positive_signals": [],
+            "review_adjustments": [],
+            "editorial_role": "background_evidence",
             "review_signal": "unlabeled",
             "next_research_actions": [],
             "inferred_confidence": "low",
@@ -593,12 +775,23 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
     modifiers = _review_modifiers(matches)
     failure_matches = _failure_mode_matches(text)
     positive_matches = _positive_signal_matches(text)
+    adjustment_matches = _review_adjustment_matches(text)
     failure_modes = [mode for mode in FAILURE_MODES if failure_matches.get(mode)]
     positive_signals = [
         signal for signal in POSITIVE_SIGNALS if positive_matches.get(signal)
     ]
+    review_adjustments = [
+        adjustment
+        for adjustment in REVIEW_ADJUSTMENTS
+        if adjustment_matches.get(adjustment)
+    ]
     if explicit_tag != "unlabeled":
         primary_label = EXPLICIT_TAG_TO_INFERRED_LABEL[explicit_tag]
+        primary_label = _raise_label_for_hook_review(
+            primary_label,
+            review_adjustments,
+            positive_signals,
+        )
         inferred_label = _legacy_inferred_label(primary_label, modifiers)
         reasons = [f"explicit_tag:{explicit_tag}"] + [
             f"{key}:{','.join(value[:3])}"
@@ -613,6 +806,10 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
             f"positive_signal:{key}:{','.join(value[:3])}"
             for key, value in positive_matches.items()
         )
+        reasons.extend(
+            f"review_adjustment:{key}:{','.join(value[:3])}"
+            for key, value in adjustment_matches.items()
+        )
         return _review_feedback_base_payload(
             raw_note=raw_note,
             explicit_tag=explicit_tag,
@@ -623,9 +820,21 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
             reasons=reasons,
             failure_modes=failure_modes,
             positive_signals=positive_signals,
+            review_adjustments=review_adjustments,
+            editorial_role=_editorial_role_from_review(
+                primary_label=primary_label,
+                failure_modes=failure_modes,
+                positive_signals=positive_signals,
+                adjustments=review_adjustments,
+            ),
         )
 
     primary_label = _primary_label_from_matches(matches)
+    primary_label = _raise_label_for_hook_review(
+        primary_label,
+        review_adjustments,
+        positive_signals,
+    )
     if primary_label == "unlabeled" and "good_question" in positive_signals:
         primary_label = "seed"
     elif primary_label == "unlabeled" and failure_modes:
@@ -644,6 +853,10 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
         f"positive_signal:{key}:{','.join(value[:3])}"
         for key, value in positive_matches.items()
     )
+    reasons.extend(
+        f"review_adjustment:{key}:{','.join(value[:3])}"
+        for key, value in adjustment_matches.items()
+    )
     if primary_label == "unlabeled":
         confidence = "low"
     elif len([value for value in matches.values() if value]) >= 2:
@@ -660,6 +873,13 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
         reasons=reasons,
         failure_modes=failure_modes,
         positive_signals=positive_signals,
+        review_adjustments=review_adjustments,
+        editorial_role=_editorial_role_from_review(
+            primary_label=primary_label,
+            failure_modes=failure_modes,
+            positive_signals=positive_signals,
+            adjustments=review_adjustments,
+        ),
     )
 
 
@@ -724,6 +944,52 @@ def _row_signal_values(
         values.extend(str(item) for item in note.get(field, []) if item)
     present = set(values)
     return [item for item in allowed if item in present]
+
+
+def _row_editorial_role(
+    *,
+    row_review_signal: str,
+    failure_modes: list[str],
+    positive_signals: list[str],
+    review_adjustments: list[str],
+    reviewer_notes: dict[str, dict[str, Any]],
+) -> str:
+    role_values = [
+        str(note.get("editorial_role") or "")
+        for note in reviewer_notes.values()
+        if note.get("note")
+    ]
+    roles = set(role_values)
+    adjustments = set(review_adjustments)
+    failures = set(failure_modes)
+    positives = set(positive_signals)
+    if "sports_primary_downrank" in adjustments and not adjustments.intersection(
+        {"hook_only", "sub_block"}
+    ):
+        return "suppress"
+    if "weak_audience_bridge" in failures and not adjustments.intersection(
+        {"hook_only", "sub_block"}
+    ):
+        return "suppress"
+    if "hook_only" in adjustments or "hook_only" in roles:
+        return "hook_only"
+    if (
+        "sub_block" in adjustments
+        or "sub_block" in roles
+        or "casual_ai_use_case_bonus" in adjustments
+    ):
+        return "sub_block"
+    if failures.intersection({"too_familiar", "evidence_not_seed"}):
+        return "suppress"
+    if row_review_signal == "strong":
+        return "main_seed"
+    if row_review_signal in {"conditional", "mixed"}:
+        return "sub_block"
+    if positives.intersection({"fresh_angle", "promising_hook", "specific_case_needed"}):
+        return "sub_block"
+    if "background_evidence" in roles:
+        return "background_evidence"
+    return "suppress" if row_review_signal in {"weak", "reject"} else "background_evidence"
 
 
 def _operator_lesson(
@@ -797,6 +1063,8 @@ def summarize_review_feedback(
     }
     failure_mode_counts = Counter({mode: 0 for mode in FAILURE_MODES})
     positive_signal_counts = Counter({signal: 0 for signal in POSITIVE_SIGNALS})
+    review_adjustment_counts = Counter({adjustment: 0 for adjustment in REVIEW_ADJUSTMENTS})
+    editorial_role_counts = Counter({role: 0 for role in EDITORIAL_ROLES})
     next_research_action_counts = Counter(
         {action: 0 for action in NEXT_RESEARCH_ACTIONS}
     )
@@ -816,6 +1084,8 @@ def summarize_review_feedback(
                     failure_mode_counts[failure_mode] += 1
                 for positive_signal in note.get("positive_signals", []):
                     positive_signal_counts[positive_signal] += 1
+                for adjustment in note.get("review_adjustments", []):
+                    review_adjustment_counts[adjustment] += 1
                 for action in note.get("next_research_actions", []):
                     next_research_action_counts[action] += 1
                 for modifier in note["modifiers"]:
@@ -845,7 +1115,20 @@ def summarize_review_feedback(
             "next_research_actions",
             NEXT_RESEARCH_ACTIONS,
         )
+        row_review_adjustments = _row_signal_values(
+            reviewer_notes,
+            "review_adjustments",
+            REVIEW_ADJUSTMENTS,
+        )
         row_review_signal = _row_review_signal(reviewer_notes)
+        editorial_role = _row_editorial_role(
+            row_review_signal=row_review_signal,
+            failure_modes=row_failure_modes,
+            positive_signals=row_positive_signals,
+            review_adjustments=row_review_adjustments,
+            reviewer_notes=reviewer_notes,
+        )
+        editorial_role_counts[editorial_role] += 1
         row_payload = {
             "row": index,
             "date": _row_date(row, run_date),
@@ -858,6 +1141,8 @@ def summarize_review_feedback(
             "row_failure_modes": row_failure_modes,
             "row_positive_signals": row_positive_signals,
             "row_next_research_actions": row_next_research_actions,
+            "row_review_adjustments": row_review_adjustments,
+            "editorial_role": editorial_role,
             "operator_lesson": _operator_lesson(
                 title=str(row.get("제목", "")),
                 row_review_signal=row_review_signal,
@@ -896,6 +1181,8 @@ def summarize_review_feedback(
         "modifier_examples": modifier_examples,
         "failure_mode_counts": dict(failure_mode_counts),
         "positive_signal_counts": dict(positive_signal_counts),
+        "review_adjustment_counts": dict(review_adjustment_counts),
+        "editorial_role_counts": dict(editorial_role_counts),
         "next_research_action_counts": dict(next_research_action_counts),
         "rows": row_payloads,
         "disagreement_rows": disagreement_rows,
@@ -934,6 +1221,15 @@ def _markdown(summary: dict[str, Any]) -> str:
         lines.append(
             f"- {signal}: {summary.get('positive_signal_counts', {}).get(signal, 0)}"
         )
+    lines.extend(["", "## Review-Derived Board Adjustments", ""])
+    for adjustment in REVIEW_ADJUSTMENTS:
+        lines.append(
+            f"- {adjustment}: "
+            f"{summary.get('review_adjustment_counts', {}).get(adjustment, 0)}"
+        )
+    lines.extend(["", "## Editorial Role Counts", ""])
+    for role in EDITORIAL_ROLES:
+        lines.append(f"- {role}: {summary.get('editorial_role_counts', {}).get(role, 0)}")
     lines.extend(["", "## Tag Counts", ""])
     for tag in REVIEW_TAGS:
         lines.append(f"- {tag}: {summary['tag_counts'].get(tag, 0)}")
@@ -971,6 +1267,7 @@ def _markdown(summary: dict[str, Any]) -> str:
         if row.get("score"):
             lines.append(f"- 점수: {row['score']}")
         lines.append(f"- row_review_signal: `{row.get('row_review_signal', '')}`")
+        lines.append(f"- editorial_role: `{row.get('editorial_role', '')}`")
         lines.append(
             "- row_failure_modes: `"
             f"{','.join(row.get('row_failure_modes', [])) or 'none'}`"
@@ -983,6 +1280,10 @@ def _markdown(summary: dict[str, Any]) -> str:
             "- row_next_research_actions: `"
             f"{','.join(row.get('row_next_research_actions', [])) or 'none'}`"
         )
+        lines.append(
+            "- row_review_adjustments: `"
+            f"{','.join(row.get('row_review_adjustments', [])) or 'none'}`"
+        )
         lines.append(f"- operator_lesson: {row.get('operator_lesson', '')}")
         for reviewer in REVIEWER_COLUMNS:
             note = row["reviewers"][reviewer]
@@ -994,6 +1295,8 @@ def _markdown(summary: dict[str, Any]) -> str:
                 f"signal=`{note.get('review_signal', 'unlabeled')}`, "
                 f"failures=`{','.join(note.get('failure_modes', [])) or 'none'}`, "
                 f"positives=`{','.join(note.get('positive_signals', [])) or 'none'}`, "
+                f"role=`{note.get('editorial_role', '')}`, "
+                f"adjustments=`{','.join(note.get('review_adjustments', [])) or 'none'}`, "
                 f"modifiers=`{','.join(note['modifiers']) or 'none'}`/"
                 f"{note['inferred_confidence']}, "
                 f"tag=`{note['tag']}` — {note_text}"

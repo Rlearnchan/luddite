@@ -137,6 +137,36 @@ def test_infer_review_feedback_extracts_operator_failure_modes() -> None:
     ]
 
 
+def test_infer_review_feedback_extracts_today_editorial_roles() -> None:
+    hook = infer_review_feedback("기사 자체는 나쁘지 않음. 초반 후킹용으로 한 단 정도 가능")
+    assert hook["review_signal"] == "conditional"
+    assert "hook_only" in hook["review_adjustments"]
+    assert hook["editorial_role"] == "hook_only"
+
+    sports = infer_review_feedback(
+        "스포츠는 되도록 가져오지 말자. 축구 관심 없는 사람에게는 조회수 나쁜 편."
+    )
+    assert "weak_audience_bridge" in sports["failure_modes"]
+    assert "sports_primary_downrank" in sports["review_adjustments"]
+    assert sports["editorial_role"] == "suppress"
+
+    ai_casual = infer_review_feedback(
+        "AI 거대담론이나 저작권 논쟁으로 몰고가지 말라. 그냥 편하게 즐긴다 쪽이 좋음."
+    )
+    assert "ai_grand_discourse_downrank" in ai_casual["review_adjustments"]
+    assert "casual_ai_use_case_bonus" in ai_casual["review_adjustments"]
+    assert ai_casual["editorial_role"] == "sub_block"
+
+    sub_block = infer_review_feedback("한 페이지 예시로 넣을 수 있음. 나쁘지 않다.")
+    assert "sub_block" in sub_block["review_adjustments"]
+    assert sub_block["editorial_role"] == "sub_block"
+
+    old = infer_review_feedback("뒷북이고 이미 했던 내용이라 novelty 없다. 새 각도 필요")
+    assert "too_familiar" in old["failure_modes"]
+    assert "past_topic_overlap_downrank" in old["review_adjustments"]
+    assert "needs_new_angle" in old["review_adjustments"]
+
+
 def test_explicit_tag_wins_over_inferred_review_text() -> None:
     payload = infer_review_feedback("seed — 홍보성이라 약하지만 구조로 풀면 가능")
 
@@ -236,6 +266,33 @@ def test_summarize_review_feedback_adds_row_operator_lessons() -> None:
     assert summary["rows"][1]["row_review_signal"] == "weak"
     assert "wrong_frame" in summary["rows"][1]["row_failure_modes"]
     assert "초점" in summary["rows"][1]["operator_lesson"]
+
+
+def test_summarize_review_feedback_adds_today_editorial_role_counts() -> None:
+    rows = [
+        {
+            "일시": "2026-05-27 09:00",
+            "제목": "축구 이벤트 경제",
+            "리뷰-형찬": "스포츠는 되도록 가져오지 말자. 조회수 나쁜 편.",
+            "ID": "2026-05-27:story_bundle_sports",
+        },
+        {
+            "일시": "2026-05-27 09:00",
+            "제목": "AI 영상 여행",
+            "리뷰-동찬": "AI 거대담론으로 몰고가지 말고 그냥 편하게 즐긴다 사례로 한 페이지 예시.",
+            "ID": "2026-05-27:story_bundle_ai_video",
+        },
+    ]
+
+    summary = summarize_review_feedback(rows, run_date="2026-05-27")
+
+    assert summary["review_adjustment_counts"]["sports_primary_downrank"] == 1
+    assert summary["review_adjustment_counts"]["ai_grand_discourse_downrank"] == 1
+    assert summary["review_adjustment_counts"]["casual_ai_use_case_bonus"] == 1
+    assert summary["editorial_role_counts"]["suppress"] == 1
+    assert summary["editorial_role_counts"]["sub_block"] == 1
+    assert summary["rows"][0]["editorial_role"] == "suppress"
+    assert summary["rows"][1]["editorial_role"] == "sub_block"
 
 
 def test_render_review_feedback_summary_from_local_csv(tmp_path) -> None:
