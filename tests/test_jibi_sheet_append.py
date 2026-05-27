@@ -725,7 +725,7 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
     assert client.values[header_index + 1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == (
         "청년 노동시장 이탈"
     )
-    assert client.review_board_formats == [(99, 7, 10, 6, 4)]
+    assert client.review_board_formats == [(99, 7, 11, 6, 4)]
     assert report.styling_applied is True
     assert client.appended == []
     assert report.sheet_replaced is True

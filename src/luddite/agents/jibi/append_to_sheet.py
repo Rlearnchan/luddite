@@ -66,10 +66,14 @@ BUNDLE_REVIEW_SHEET_COLUMNS = [
     "메인 링크",
     "서브 링크",
     "설명",
+    "참고",
     "리뷰-성원",
     "리뷰-동찬",
     "리뷰-형찬",
     "ID",
+]
+LEGACY_BUNDLE_REVIEW_SHEET_COLUMNS = [
+    column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "참고"
 ]
 REVIEWER_COLUMNS = ["리뷰-성원", "리뷰-동찬", "리뷰-형찬"]
 REVIEW_BOARD_INTRO_TITLE = "안녕하세요. Jibi입니다."
@@ -201,6 +205,8 @@ def _schema_legacy_columns(sheet_schema: str) -> list[str] | None:
     schema = _normalize_sheet_schema(sheet_schema)
     if schema == CANDIDATE_SHEET_SCHEMA:
         return LEGACY_25_SHEET_COLUMNS
+    if schema == BUNDLE_REVIEW_SHEET_SCHEMA:
+        return LEGACY_BUNDLE_REVIEW_SHEET_COLUMNS
     return None
 
 
@@ -407,6 +413,13 @@ def _find_header_row_containing(
     return None
 
 
+def _find_bundle_review_header_row(values: list[list[str]]) -> int | None:
+    current = _find_exact_header_row(values, BUNDLE_REVIEW_SHEET_COLUMNS)
+    if current is not None:
+        return current
+    return _find_exact_header_row(values, LEGACY_BUNDLE_REVIEW_SHEET_COLUMNS)
+
+
 def _column_index(header: list[str], column: str) -> int | None:
     try:
         return header.index(column)
@@ -489,7 +502,7 @@ def _bundle_review_sheet_values(
 def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, str | int]]:
     if not existing_values:
         return []
-    header_index = _find_exact_header_row(existing_values, BUNDLE_REVIEW_SHEET_COLUMNS)
+    header_index = _find_bundle_review_header_row(existing_values)
     if header_index is None:
         return []
     header = existing_values[header_index]
@@ -523,7 +536,7 @@ def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, st
 def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, object]]:
     if not existing_values:
         return []
-    header_index = _find_exact_header_row(existing_values, BUNDLE_REVIEW_SHEET_COLUMNS)
+    header_index = _find_bundle_review_header_row(existing_values)
     if header_index is None:
         return []
     header = existing_values[header_index]

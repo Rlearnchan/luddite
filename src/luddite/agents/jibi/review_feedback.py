@@ -20,7 +20,7 @@ from luddite.agents.jibi.append_to_sheet import (
     BUNDLE_REVIEW_SHEET_COLUMNS,
     REVIEWER_COLUMNS,
     GoogleSheetAppendConfig,
-    _find_exact_header_row,
+    _find_bundle_review_header_row,
     load_append_config,
 )
 from luddite.integrations.google_sheets import GoogleSheetsApiClient
@@ -666,7 +666,7 @@ def infer_review_feedback(note: str) -> dict[str, Any]:
 def _rows_from_values(values: list[list[str]]) -> list[dict[str, str]]:
     if not values:
         return []
-    header_index = _find_exact_header_row(values, BUNDLE_REVIEW_SHEET_COLUMNS)
+    header_index = _find_bundle_review_header_row(values)
     if header_index is None:
         header_index = 0
     header = values[header_index]

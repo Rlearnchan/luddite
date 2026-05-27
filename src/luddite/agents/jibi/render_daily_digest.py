@@ -767,9 +767,6 @@ def write_bundle_review_sheet_preview(
             auto_title = str(row.get("제목") or "")
             auto_description = str(row.get("설명") or "")
             _apply_editorial_override(row, override)
-            annotation = _syuka_similarity_annotation(syuka_similarity)
-            if annotation and annotation not in str(row.get("설명") or ""):
-                row["설명"] = f"{row.get('설명', '')} {annotation}".strip()
             writer.writerow(row)
             metadata_rows.append(
                 _bundle_review_metadata_row(
@@ -1085,10 +1082,13 @@ def _apply_editorial_override(
         return
     title = str(override.get("title") or "").strip()
     description = str(override.get("description") or "").strip()
+    reference = str(override.get("reference") or override.get("참고") or "").strip()
     if title:
         row["제목"] = title
     if description:
         row["설명"] = description
+    if reference:
+        row["참고"] = reference
 
 
 def _write_editorial_override_template(
@@ -2595,6 +2595,7 @@ def _bundle_review_metadata_row(
         "story_bundle_id": str(record.get("story_bundle_id") or ""),
         "title": str(row.get("제목") or record.get("bundle_title") or ""),
         "description": str(row.get("설명") or ""),
+        "reference": str(row.get("참고") or ""),
         "auto_title": auto_title or str(row.get("제목") or ""),
         "auto_description": auto_description or str(row.get("설명") or ""),
         "editorial_override_applied": bool(editorial_override),
@@ -2971,50 +2972,41 @@ def _human_description(
     ).description
 
 
-def _syuka_similarity_annotation(syuka_similarity: dict[str, Any] | None) -> str:
+def _syuka_similarity_reference(syuka_similarity: dict[str, Any] | None) -> str:
     if not syuka_similarity:
         return ""
     recommendation = str(syuka_similarity.get("recommendation") or "")
     display_on_board = bool(syuka_similarity.get("display_on_board"))
-    match_confidence = str(syuka_similarity.get("match_confidence") or "")
-    past_video = (
-        _past_video_annotation_detail(syuka_similarity)
-        if display_on_board and match_confidence in {"high", "medium"}
-        else ""
-    )
-    if recommendation == "duplicate":
-        return (
-            "과거 영상과 강하게 겹칠 수 있습니다. "
-            f"{past_video}새 자료가 업데이트인지, 아니면 반복인지 확인하세요."
-        )
-    if recommendation == "adjacent":
-        if not display_on_board:
-            return ""
-        return (
-            "관련 과거 영상이 있어 배경자료로 쓸 수 있지만, "
-            f"{past_video}새 각도인지 확인이 필요합니다."
-        )
-    if recommendation == "needs_human_check":
-        if not display_on_board:
-            return "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다."
-        return (
-            "과거 영상과 약하게 겹칠 수 있어 사람이 한 번 더 확인해야 합니다. "
-            f"{past_video}"
-        ).strip()
-    return ""
-
-
-def _past_video_annotation_detail(syuka_similarity: dict[str, Any]) -> str:
     title = str(syuka_similarity.get("top_match_title") or "").strip()
-    if not title:
+    if not title or recommendation not in {
+        "duplicate",
+        "adjacent",
+        "needs_human_check",
+    }:
+        return ""
+    if recommendation != "duplicate" and not display_on_board:
         return ""
     date_text = _format_video_date(syuka_similarity.get("upload_date"))
     view_text = _format_metric_count(syuka_similarity.get("view_count"), "조회")
     like_text = _format_metric_count(syuka_similarity.get("like_count"), "좋아요")
     metrics = ", ".join(item for item in [date_text, view_text, like_text] if item)
+    prefix = {
+        "duplicate": "과거 유사 영상",
+        "adjacent": "관련 과거 영상",
+        "needs_human_check": "확인 필요 영상",
+    }.get(recommendation, "과거 영상")
+    note = {
+        "duplicate": "강한 중복 가능",
+        "adjacent": "배경/인접 주제",
+        "needs_human_check": "약한 유사도",
+    }.get(recommendation, "")
+    if metrics and note:
+        return f"{prefix}: {title} ({metrics}) · {note}"
     if metrics:
-        return f"가장 가까운 과거 영상은 '{title}'({metrics})입니다. "
-    return f"가장 가까운 과거 영상은 '{title}'입니다. "
+        return f"{prefix}: {title} ({metrics})"
+    if note:
+        return f"{prefix}: {title} · {note}"
+    return f"{prefix}: {title}"
 
 
 def _format_video_date(value: object) -> str:
@@ -3100,9 +3092,6 @@ def _bundle_review_row(
         related_titles=related_titles,
         history_status=history_status,
     )
-    annotation = _syuka_similarity_annotation(syuka_similarity)
-    if annotation and annotation not in description:
-        description = f"{description} {annotation}".strip()
     return {
         "일시": registered_at,
         "제목": review_title or candidate_title,
@@ -3110,6 +3099,7 @@ def _bundle_review_row(
         "메인 링크": candidate.get("seed_url", ""),
         "서브 링크": sub_links,
         "설명": description,
+        "참고": _syuka_similarity_reference(syuka_similarity),
         "리뷰-성원": "",
         "리뷰-동찬": "",
         "리뷰-형찬": "",

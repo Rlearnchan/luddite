@@ -221,10 +221,11 @@ class GoogleSheetsApiClient:
         header_row: int = 1,
         intro_row_count: int = 0,
     ) -> None:
-        column_widths = [90, 280, 120, 190, 360, 560, 180, 180, 180, 230]
+        column_widths = [90, 280, 95, 190, 220, 520, 360, 170, 170, 170, 230]
         header_row_index = max(header_row - 1, 0)
         data_start_row_index = min(header_row_index + 1, max(row_count, 1))
         description_column_index = 5 if column_count > 5 else 4
+        wrap_end_column_index = min(description_column_index + 2, column_count)
         requests: list[dict[str, Any]] = [
             {
                 "repeatCell": {
@@ -254,7 +255,7 @@ class GoogleSheetsApiClient:
                         "startRowIndex": data_start_row_index,
                         "endRowIndex": max(row_count, 1),
                         "startColumnIndex": description_column_index,
-                        "endColumnIndex": min(description_column_index + 1, column_count),
+                        "endColumnIndex": wrap_end_column_index,
                     },
                     "cell": {
                         "userEnteredFormat": {

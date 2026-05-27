@@ -3,6 +3,7 @@ import hashlib
 import json
 
 from luddite import paths
+from luddite.agents.jibi.append_to_sheet import BUNDLE_REVIEW_SHEET_COLUMNS
 from luddite.agents.jibi.render_daily_digest import (
     render_daily_digest,
     top_candidates,
@@ -108,18 +109,7 @@ def test_daily_digest_renderer_writes_markdown_and_csv(tmp_path, monkeypatch) ->
     with bundle_csv_path.open(encoding="utf-8-sig", newline="") as source:
         bundle_rows = list(csv.DictReader(source))
     assert len(bundle_rows) == 1
-    assert list(bundle_rows[0].keys()) == [
-        "일시",
-        "제목",
-        "점수",
-        "메인 링크",
-        "서브 링크",
-        "설명",
-        "리뷰-성원",
-        "리뷰-동찬",
-        "리뷰-형찬",
-        "ID",
-    ]
+    assert list(bundle_rows[0].keys()) == BUNDLE_REVIEW_SHEET_COLUMNS
     assert bundle_rows[0]["일시"] == "2026-05-17 09:30"
     assert bundle_rows[0]["제목"] == "전당포 주식회사"
     assert bundle_rows[0]["점수"] == "C · 57점"
@@ -718,18 +708,7 @@ def test_bundle_review_missing_editorial_override_is_harmless(tmp_path) -> None:
     metadata = json.loads(
         csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
     )
-    assert metadata["visible_columns"] == [
-        "일시",
-        "제목",
-        "점수",
-        "메인 링크",
-        "서브 링크",
-        "설명",
-        "리뷰-성원",
-        "리뷰-동찬",
-        "리뷰-형찬",
-        "ID",
-    ]
+    assert metadata["visible_columns"] == BUNDLE_REVIEW_SHEET_COLUMNS
     assert metadata["rows"][0]["editorial_override_applied"] is False
 
 
@@ -793,23 +772,14 @@ def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -
     metadata = json.loads(
         csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
     )
-    assert list(rows[0].keys()) == [
-        "일시",
-        "제목",
-        "점수",
-        "메인 링크",
-        "서브 링크",
-        "설명",
-        "리뷰-성원",
-        "리뷰-동찬",
-        "리뷰-형찬",
-        "ID",
-    ]
-    assert "과거 영상과 강하게 겹칠 수 있습니다" in rows[0]["설명"]
-    assert "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?" in rows[0]["설명"]
-    assert "2026-05-01" in rows[0]["설명"]
-    assert "조회 150만" in rows[0]["설명"]
-    assert "좋아요 3.2만" in rows[0]["설명"]
+    assert list(rows[0].keys()) == BUNDLE_REVIEW_SHEET_COLUMNS
+    assert "과거 영상과 강하게 겹칠 수 있습니다" not in rows[0]["설명"]
+    assert "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?" not in rows[0]["설명"]
+    assert "과거 유사 영상" in rows[0]["참고"]
+    assert "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?" in rows[0]["참고"]
+    assert "2026-05-01" in rows[0]["참고"]
+    assert "조회 150만" in rows[0]["참고"]
+    assert "좋아요 3.2만" in rows[0]["참고"]
     assert metadata["rows"][0]["syuka_similarity"]["recommendation"] == "duplicate"
     assert metadata["rows"][0]["syuka_similarity"]["top_match_score"] == 12
     assert metadata["rows"][0]["syuka_similarity"]["like_count"] == 32000
@@ -891,8 +861,9 @@ def test_bundle_review_editorial_override_keeps_syuka_annotation(tmp_path) -> No
         rows = list(csv.DictReader(source))
 
     assert rows[0]["설명"].startswith("사람이 보기 좋게 다시 쓴 설명입니다.")
-    assert "과거 영상과 강하게 겹칠 수 있습니다" in rows[0]["설명"]
-    assert "청년 노동시장 이탈을 다룬 과거 영상" in rows[0]["설명"]
+    assert "과거 영상과 강하게 겹칠 수 있습니다" not in rows[0]["설명"]
+    assert "청년 노동시장 이탈을 다룬 과거 영상" not in rows[0]["설명"]
+    assert "청년 노동시장 이탈을 다룬 과거 영상" in rows[0]["참고"]
 
 
 def test_bundle_review_keeps_low_confidence_syuka_metrics_out_of_description(
@@ -957,9 +928,10 @@ def test_bundle_review_keeps_low_confidence_syuka_metrics_out_of_description(
     metadata = json.loads(
         csv_path.with_name(f"{csv_path.stem}_metadata.json").read_text(encoding="utf-8")
     )
-    assert "과거 영상과 약하게 겹칠 수 있어" in rows[0]["설명"]
+    assert "과거 영상과 약하게 겹칠 수 있어" not in rows[0]["설명"]
     assert "AI가 바꾸는 주식시장" not in rows[0]["설명"]
     assert "조회 200만" not in rows[0]["설명"]
+    assert rows[0]["참고"] == ""
     similarity = metadata["rows"][0]["syuka_similarity"]
     assert similarity["match_confidence"] == "low"
     assert similarity["match_reason"] == "transcript_only"

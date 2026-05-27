@@ -50,6 +50,7 @@ def test_rows_from_values_finds_review_board_header_below_intro() -> None:
             "공공 현장 AI 후보",
             "",
             "",
+            "",
             "좋음",
             "2026-05-27:story_bundle_ai",
         ],
