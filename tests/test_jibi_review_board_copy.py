@@ -219,6 +219,130 @@ def test_review_board_copy_fallback_uses_story_role_research_action() -> None:
     assert "두 번째 출처와 숫자" in copy.description
 
 
+def test_review_board_copy_global_datacentre_uses_specific_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "Scotland green datacentres and AI emissions"},
+        {
+            "title": (
+                "Scotland’s ‘green datacentres’ policy ignores emissions impact "
+                "of AI, analysis shows"
+            ),
+            "summary": "AI datacentres increase electricity demand and emissions.",
+            "source": "The Guardian Technology",
+            "source_id": "guardian_technology",
+            "source_role_class": "section_news",
+            "seed_type": "policy_market_shock",
+            "story_role": "seed_with_supporting_links",
+        },
+    )
+
+    assert copy.description.startswith("'AI 데이터센터는")
+    assert "전력수요와 탄소회계" in copy.description
+    assert "최신 뉴스와 두 번째 출처" not in copy.description
+    assert "AI가 실제 조직 안으로" not in copy.description
+
+
+def test_review_board_copy_global_energy_story_does_not_false_ai_on_straight() -> None:
+    copy = _copy(
+        {"bundle_title": "energy bills"},
+        {
+            "title": (
+                "Ofgem should tell it straight: electricity prices are set to stay "
+                "high for years"
+            ),
+            "summary": "The regulator says household energy bills will stay high.",
+            "source": "The Guardian Business",
+            "source_id": "guardian_business",
+            "source_role_class": "section_news",
+            "seed_type": "life_change",
+        },
+    )
+
+    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert "가계 지출, 기업 비용, 전력망 투자" in copy.description
+    assert "AI가 실제 조직 안으로" not in copy.description
+
+
+def test_review_board_copy_global_work_placement_uses_labor_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "Manchester work placements"},
+        {
+            "title": "Manchester University to offer work placements to all undergraduates",
+            "summary": (
+                "A university promises meaningful real-world experience for all "
+                "students before the job market."
+            ),
+            "source": "The Guardian Business",
+            "source_id": "guardian_business",
+            "source_role_class": "section_news",
+            "seed_type": "workplace_transition",
+        },
+    )
+
+    assert copy.description.startswith("'청년의 첫 경력은")
+    assert "대학·기업·노동시장" in copy.description
+    assert "최신 뉴스와 두 번째 출처" not in copy.description
+
+
+def test_review_board_copy_global_public_wire_energy_uses_global_not_korea_bridge() -> None:
+    copy = _copy(
+        {"bundle_title": "Iran war and energy bills"},
+        {
+            "title": "Iran war impact to hit household energy bills for the first time",
+            "summary": (
+                "Energy prices and household electricity bills may rise as war "
+                "pressure reaches global markets."
+            ),
+            "source": "BBC News",
+            "source_id": "bbc_rss_candidate",
+            "source_role_class": "public_wire",
+            "seed_type": "policy_market_shock",
+        },
+    )
+
+    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert "에너지 가격 충격" in copy.description
+    assert "한국 시청자" not in copy.description
+
+
+def test_review_board_copy_global_ai_ethics_uses_specific_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "Pope Leo and AI risk"},
+        {
+            "title": "Pope Leo warns of AI’s risks to humanity in his first encyclical",
+            "summary": "The pope warns about artificial intelligence and human dignity.",
+            "source": "The Conversation",
+            "source_id": "the_conversation",
+            "source_role_class": "academic_explainer",
+            "seed_type": "academic_explainer",
+            "story_role": "seed_with_supporting_links",
+        },
+    )
+
+    assert copy.description.startswith("'AI가 콘텐츠와 신뢰의 규칙을")
+    assert "창작자 권리, 목소리 소유권, 교육 현장" in copy.description
+    assert "최신 뉴스와 두 번째 출처" not in copy.description
+
+
+def test_review_board_copy_weather_retail_uses_consumer_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "B&Q weather and sales"},
+        {
+            "title": "B&Q blames sales dip on wet Easter but predicts heatwave gain",
+            "summary": "The retailer says weather changed DIY and garden sales.",
+            "source": "The Guardian Business",
+            "source_id": "guardian_business",
+            "source_role_class": "section_news",
+            "seed_type": "life_change",
+            "story_role": "seed_with_supporting_links",
+        },
+    )
+
+    assert copy.description.startswith("'날씨가 달라지면")
+    assert "생활 소비를 바꾸는 장면" in copy.description
+    assert "최신 뉴스와 두 번째 출처" not in copy.description
+
+
 def test_review_board_copy_excludes_internal_labels() -> None:
     copy = _copy(
         {

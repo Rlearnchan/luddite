@@ -92,6 +92,16 @@ def _has_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
+def _has_ai_signal(text: str) -> bool:
+    return (
+        "인공지능" in text
+        or "챗gpt" in text
+        or "chatgpt" in text
+        or "openai" in text
+        or bool(re.search(r"\bai\b", text, flags=re.IGNORECASE))
+    )
+
+
 def _has_tokenization_signal(text: str) -> bool:
     return (
         "토큰화" in text
@@ -250,13 +260,131 @@ def _fallback_question(
         return "이 후보를 단독 주제로 만들려면 어떤 최신 뉴스와 두 번째 출처가 필요한가?"
     if source_role == "research_note":
         return "이 연구자료를 오늘의 생활경제 질문으로 바꾸려면 어디를 좁혀야 하나?"
-    if _has_any(text, ("ai", "인공지능")):
+    if _has_ai_signal(text):
         return "AI가 실제 조직 안으로 들어올 때 효율과 책임은 어떻게 나뉘나?"
     if _has_any(text, ("규제", "지원", "정책", "보조")):
         return "이 정책은 누구의 비용을 줄이고 누구에게 새 부담을 넘기나?"
     if _has_any(text, ("가격", "물가", "요금", "수수료", "금리")):
         return "이 가격 변화는 시청자의 지갑과 어떤 경로로 연결되나?"
     return "이 후보를 방송 소재로 만들려면 어떤 한 가지 질문으로 좁혀야 하나?"
+
+
+def _global_section_description(
+    *,
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    candidate_title: str,
+    related_titles: str,
+    history_status: str,
+) -> str | None:
+    del record, related_titles, history_status
+    text = _direct_copy_text({}, candidate, candidate_title)
+    source = _source_cue(candidate)
+    if _has_any(text, ("datacentre", "datacenter", "data centre", "데이터센터")) and (
+        _has_ai_signal(text) or _has_any(text, ("emissions", "electricity", "전력", "배출"))
+    ):
+        return _question_first_description(
+            question="AI 데이터센터는 친환경 인프라인가, 전력 먹는 공장인가?",
+            reason=(
+                f"{source}은 AI가 클라우드 화면 뒤에서 전기·토지·배출 문제로 바뀌는 지점을 보여줍니다. "
+                "선정 이유는 데이터센터를 디지털 산업이 아니라 전력수요와 탄소회계가 붙은 물리적 인프라로 볼 수 있기 때문입니다."
+            ),
+            next_step="전력 사용량, 배출 산정 방식, 지역 인허가, 빅테크 투자 계획을 붙여 'AI 붐의 숨은 전기요금'으로 설명 가능한지 확인하는 것",
+        )
+    if _has_any(
+        text,
+        (
+            "energy bills",
+            "electricity prices",
+            "energy shock",
+            "ofgem",
+            "전기요금",
+            "에너지 요금",
+            "전력요금",
+        ),
+    ):
+        return _question_first_description(
+            question="전기요금이 오래 비싸지면 가계와 산업은 무엇부터 바뀌나?",
+            reason=(
+                f"{source}은 에너지 가격 충격이 일시적 뉴스가 아니라 가계 지출, 기업 비용, 전력망 투자 문제로 이어질 수 있음을 보여줍니다. "
+                "선정 이유는 전기요금을 물가 기사로 끝내지 않고, 에너지 전환과 생활비 압박이 만나는 구조로 키울 수 있기 때문입니다."
+            ),
+            next_step="가계 전기요금 추이, 산업용 전력 가격, 규제기관 전망, 정부 보조 또는 요금 설계 논쟁을 붙이는 것",
+        )
+    if _has_any(
+        text,
+        (
+            "work placements",
+            "zero-hours",
+            "entry-level jobs",
+            "worklessness",
+            "search for a job",
+            "첫 직장",
+            "청년 일자리",
+        ),
+    ):
+        return _question_first_description(
+            question="청년의 첫 경력은 왜 점점 더 비싼 관문이 되고 있나?",
+            reason=(
+                f"{source}은 대학·기업·노동시장이 청년에게 요구하는 '경험'의 기준이 높아지는 장면입니다. "
+                "선정 이유는 해외 사례라도 청년이 첫 직장에 들어가기 전부터 인턴십, 현장경험, 네트워크를 요구받는 구조를 설명할 수 있기 때문입니다."
+            ),
+            next_step="대학 work placement 제도, 무급/저임금 인턴 논쟁, 청년 고용률, 기업의 신입 교육 비용 자료를 붙여 한국 청년 노동시장과 비교 가능한지 보는 것",
+        )
+    if _has_any(text, ("heatwave", "wet easter", "hot weather", "hottest may")) and _has_any(
+        text,
+        ("sales", "retail", "b&q", "kingfisher", "diy", "consumer", "소비", "유통"),
+    ):
+        return _question_first_description(
+            question="날씨가 달라지면 사람들의 소비와 기업 실적은 어디서 먼저 흔들리나?",
+            reason=(
+                f"{source}은 폭염이나 비 많은 연휴가 단순 날씨 뉴스가 아니라 유통·DIY·냉방·정원용품 같은 생활 소비를 바꾸는 장면입니다. "
+                "선정 이유는 기후 변화가 먼 미래 이야기가 아니라 계절 장사, 재고, 전력수요, 소비 패턴을 흔드는 생활경제 소재로 이어질 수 있기 때문입니다."
+            ),
+            next_step="날씨별 판매 품목 변화, 냉방/정원/주택수리 소비, 소매업 실적, 폭염 적응 비용 자료를 붙여 회사 실적 기사에서 생활경제 이야기로 옮기는 것",
+        )
+    if _has_any(text, ("delivery robots", "robot delivery", "배달 로봇")):
+        return _question_first_description(
+            question="배달 로봇이 거리로 나오면 편리함과 불편은 누가 나눠 갖나?",
+            reason=(
+                f"{source}은 기술 데모가 아니라 보도·상점·주민·플랫폼이 같은 공간을 나눠 쓰는 문제를 보여줍니다. "
+                "선정 이유는 자동화가 실제 거리로 내려왔을 때 비용절감, 보행권, 안전, 노동 대체가 한꺼번에 충돌하기 때문입니다."
+            ),
+            next_step="운영 도시, 사고/민원 사례, 배달비 구조, 로봇 규제와 보험 책임 자료를 붙이는 것",
+        )
+    if _has_ai_signal(text) and _has_any(
+        text,
+        (
+            "copyright",
+            "voice",
+            "ai slop",
+            "music",
+            "students",
+            "graduation",
+            "culture of power",
+            "risks to humanity",
+            "pope leo",
+            "encyclical",
+        ),
+    ):
+        return _question_first_description(
+            question="AI가 콘텐츠와 신뢰의 규칙을 어디까지 바꾸고 있나?",
+            reason=(
+                f"{source}은 AI를 산업 생산성보다 창작자 권리, 목소리 소유권, 교육 현장, 가짜 콘텐츠 신뢰 문제로 보게 해줍니다. "
+                "선정 이유는 기술 설명보다 사람들이 실제로 불편해하거나 반발하는 접점을 잡을 수 있기 때문입니다."
+            ),
+            next_step="저작권 분쟁, 플랫폼 정책, 학교/창작자 반발 사례, 숫자로 확인되는 이용 변화가 붙는지 보는 것",
+        )
+    if _has_any(text, ("pfas", "forever chemicals", "factory farming", "battery cows", "toxic")):
+        return _question_first_description(
+            question="싸게 생산한 비용은 환경과 지역사회에 어떻게 돌아오나?",
+            reason=(
+                f"{source}은 환경 이슈를 캠페인 구호가 아니라 규제, 생산비, 소비자 가격, 지역 피해의 문제로 볼 수 있게 합니다. "
+                "선정 이유는 해외 사례라도 오염물질, 대량생산, 처리 비용이라는 구조가 분명하면 방송형 설명 소재로 자랄 수 있기 때문입니다."
+            ),
+            next_step="규제 기준, 기업 비용, 피해 지역 사례, 소비자 가격과 연결되는 숫자를 붙이는 것",
+        )
+    return None
 
 
 def _template_description(
@@ -269,6 +397,15 @@ def _template_description(
 ) -> str | None:
     text = _direct_copy_text(record, candidate, candidate_title)
     source = _source_cue(candidate)
+    global_section = _global_section_description(
+        record=record,
+        candidate=candidate,
+        candidate_title=candidate_title,
+        related_titles=related_titles,
+        history_status=history_status,
+    )
+    if global_section:
+        return global_section
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return _question_first_description(
             question="청년 실업률이 낮아도 왜 일하지도 구직하지도 않는 청년은 늘어날까?",
