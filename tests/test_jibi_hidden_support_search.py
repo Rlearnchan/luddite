@@ -149,3 +149,35 @@ def test_hidden_support_filters_low_relevance_and_reports_status() -> None:
     assert row["rejected_low_relevance_count"] >= 1
     assert row["selected_link_details"][0]["usefulness_score"] >= 8
     assert "Jibi Hidden Support Search" in render_markdown(result)
+
+
+def test_hidden_support_does_not_treat_dairy_as_ai_signal() -> None:
+    payload = {
+        "run_date": "2026-05-27",
+        "rows": [
+            {
+                "ID": "2026-05-27:story_bundle_dairy",
+                "title": "배터리 소는 왜 생겼나",
+                "auto_title": "Battery cows and dairy farming pressure",
+                "source": "The Guardian Environment",
+                "source_role": "section_news",
+                "seed_type": "life_change",
+                "main_link": "https://www.theguardian.com/environment/battery-cows",
+            }
+        ],
+    }
+    provider = FakeHiddenSupportProvider()
+
+    run_hidden_support_search(
+        run_date="2026-05-27",
+        metadata_payload=payload,
+        provider=provider,
+        categories=["news"],
+        max_links_per_row=1,
+        results_per_query=2,
+        max_provider_calls=5,
+    )
+
+    queries = [call[0] for call in provider.calls]
+    assert queries
+    assert all("AI 도입 책임" not in query for query in queries)

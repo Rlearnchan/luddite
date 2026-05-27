@@ -387,7 +387,7 @@ def _system_query(
     text = " ".join([origin_title, seed_type, source_role, " ".join(terms)])
     if any(term in text for term in ("열사병", "불볕더위", "산업현장")):
         return "폭염 산업현장 열사병 산재 작업중지권"
-    if "AI" in text or "ai" in text or "인공지능" in text:
+    if _has_ai_signal(text):
         return "AI 도입 책임 노동시장 규제 사례"
     if "실질임금" in text or "임금" in text:
         return "실질임금 물가 생활수준 통계"
@@ -416,6 +416,12 @@ def _keyword_terms(text: str) -> list[str]:
             continue
         terms.append(cleaned)
     return list(dict.fromkeys(terms))[:8]
+
+
+def _has_ai_signal(text: str) -> bool:
+    if "인공지능" in text or "artificial intelligence" in text.lower():
+        return True
+    return bool(re.search(r"(?<![A-Za-z0-9])AI(?![A-Za-z0-9])", text))
 
 
 def _is_low_signal_token(token: str) -> bool:
