@@ -180,6 +180,22 @@ def test_sheet_columns_preserve_old_schema_prefix() -> None:
     assert SHEET_COLUMNS[25:] == SLIDEABILITY_COLUMNS
 
 
+def test_bundle_review_visible_columns_are_locked() -> None:
+    assert BUNDLE_REVIEW_SHEET_COLUMNS == [
+        "일시",
+        "제목",
+        "점수",
+        "메인 링크",
+        "서브 링크",
+        "설명",
+        "참고",
+        "리뷰-성원",
+        "리뷰-동찬",
+        "리뷰-형찬",
+        "ID",
+    ]
+
+
 def test_append_creates_sheet_header_and_appends_rows(tmp_path) -> None:
     preview = tmp_path / "2026-05-18_sheet_append_preview.csv"
     report_path = tmp_path / "report.md"

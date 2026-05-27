@@ -182,9 +182,9 @@ Guardrails:
   broad Guardian feed by default.
 
 Editorial override files are local operating artifacts. They let Codex/user
-rewrite only the visible `제목` and `설명` without changing the sheet schema or
-losing the original auto-generated copy. The metadata sidecar records
-`auto_title`, `auto_description`, `editorial_override_applied`, and
+rewrite the visible `제목`, `설명`, and optional `참고` without changing the fixed
+sheet format or losing the original auto-generated copy. The metadata sidecar
+records `auto_title`, `auto_description`, `editorial_override_applied`, and
 `editorial_override_reason`.
 
 For the current research-team experiment, treat this Codex editorial pass as a
@@ -244,10 +244,11 @@ Use the recommendations as advisory:
 - `safe_new_angle`: no obvious local snapshot match; not proof of novelty.
 
 When a snapshot report exists for the same date, the Jibi bundle review metadata
-sidecar records a `syuka_similarity` object. The visible `Jibi` sheet schema does
-not change. The `설명` cell only gets a short caution sentence for duplicate,
-adjacent, or weak overlap cases; no candidate is removed or promoted by the
-snapshot probe.
+sidecar records a `syuka_similarity` object. The visible `Jibi` sheet keeps the
+same fixed format. The `참고` cell gets the similar-video title/date/views/likes
+for duplicate or useful adjacent overlap cases; `설명` stays focused on the
+candidate's story value. No candidate is removed or promoted by the snapshot
+probe.
 
 For the normal operating experiment, prefer the two-pass wrapper:
 
@@ -473,9 +474,10 @@ JIBI_ALLOW_REVIEW_OVERWRITE=1 make jibi-review-board-replace
 ```
 
 Reviewers should read each row as one story bundle. Supporting/evidence items
-are not shown as separate rows; they appear as `서브 링크` and in `설명`.
-The `설명` cell includes source/title cues so the reviewer can see what raw
-material the humanized title came from.
+are not shown as separate rows; they appear as `서브 링크`. The `설명` cell
+explains why Jibi selected the candidate, how it could become a story, and what
+is still missing. The `참고` cell is reserved for auxiliary context such as
+read-only syuka-ops past-video matches.
 
 Ask reviewers to start each review with one lightweight tag:
 `seed`, `evidence`, `merge`, `needs`, `reject`, or `unclear`.
@@ -495,7 +497,8 @@ Current review columns in the shared sheet:
 - `점수`: Jibi ranking hint, e.g. `72점 · B · 자료 보강 필요`; not a command.
 - `메인 링크`: primary source link.
 - `서브 링크`: supporting/evidence source links, separated by ` | `.
-- `설명`: why Jibi selected this bundle, how it could become a story, what is missing, and source/title cues.
+- `설명`: reviewer-facing prose explaining selection reason, story growth path, and missing evidence.
+- `참고`: optional auxiliary context, especially syuka-ops similar video title/date/views/likes.
 - `리뷰-성원`, `리뷰-동찬`, `리뷰-형찬`: one-line reviewer notes.
 - `ID`: stable review item id for later feedback analysis.
 
