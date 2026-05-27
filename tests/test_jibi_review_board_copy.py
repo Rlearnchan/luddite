@@ -27,7 +27,7 @@ def test_review_board_copy_youth_labor_matches_editorial_baseline() -> None:
     )
 
     assert copy.title == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
-    assert copy.description.startswith("'청년 실업률이 낮아도")
+    assert copy.description.startswith("이 후보는 '청년 실업률이 낮아도")
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in copy.description
     assert "경제활동참가율" in copy.description
 
@@ -129,7 +129,7 @@ def test_review_board_copy_does_not_treat_underwater_as_rwa() -> None:
         },
     )
 
-    assert copy.title == "The network watching the world’s oceans is under pressure"
+    assert copy.title == "해외 후보, 한 가지 질문으로 더 좁혀볼 소재"
     assert "자산 토큰화" not in copy.title
     assert "부동산·채권" not in copy.description
 
@@ -195,7 +195,7 @@ def test_review_board_copy_makes_tokenization_question_first() -> None:
     )
 
     assert copy.title == "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
-    assert copy.description.startswith("'코인 가격이 아니라")
+    assert copy.description.startswith("이 후보는 '코인 가격이 아니라")
     assert "누가 책임질까" in copy.description
     assert "최신 뉴스 hook" in copy.description
     assert "BOK는 핵심 근거" in copy.description
@@ -214,7 +214,7 @@ def test_review_board_copy_fallback_uses_story_role_research_action() -> None:
         },
     )
 
-    assert copy.description.startswith("'이 후보를 단독 주제로")
+    assert copy.description.startswith("이 후보는 '이 후보를 단독 주제로")
     assert "최신 뉴스와 두 번째 출처" in copy.description
     assert "두 번째 출처와 숫자" in copy.description
 
@@ -236,7 +236,8 @@ def test_review_board_copy_global_datacentre_uses_specific_frame() -> None:
         },
     )
 
-    assert copy.description.startswith("'AI 데이터센터는")
+    assert copy.title == "AI 데이터센터는 전력 먹는 공장인가"
+    assert copy.description.startswith("이 후보는 'AI 데이터센터는")
     assert "전력수요와 탄소회계" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
     assert "AI가 실제 조직 안으로" not in copy.description
@@ -258,7 +259,8 @@ def test_review_board_copy_global_energy_story_does_not_false_ai_on_straight() -
         },
     )
 
-    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
+    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
     assert "가계 지출, 기업 비용, 전력망 투자" in copy.description
     assert "AI가 실제 조직 안으로" not in copy.description
 
@@ -279,7 +281,8 @@ def test_review_board_copy_global_work_placement_uses_labor_frame() -> None:
         },
     )
 
-    assert copy.description.startswith("'청년의 첫 경력은")
+    assert copy.title == "첫 경력은 왜 점점 비싼 관문이 됐나"
+    assert copy.description.startswith("이 후보는 '청년의 첫 경력은")
     assert "대학·기업·노동시장" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
 
@@ -300,7 +303,8 @@ def test_review_board_copy_global_public_wire_energy_uses_global_not_korea_bridg
         },
     )
 
-    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
+    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
     assert "에너지 가격 충격" in copy.description
     assert "한국 시청자" not in copy.description
 
@@ -319,7 +323,8 @@ def test_review_board_copy_global_ai_ethics_uses_specific_frame() -> None:
         },
     )
 
-    assert copy.description.startswith("'AI가 콘텐츠와 신뢰의 규칙을")
+    assert copy.title == "교황은 왜 AI 위험을 먼저 꺼냈나"
+    assert copy.description.startswith("이 후보는 'AI가 콘텐츠와 신뢰의 규칙을")
     assert "창작자 권리, 목소리 소유권, 교육 현장" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
 
@@ -338,7 +343,8 @@ def test_review_board_copy_weather_retail_uses_consumer_frame() -> None:
         },
     )
 
-    assert copy.description.startswith("'날씨가 달라지면")
+    assert copy.title == "날씨가 바꾸는 소비와 기업 실적"
+    assert copy.description.startswith("이 후보는 '날씨가 달라지면")
     assert "생활 소비를 바꾸는 장면" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
 
@@ -451,9 +457,9 @@ def test_review_board_copy_mou_bundle_does_not_override_unrelated_candidate_titl
         },
     )
 
-    assert copy.title == "Iran war impact to hit household energy bills for the first time"
+    assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
     assert "근거 자료" not in copy.title
-    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
 
 
 def test_review_board_copy_generic_machine_title_does_not_override_candidate_title() -> None:
@@ -472,8 +478,8 @@ def test_review_board_copy_generic_machine_title_does_not_override_candidate_tit
         },
     )
 
-    assert copy.title == "Iran war impact to hit household energy bills for the first time"
-    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
+    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
 
 
 def test_review_board_copy_does_not_treat_amount_as_mou() -> None:
@@ -492,9 +498,9 @@ def test_review_board_copy_does_not_treat_amount_as_mou() -> None:
         },
     )
 
-    assert copy.title == "Iran war impact to hit household energy bills for the first time"
+    assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
     assert "근거 자료" not in copy.title
-    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
 
 
 def test_review_board_copy_excludes_internal_labels() -> None:

@@ -39,6 +39,29 @@ def clean_review_title(value: object) -> str:
     return title.strip(" -:") or compact_text(value)
 
 
+def _latin_heavy(value: object) -> bool:
+    text = compact_text(value)
+    if not text:
+        return False
+    latin = len(re.findall(r"[A-Za-z]", text))
+    hangul = len(re.findall(r"[가-힣]", text))
+    return latin >= 8 and latin > hangul * 2
+
+
+def _friendly_source_name(value: object) -> str:
+    source = compact_text(value)
+    lowered = source.lower()
+    if "guardian" in lowered:
+        return "가디언"
+    if "conversation" in lowered:
+        return "더컨버세이션"
+    if "bbc" in lowered:
+        return "BBC 뉴스"
+    if "npr" in lowered:
+        return "NPR"
+    return source
+
+
 def _copy_text(record: dict[str, Any], candidate: dict[str, Any], candidate_title: str) -> str:
     return " ".join(
         [
@@ -75,8 +98,12 @@ def _direct_copy_text(
 
 
 def _source_cue(candidate: dict[str, Any]) -> str:
-    source = compact_text(candidate.get("source"))
+    source = _friendly_source_name(candidate.get("source"))
     title = clean_review_title(candidate.get("title"))
+    if _latin_heavy(title):
+        if source:
+            return f"{source} 기사"
+        return "원문"
     if source and title:
         if title[0] in {"'", '"', "“", "‘"}:
             return f"{source}의 {title}"
@@ -86,6 +113,23 @@ def _source_cue(candidate: dict[str, Any]) -> str:
     if title:
         return f"원문 '{title}'"
     return "원문"
+
+
+def _has_final_consonant(text: str) -> bool:
+    if not text:
+        return False
+    char = text[-1]
+    code = ord(char)
+    if 0xAC00 <= code <= 0xD7A3:
+        return (code - 0xAC00) % 28 != 0
+    return False
+
+
+def _source_subject_cue(candidate: dict[str, Any]) -> str:
+    cue = _source_cue(candidate)
+    particle_base = cue.rstrip("'\"“”‘’")
+    particle = "은" if _has_final_consonant(particle_base) else "는"
+    return f"{cue}{particle}"
 
 
 def _has_any(text: str, terms: tuple[str, ...]) -> bool:
@@ -231,6 +275,73 @@ def _is_generic_machine_title(title: str) -> bool:
     }
 
 
+def _global_korean_title(text: str) -> str:
+    if _has_any(text, ("pope leo", "encyclical", "risks to humanity")):
+        return "교황은 왜 AI 위험을 먼저 꺼냈나"
+    if _has_any(text, ("ai slop", "fooled by ai slop")):
+        return "AI 가짜 콘텐츠를 어떻게 걸러낼까"
+    if _has_any(text, ("copyright", "voice", "taylor swift")) and _has_ai_signal(text):
+        return "목소리도 AI 시대의 소유권이 될까"
+    if _has_any(text, ("datacentre", "datacenter", "data centre", "데이터센터")) and (
+        _has_ai_signal(text) or _has_any(text, ("emissions", "electricity", "전력", "배출"))
+    ):
+        return "AI 데이터센터는 전력 먹는 공장인가"
+    if _has_any(
+        text,
+        (
+            "iran war impact",
+            "energy bills",
+            "electricity prices",
+            "energy shock",
+            "ofgem",
+            "전기요금",
+            "에너지 요금",
+            "전력요금",
+        ),
+    ):
+        return "중동 전쟁이 전기요금으로 번지는 길"
+    if _has_any(
+        text,
+        (
+            "work placements",
+            "zero-hours",
+            "entry-level jobs",
+            "worklessness",
+            "search for a job",
+            "첫 직장",
+            "청년 일자리",
+        ),
+    ):
+        return "첫 경력은 왜 점점 비싼 관문이 됐나"
+    if _has_any(text, ("heatwave", "wet easter", "hot weather", "hottest may")) and _has_any(
+        text,
+        ("sales", "retail", "b&q", "kingfisher", "diy", "consumer", "소비", "유통"),
+    ):
+        return "날씨가 바꾸는 소비와 기업 실적"
+    if _has_any(text, ("delivery robots", "robot delivery", "배달 로봇")):
+        return "거리로 나온 배달 로봇, 누가 편하고 누가 불편할까"
+    if _has_ai_signal(text):
+        return "해외 AI 이슈, 신뢰와 책임의 변화"
+    if _has_any(text, ("inflation", "wage", "pay", "living standards", "실질임금")):
+        return "월급은 올랐는데 왜 더 가난해졌을까"
+    if _has_any(text, ("war", "ukraine", "iran", "tariff", "trade")):
+        return "해외 충격은 생활비로 어떻게 번지나"
+    return ""
+
+
+def _fallback_korean_title(raw_title: str, text: str) -> str:
+    if not _latin_heavy(raw_title):
+        return clean_review_title(raw_title)
+    global_title = _global_korean_title(text)
+    if global_title:
+        return global_title
+    if _has_any(text, ("business", "market", "sales", "price", "cost")):
+        return "해외 시장 변화, 생활경제로 볼 만한 후보"
+    if _has_any(text, ("policy", "regulation", "government")):
+        return "해외 정책 변화, 구조를 더 볼 후보"
+    return "해외 후보, 한 가지 질문으로 더 좁혀볼 소재"
+
+
 def review_board_title(
     record: dict[str, Any],
     candidate: dict[str, Any],
@@ -293,7 +404,11 @@ def review_board_title(
         return "시장 반응 메모: 단독 seed인지 근거인지"
     if _has_mou_bulletin_signal(candidate_text):
         return "근거 자료: 더 큰 이야기 안에서 볼 후보"
-    return clean_review_title(raw_title or candidate_title)
+    if _latin_heavy(raw_title or candidate_title):
+        global_title = _global_korean_title(candidate_text)
+        if global_title:
+            return global_title
+    return _fallback_korean_title(raw_title or candidate_title, candidate_text)
 
 
 def _evidence_text(candidate: dict[str, Any]) -> str:
@@ -334,10 +449,12 @@ def _question_first_description(
     elif next_text and next_text[-1] in ".?!。！？":
         next_sentence = next_text
     else:
-        next_sentence = f"더 볼 지점은 {next_text}입니다."
+        next_focus = re.sub(r"\s+것$", " 부분", next_text)
+        next_sentence = f"보강할 때는 {next_focus}부터 확인하면 좋겠습니다."
+    reason_sentence = _sentence(reason).replace("선정 이유는 ", "")
     parts = [
-        f"'{compact_text(question)}' 이 질문으로 열면 시청자가 바로 따라올 수 있습니다.",
-        _sentence(reason),
+        f"이 후보는 '{compact_text(question)}'라는 질문으로 볼 만합니다.",
+        reason_sentence,
         next_sentence,
     ]
     if verdict:
@@ -406,14 +523,14 @@ def _global_section_description(
 ) -> str | None:
     del record, related_titles, history_status
     text = _direct_copy_text({}, candidate, candidate_title)
-    source = _source_cue(candidate)
+    source = _source_subject_cue(candidate)
     if _has_any(text, ("datacentre", "datacenter", "data centre", "데이터센터")) and (
         _has_ai_signal(text) or _has_any(text, ("emissions", "electricity", "전력", "배출"))
     ):
         return _question_first_description(
             question="AI 데이터센터는 친환경 인프라인가, 전력 먹는 공장인가?",
             reason=(
-                f"{source}은 AI가 클라우드 화면 뒤에서 전기·토지·배출 문제로 바뀌는 지점을 보여줍니다. "
+                f"{source} AI가 클라우드 화면 뒤에서 전기·토지·배출 문제로 바뀌는 지점을 보여줍니다. "
                 "선정 이유는 데이터센터를 디지털 산업이 아니라 전력수요와 탄소회계가 붙은 물리적 인프라로 볼 수 있기 때문입니다."
             ),
             next_step="전력 사용량, 배출 산정 방식, 지역 인허가, 빅테크 투자 계획을 붙여 'AI 붐의 숨은 전기요금'으로 설명 가능한지 확인하는 것",
@@ -433,7 +550,7 @@ def _global_section_description(
         return _question_first_description(
             question="전기요금이 오래 비싸지면 가계와 산업은 무엇부터 바뀌나?",
             reason=(
-                f"{source}은 에너지 가격 충격이 일시적 뉴스가 아니라 가계 지출, 기업 비용, 전력망 투자 문제로 이어질 수 있음을 보여줍니다. "
+                f"{source} 에너지 가격 충격이 일시적 뉴스가 아니라 가계 지출, 기업 비용, 전력망 투자 문제로 이어질 수 있음을 보여줍니다. "
                 "선정 이유는 전기요금을 물가 기사로 끝내지 않고, 에너지 전환과 생활비 압박이 만나는 구조로 키울 수 있기 때문입니다."
             ),
             next_step="가계 전기요금 추이, 산업용 전력 가격, 규제기관 전망, 정부 보조 또는 요금 설계 논쟁을 붙이는 것",
@@ -453,7 +570,7 @@ def _global_section_description(
         return _question_first_description(
             question="청년의 첫 경력은 왜 점점 더 비싼 관문이 되고 있나?",
             reason=(
-                f"{source}은 대학·기업·노동시장이 청년에게 요구하는 '경험'의 기준이 높아지는 장면입니다. "
+                f"{source} 대학·기업·노동시장이 청년에게 요구하는 '경험'의 기준이 높아지는 장면입니다. "
                 "선정 이유는 해외 사례라도 청년이 첫 직장에 들어가기 전부터 인턴십, 현장경험, 네트워크를 요구받는 구조를 설명할 수 있기 때문입니다."
             ),
             next_step="대학 work placement 제도, 무급/저임금 인턴 논쟁, 청년 고용률, 기업의 신입 교육 비용 자료를 붙여 한국 청년 노동시장과 비교 가능한지 보는 것",
@@ -465,7 +582,7 @@ def _global_section_description(
         return _question_first_description(
             question="날씨가 달라지면 사람들의 소비와 기업 실적은 어디서 먼저 흔들리나?",
             reason=(
-                f"{source}은 폭염이나 비 많은 연휴가 단순 날씨 뉴스가 아니라 유통·DIY·냉방·정원용품 같은 생활 소비를 바꾸는 장면입니다. "
+                f"{source} 폭염이나 비 많은 연휴가 단순 날씨 뉴스가 아니라 유통·DIY·냉방·정원용품 같은 생활 소비를 바꾸는 장면입니다. "
                 "선정 이유는 기후 변화가 먼 미래 이야기가 아니라 계절 장사, 재고, 전력수요, 소비 패턴을 흔드는 생활경제 소재로 이어질 수 있기 때문입니다."
             ),
             next_step="날씨별 판매 품목 변화, 냉방/정원/주택수리 소비, 소매업 실적, 폭염 적응 비용 자료를 붙여 회사 실적 기사에서 생활경제 이야기로 옮기는 것",
@@ -474,7 +591,7 @@ def _global_section_description(
         return _question_first_description(
             question="배달 로봇이 거리로 나오면 편리함과 불편은 누가 나눠 갖나?",
             reason=(
-                f"{source}은 기술 데모가 아니라 보도·상점·주민·플랫폼이 같은 공간을 나눠 쓰는 문제를 보여줍니다. "
+                f"{source} 기술 데모가 아니라 보도·상점·주민·플랫폼이 같은 공간을 나눠 쓰는 문제를 보여줍니다. "
                 "선정 이유는 자동화가 실제 거리로 내려왔을 때 비용절감, 보행권, 안전, 노동 대체가 한꺼번에 충돌하기 때문입니다."
             ),
             next_step="운영 도시, 사고/민원 사례, 배달비 구조, 로봇 규제와 보험 책임 자료를 붙이는 것",
@@ -497,7 +614,7 @@ def _global_section_description(
         return _question_first_description(
             question="AI가 콘텐츠와 신뢰의 규칙을 어디까지 바꾸고 있나?",
             reason=(
-                f"{source}은 AI를 산업 생산성보다 창작자 권리, 목소리 소유권, 교육 현장, 가짜 콘텐츠 신뢰 문제로 보게 해줍니다. "
+                f"{source} AI를 산업 생산성보다 창작자 권리, 목소리 소유권, 교육 현장, 가짜 콘텐츠 신뢰 문제로 보게 해줍니다. "
                 "선정 이유는 기술 설명보다 사람들이 실제로 불편해하거나 반발하는 접점을 잡을 수 있기 때문입니다."
             ),
             next_step="저작권 분쟁, 플랫폼 정책, 학교/창작자 반발 사례, 숫자로 확인되는 이용 변화가 붙는지 보는 것",
@@ -506,7 +623,7 @@ def _global_section_description(
         return _question_first_description(
             question="싸게 생산한 비용은 환경과 지역사회에 어떻게 돌아오나?",
             reason=(
-                f"{source}은 환경 이슈를 캠페인 구호가 아니라 규제, 생산비, 소비자 가격, 지역 피해의 문제로 볼 수 있게 합니다. "
+                f"{source} 환경 이슈를 캠페인 구호가 아니라 규제, 생산비, 소비자 가격, 지역 피해의 문제로 볼 수 있게 합니다. "
                 "선정 이유는 해외 사례라도 오염물질, 대량생산, 처리 비용이라는 구조가 분명하면 방송형 설명 소재로 자랄 수 있기 때문입니다."
             ),
             next_step="규제 기준, 기업 비용, 피해 지역 사례, 소비자 가격과 연결되는 숫자를 붙이는 것",
@@ -524,12 +641,12 @@ def _market_corporate_description(
 ) -> str | None:
     del record, related_titles, history_status
     text = _direct_copy_text({}, candidate, candidate_title)
-    source = _source_cue(candidate)
+    source = _source_subject_cue(candidate)
     if _has_factory_capex_signal(text):
         return _question_first_description(
             question="전기차 공장 붐 이후 누가 비용을 떠안나?",
             reason=(
-                f"{source}은 회사 하나의 부동산 처분이나 공장 뉴스로 끝내기보다, 전기차·배터리 투자 붐 이후 공장과 현금흐름을 어떻게 재조정하는지 보는 단서입니다. "
+                f"{source} 회사 하나의 부동산 처분이나 공장 뉴스로 끝내기보다, 전기차·배터리 투자 붐 이후 공장과 현금흐름을 어떻게 재조정하는지 보는 단서입니다. "
                 "핵심은 주가가 아니라 보조금, 합작공장, 공급과잉, 설비투자 부담, 현금 회수의 구조입니다."
             ),
             next_step="다른 배터리 업체의 공장 조정, 미국 보조금 조건, 전기차 수요 둔화, 가동률 자료를 붙여 산업 재편 이야기로 커지는지 확인하는 것",
@@ -539,7 +656,7 @@ def _market_corporate_description(
         return _question_first_description(
             question="기업이 가진 지분을 팔아 현금을 만들면, 그 돈은 어디로 옮겨가나?",
             reason=(
-                f"{source}은 단순 지분 매각 뉴스라기보다, 큰 기업이 전환기에 현금을 확보하고 다음 투자처를 고르는 장면으로 볼 수 있습니다. "
+                f"{source} 단순 지분 매각 뉴스라기보다, 큰 기업이 전환기에 현금을 확보하고 다음 투자처를 고르는 장면으로 볼 수 있습니다. "
                 "다만 한 회사의 다음 행보만 따라가면 투자 기사처럼 보이므로, 자산 매각과 현금 재배치라는 구조로 좁히는 편이 안전합니다."
             ),
             next_step="다른 플랫폼 기업의 자산 매각, AI·콘텐츠·커머스 투자 재원, 부채와 규제 리스크 자료를 붙여 '기업들은 다음 성장판을 어떻게 사나'로 확장 가능한지 보는 것",
@@ -549,7 +666,7 @@ def _market_corporate_description(
         return _question_first_description(
             question="회사가 주주에게 다시 돈을 구하면 누가 비용을 부담하나?",
             reason=(
-                f"{source}은 유상증자 자체보다, 금리가 높고 투자비가 큰 시기에 기업이 돈을 조달하는 방식과 기존 주주의 희석 부담을 보여주는 사례입니다. "
+                f"{source} 유상증자 자체보다, 금리가 높고 투자비가 큰 시기에 기업이 돈을 조달하는 방식과 기존 주주의 희석 부담을 보여주는 사례입니다. "
                 "투자 판단으로 읽히지 않게 하려면 특정 종목보다 산업 전체의 자금조달 압박을 봐야 합니다."
             ),
             next_step="동종 업계 유상증자 사례, 부채비율, 투자계획, 주주배정 구조와 희석 효과를 붙여 기업 자금조달 설명 자료로 쓸 수 있는지 확인하는 것",
@@ -559,7 +676,7 @@ def _market_corporate_description(
         return _question_first_description(
             question="시장은 어떤 산업 변화를 이미 가격에 반영하고 있나?",
             reason=(
-                f"{source}은 목표가·특징주·수혜주 같은 시장 반응을 보여주지만, 그 자체로는 방송 seed라기보다 기대가 어디에 몰리는지 보여주는 메모에 가깝습니다. "
+                f"{source} 목표가·특징주·수혜주 같은 시장 반응을 보여주지만, 그 자체로는 방송 seed라기보다 기대가 어디에 몰리는지 보여주는 메모에 가깝습니다. "
                 "종목 전망처럼 보이면 위험하고, 반도체·배터리·AI 인프라 같은 산업 병목의 보조 근거로 붙일 때 가치가 있습니다."
             ),
             next_step="기업 하나의 목표가가 아니라 공급 부족, CAPEX, 수요처, 경쟁사 사례, 공식 통계가 같은 방향을 가리키는지 확인하는 것",
@@ -569,7 +686,7 @@ def _market_corporate_description(
         return _question_first_description(
             question="이 협약이나 행사는 어떤 큰 변화의 증거로 붙일 때 의미가 있나?",
             reason=(
-                f"{source}은 단독으로는 행사·협약·모집 공지에 가깝습니다. "
+                f"{source} 단독으로는 행사·협약·모집 공지에 가깝습니다. "
                 "그래도 금융취약층 지원, AI 인력 양성, 산업 전환처럼 더 큰 흐름을 설명할 때 공식 근거로 붙이면 쓸모가 생깁니다."
             ),
             next_step="협약 이후 실제 예산, 참여 기관, 대상 규모, 이전 정책과의 차이, 현장 사례를 확인해 큰 이야기의 근거인지 판단하는 것",
@@ -588,6 +705,7 @@ def _template_description(
 ) -> str | None:
     text = _direct_copy_text(record, candidate, candidate_title)
     source = _source_cue(candidate)
+    source_subject = _source_subject_cue(candidate)
     global_section = _global_section_description(
         record=record,
         candidate=candidate,
@@ -643,7 +761,7 @@ def _template_description(
             question="무료배달 비용은 소비자·점주·플랫폼 중 누가 내고 있나?",
             reason=(
                 "무료배달은 소비자에게는 혜택처럼 보이지만, 실제 비용이 플랫폼·점주·배달노동자 사이에서 어떻게 나뉘는지 보면 생활경제 소재가 됩니다. "
-                f"{source}은 업주 부담 논쟁을 보여주는 출발점이고, 이 주제는 앱 경제의 성장 비용을 누가 내는지 묻는 이야기로 키울 수 있습니다."
+                f"{source_subject} 업주 부담 논쟁을 보여주는 출발점이고, 이 주제는 앱 경제의 성장 비용을 누가 내는지 묻는 이야기로 키울 수 있습니다."
             ),
             next_step="수수료율, 배달비 보조 구조, 자영업자 매출/마진 자료를 붙여 단일 업체 공방이 아니라 플랫폼 비용 배분 구조로 설명하는 것",
         )
@@ -745,11 +863,12 @@ def _fallback_description(
     history_status: str,
 ) -> str:
     source = _source_cue(candidate)
+    source_subject = _source_subject_cue(candidate)
     bundle_type = str(record.get("bundle_type") or "")
     question = _fallback_question(record, candidate, candidate_title)
     if bundle_type == "evidence_cluster":
         opening = (
-            f"{source}은 단독 주제보다는 큰 이야기에 붙일 근거 자료로 보는 편이 안전합니다. "
+            f"{source_subject} 단독 주제보다는 큰 이야기에 붙일 근거 자료로 보는 편이 안전합니다. "
             "회의·현황·지원 같은 공식자료는 숫자와 정책 근거를 확인해주는 역할을 할 때 가치가 커집니다."
         )
     else:
