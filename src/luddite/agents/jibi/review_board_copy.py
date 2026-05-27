@@ -123,13 +123,130 @@ def _has_energy_support_signal(text: str) -> bool:
     return "고유가" in text or "유가" in text or ("피해지원금" in text and "에너지" in text)
 
 
+def _has_factory_capex_signal(text: str) -> bool:
+    return _has_any(
+        text,
+        (
+            "공장",
+            "배터리공장",
+            "합작공장",
+            "plant",
+            "factory",
+            "capex",
+            "설비투자",
+            "투자 부담",
+            "공급과잉",
+        ),
+    ) and _has_any(
+        text,
+        (
+            "처분",
+            "매각",
+            "매입",
+            "투자",
+            "합작",
+            "배터리",
+            "전기차",
+            "ev",
+            "보조금",
+            "subsidy",
+        ),
+    )
+
+
+def _has_cash_reallocation_signal(text: str) -> bool:
+    return _has_any(
+        text,
+        (
+            "지분 팔아",
+            "지분 매각",
+            "지분을 팔",
+            "매각대금",
+            "자산 매각",
+            "손에 쥔",
+            "현금 확보",
+            "stake sale",
+            "sells stake",
+            "sold stake",
+        ),
+    )
+
+
+def _has_market_note_signal(text: str) -> bool:
+    return _has_any(
+        text,
+        (
+            "목표가",
+            "특징주",
+            "수혜",
+            "주가",
+            "ipo챗",
+            "수요예측",
+            "청약",
+            "레버리지",
+            "증권",
+            "analyst",
+            "price target",
+            "shares fall",
+        ),
+    )
+
+
+def _has_equity_financing_signal(text: str) -> bool:
+    return _has_any(
+        text,
+        (
+            "유상증자",
+            "주주배정",
+            "신주",
+            "희석",
+            "자본확충",
+            "rights issue",
+            "capital raise",
+            "share issue",
+        ),
+    )
+
+
+def _has_mou_bulletin_signal(text: str) -> bool:
+    return bool(re.search(r"\bmou\b", text, flags=re.IGNORECASE)) or _has_any(
+        text,
+        (
+            "[게시판]",
+            "게시판",
+            "업무협약",
+            "협약",
+            "워크숍",
+            "포럼",
+            "모집",
+            "개최",
+        ),
+    )
+
+
+def _is_generic_machine_title(title: str) -> bool:
+    return compact_text(title) in {
+        "근거 자료: 더 큰 이야기 안에서 볼 후보",
+        "시장 반응 메모: 단독 seed인지 근거인지",
+    }
+
+
 def review_board_title(
     record: dict[str, Any],
     candidate: dict[str, Any],
     candidate_title: str,
 ) -> str:
-    raw_title = str(record.get("bundle_title") or candidate_title or candidate.get("title") or "")
     text = _direct_copy_text(record, candidate, candidate_title)
+    candidate_text = _direct_copy_text({}, candidate, candidate_title)
+    bundle_title = str(record.get("bundle_title") or "")
+    if (
+        bundle_title
+        and _has_mou_bulletin_signal(bundle_title.lower())
+        and not _has_mou_bulletin_signal(candidate_text)
+    ) or _is_generic_machine_title(bundle_title):
+        raw_title = str(candidate_title or candidate.get("title") or bundle_title)
+    else:
+        raw_title = str(bundle_title or candidate_title or candidate.get("title") or "")
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
     if _has_tokenization_signal(text):
@@ -166,6 +283,16 @@ def review_board_title(
         return "중국 항모 3척과 스텔스기: 해군력이 바뀌는 신호인가"
     if _has_any(text, ("taunting and degrading civilians", "degrading civilians")):
         return "전쟁 중 모욕과 조롱도 왜 국제법 문제가 되나"
+    if _has_factory_capex_signal(candidate_text):
+        return "전기차 공장 붐 이후 누가 비용을 떠안나"
+    if _has_cash_reallocation_signal(candidate_text):
+        return "기업은 현금을 어디로 옮기나"
+    if _has_equity_financing_signal(candidate_text):
+        return "회사가 주주에게 다시 돈을 구할 때"
+    if _has_market_note_signal(candidate_text):
+        return "시장 반응 메모: 단독 seed인지 근거인지"
+    if _has_mou_bulletin_signal(candidate_text):
+        return "근거 자료: 더 큰 이야기 안에서 볼 후보"
     return clean_review_title(raw_title or candidate_title)
 
 
@@ -387,6 +514,70 @@ def _global_section_description(
     return None
 
 
+def _market_corporate_description(
+    *,
+    record: dict[str, Any],
+    candidate: dict[str, Any],
+    candidate_title: str,
+    related_titles: str,
+    history_status: str,
+) -> str | None:
+    del record, related_titles, history_status
+    text = _direct_copy_text({}, candidate, candidate_title)
+    source = _source_cue(candidate)
+    if _has_factory_capex_signal(text):
+        return _question_first_description(
+            question="전기차 공장 붐 이후 누가 비용을 떠안나?",
+            reason=(
+                f"{source}은 회사 하나의 부동산 처분이나 공장 뉴스로 끝내기보다, 전기차·배터리 투자 붐 이후 공장과 현금흐름을 어떻게 재조정하는지 보는 단서입니다. "
+                "핵심은 주가가 아니라 보조금, 합작공장, 공급과잉, 설비투자 부담, 현금 회수의 구조입니다."
+            ),
+            next_step="다른 배터리 업체의 공장 조정, 미국 보조금 조건, 전기차 수요 둔화, 가동률 자료를 붙여 산업 재편 이야기로 커지는지 확인하는 것",
+            verdict="단일 기업 기사로만 남으면 evidence이고, 여러 회사 사례가 붙으면 seed 후보가 됩니다",
+        )
+    if _has_cash_reallocation_signal(text):
+        return _question_first_description(
+            question="기업이 가진 지분을 팔아 현금을 만들면, 그 돈은 어디로 옮겨가나?",
+            reason=(
+                f"{source}은 단순 지분 매각 뉴스라기보다, 큰 기업이 전환기에 현금을 확보하고 다음 투자처를 고르는 장면으로 볼 수 있습니다. "
+                "다만 한 회사의 다음 행보만 따라가면 투자 기사처럼 보이므로, 자산 매각과 현금 재배치라는 구조로 좁히는 편이 안전합니다."
+            ),
+            next_step="다른 플랫폼 기업의 자산 매각, AI·콘텐츠·커머스 투자 재원, 부채와 규제 리스크 자료를 붙여 '기업들은 다음 성장판을 어떻게 사나'로 확장 가능한지 보는 것",
+            verdict="단일 회사 전망으로 끝나면 evidence이고, 여러 기업의 현금 재배치 흐름이 보이면 seed로 올릴 수 있습니다",
+        )
+    if _has_equity_financing_signal(text):
+        return _question_first_description(
+            question="회사가 주주에게 다시 돈을 구하면 누가 비용을 부담하나?",
+            reason=(
+                f"{source}은 유상증자 자체보다, 금리가 높고 투자비가 큰 시기에 기업이 돈을 조달하는 방식과 기존 주주의 희석 부담을 보여주는 사례입니다. "
+                "투자 판단으로 읽히지 않게 하려면 특정 종목보다 산업 전체의 자금조달 압박을 봐야 합니다."
+            ),
+            next_step="동종 업계 유상증자 사례, 부채비율, 투자계획, 주주배정 구조와 희석 효과를 붙여 기업 자금조달 설명 자료로 쓸 수 있는지 확인하는 것",
+            verdict="단독 Top seed보다는 산업 자금조달 이야기의 evidence로 두는 편이 안전합니다",
+        )
+    if _has_market_note_signal(text):
+        return _question_first_description(
+            question="시장은 어떤 산업 변화를 이미 가격에 반영하고 있나?",
+            reason=(
+                f"{source}은 목표가·특징주·수혜주 같은 시장 반응을 보여주지만, 그 자체로는 방송 seed라기보다 기대가 어디에 몰리는지 보여주는 메모에 가깝습니다. "
+                "종목 전망처럼 보이면 위험하고, 반도체·배터리·AI 인프라 같은 산업 병목의 보조 근거로 붙일 때 가치가 있습니다."
+            ),
+            next_step="기업 하나의 목표가가 아니라 공급 부족, CAPEX, 수요처, 경쟁사 사례, 공식 통계가 같은 방향을 가리키는지 확인하는 것",
+            verdict="리뷰보드에서는 seed 후보보다 evidence 후보로 보는 편이 안전합니다",
+        )
+    if _has_mou_bulletin_signal(text):
+        return _question_first_description(
+            question="이 협약이나 행사는 어떤 큰 변화의 증거로 붙일 때 의미가 있나?",
+            reason=(
+                f"{source}은 단독으로는 행사·협약·모집 공지에 가깝습니다. "
+                "그래도 금융취약층 지원, AI 인력 양성, 산업 전환처럼 더 큰 흐름을 설명할 때 공식 근거로 붙이면 쓸모가 생깁니다."
+            ),
+            next_step="협약 이후 실제 예산, 참여 기관, 대상 규모, 이전 정책과의 차이, 현장 사례를 확인해 큰 이야기의 근거인지 판단하는 것",
+            verdict="단독 seed로 올리기보다 evidence 또는 보강 검색 출발점으로 두는 편이 안전합니다",
+        )
+    return None
+
+
 def _template_description(
     record: dict[str, Any],
     candidate: dict[str, Any],
@@ -406,6 +597,15 @@ def _template_description(
     )
     if global_section:
         return global_section
+    market_corporate = _market_corporate_description(
+        record=record,
+        candidate=candidate,
+        candidate_title=candidate_title,
+        related_titles=related_titles,
+        history_status=history_status,
+    )
+    if market_corporate:
+        return market_corporate
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return _question_first_description(
             question="청년 실업률이 낮아도 왜 일하지도 구직하지도 않는 청년은 늘어날까?",

@@ -343,6 +343,160 @@ def test_review_board_copy_weather_retail_uses_consumer_frame() -> None:
     assert "최신 뉴스와 두 번째 출처" not in copy.description
 
 
+def test_review_board_copy_corporate_cash_reallocation_avoids_investment_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "두나무 지분 팔아 1.6조 손에 쥔 카카오"},
+        {
+            "title": "두나무 지분 팔아 1.6조 손에 쥔 카카오…다음 행보는",
+            "summary": "카카오가 두나무 지분 매각대금으로 현금을 확보했다.",
+            "source": "연합인포맥스",
+            "source_role_class": "market_wire",
+            "seed_type": "single_company_financing",
+            "story_role": "seed_with_supporting_links",
+        },
+    )
+
+    assert copy.title == "기업은 현금을 어디로 옮기나"
+    assert "현금을 확보하고 다음 투자처를 고르는 장면" in copy.description
+    assert "투자 기사처럼 보이므로" in copy.description
+    assert "단일 회사 전망으로 끝나면 evidence" in copy.description
+    assert "AI가 실제 조직 안으로" not in copy.description
+
+
+def test_review_board_copy_factory_capex_rebalance_uses_industry_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "LG엔솔 미국 배터리공장 건물 처분"},
+        {
+            "title": "LG엔솔, 혼다 합작 미국 배터리공장 건물 3조7천억원에 처분",
+            "summary": "전기차 수요 둔화 속 배터리 합작공장 건물을 처분했다.",
+            "source": "연합뉴스 산업",
+            "source_role_class": "public_wire",
+            "seed_type": "industry_disruption",
+        },
+    )
+
+    assert copy.title == "전기차 공장 붐 이후 누가 비용을 떠안나"
+    assert "보조금, 합작공장, 공급과잉" in copy.description
+    assert "단일 기업 기사로만 남으면 evidence" in copy.description
+    assert "핵심은 주가가 아니라" in copy.description
+
+
+def test_review_board_copy_market_note_marks_evidence_not_seed() -> None:
+    copy = _copy(
+        {"bundle_title": "KB증권 AI 기판 목표가"},
+        {
+            "title": 'KB증권 "LG이노텍, AI 기판 공급 부족 수혜…목표가 160만원"',
+            "summary": "증권사가 AI 기판 수혜와 목표가를 제시했다.",
+            "source": "연합뉴스 경제",
+            "source_role_class": "public_wire",
+            "seed_type": "market_note",
+        },
+    )
+
+    assert copy.title == "시장 반응 메모: 단독 seed인지 근거인지"
+    assert "방송 seed라기보다" in copy.description
+    assert "보조 근거" in copy.description
+    assert "리뷰보드에서는 seed 후보보다 evidence 후보" in copy.description
+
+
+def test_review_board_copy_equity_financing_marks_dilution_cost() -> None:
+    copy = _copy(
+        {"bundle_title": "아모텍 유상증자"},
+        {
+            "title": "아모텍, 350억원 주주배정 유상증자 결정",
+            "summary": "회사가 신주를 발행해 투자자금을 조달한다.",
+            "source": "연합뉴스 경제",
+            "source_role_class": "public_wire",
+            "seed_type": "single_company_financing",
+        },
+    )
+
+    assert copy.title == "회사가 주주에게 다시 돈을 구할 때"
+    assert "기존 주주의 희석 부담" in copy.description
+    assert "특정 종목보다 산업 전체" in copy.description
+    assert "evidence" in copy.description
+
+
+def test_review_board_copy_mou_bulletin_defaults_to_evidence() -> None:
+    copy = _copy(
+        {"bundle_title": "신용회복위원회 NH농협은행 MOU"},
+        {
+            "title": "[게시판] 신용회복위원회-NH농협은행, 금융취약계층 금융 지원 MOU",
+            "summary": "두 기관이 금융취약계층 지원 업무협약을 맺었다.",
+            "source": "연합뉴스 경제",
+            "source_role_class": "public_wire",
+            "seed_type": "policy_release_evidence",
+        },
+    )
+
+    assert copy.title == "근거 자료: 더 큰 이야기 안에서 볼 후보"
+    assert "행사·협약·모집 공지" in copy.description
+    assert "공식 근거로 붙이면" in copy.description
+    assert "단독 seed로 올리기보다 evidence" in copy.description
+
+
+def test_review_board_copy_mou_bundle_does_not_override_unrelated_candidate_title() -> None:
+    copy = _copy(
+        {"bundle_title": "순천향대-싸이티바 AI 바이오 인재 양성 협약"},
+        {
+            "title": "Iran war impact to hit household energy bills for the first time",
+            "summary": (
+                "Energy prices and household electricity bills may rise as war "
+                "pressure reaches global markets."
+            ),
+            "source": "BBC News",
+            "source_id": "bbc_rss_candidate",
+            "source_role_class": "public_wire",
+            "seed_type": "policy_market_shock",
+        },
+    )
+
+    assert copy.title == "Iran war impact to hit household energy bills for the first time"
+    assert "근거 자료" not in copy.title
+    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+
+
+def test_review_board_copy_generic_machine_title_does_not_override_candidate_title() -> None:
+    copy = _copy(
+        {"bundle_title": "근거 자료: 더 큰 이야기 안에서 볼 후보"},
+        {
+            "title": "Iran war impact to hit household energy bills for the first time",
+            "summary": (
+                "Energy prices and household electricity bills may rise as war "
+                "pressure reaches global markets."
+            ),
+            "source": "BBC News",
+            "source_id": "bbc_rss_candidate",
+            "source_role_class": "public_wire",
+            "seed_type": "policy_market_shock",
+        },
+    )
+
+    assert copy.title == "Iran war impact to hit household energy bills for the first time"
+    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+
+
+def test_review_board_copy_does_not_treat_amount_as_mou() -> None:
+    copy = _copy(
+        {"bundle_title": "Iran war impact to hit household energy bills for the first time"},
+        {
+            "title": "Iran war impact to hit household energy bills for the first time",
+            "summary": (
+                "A household using a typical amount of gas and electricity is forecast "
+                "to pay about £200 more a year."
+            ),
+            "source": "BBC News",
+            "source_id": "bbc_rss_candidate",
+            "source_role_class": "public_wire",
+            "seed_type": "policy_market_shock",
+        },
+    )
+
+    assert copy.title == "Iran war impact to hit household energy bills for the first time"
+    assert "근거 자료" not in copy.title
+    assert copy.description.startswith("'전기요금이 오래 비싸지면")
+
+
 def test_review_board_copy_excludes_internal_labels() -> None:
     copy = _copy(
         {
