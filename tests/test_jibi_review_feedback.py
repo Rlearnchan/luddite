@@ -3,6 +3,7 @@ import json
 
 from luddite.agents.jibi.append_to_sheet import BUNDLE_REVIEW_SHEET_COLUMNS
 from luddite.agents.jibi.review_feedback import (
+    _rows_from_values,
     infer_review_feedback,
     parse_review_tag,
     render_review_feedback_summary,
@@ -32,6 +33,33 @@ def test_parse_review_tag_accepts_lightweight_aliases() -> None:
     assert parse_review_tag("별로 — 홍보성") == "reject"
     assert parse_review_tag("애매 — 왜 올라왔는지 모르겠음") == "unclear"
     assert parse_review_tag("좋아 보임") == "unlabeled"
+
+
+def test_rows_from_values_finds_review_board_header_below_intro() -> None:
+    values = [
+        ["안녕하세요. Jibi입니다."],
+        ["오늘 후보 안내"],
+        [""],
+        BUNDLE_REVIEW_SHEET_COLUMNS,
+        [
+            "2026-05-27 09:00",
+            "AI가 공무원 보고서와 현장 치안에 들어올 때",
+            "B · 68점",
+            "https://example.com/main",
+            "",
+            "공공 현장 AI 후보",
+            "",
+            "",
+            "좋음",
+            "2026-05-27:story_bundle_ai",
+        ],
+    ]
+
+    rows = _rows_from_values(values)
+
+    assert len(rows) == 1
+    assert rows[0]["제목"] == "AI가 공무원 보고서와 현장 치안에 들어올 때"
+    assert rows[0]["리뷰-형찬"] == "좋음"
 
 
 def test_infer_review_feedback_understands_natural_korean_notes() -> None:

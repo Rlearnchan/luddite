@@ -59,6 +59,8 @@ class GoogleSheetsClient(Protocol):
         *,
         row_count: int,
         column_count: int,
+        header_row: int = 1,
+        intro_row_count: int = 0,
     ) -> None: ...
 
 
@@ -216,8 +218,13 @@ class GoogleSheetsApiClient:
         *,
         row_count: int,
         column_count: int,
+        header_row: int = 1,
+        intro_row_count: int = 0,
     ) -> None:
         column_widths = [90, 280, 120, 190, 360, 560, 180, 180, 180, 230]
+        header_row_index = max(header_row - 1, 0)
+        data_start_row_index = min(header_row_index + 1, max(row_count, 1))
+        description_column_index = 5 if column_count > 5 else 4
         requests: list[dict[str, Any]] = [
             {
                 "repeatCell": {
@@ -244,10 +251,10 @@ class GoogleSheetsApiClient:
                 "repeatCell": {
                     "range": {
                         "sheetId": sheet_id,
-                        "startRowIndex": 1,
+                        "startRowIndex": data_start_row_index,
                         "endRowIndex": max(row_count, 1),
-                        "startColumnIndex": 4,
-                        "endColumnIndex": 5,
+                        "startColumnIndex": description_column_index,
+                        "endColumnIndex": min(description_column_index + 1, column_count),
                     },
                     "cell": {
                         "userEnteredFormat": {
@@ -261,8 +268,8 @@ class GoogleSheetsApiClient:
                 "repeatCell": {
                     "range": {
                         "sheetId": sheet_id,
-                        "startRowIndex": 0,
-                        "endRowIndex": 1,
+                        "startRowIndex": header_row_index,
+                        "endRowIndex": header_row_index + 1,
                         "startColumnIndex": 0,
                         "endColumnIndex": column_count,
                     },
@@ -286,12 +293,90 @@ class GoogleSheetsApiClient:
                 "updateSheetProperties": {
                     "properties": {
                         "sheetId": sheet_id,
-                        "gridProperties": {"frozenRowCount": 1},
+                        "gridProperties": {"frozenRowCount": 0 if intro_row_count else 1},
                     },
                     "fields": "gridProperties.frozenRowCount",
                 }
             },
         ]
+        if intro_row_count:
+            requests.extend(
+                [
+                    {
+                        "unmergeCells": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": 0,
+                                "endRowIndex": intro_row_count,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": column_count,
+                            }
+                        }
+                    },
+                    {
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": 0,
+                                "endRowIndex": intro_row_count,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": column_count,
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "wrapStrategy": "WRAP",
+                                    "verticalAlignment": "TOP",
+                                    "backgroundColor": {
+                                        "red": 0.98,
+                                        "green": 0.99,
+                                        "blue": 1.0,
+                                    },
+                                }
+                            },
+                            "fields": (
+                                "userEnteredFormat.wrapStrategy,"
+                                "userEnteredFormat.verticalAlignment,"
+                                "userEnteredFormat.backgroundColor"
+                            ),
+                        }
+                    },
+                    {
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": 0,
+                                "endRowIndex": 1,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": column_count,
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "textFormat": {"bold": True, "fontSize": 12}
+                                }
+                            },
+                            "fields": (
+                                "userEnteredFormat.textFormat.bold,"
+                                "userEnteredFormat.textFormat.fontSize"
+                            ),
+                        }
+                    },
+                ]
+            )
+            for row_index in range(intro_row_count):
+                requests.append(
+                    {
+                        "mergeCells": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": row_index,
+                                "endRowIndex": row_index + 1,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": column_count,
+                            },
+                            "mergeType": "MERGE_ALL",
+                        }
+                    }
+                )
         for index, width in enumerate(column_widths[:column_count]):
             requests.append(
                 {

@@ -113,8 +113,12 @@ class FakeGoogleSheetsClient:
         *,
         row_count: int,
         column_count: int,
+        header_row: int = 1,
+        intro_row_count: int = 0,
     ) -> None:
-        self.review_board_formats.append((sheet_id, row_count, column_count))
+        self.review_board_formats.append(
+            (sheet_id, row_count, column_count, header_row, intro_row_count)
+        )
 
 
 def _write_preview(path, rows):
@@ -714,14 +718,21 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
     )
 
     assert client.cleared is True
-    assert client.values[0] == BUNDLE_REVIEW_SHEET_COLUMNS
-    assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "청년 노동시장 이탈"
-    assert client.review_board_formats == [(99, 2, 10)]
+    assert client.values[0] == ["안녕하세요. Jibi입니다."]
+    header_index = next(
+        index for index, row in enumerate(client.values) if row == BUNDLE_REVIEW_SHEET_COLUMNS
+    )
+    assert client.values[header_index + 1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == (
+        "청년 노동시장 이탈"
+    )
+    assert client.review_board_formats == [(99, 7, 10, 6, 4)]
     assert report.styling_applied is True
     assert client.appended == []
     assert report.sheet_replaced is True
     assert report.header_updated is True
     assert report.rows_appended == 1
+    assert report.appended_range is not None
+    assert report.appended_range.start_row == 7
 
 
 def test_bundle_review_replace_dry_run_detects_existing_review_comments(
@@ -771,6 +782,56 @@ def test_bundle_review_replace_dry_run_detects_existing_review_comments(
     assert report.review_comment_cells == 1
     assert report.review_snapshot_path is None
     assert client.cleared is False
+
+
+def test_bundle_review_replace_detects_comments_below_intro_rows(
+    tmp_path,
+) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "날짜": "2026-05-23",
+                "제목": "새 후보",
+                "메인 링크": "https://example.com/new",
+                "ID": "2026-05-23:story_bundle_new",
+            }
+        ],
+    )
+    existing = {
+        "날짜": "2026-05-23",
+        "제목": "기존 후보",
+        "메인 링크": "https://example.com/old",
+        "리뷰-성원": "seed — 좋아 보임",
+        "ID": "2026-05-23:story_bundle_old",
+    }
+    client = FakeGoogleSheetsClient(
+        sheet_id=99,
+        values=[
+            ["안녕하세요. Jibi입니다."],
+            ["오늘 후보 안내"],
+            [""],
+            BUNDLE_REVIEW_SHEET_COLUMNS,
+            _sheet_values(existing, BUNDLE_REVIEW_SHEET_COLUMNS),
+        ],
+    )
+
+    report = append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle_review",
+            dry_run=True,
+            replace_existing=True,
+            review_snapshot_dir=tmp_path,
+        ),
+        client=client,
+    )
+
+    assert report.errors == []
+    assert report.review_comments_found is True
+    assert report.review_comment_cells == 1
 
 
 def test_bundle_review_replace_refuses_to_overwrite_existing_comments(
@@ -911,7 +972,12 @@ def test_bundle_review_replace_override_allows_existing_comments(
     assert report.review_snapshot_path and report.review_snapshot_path.exists()
     assert report.review_history_archive_path and report.review_history_archive_path.exists()
     assert client.cleared is True
-    assert client.values[1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == "새 후보"
+    header_index = next(
+        index for index, row in enumerate(client.values) if row == BUNDLE_REVIEW_SHEET_COLUMNS
+    )
+    assert client.values[header_index + 1][BUNDLE_REVIEW_SHEET_COLUMNS.index("제목")] == (
+        "새 후보"
+    )
 
 
 def test_bundle_review_same_day_snapshots_do_not_overwrite(tmp_path) -> None:

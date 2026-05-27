@@ -72,6 +72,7 @@ BUNDLE_REVIEW_SHEET_COLUMNS = [
     "ID",
 ]
 REVIEWER_COLUMNS = ["리뷰-성원", "리뷰-동찬", "리뷰-형찬"]
+REVIEW_BOARD_INTRO_TITLE = "안녕하세요. Jibi입니다."
 CANDIDATE_SHEET_SCHEMA = "candidate"
 BUNDLE_REVIEW_SHEET_SCHEMA = "bundle_review"
 VALID_SHEET_SCHEMAS = {CANDIDATE_SHEET_SCHEMA, BUNDLE_REVIEW_SHEET_SCHEMA}
@@ -324,6 +325,11 @@ def _header_status(
 ) -> str:
     if not existing_values:
         return "missing"
+    header_index = _find_exact_header_row(existing_values, expected_columns)
+    if header_index is not None:
+        return "ok"
+    if legacy_columns and _find_exact_header_row(existing_values, legacy_columns) is not None:
+        return "legacy_25"
     header = existing_values[0]
     if header == expected_columns:
         return "ok"
@@ -359,16 +365,46 @@ def _existing_duplicate_values(
     values = {column: set() for column in duplicate_columns}
     if not existing_values:
         return values
-    header = existing_values[0]
+    header_index = _find_header_row_containing(existing_values, list(duplicate_columns))
+    header_index = 0 if header_index is None else header_index
+    header = existing_values[header_index]
     column_indexes = {
         column: _column_index(header, column)
         for column in duplicate_columns
     }
-    for row in existing_values[1:]:
+    for row in existing_values[header_index + 1 :]:
         for column, column_index in column_indexes.items():
             if column_index is not None and column_index < len(row) and row[column_index]:
                 values[column].add(row[column_index])
     return values
+
+
+def _normalize_header_cells(row: list[str]) -> list[str]:
+    return [str(value).strip() for value in row]
+
+
+def _find_exact_header_row(
+    values: list[list[str]],
+    expected_columns: list[str],
+) -> int | None:
+    expected = [str(value).strip() for value in expected_columns]
+    for index, row in enumerate(values):
+        cells = _normalize_header_cells(row)
+        if cells[: len(expected)] == expected:
+            return index
+    return None
+
+
+def _find_header_row_containing(
+    values: list[list[str]],
+    columns: list[str],
+) -> int | None:
+    required = {str(value).strip() for value in columns}
+    for index, row in enumerate(values):
+        cells = set(_normalize_header_cells(row))
+        if required.issubset(cells):
+            return index
+    return None
 
 
 def _column_index(header: list[str], column: str) -> int | None:
@@ -396,10 +432,67 @@ def _preview_date(preview_csv: Path) -> str:
     return datetime.now(UTC).date().isoformat()
 
 
+def _review_board_theme_sentence(rows: list[dict[str, str]]) -> str:
+    text = " ".join(
+        str(row.get("제목") or row.get("설명") or "")
+        for row in rows
+    )
+    themes: list[str] = []
+    if "AI" in text or "인공지능" in text:
+        themes.append("AI가 신뢰·노동·공공 현장으로 들어오는 장면")
+    if any(keyword in text for keyword in ["월급", "돈", "자금", "은행", "금융"]):
+        themes.append("돈의 흐름과 생활경제")
+    if any(keyword in text for keyword in ["날씨", "전기요금", "중동", "해외"]):
+        themes.append("해외 이슈가 일상 가격으로 번지는 경로")
+    if any(keyword in text for keyword in ["배달", "로봇", "경력", "일자리"]):
+        themes.append("일하는 방식과 현장 자동화")
+    if not themes:
+        themes.append("오늘 수집된 후보 중 방송 소재 가능성이 있는 항목")
+    return "오늘은 " + ", ".join(themes[:3]) + " 관련 후보를 함께 올렸습니다."
+
+
+def _bundle_review_intro_rows(rows: list[dict[str, str]]) -> list[list[str]]:
+    count = len(rows)
+    return [
+        [REVIEW_BOARD_INTRO_TITLE],
+        [_review_board_theme_sentence(rows)],
+        [
+            (
+                f"아래 {count}개 후보는 완성안이 아니라, 단독 seed인지 근거자료인지 "
+                "또는 다른 후보와 묶어야 하는지 확인하기 위한 리뷰 보드입니다."
+            )
+        ],
+        [
+            (
+                "좋으면 왜 좋은지, 약하면 왜 약한지, 살리려면 무엇을 더 찾아야 "
+                "하는지 리뷰 칸에 한 줄씩 남겨주세요."
+            )
+        ],
+    ]
+
+
+def _bundle_review_header_row_number(rows: list[dict[str, str]]) -> int:
+    return len(_bundle_review_intro_rows(rows)) + 2
+
+
+def _bundle_review_sheet_values(
+    rows: list[dict[str, str]],
+    rows_to_write: list[list[str]],
+    columns: list[str],
+) -> tuple[list[list[str]], int, int]:
+    intro_rows = _bundle_review_intro_rows(rows)
+    header_row_number = len(intro_rows) + 2
+    values = [*intro_rows, [""], columns, *rows_to_write]
+    return values, header_row_number, len(intro_rows)
+
+
 def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, str | int]]:
     if not existing_values:
         return []
-    header = existing_values[0]
+    header_index = _find_exact_header_row(existing_values, BUNDLE_REVIEW_SHEET_COLUMNS)
+    if header_index is None:
+        return []
+    header = existing_values[header_index]
     column_indexes = {
         column: _column_index(header, column)
         for column in REVIEWER_COLUMNS
@@ -407,7 +500,7 @@ def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, st
     title_index = _column_index(header, "제목")
     id_index = _column_index(header, "ID")
     cells: list[dict[str, str | int]] = []
-    for row_number, row in enumerate(existing_values[1:], start=2):
+    for row_number, row in enumerate(existing_values[header_index + 1 :], start=header_index + 2):
         title = row[title_index] if title_index is not None and title_index < len(row) else ""
         review_id = row[id_index] if id_index is not None and id_index < len(row) else ""
         for column, column_index in column_indexes.items():
@@ -430,10 +523,13 @@ def _review_comment_cells(existing_values: list[list[str]]) -> list[dict[str, st
 def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, object]]:
     if not existing_values:
         return []
-    header = existing_values[0]
+    header_index = _find_exact_header_row(existing_values, BUNDLE_REVIEW_SHEET_COLUMNS)
+    if header_index is None:
+        return []
+    header = existing_values[header_index]
     indexes = {column: _column_index(header, column) for column in BUNDLE_REVIEW_SHEET_COLUMNS}
     rows: list[dict[str, object]] = []
-    for row_number, row in enumerate(existing_values[1:], start=2):
+    for row_number, row in enumerate(existing_values[header_index + 1 :], start=header_index + 2):
         if not any(str(value).strip() for value in row):
             continue
         item: dict[str, object] = {"row": row_number}
@@ -641,25 +737,34 @@ def append_jibi_sheet(
             report.header_reason = "replace_existing_explicit"
         if client and config.spreadsheet_id and not config.dry_run:
             client.clear_values(config.spreadsheet_id, config.target_sheet_name)
+            values_to_write = [columns, *rows_to_write]
+            header_row_number = 1
+            intro_row_count = 0
+            if sheet_schema == BUNDLE_REVIEW_SHEET_SCHEMA:
+                values_to_write, header_row_number, intro_row_count = (
+                    _bundle_review_sheet_values(rows, rows_to_write, columns)
+                )
             client.update_values(
                 config.spreadsheet_id,
                 config.target_sheet_name,
                 "A1",
-                [columns, *rows_to_write],
+                values_to_write,
             )
             report.sheet_replaced = True
             report.header_updated = True
             report.header_update_planned = False
             report.appended_range = AppendResult(
-                start_row=2 if rows_to_write else None,
-                end_row=(len(rows_to_write) + 1) if rows_to_write else None,
+                start_row=header_row_number + 1 if rows_to_write else None,
+                end_row=(header_row_number + len(rows_to_write)) if rows_to_write else None,
             )
             if sheet_schema == BUNDLE_REVIEW_SHEET_SCHEMA and sheet_id is not None:
                 client.format_review_board(
                     config.spreadsheet_id,
                     sheet_id,
-                    row_count=len(rows_to_write) + 1,
+                    row_count=len(values_to_write),
                     column_count=len(columns),
+                    header_row=header_row_number,
+                    intro_row_count=intro_row_count,
                 )
                 report.styling_applied = True
             if (
