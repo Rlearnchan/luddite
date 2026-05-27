@@ -126,6 +126,25 @@ GLOBAL_STORY_BRIDGE_TERMS = {
     "industrial policy",
     "tariff",
 }
+GLOBAL_STORY_BRIDGE_SOURCE_IDS = {
+    "bbc_rss_candidate",
+    "npr_rss_candidate",
+}
+GLOBAL_STORY_BRIDGE_SOURCE_ROLES = {
+    "academic_explainer",
+    "section_news",
+}
+DEFAULT_KOREA_BRIDGE_SOURCE_IDS = {
+    "bok",
+    "korea_policy_briefing",
+    "yonhap_economy",
+    "yonhap_health",
+    "yonhap_industry",
+    "yonhap_international",
+    "yonhap_international_rss_candidate",
+    "yonhap_market",
+    "yonhap_rss_candidate",
+}
 WEIRD_BUT_EXPANDABLE_TERMS = {
     "마른논",
     "써레질",
@@ -231,6 +250,12 @@ def _company_like_text(text: str) -> bool:
     )
 
 
+def _source_has_default_korea_bridge(source_id: str, source_role: str) -> bool:
+    if source_role in {"research_note", "policy_release"}:
+        return True
+    return source_id in DEFAULT_KOREA_BRIDGE_SOURCE_IDS
+
+
 def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
     """Return report-only audience-interest diagnostics for a candidate."""
 
@@ -248,6 +273,7 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
         candidate.get("seed_type"),
         candidate.get("source"),
     )
+    source_id = str(candidate.get("source_id") or "")
     source_role = str(candidate.get("source_role_class") or "")
     seed_type = str(candidate.get("seed_type") or "")
     existing_flags = set(str(flag) for flag in candidate.get("quality_flags") or [])
@@ -286,10 +312,13 @@ def analyze_so_what(candidate: dict[str, Any]) -> dict[str, Any]:
     if contains_any(text, EVERYDAY_ANALOGY_TERMS):
         score += 1
         _add_unique(audience_bridge_signals, "everyday_analogy_or_life_hook")
-    if source_role == "section_news" and contains_any(text, GLOBAL_STORY_BRIDGE_TERMS):
+    if (
+        source_role in GLOBAL_STORY_BRIDGE_SOURCE_ROLES
+        or source_id in GLOBAL_STORY_BRIDGE_SOURCE_IDS
+    ) and contains_any(text, GLOBAL_STORY_BRIDGE_TERMS):
         score += 1
         _add_unique(audience_bridge_signals, "global_story_bridge")
-    if "한국" in primary_text or source_role in {"research_note", "policy_release", "public_wire"}:
+    if "한국" in primary_text or _source_has_default_korea_bridge(source_id, source_role):
         score += 1
         _add_unique(audience_bridge_signals, "korea_bridge")
     if source_role == "research_note" and audience_bridge_signals:

@@ -1380,6 +1380,7 @@ def normalize_article(article: dict[str, Any]) -> dict[str, Any]:
             "why_interesting": why_interesting,
             "seed_type": seed_type,
             "source": article["source"],
+            "source_id": article.get("source_id"),
             "source_role_class": source_role_class,
             "quality_flags": quality_flags,
             "risk_flags": risk_flags,

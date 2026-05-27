@@ -651,3 +651,29 @@ def test_guardian_product_review_is_evidence_only() -> None:
     assert scored["seed_quality_classification"] == "evidence_only"
     assert scored["story_role"] == "evidence_for_larger_story"
     assert scored["recommended_action"] == "keep_for_later"
+
+
+def test_global_public_wire_does_not_get_default_korea_bridge() -> None:
+    candidate = normalize_article(
+        {
+            "article_id": "article_bbc_energy_bills",
+            "title": "Iran war impact to hit household energy bills for the first time",
+            "url": "https://www.bbc.com/news/articles/example",
+            "source": "BBC News",
+            "source_id": "bbc_rss_candidate",
+            "published_at": "2026-05-27T00:00:00Z",
+            "collected_at": "2026-05-27T01:00:00+00:00",
+            "raw_summary": (
+                "Energy prices and household electricity bills may rise as war "
+                "pressure reaches global markets."
+            ),
+            "collector": "rss",
+            "tags": ["rss"],
+        }
+    )
+
+    scored = score_candidate(candidate)
+
+    assert "global_story_bridge" in scored["so_what"]["audience_bridge_signals"]
+    assert "korea_bridge" not in scored["so_what"]["audience_bridge_signals"]
+    assert "weak_audience_bridge" not in scored["quality_flags"]
