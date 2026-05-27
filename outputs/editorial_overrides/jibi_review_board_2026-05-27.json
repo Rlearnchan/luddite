@@ -1,85 +1,55 @@
 {
   "editor": "codex",
   "items": {
-    "2026-05-27:story_bundle_1e2fcd6426": {
-      "description": "K뉴딜 아카데미는 모집 공고라 그대로 올리면 홍보물처럼 보일 수 있습니다. 그래도 대기업, 정부, 청년훈련이 만나는 지점에는 볼거리가 있습니다. 실제 취업으로 이어지는 프로그램인지, 기업·정책 홍보에 가까운지 숫자로 확인되면 청년 일자리 훈련 시장을 설명하는 보조 자료가 될 수 있습니다.",
-      "reason": "weak program announcement reframed as reviewable youth job-training question",
-      "title": "청년 교육 프로그램은 일자리 해법인가, 기업 홍보인가"
+    "2026-05-27:story_bundle_fa3a9f94ab": {
+      "description": "교황이 첫 회칙에서 AI를 언급했다는 점은 기술 뉴스보다 사회적 신뢰의 신호로 볼 만합니다. AI가 일자리와 생산성의 문제가 아니라 인간 존엄, 창작권, 교육, 가짜 콘텐츠 문제로 넘어가고 있다는 뜻입니다. 단독 아이템으로 쓰려면 종교계 발언 자체보다, 왜 각국 제도권과 시민사회가 AI를 윤리와 권리의 문제로 부르기 시작했는지를 보여주는 사례를 붙이는 쪽이 좋아 보입니다.",
+      "reason": "manual ideal description: AI ethics as trust/institution story",
+      "title": "교황은 왜 AI 위험을 먼저 꺼냈나"
     },
-    "2026-05-27:story_bundle_23955a409f": {
-      "description": "NHN클라우드 공개 기사라 처음엔 회사 홍보처럼 보입니다. 다만 기업들이 AI를 도입할 때 모델만 사는 게 아니라 서버, 칩, 데이터, 운영까지 묶어 사야 한다는 점을 보여주는 사례일 수 있습니다. NHN 한 회사 이야기에 머무르면 내리고, 기업용 AI 인프라가 공장 설비처럼 팔리는 흐름으로 확장되면 살릴 수 있습니다.",
-      "reason": "single-company AI copy reframed as enterprise AI infrastructure question",
-      "title": "기업용 AI 공장 전쟁: 클라우드는 왜 '풀스택'을 팔까"
-    },
-    "2026-05-27:story_bundle_48c08b7b05": {
-      "description": "남부발전의 해외사업 뉴스로만 보면 작지만, 전력망 이야기로 돌리면 꽤 커집니다. 태양광·풍력은 많이 지어도 전기를 제때 저장하지 못하면 출력제한, 피크 전력, 요금 문제가 생깁니다. 이 후보는 텍사스 진출 자체보다 전력망이 왜 배터리 저장장치를 필요로 하는지 설명할 수 있는지 보는 쪽이 좋습니다.",
-      "reason": "BESS candidate reframed as grid storage explainer",
-      "title": "배터리 저장장치가 전력망의 새 창고가 되는 이유"
-    },
-    "2026-05-27:story_bundle_481b19715a": {
-      "description": "로켓은 기술만으로 날아가는 것 같지만, 산업으로 커지려면 실패 비용을 누가 떠안을지도 정해야 합니다. 발사 실패, 위성 손상, 재보험, 정부 보증 같은 낯선 비용 구조를 보여줄 수 있어 우주산업을 보험과 위험 배분의 문제로 읽게 해줍니다. 한국 우주산업에서 실제 병목이 보험시장인지 숫자가 붙으면 꽤 좋은 설명형 소재가 됩니다.",
-      "reason": "space industry candidate reframed around insurance and risk allocation",
-      "title": "우주산업은 왜 보험 없이는 날기 어려울까"
-    },
-    "2026-05-27:story_bundle_4ac1fa6b2d": {
-      "description": "공항에서 가방을 맡긴 뒤 벌어지는 보이지 않는 물류를 보여주는 후보입니다. AI 자체보다 컨베이어, 스캐너, 허브 공항, 분실 수하물 비용, 노동 배치가 더 좋은 소재입니다. 인천공항이나 성수기 수하물 대란과 붙이면 생활감 있는 설명형 이야기로 갈 수 있습니다.",
-      "reason": "English article made readable and reframed away from generic AI",
-      "title": "세계 최대 공항은 하루 10만 개 가방을 어떻게 굴리나"
-    },
-    "2026-05-27:story_bundle_5e2c61b1f8": {
-      "description": "돈이 금융시장 안에서만 빠르게 돌 때와 공장·설비·기술로 흘러갈 때, 경제의 성장 경로는 달라집니다. 한국은행 자료라 원문은 딱딱하지만 생산적 금융, 기업 투자, 성장률, 가계 자산시장 쏠림을 한 번에 묶을 수 있습니다. 너무 원론적으로 느껴지면 한국의 부동산·주식 쏠림과 기업투자 부진이라는 생활감 있는 질문으로 좁혀보면 좋겠습니다.",
-      "reason": "BOK finance-flow note rewritten as a concrete growth question",
-      "title": "돈은 왜 공장보다 금융시장으로 흐를까"
+    "2026-05-27:story_bundle_68a0af9170": {
+      "description": "AI slop은 그냥 저품질 콘텐츠가 많아졌다는 이야기가 아니라, 사람들이 무엇을 믿고 클릭할지 스스로 방어해야 하는 인터넷 환경의 변화입니다. 기사 하나로 끝내기보다 검색 결과, SNS 추천, 뉴스 이미지, 학교 과제처럼 매일 보는 화면에서 AI 생성물이 어떻게 섞이는지 보여주면 생활감이 생깁니다. 좋은 후보지만 1번의 AI 윤리 후보와 겹치므로, 둘 중 하나를 대표로 두거나 'AI 시대의 신뢰 비용' 묶음으로 합쳐 보는 편이 낫습니다.",
+      "reason": "manual ideal description: AI slop as daily trust and media literacy story",
+      "title": "AI 가짜 콘텐츠를 어떻게 걸러낼까"
     },
     "2026-05-27:story_bundle_d58520fd57": {
-      "description": "AI 인재가 부족하다는 말은 흔하지만, 실제 병목이 사람 수인지 임금인지 이동성인지 교육 경로인지는 따로 봐야 합니다. 이 한국은행 자료는 AI 인력의 규모, 임금, 기업 간 이동성, 지역 격차를 숫자로 볼 수 있어 기술 뉴스가 아니라 노동시장 이야기로 읽을 수 있습니다. 단순 인력부족론에 머물면 약하고, AI 시대 임금 프리미엄과 인재 쏠림을 설명하면 살아납니다.",
-      "reason": "BOK AI talent note rewritten as labor-market bottleneck question",
+      "description": "AI 인재 부족은 너무 흔한 말이라 그대로 쓰면 약합니다. 대신 이 한국은행 자료는 '부족하다'가 아니라 누가 더 비싼 임금을 받고, 어떤 기업으로 이동하고, 지역과 학력에 따라 기회가 어떻게 갈리는지를 숫자로 볼 수 있다는 점이 좋습니다. 방송 소재로 키운다면 AI가 사람을 대체한다는 이야기보다, AI 시대에 어떤 사람의 몸값이 오르고 어떤 사람은 진입 자체가 어려워지는지를 묻는 쪽이 더 선명합니다.",
+      "reason": "manual ideal description: BOK AI talent note as labor market distribution story",
       "title": "AI 인재 부족은 왜 매번 반복될까"
     },
-    "2026-05-27:story_bundle_68d6d53b00": {
-      "description": "신용회복위원회와 은행의 MOU라 단독으로는 딱딱합니다. 그래도 고금리 이후 빚을 갚기 어려운 사람들, 개인회생, 채무조정, 소액금융, 연체 관리를 설명할 때 붙이면 생활 금융 소재가 됩니다. seed라기보다 취약차주 이야기에 붙일 evidence인지 보는 편이 안전합니다.",
-      "reason": "MOU candidate marked as finance vulnerability evidence",
-      "title": "빚을 갚기 어려운 사람에게 은행은 무엇을 해줄 수 있나"
+    "2026-05-27:story_bundle_5e2c61b1f8": {
+      "description": "이 자료는 제목만 보면 거시경제 교과서처럼 보이지만, 질문은 꽤 현실적입니다. 돈이 주식·부동산·금융상품 안에서만 빠르게 돌 때와 공장·설비·기술 투자로 흘러갈 때, 경제의 체감 성장 경로가 달라집니다. 한국의 자산시장 쏠림, 기업투자 부진, 생산성 정체를 한 장의 돈 흐름 그림으로 설명할 수 있다면 좋은 설명형 seed가 될 수 있습니다.",
+      "reason": "manual ideal description: productive finance as money-flow explainer",
+      "title": "돈은 왜 공장보다 금융시장으로 흐를까"
     },
-    "2026-05-27:story_bundle_6aaab96a27": {
-      "description": "원문은 일본의 역대급 불볕더위와 산업현장 열사병 대책을 다룬 기사입니다. 사무실 복장문화보다 현장 노동의 안전 규칙, 휴식 시간, 냉방 설비, 기업의 예방 의무가 폭염으로 어떻게 바뀌는지 보는 편이 맞습니다. 일본의 열사병 통계나 한국의 폭염 산재 사례가 붙으면 기후적응과 노동안전 이야기로 살릴 수 있고, 그런 자료가 없으면 단독 seed로는 약합니다.",
-      "reason": "corrected heatstroke article frame away from office-shorts PPT pattern",
-      "title": "폭염은 산업현장의 새 안전 규칙이 될까"
-    },
-    "2026-05-27:story_bundle_6af21b621d": {
-      "description": "AI가 일자리를 바꾼다는 말은 많지만, 청년의 첫 직장과 경력 형성에 어떤 영향을 주는지는 따로 볼 필요가 있습니다. 한국은행 자료라 기사성은 약해도 연공편향 기술변화라는 각도가 있어, AI가 숙련자와 신규 진입자에게 다르게 작동하는지 묻기 좋습니다. 이미 흔한 AI 일자리론으로 보이면 낮추고, 청년 노동시장 진입 문제로 좁혀지면 살릴 만합니다.",
-      "reason": "BOK AI-youth employment note rewritten as labor-market question",
-      "title": "AI는 청년 일자리부터 흔들까"
-    },
-    "2026-05-27:story_bundle_8385ead915": {
-      "description": "스타벅스 사태는 단순 follow-up이 아니라, 기업이 AI 문구를 참고했다고 말할 때 책임이 어디까지 흐려지는지 보여줍니다. 소비자 환불 이슈, 휴대폰 제출 거부, AI 문구가 한 사건 안에서 만난다는 점이 흥미롭습니다. 스벅 사건의 근거 자료로만 둘지, AI 시대 기업 책임이라는 더 큰 주제로 키울지는 추가 기사에 달려 있습니다.",
-      "reason": "Starbucks row reframed around AI wording and accountability",
-      "title": "스벅 사태, AI 문구와 책임의 경계"
+    "2026-05-27:story_bundle_7b5d4e352b": {
+      "description": "메인 링크 자체는 AI 바이오 인재 양성 협약이라 단독으로는 행사성 자료에 가깝습니다. 다만 공공 보고서, 현장 치안, 바이오 인력 양성처럼 AI가 실제 조직 안으로 들어오는 사례들이 이어지고 있다는 점은 볼 만합니다. 지금 행은 seed라기보다 'AI 도입이 현장 책임과 사람 교육을 어떻게 바꾸는가'라는 큰 주제의 근거 묶음으로 보는 편이 안전합니다. 관련 과거 영상이 있어 배경자료로 쓸 수 있지만, 가장 가까운 과거 영상은 '주 5회 10년, 딸깍으로 PPT 만드는 법'(2026-04-16, 조회 22.0만, 좋아요 3,172)입니다. 새 각도인지 확인이 필요합니다.",
+      "reason": "manual ideal description: public AI row marked as evidence bundle with syuka context",
+      "title": "AI가 공무원 보고서와 현장 치안에 들어올 때"
     },
     "2026-05-27:story_bundle_84728ca09d": {
-      "description": "월급이 오르는데도 더 가난해지는 느낌은 실질임금이 줄 때 생깁니다. 서구 선진국 기사에서 출발하지만 명목임금, 물가, 소비 여력이라는 체감 지표가 분명해서 한국 데이터와 붙이기 좋습니다. 한국 임금·물가 사례를 붙이면 생활경제 소재가 되고, 해외 현상 소개로 끝나면 근거 자료에 가깝습니다.",
-      "reason": "real wage candidate rewritten as inflation and living-standard question",
+      "description": "월급은 오르는데 더 가난해지는 느낌은 시청자가 바로 이해할 수 있는 생활경제 질문입니다. 핵심은 명목임금이 아니라 실질임금이고, 임금 상승보다 물가가 더 빨리 오르면 생활수준은 후퇴할 수 있다는 점입니다. 해외 기사에서 출발했지만 한국 임금, 물가, 소비 여력 자료를 붙이면 '내 월급은 왜 늘었는데 남는 돈은 줄었나'라는 이야기로 충분히 살릴 수 있습니다.",
+      "reason": "manual ideal description: real wage decline as intuitive living cost story",
       "title": "월급은 올랐는데 왜 더 가난해졌을까"
     },
-    "2026-05-27:story_bundle_84cf80a820": {
-      "description": "페라리 전기차는 신차 뉴스라 그대로 올리면 홍보성 리스크가 큽니다. 다만 9.6억원이라는 가격, 럭셔리 브랜드의 전동화, 배터리 무게와 충전 인프라를 붙이면 전기차 시장이 대중차와 슈퍼카로 갈라지는 신호로 볼 수 있습니다. 단순 브랜드 기사로 보이면 내리고, 전동화의 양극화 사례로 읽히면 조건부로 살릴 수 있습니다.",
-      "reason": "Ferrari EV kept as conditional industry signal despite promo risk",
-      "title": "전기차가 슈퍼카가 되면 뭐가 달라지나"
+    "2026-05-27:story_bundle_0893bec11f": {
+      "description": "B&Q 실적 기사는 회사 뉴스처럼 보이지만, 날씨가 소비를 바꾸는 경로를 보여주는 작은 창입니다. 비가 많이 오면 DIY와 정원용품 판매가 흔들리고, 폭염이 오면 냉방·수리·야외 생활 소비가 달라집니다. 이 후보는 특정 기업 실적보다 기후가 유통 재고, 전력수요, 계절 장사를 어떻게 바꾸는지 보는 쪽으로 키우면 좋습니다. 관련 과거 영상이 있어 배경자료로 쓸 수 있지만, 가장 가까운 과거 영상은 '유럽이 40°C 폭염을 에어컨 없이 버텨야하는 이유'(2025-07-10, 조회 34.1만, 좋아요 3,523)입니다. 새 각도인지 확인이 필요합니다.",
+      "reason": "manual ideal description: weather retail as climate-to-consumption story with syuka note",
+      "title": "날씨가 바꾸는 소비와 기업 실적"
     },
-    "2026-05-27:story_bundle_99dcfcfcf3": {
-      "description": "아파트 공급만으로 집 문제를 빨리 풀 수 없다면 빌라·오피스텔 같은 비아파트가 대안이 될 수 있는지가 쟁점입니다. 전세사기 이후 비아파트 기피, 단기 공급, 주거비, 청년·신혼부부 선택지가 한꺼번에 걸려 있습니다. 정책 홍보처럼 보이면 약하지만, 실제 거주 선택지가 왜 막혔는지를 보여주는 숫자와 사례가 붙으면 살아납니다.",
-      "reason": "housing supply row rewritten as non-apartment policy question",
-      "title": "아파트 말고 집을 빨리 늘리는 법"
+    "2026-05-27:story_bundle_c18634ed9b": {
+      "description": "배달 로봇은 기술 데모로 보면 흔하지만, 실제 거리로 나오면 이야기가 달라집니다. 보행자는 불편하고, 상점은 비용을 줄이고 싶고, 플랫폼은 인건비를 낮추고 싶고, 도시는 안전과 보도 이용 규칙을 정해야 합니다. 이 후보는 로봇이 똑똑한가보다, 자동화가 공공 공간과 노동 비용을 누구에게 넘기는지 보는 쪽이 더 좋습니다.",
+      "reason": "manual ideal description: delivery robots as street space and labor-cost story",
+      "title": "거리로 나온 배달 로봇, 누가 편하고 누가 불편할까"
     },
-    "2026-05-27:story_bundle_a85bbfb6cc": {
-      "description": "챗GPT가 세계 6위 웹사이트가 됐다는 숫자는 그 자체로는 순위 뉴스에 가깝습니다. 하지만 AI가 검색창이나 메신저처럼 매일 쓰는 인터넷 입구가 되고 있는지 묻는다면 의미가 생깁니다. seed로 쓰기보다는 AI 일상화와 검색시장 변화 이야기에 붙일 숫자 evidence인지 보면 좋겠습니다.",
-      "reason": "generic AI traffic story made into seed/evidence decision",
-      "title": "챗GPT가 세계 6위 웹사이트가 됐다는 것"
+    "2026-05-27:story_bundle_4fd1cffd25": {
+      "description": "중동 전쟁이 한국 시청자에게 멀게 느껴져도, 에너지 가격을 거치면 전기요금과 물가의 문제로 들어옵니다. BBC 기사는 영국 가계 전기요금 전망을 다루지만, 구조는 한국에도 익숙합니다. 전쟁과 유가, 가스 가격, 전력 도매가격, 정부 보조, 가계 청구서가 어떤 순서로 연결되는지 보여주면 '멀리 있는 전쟁이 내 생활비가 되는 과정'으로 설명할 수 있습니다.",
+      "reason": "manual ideal description: Middle East shock as household energy-bill transmission story",
+      "title": "중동 전쟁이 전기요금으로 번지는 길"
     },
-    "2026-05-27:story_bundle_da6bffa4cb": {
-      "description": "무료배달 비용이 소비자·점주·플랫폼 사이에서 어떻게 나뉘는지는 좋은 생활경제 질문입니다. 다만 이 행은 클러스터 원문 매칭이 흔들린 것으로 보이므로, 링크 자체보다 주제 검증용으로 봐야 합니다. 무료배달 경쟁, 수수료율, 광고비, 자영업자 마진, 배달노동자 보상으로 확장할 추가 기사가 없으면 보류하는 편이 안전합니다.",
-      "reason": "source mismatch warning kept for guard regression",
-      "title": "무료배달은 누가 내나: 배달앱 수수료와 업주 부담"
+    "2026-05-27:story_bundle_689b33368c": {
+      "description": "맨체스터대가 모든 학부생에게 현장 경험을 제공한다는 기사는 대학 홍보처럼 보일 수 있지만, 뒤에는 더 큰 노동시장 변화가 있습니다. 이제 첫 직장을 얻기 전부터 인턴십, 프로젝트, 네트워크 같은 '경험'을 요구받고, 그 경험을 살 수 있는 학생과 그렇지 못한 학생의 격차가 생깁니다. 한국 청년 취업과 연결한다면 스펙 경쟁 이야기가 아니라 첫 경력이 왜 점점 비싼 입장권이 되는지를 묻는 소재로 볼 수 있습니다.",
+      "reason": "manual ideal description: work placement as first-career access and inequality story",
+      "title": "첫 경력은 왜 점점 비싼 관문이 됐나"
     }
   },
   "run_date": "2026-05-27"
