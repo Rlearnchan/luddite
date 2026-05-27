@@ -20,7 +20,7 @@ Visible columns are fixed in this order:
 메인 링크
 서브 링크
 설명
-참고
+과거 영상
 리뷰-성원
 리뷰-동찬
 리뷰-형찬
@@ -39,17 +39,18 @@ ID
 - `설명` must not include internal labels such as `merged_seed`, `evidence_only`,
   `story_bundle`, or `generic_why`.
 - `설명` must not include syuka-ops similar video metadata.
-- `참고` is for auxiliary context only. Put syuka-ops similar video title/date,
+- `과거 영상` is for auxiliary context only. Put syuka-ops similar video title/date,
   view count, like count, and overlap note here.
+- In the live Google Sheet, only the video title part is hyperlinked to YouTube.
 - `서브 링크` stays short. Use it for bundled supporting/evidence links only.
 
 ## syuka-ops Reference Format
 
 When syuka-ops finds a useful adjacent or duplicate past-video match, write it in
-`참고` like this:
+`과거 영상` like this:
 
 ```text
-관련 과거 영상: 유럽이 40°C 폭염을 에어컨 없이 버텨야하는 이유 (2025-07-10, 조회 34.1만, 좋아요 3,523) · 배경/인접 주제
+유럽이 40°C 폭염을 에어컨 없이 버텨야하는 이유 (2025-07-10, 조회 34.1만, 좋아요 3,523) · 배경/인접 주제
 ```
 
-If the match is weak or not useful for reviewers, leave `참고` blank.
+If the match is weak or not useful for reviewers, leave `과거 영상` blank.

@@ -57,6 +57,7 @@ class FakeGoogleSheetsClient:
         self.appended = []
         self.formatted = []
         self.review_board_formats = []
+        self.text_hyperlinks = []
 
     def get_sheet_id(self, spreadsheet_id: str, sheet_name: str) -> int | None:
         return self.sheet_id
@@ -119,6 +120,15 @@ class FakeGoogleSheetsClient:
         self.review_board_formats.append(
             (sheet_id, row_count, column_count, header_row, intro_row_count)
         )
+
+    def apply_text_hyperlinks(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        *,
+        links: list[dict[str, object]],
+    ) -> None:
+        self.text_hyperlinks.append((sheet_id, links))
 
 
 def _write_preview(path, rows):
@@ -188,7 +198,7 @@ def test_bundle_review_visible_columns_are_locked() -> None:
         "메인 링크",
         "서브 링크",
         "설명",
-        "참고",
+        "과거 영상",
         "리뷰-성원",
         "리뷰-동찬",
         "리뷰-형찬",
@@ -749,6 +759,69 @@ def test_bundle_review_replace_writes_header_and_rows(tmp_path) -> None:
     assert report.rows_appended == 1
     assert report.appended_range is not None
     assert report.appended_range.start_row == 7
+
+
+def test_bundle_review_replace_links_past_video_title(tmp_path) -> None:
+    preview = tmp_path / "2026-05-23_bundle_review_sheet.csv"
+    video_title = "유럽이 40°C 폭염을 에어컨 없이 버텨야하는 이유"
+    _write_bundle_review_preview(
+        preview,
+        [
+            {
+                "일시": "2026-05-23 09:00",
+                "제목": "폭염이 도시 생활을 바꾸는 이유",
+                "메인 링크": "https://example.com/heat",
+                "설명": "폭염과 전력 수요를 같이 볼 수 있는 후보입니다.",
+                "과거 영상": f"{video_title} (2025-07-10, 조회 34.1만) · 배경/인접 주제",
+                "ID": "2026-05-23:story_bundle_heat",
+            }
+        ],
+    )
+    preview.with_name("2026-05-23_bundle_review_sheet_metadata.json").write_text(
+        json.dumps(
+            {
+                "run_date": "2026-05-23",
+                "rows": [
+                    {
+                        "ID": "2026-05-23:story_bundle_heat",
+                        "syuka_similarity": {
+                            "top_match_title": video_title,
+                            "past_video_url": "https://www.youtube.com/watch?v=heat",
+                        },
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    client = FakeGoogleSheetsClient(sheet_id=99, values=[])
+
+    append_jibi_sheet(
+        config=GoogleSheetAppendConfig(
+            spreadsheet_id="spreadsheet",
+            source_preview_csv=preview,
+            sheet_schema="bundle-review",
+            dry_run=False,
+            replace_existing=True,
+        ),
+        client=client,
+    )
+
+    assert client.text_hyperlinks == [
+        (
+            99,
+            [
+                {
+                    "row": 7,
+                    "column": BUNDLE_REVIEW_SHEET_COLUMNS.index("과거 영상") + 1,
+                    "start_index": 0,
+                    "end_index": len(video_title),
+                    "url": "https://www.youtube.com/watch?v=heat",
+                }
+            ],
+        )
+    ]
 
 
 def test_bundle_review_replace_dry_run_detects_existing_review_comments(

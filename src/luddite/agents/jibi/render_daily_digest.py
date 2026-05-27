@@ -1082,13 +1082,19 @@ def _apply_editorial_override(
         return
     title = str(override.get("title") or "").strip()
     description = str(override.get("description") or "").strip()
-    reference = str(override.get("reference") or override.get("참고") or "").strip()
+    reference = str(
+        override.get("past_video")
+        or override.get("과거 영상")
+        or override.get("reference")
+        or override.get("참고")
+        or ""
+    ).strip()
     if title:
         row["제목"] = title
     if description:
         row["설명"] = description
     if reference:
-        row["참고"] = reference
+        row["과거 영상"] = reference
 
 
 def _write_editorial_override_template(
@@ -2595,7 +2601,8 @@ def _bundle_review_metadata_row(
         "story_bundle_id": str(record.get("story_bundle_id") or ""),
         "title": str(row.get("제목") or record.get("bundle_title") or ""),
         "description": str(row.get("설명") or ""),
-        "reference": str(row.get("참고") or ""),
+        "past_video": str(row.get("과거 영상") or ""),
+        "reference": str(row.get("과거 영상") or row.get("참고") or ""),
         "auto_title": auto_title or str(row.get("제목") or ""),
         "auto_description": auto_description or str(row.get("설명") or ""),
         "editorial_override_applied": bool(editorial_override),
@@ -2990,23 +2997,18 @@ def _syuka_similarity_reference(syuka_similarity: dict[str, Any] | None) -> str:
     view_text = _format_metric_count(syuka_similarity.get("view_count"), "조회")
     like_text = _format_metric_count(syuka_similarity.get("like_count"), "좋아요")
     metrics = ", ".join(item for item in [date_text, view_text, like_text] if item)
-    prefix = {
-        "duplicate": "과거 유사 영상",
-        "adjacent": "관련 과거 영상",
-        "needs_human_check": "확인 필요 영상",
-    }.get(recommendation, "과거 영상")
     note = {
         "duplicate": "강한 중복 가능",
         "adjacent": "배경/인접 주제",
         "needs_human_check": "약한 유사도",
     }.get(recommendation, "")
     if metrics and note:
-        return f"{prefix}: {title} ({metrics}) · {note}"
+        return f"{title} ({metrics}) · {note}"
     if metrics:
-        return f"{prefix}: {title} ({metrics})"
+        return f"{title} ({metrics})"
     if note:
-        return f"{prefix}: {title} · {note}"
-    return f"{prefix}: {title}"
+        return f"{title} · {note}"
+    return title
 
 
 def _format_video_date(value: object) -> str:
@@ -3099,7 +3101,7 @@ def _bundle_review_row(
         "메인 링크": candidate.get("seed_url", ""),
         "서브 링크": sub_links,
         "설명": description,
-        "참고": _syuka_similarity_reference(syuka_similarity),
+        "과거 영상": _syuka_similarity_reference(syuka_similarity),
         "리뷰-성원": "",
         "리뷰-동찬": "",
         "리뷰-형찬": "",

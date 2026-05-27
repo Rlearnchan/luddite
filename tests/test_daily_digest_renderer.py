@@ -775,11 +775,13 @@ def test_bundle_review_adds_syuka_similarity_metadata_and_annotation(tmp_path) -
     assert list(rows[0].keys()) == BUNDLE_REVIEW_SHEET_COLUMNS
     assert "과거 영상과 강하게 겹칠 수 있습니다" not in rows[0]["설명"]
     assert "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?" not in rows[0]["설명"]
-    assert "과거 유사 영상" in rows[0]["참고"]
-    assert "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?" in rows[0]["참고"]
-    assert "2026-05-01" in rows[0]["참고"]
-    assert "조회 150만" in rows[0]["참고"]
-    assert "좋아요 3.2만" in rows[0]["참고"]
+    assert "과거 유사 영상" not in rows[0]["과거 영상"]
+    assert rows[0]["과거 영상"].startswith(
+        "'쉬었음' 역대 최고인데, 실업률은 왜 최저인가?"
+    )
+    assert "2026-05-01" in rows[0]["과거 영상"]
+    assert "조회 150만" in rows[0]["과거 영상"]
+    assert "좋아요 3.2만" in rows[0]["과거 영상"]
     assert metadata["rows"][0]["syuka_similarity"]["recommendation"] == "duplicate"
     assert metadata["rows"][0]["syuka_similarity"]["top_match_score"] == 12
     assert metadata["rows"][0]["syuka_similarity"]["like_count"] == 32000
@@ -863,7 +865,7 @@ def test_bundle_review_editorial_override_keeps_syuka_annotation(tmp_path) -> No
     assert rows[0]["설명"].startswith("사람이 보기 좋게 다시 쓴 설명입니다.")
     assert "과거 영상과 강하게 겹칠 수 있습니다" not in rows[0]["설명"]
     assert "청년 노동시장 이탈을 다룬 과거 영상" not in rows[0]["설명"]
-    assert "청년 노동시장 이탈을 다룬 과거 영상" in rows[0]["참고"]
+    assert "청년 노동시장 이탈을 다룬 과거 영상" in rows[0]["과거 영상"]
 
 
 def test_bundle_review_keeps_low_confidence_syuka_metrics_out_of_description(
@@ -931,7 +933,7 @@ def test_bundle_review_keeps_low_confidence_syuka_metrics_out_of_description(
     assert "과거 영상과 약하게 겹칠 수 있어" not in rows[0]["설명"]
     assert "AI가 바꾸는 주식시장" not in rows[0]["설명"]
     assert "조회 200만" not in rows[0]["설명"]
-    assert rows[0]["참고"] == ""
+    assert rows[0]["과거 영상"] == ""
     similarity = metadata["rows"][0]["syuka_similarity"]
     assert similarity["match_confidence"] == "low"
     assert similarity["match_reason"] == "transcript_only"

@@ -66,14 +66,18 @@ BUNDLE_REVIEW_SHEET_COLUMNS = [
     "메인 링크",
     "서브 링크",
     "설명",
-    "참고",
+    "과거 영상",
     "리뷰-성원",
     "리뷰-동찬",
     "리뷰-형찬",
     "ID",
 ]
 LEGACY_BUNDLE_REVIEW_SHEET_COLUMNS = [
-    column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "참고"
+    column for column in BUNDLE_REVIEW_SHEET_COLUMNS if column != "과거 영상"
+]
+LEGACY_BUNDLE_REVIEW_WITH_REFERENCE_SHEET_COLUMNS = [
+    "참고" if column == "과거 영상" else column
+    for column in BUNDLE_REVIEW_SHEET_COLUMNS
 ]
 REVIEWER_COLUMNS = ["리뷰-성원", "리뷰-동찬", "리뷰-형찬"]
 REVIEW_BOARD_INTRO_TITLE = "안녕하세요. Jibi입니다."
@@ -206,7 +210,7 @@ def _schema_legacy_columns(sheet_schema: str) -> list[str] | None:
     if schema == CANDIDATE_SHEET_SCHEMA:
         return LEGACY_25_SHEET_COLUMNS
     if schema == BUNDLE_REVIEW_SHEET_SCHEMA:
-        return LEGACY_BUNDLE_REVIEW_SHEET_COLUMNS
+        return LEGACY_BUNDLE_REVIEW_WITH_REFERENCE_SHEET_COLUMNS
     return None
 
 
@@ -417,6 +421,12 @@ def _find_bundle_review_header_row(values: list[list[str]]) -> int | None:
     current = _find_exact_header_row(values, BUNDLE_REVIEW_SHEET_COLUMNS)
     if current is not None:
         return current
+    with_reference = _find_exact_header_row(
+        values,
+        LEGACY_BUNDLE_REVIEW_WITH_REFERENCE_SHEET_COLUMNS,
+    )
+    if with_reference is not None:
+        return with_reference
     return _find_exact_header_row(values, LEGACY_BUNDLE_REVIEW_SHEET_COLUMNS)
 
 
@@ -541,6 +551,8 @@ def _snapshot_rows(existing_values: list[list[str]]) -> list[dict[str, object]]:
         return []
     header = existing_values[header_index]
     indexes = {column: _column_index(header, column) for column in BUNDLE_REVIEW_SHEET_COLUMNS}
+    if indexes.get("과거 영상") is None:
+        indexes["과거 영상"] = _column_index(header, "참고")
     rows: list[dict[str, object]] = []
     for row_number, row in enumerate(existing_values[header_index + 1 :], start=header_index + 2):
         if not any(str(value).strip() for value in row):
@@ -588,6 +600,47 @@ def _load_review_board_metadata_index(preview_csv: Path) -> dict[str, dict[str, 
                 if key:
                     index.setdefault(key, row)
     return index
+
+
+def _review_board_past_video_link_specs(
+    *,
+    preview_csv: Path,
+    rows: list[dict[str, str]],
+    header_row_number: int,
+    columns: list[str],
+) -> list[dict[str, object]]:
+    if "과거 영상" not in columns:
+        return []
+    column_number = columns.index("과거 영상") + 1
+    metadata_index = _load_review_board_metadata_index(preview_csv)
+    links: list[dict[str, object]] = []
+    for row_offset, row in enumerate(rows, start=1):
+        review_id = str(row.get("ID") or "").strip()
+        metadata = metadata_index.get(review_id) if review_id else None
+        if not metadata:
+            continue
+        syuka = metadata.get("syuka_similarity")
+        if not isinstance(syuka, dict):
+            continue
+        url = str(syuka.get("past_video_url") or "").strip()
+        title = str(syuka.get("top_match_title") or "").strip()
+        visible_text = str(row.get("과거 영상") or "").strip()
+        if not url or not title or not visible_text:
+            continue
+        try:
+            start_index = visible_text.index(title)
+        except ValueError:
+            continue
+        links.append(
+            {
+                "row": header_row_number + row_offset,
+                "column": column_number,
+                "start_index": start_index,
+                "end_index": start_index + len(title),
+                "url": url,
+            }
+        )
+    return links
 
 
 def _enrich_snapshot_row(
@@ -780,6 +833,18 @@ def append_jibi_sheet(
                     intro_row_count=intro_row_count,
                 )
                 report.styling_applied = True
+                links = _review_board_past_video_link_specs(
+                    preview_csv=preview_csv,
+                    rows=rows,
+                    header_row_number=header_row_number,
+                    columns=columns,
+                )
+                if links:
+                    client.apply_text_hyperlinks(
+                        config.spreadsheet_id,
+                        sheet_id,
+                        links=links,
+                    )
             if (
                 sheet_schema != BUNDLE_REVIEW_SHEET_SCHEMA
                 and config.styling_enabled

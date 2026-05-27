@@ -182,7 +182,7 @@ Guardrails:
   broad Guardian feed by default.
 
 Editorial override files are local operating artifacts. They let Codex/user
-rewrite the visible `제목`, `설명`, and optional `참고` without changing the fixed
+rewrite the visible `제목`, `설명`, and optional `과거 영상` without changing the fixed
 sheet format or losing the original auto-generated copy. The metadata sidecar
 records `auto_title`, `auto_description`, `editorial_override_applied`, and
 `editorial_override_reason`.
@@ -245,10 +245,11 @@ Use the recommendations as advisory:
 
 When a snapshot report exists for the same date, the Jibi bundle review metadata
 sidecar records a `syuka_similarity` object. The visible `Jibi` sheet keeps the
-same fixed format. The `참고` cell gets the similar-video title/date/views/likes
-for duplicate or useful adjacent overlap cases; `설명` stays focused on the
-candidate's story value. No candidate is removed or promoted by the snapshot
-probe.
+same fixed format. The `과거 영상` cell gets the similar-video
+title/date/views/likes for duplicate or useful adjacent overlap cases; in the
+live Google Sheet, only the title text is hyperlinked to YouTube. `설명` stays
+focused on the candidate's story value. No candidate is removed or promoted by
+the snapshot probe.
 
 For the normal operating experiment, prefer the two-pass wrapper:
 
@@ -476,7 +477,7 @@ JIBI_ALLOW_REVIEW_OVERWRITE=1 make jibi-review-board-replace
 Reviewers should read each row as one story bundle. Supporting/evidence items
 are not shown as separate rows; they appear as `서브 링크`. The `설명` cell
 explains why Jibi selected the candidate, how it could become a story, and what
-is still missing. The `참고` cell is reserved for auxiliary context such as
+is still missing. The `과거 영상` cell is reserved for auxiliary context such as
 read-only syuka-ops past-video matches.
 
 Ask reviewers to start each review with one lightweight tag:
@@ -498,7 +499,7 @@ Current review columns in the shared sheet:
 - `메인 링크`: primary source link.
 - `서브 링크`: supporting/evidence source links, separated by ` | `.
 - `설명`: reviewer-facing prose explaining selection reason, story growth path, and missing evidence.
-- `참고`: optional auxiliary context, especially syuka-ops similar video title/date/views/likes.
+- `과거 영상`: optional auxiliary context, especially syuka-ops similar video title/date/views/likes. The title text is hyperlinked in the live Google Sheet when a YouTube URL is available.
 - `리뷰-성원`, `리뷰-동찬`, `리뷰-형찬`: one-line reviewer notes.
 - `ID`: stable review item id for later feedback analysis.
 

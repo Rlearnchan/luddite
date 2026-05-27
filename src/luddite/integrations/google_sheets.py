@@ -63,6 +63,14 @@ class GoogleSheetsClient(Protocol):
         intro_row_count: int = 0,
     ) -> None: ...
 
+    def apply_text_hyperlinks(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        *,
+        links: list[dict[str, Any]],
+    ) -> None: ...
+
 
 class GoogleSheetsApiClient:
     """Thin wrapper around Google Sheets API v4.
@@ -393,6 +401,62 @@ class GoogleSheetsApiClient:
                     }
                 }
             )
+        (
+            self.service.spreadsheets()
+            .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
+            .execute()
+        )
+
+    def apply_text_hyperlinks(
+        self,
+        spreadsheet_id: str,
+        sheet_id: int,
+        *,
+        links: list[dict[str, Any]],
+    ) -> None:
+        requests: list[dict[str, Any]] = []
+        for link in links:
+            try:
+                row_number = int(link["row"])
+                column_number = int(link["column"])
+                start_index = int(link.get("start_index", 0))
+                end_index = int(link["end_index"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            url = str(link.get("url") or "").strip()
+            if row_number < 1 or column_number < 1 or not url or end_index <= start_index:
+                continue
+            requests.append(
+                {
+                    "updateCells": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": row_number - 1,
+                            "endRowIndex": row_number,
+                            "startColumnIndex": column_number - 1,
+                            "endColumnIndex": column_number,
+                        },
+                        "rows": [
+                            {
+                                "values": [
+                                    {
+                                        "textFormatRuns": [
+                                            {
+                                                "startIndex": start_index,
+                                                "format": {"link": {"uri": url}},
+                                            },
+                                            {"startIndex": end_index, "format": {}},
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "fields": "textFormatRuns",
+                    }
+                }
+            )
+        if not requests:
+            return
         (
             self.service.spreadsheets()
             .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
