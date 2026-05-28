@@ -180,6 +180,162 @@ BOARD_SCORE_PRODUCT_REVIEW_TERMS = {
     "shopping guide",
     "buying guide",
 }
+TOPIC_FAMILY_TERMS = {
+    "ai_tech": {
+        "ai",
+        "인공지능",
+        "챗봇",
+        "대화형ai",
+        "대화형 ai",
+        "데이터센터",
+        "datacentre",
+        "datacenter",
+        "automation",
+        "업무자동화",
+    },
+    "macro_economy": {
+        "경제성장",
+        "성장률",
+        "물가",
+        "금리",
+        "환율",
+        "수출",
+        "gdp",
+        "inflation",
+        "한국은행",
+        "bok",
+    },
+    "markets_finance": {
+        "주가",
+        "증시",
+        "ipo",
+        "상장",
+        "채권",
+        "은행",
+        "금융",
+        "pf",
+        "투자",
+        "market",
+        "shares",
+        "stocks",
+    },
+    "policy_government": {
+        "정부",
+        "정책",
+        "장관",
+        "규제",
+        "지원",
+        "공공",
+        "공무원",
+        "회의",
+        "보도자료",
+        "수행기관",
+    },
+    "global_conflict": {
+        "war",
+        "전쟁",
+        "iran",
+        "middle east",
+        "ukraine",
+        "tariff",
+        "관세",
+        "중동",
+    },
+    "energy_climate": {
+        "energy",
+        "electricity",
+        "전기요금",
+        "전력",
+        "가스",
+        "폭염",
+        "냉방",
+        "heatwave",
+        "climate",
+        "emissions",
+        "탄소",
+    },
+    "labor_work": {
+        "노동",
+        "고용",
+        "청년",
+        "임금",
+        "직원",
+        "성과급",
+        "workplace",
+        "worker",
+        "staff",
+        "jobs",
+        "bonus",
+    },
+    "consumer_life": {
+        "가격",
+        "요금",
+        "생활비",
+        "소비",
+        "쇼핑",
+        "배달",
+        "구독",
+        "소음",
+        "스마트폰",
+        "household",
+        "lawnmower",
+        "subscription",
+    },
+    "industry_supply_chain": {
+        "반도체",
+        "메모리",
+        "공급",
+        "수급",
+        "산업",
+        "수출",
+        "배터리",
+        "공장",
+        "chip",
+        "memory",
+        "supply",
+        "factory",
+    },
+    "culture_media": {
+        "콘텐츠",
+        "영상",
+        "음악",
+        "브이로그",
+        "저작권",
+        "media",
+        "spotify",
+        "vlog",
+        "copyright",
+    },
+    "sports_entertainment": BOARD_SCORE_SPORTS_PRIMARY_TERMS,
+    "odd_hook": {
+        "양파",
+        "염소",
+        "소음",
+        "잔디깎이",
+        "lawnmower",
+        "odd",
+    },
+}
+TOPIC_PRIMARY_PRIORITY = [
+    "energy_climate",
+    "industry_supply_chain",
+    "labor_work",
+    "consumer_life",
+    "policy_government",
+    "macro_economy",
+    "markets_finance",
+    "global_conflict",
+    "culture_media",
+    "sports_entertainment",
+    "odd_hook",
+    "ai_tech",
+]
+TOPIC_DIVERSITY_RANK_PENALTIES = {
+    3: -8,
+    4: -18,
+    5: -30,
+}
+TOPIC_DIVERSITY_CONSTRAINED_FAMILIES = {"ai_tech"}
 BOARD_SCORE_GRADE_CUTS = {
     "A": 90,
     "B": 60,
@@ -693,6 +849,7 @@ def write_bundle_review_sheet_preview(
     editorial_overrides_path: Path | None = None,
     allow_reviewed_candidates: bool | None = None,
     use_board_score: bool | None = None,
+    use_topic_diversity: bool | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -724,6 +881,11 @@ def write_bundle_review_sheet_preview(
         if use_board_score is not None
         else _env_bool("JIBI_USE_BOARD_SCORE", False)
     )
+    use_topic_diversity_value = (
+        use_topic_diversity
+        if use_topic_diversity is not None
+        else _env_bool("JIBI_USE_TOPIC_DIVERSITY", False)
+    )
     second_search_index = _load_second_search_intake_index(paths.REPORTS_DIR)
     all_bundle_records = _story_bundle_records(
         candidates,
@@ -741,6 +903,7 @@ def write_bundle_review_sheet_preview(
         review_board_limit=review_board_limit,
         allow_reviewed_candidates=allow_reviewed,
         use_board_score=use_board_score_value,
+        use_topic_diversity=use_topic_diversity_value,
     )
     metadata_rows: list[dict[str, Any]] = []
     with path.open("w", encoding="utf-8-sig", newline="") as output:
@@ -789,13 +952,18 @@ def write_bundle_review_sheet_preview(
                 story_fingerprint=str(record.get("story_fingerprint") or ""),
             )
             mismatch_reasons = _board_mismatch_reasons(record, representative, override)
-            board_score = _board_score_info(
-                record=record,
-                representative=representative,
-                history_rows=_reviewed_history_rows_for_record(record, history_index),
-                mismatch_reasons=mismatch_reasons,
-                syuka_similarity=syuka_similarity,
-                second_search=_second_search_for_record(record, second_search_index),
+            board_score = (
+                board_selection_report.get("board_score_by_id", {}).get(
+                    str(record.get("story_bundle_id") or ""),
+                )
+                or _board_score_info(
+                    record=record,
+                    representative=representative,
+                    history_rows=_reviewed_history_rows_for_record(record, history_index),
+                    mismatch_reasons=mismatch_reasons,
+                    syuka_similarity=syuka_similarity,
+                    second_search=_second_search_for_record(record, second_search_index),
+                )
             )
             row = _bundle_review_row(
                 digest_date=digest_date,
@@ -1449,6 +1617,7 @@ def _select_review_board_records(
     review_board_limit: int,
     allow_reviewed_candidates: bool,
     use_board_score: bool,
+    use_topic_diversity: bool,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     selected: list[dict[str, Any]] = []
     selected_ids: set[str] = set()
@@ -1500,6 +1669,11 @@ def _select_review_board_records(
                 override=override,
             )
         )
+    _apply_topic_diversity_adjustments(
+        scored_records,
+        score_rows,
+        use_topic_diversity=use_topic_diversity,
+    )
 
     if use_board_score:
         scored_records.sort(
@@ -1574,7 +1748,12 @@ def _select_review_board_records(
                 break
     return selected, suppressed, {
         "use_board_score": use_board_score,
+        "use_topic_diversity": use_topic_diversity,
         "score_rows": score_rows,
+        "board_score_by_id": {
+            str(record.get("story_bundle_id") or ""): board_score
+            for record, board_score in scored_records
+        },
         "hard_blocked": hard_blocked,
         "mismatch_blocked": mismatch_blocked,
         "reviewed_suppressed": suppressed,
@@ -1786,6 +1965,194 @@ def _board_score_review_lesson_adjustments(
     )
 
 
+def _topic_profile(
+    record: dict[str, Any],
+    representative: dict[str, Any],
+) -> dict[str, Any]:
+    text = " ".join(
+        [
+            str(representative.get("title") or ""),
+            str(representative.get("summary") or ""),
+            str(representative.get("why_interesting") or ""),
+            " ".join(str(item) for item in representative.get("possible_expansions") or []),
+            str(record.get("bundle_title") or ""),
+            str(record.get("why_bundle") or ""),
+            str(record.get("story_fingerprint") or ""),
+            str(representative.get("seed_type") or ""),
+            str(representative.get("source_role_class") or ""),
+        ]
+    ).lower()
+    signals_by_family: dict[str, list[str]] = {}
+    for family, terms in TOPIC_FAMILY_TERMS.items():
+        matches = [
+            str(term)
+            for term in sorted(terms)
+            if _topic_term_in_text(str(term), text)
+        ]
+        if matches:
+            signals_by_family[family] = matches[:5]
+    families = sorted(signals_by_family)
+    if not families:
+        families = ["other"]
+        signals_by_family["other"] = []
+    primary = _primary_topic_family(families, signals_by_family, text)
+    signal_count = sum(len(items) for items in signals_by_family.values())
+    confidence = "low"
+    if signal_count >= 4 or len(families) >= 3:
+        confidence = "high"
+    elif signal_count >= 2 or families != ["other"]:
+        confidence = "medium"
+    return {
+        "topic_families": families,
+        "primary_topic_family": primary,
+        "topic_confidence": confidence,
+        "topic_signals": signals_by_family,
+    }
+
+
+def _primary_topic_family(
+    families: list[str],
+    signals_by_family: dict[str, list[str]],
+    text: str,
+) -> str:
+    del signals_by_family
+    family_set = set(families)
+    if "energy_climate" in family_set and any(
+        term in text
+        for term in (
+            "전기요금",
+            "전력",
+            "energy",
+            "electricity",
+            "heatwave",
+            "폭염",
+            "냉방",
+            "emissions",
+            "탄소",
+        )
+    ):
+        return "energy_climate"
+    if "industry_supply_chain" in family_set and any(
+        term in text
+        for term in (
+            "반도체",
+            "메모리",
+            "수급",
+            "수출",
+            "스마트폰",
+            "chip",
+            "memory",
+            "supply",
+        )
+    ):
+        return "industry_supply_chain"
+    if "consumer_life" in family_set and any(
+        term in text
+        for term in ("생활비", "구독", "쇼핑", "배달", "소음", "household", "subscription")
+    ):
+        return "consumer_life"
+    for family in TOPIC_PRIMARY_PRIORITY:
+        if family in family_set:
+            return family
+    return families[0] if families else "other"
+
+
+def _topic_rank_penalty(rank: int, *, softened: bool) -> int:
+    if rank <= 2:
+        return 0
+    if rank >= 5:
+        penalty = TOPIC_DIVERSITY_RANK_PENALTIES[5]
+    else:
+        penalty = TOPIC_DIVERSITY_RANK_PENALTIES.get(rank, 0)
+    if softened and penalty < 0:
+        return int(round(penalty / 2))
+    return penalty
+
+
+def _apply_topic_diversity_adjustments(
+    scored_records: list[tuple[dict[str, Any], dict[str, Any]]],
+    score_rows: list[dict[str, Any]],
+    *,
+    use_topic_diversity: bool,
+) -> None:
+    row_by_id = {str(row.get("story_bundle_id") or ""): row for row in score_rows}
+    ranked_by_family: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for record, board_score in scored_records:
+        record_id = str(record.get("story_bundle_id") or "")
+        for family in board_score.get("topic_families") or ["other"]:
+            ranked_by_family.setdefault(str(family), []).append((record_id, board_score))
+    family_ranks: dict[str, dict[str, int]] = {}
+    for family, items in ranked_by_family.items():
+        sorted_items = sorted(
+            items,
+            key=lambda item: float(item[1].get("board_score") or 0),
+            reverse=True,
+        )
+        family_ranks[family] = {
+            record_id: index
+            for index, (record_id, _board_score) in enumerate(sorted_items, start=1)
+        }
+
+    for record, board_score in scored_records:
+        record_id = str(record.get("story_bundle_id") or "")
+        families = [str(item) for item in board_score.get("topic_families") or ["other"]]
+        primary = str(board_score.get("primary_topic_family") or "other")
+        rank_by_family = {
+            family: family_ranks.get(family, {}).get(record_id, 0)
+            for family in families
+        }
+        penalty_candidates: list[tuple[int, str, int, bool]] = []
+        for family, rank in rank_by_family.items():
+            if not rank:
+                continue
+            if family not in TOPIC_DIVERSITY_CONSTRAINED_FAMILIES:
+                continue
+            softened = False
+            penalty = _topic_rank_penalty(rank, softened=softened)
+            if penalty:
+                penalty_candidates.append((penalty, family, rank, softened))
+        penalty, family, rank, softened = min(
+            penalty_candidates,
+            default=(0, "", 0, False),
+            key=lambda item: item[0],
+        )
+        base_score = float(board_score.get("board_score") or 0)
+        board_score["board_score_before_topic_diversity"] = round(base_score, 1)
+        board_score["topic_diversity_rank_by_family"] = rank_by_family
+        board_score["topic_diversity_potential_penalty"] = penalty
+        board_score["topic_diversity_penalty"] = penalty if use_topic_diversity else 0
+        if penalty:
+            reason = f"{penalty} topic_diversity_{family}_rank_{rank}"
+            if softened:
+                reason += "_softened_cross_family"
+            board_score["topic_diversity_reason"] = reason
+            if use_topic_diversity:
+                board_score["board_score"] = round(max(0.0, base_score + penalty), 1)
+                board_score.setdefault("reasons", []).append(reason)
+        else:
+            board_score["topic_diversity_reason"] = ""
+        row = row_by_id.get(record_id)
+        if row is None:
+            continue
+        row["board_score"] = board_score.get("board_score", 0)
+        row["board_score_before_topic_diversity"] = board_score.get(
+            "board_score_before_topic_diversity",
+            0,
+        )
+        row["board_score_reasons"] = board_score.get("reasons", [])
+        row["topic_families"] = families
+        row["primary_topic_family"] = primary
+        row["topic_confidence"] = board_score.get("topic_confidence", "")
+        row["topic_signals"] = board_score.get("topic_signals", {})
+        row["topic_diversity_rank_by_family"] = rank_by_family
+        row["topic_diversity_potential_penalty"] = board_score.get(
+            "topic_diversity_potential_penalty",
+            0,
+        )
+        row["topic_diversity_penalty"] = board_score.get("topic_diversity_penalty", 0)
+        row["topic_diversity_reason"] = board_score.get("topic_diversity_reason", "")
+
+
 def _board_score_info(
     *,
     record: dict[str, Any],
@@ -1809,6 +2176,7 @@ def _board_score_info(
     quality_flags = set(str(flag) for flag in representative.get("quality_flags") or [])
     weakness = set(str(flag) for flag in so_what.get("weakness_signals") or [])
     review_context = _history_review_context(history_rows)
+    topic_profile = _topic_profile(record, representative)
 
     if story_role == "standalone_seed" or seed_quality == "standalone_seed":
         score += 8
@@ -1921,6 +2289,7 @@ def _board_score_info(
         "review_editorial_roles": review_editorial_roles,
         "review_failure_modes": review_context.get("review_failure_modes", []),
         "review_positive_signals": review_context.get("review_positive_signals", []),
+        **topic_profile,
     }
 
 
@@ -1949,7 +2318,25 @@ def _board_score_report_row(
         ),
         "total_score": board_score.get("total_score", 0),
         "board_score": board_score.get("board_score", 0),
+        "board_score_before_topic_diversity": board_score.get(
+            "board_score_before_topic_diversity",
+            board_score.get("board_score", 0),
+        ),
         "board_score_reasons": board_score.get("reasons", []),
+        "topic_families": board_score.get("topic_families", []),
+        "primary_topic_family": board_score.get("primary_topic_family", "other"),
+        "topic_confidence": board_score.get("topic_confidence", ""),
+        "topic_signals": board_score.get("topic_signals", {}),
+        "topic_diversity_rank_by_family": board_score.get(
+            "topic_diversity_rank_by_family",
+            {},
+        ),
+        "topic_diversity_potential_penalty": board_score.get(
+            "topic_diversity_potential_penalty",
+            0,
+        ),
+        "topic_diversity_penalty": board_score.get("topic_diversity_penalty", 0),
+        "topic_diversity_reason": board_score.get("topic_diversity_reason", ""),
         "review_adjustments": board_score.get("review_adjustments", []),
         "review_editorial_roles": board_score.get("review_editorial_roles", []),
         "review_failure_modes": board_score.get("review_failure_modes", []),
@@ -2338,6 +2725,56 @@ def _reconsideration_status(
     return "not_reconsidered_needs_second_search_or_new_hook"
 
 
+def _topic_family_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    for row in rows:
+        for family in row.get("topic_families") or ["other"]:
+            counts[str(family)] += 1
+    return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0])))
+
+
+def _primary_topic_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts = Counter(str(row.get("primary_topic_family") or "other") for row in rows)
+    return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0])))
+
+
+def _topic_diversity_warnings(rows: list[dict[str, Any]]) -> list[str]:
+    if not rows:
+        return []
+    warnings: list[str] = []
+    total = len(rows)
+    for family, count in _topic_family_counts(rows).items():
+        share = count / total
+        if count >= 4 or share >= 0.4:
+            warnings.append(f"topic_overconcentration:{family}={count}/{total}")
+    for family, count in _primary_topic_counts(rows).items():
+        if count >= 4:
+            warnings.append(f"primary_topic_overconcentration:{family}={count}/{total}")
+    return warnings
+
+
+def _topic_diversity_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "title": str(row.get("title") or ""),
+            "board_score": row.get("board_score", 0),
+            "board_score_before_topic_diversity": row.get(
+                "board_score_before_topic_diversity",
+                row.get("board_score", 0),
+            ),
+            "topic_families": row.get("topic_families") or [],
+            "primary_topic_family": row.get("primary_topic_family") or "other",
+            "topic_diversity_potential_penalty": row.get(
+                "topic_diversity_potential_penalty",
+                0,
+            ),
+            "topic_diversity_penalty": row.get("topic_diversity_penalty", 0),
+            "topic_diversity_reason": row.get("topic_diversity_reason", ""),
+        }
+        for row in rows
+    ]
+
+
 def _write_board_score_report(
     *,
     digest_date: str,
@@ -2385,6 +2822,8 @@ def _write_board_score_report(
         reasons = list(reason_index.get(record_id) or [])
         if row.get("mismatch_reasons"):
             reasons.append("source_cluster_title_mismatch")
+        if int(row.get("topic_diversity_penalty") or 0) < 0:
+            reasons.append("topic_diversity_downrank")
         if not reasons and float(row.get("board_score") or 0) < selected_board_floor:
             reasons.append("board_score_downranked_below_selected_floor")
         if not reasons:
@@ -2513,9 +2952,24 @@ def _write_board_score_report(
         for row in review_adjustment_rows
         if "needs_new_angle" in set(row.get("review_adjustments") or [])
     ]
+    topic_diversity_summary = {
+        "use_topic_diversity": bool(selection_report.get("use_topic_diversity")),
+        "constrained_families": sorted(TOPIC_DIVERSITY_CONSTRAINED_FAMILIES),
+        "selected_topic_family_counts": _topic_family_counts(selected_rows),
+        "selected_primary_topic_counts": _primary_topic_counts(selected_rows),
+        "eligible_topic_family_counts": _topic_family_counts(eligible_score_rows),
+        "warnings": _topic_diversity_warnings(selected_rows),
+        "selected_rows": _topic_diversity_rows(selected_rows),
+        "penalized_rows": [
+            row
+            for row in _topic_diversity_rows(score_rows)
+            if int(row.get("topic_diversity_potential_penalty") or 0) < 0
+        ][:25],
+    }
     payload = {
         "run_date": digest_date,
         "use_board_score": bool(selection_report.get("use_board_score")),
+        "use_topic_diversity": bool(selection_report.get("use_topic_diversity")),
         "selected_count": len(selected_rows),
         "score_rows_count": len(score_rows),
         "mismatch_guarded_count": len(mismatch_rows),
@@ -2531,6 +2985,7 @@ def _write_board_score_report(
         "hook_subblock_queue": hook_subblock_rows[:25],
         "do_not_rescue_with_links": do_not_rescue_rows[:25],
         "needs_new_angle": needs_new_angle_rows[:25],
+        "topic_diversity": topic_diversity_summary,
         "board_score_distribution": {
             "total_candidate_count": len(score_rows),
             "eligible_count": len(eligible_score_rows),
@@ -2553,6 +3008,7 @@ def _write_board_score_report(
         "Report-only review-board scoring layer. This does not change the visible sheet schema.",
         "",
         f"- use_board_score: {str(payload['use_board_score']).lower()}",
+        f"- use_topic_diversity: {str(payload['use_topic_diversity']).lower()}",
         f"- selected_count: {payload['selected_count']}",
         f"- mismatch_guarded_count: {payload['mismatch_guarded_count']}",
         f"- reviewed_suppressed_count: {payload['reviewed_suppressed_count']}",
@@ -2723,6 +3179,54 @@ def _write_board_score_report(
     lines.extend(
         [
             "",
+            "## Topic Diversity",
+            "",
+            f"- use_topic_diversity: {str(topic_diversity_summary['use_topic_diversity']).lower()}",
+            "- constrained_families: "
+            + ", ".join(topic_diversity_summary["constrained_families"]),
+            "- selected_topic_family_counts: "
+            + json.dumps(
+                topic_diversity_summary["selected_topic_family_counts"],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+            "- selected_primary_topic_counts: "
+            + json.dumps(
+                topic_diversity_summary["selected_primary_topic_counts"],
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+            "- warnings: "
+            + (
+                ", ".join(topic_diversity_summary["warnings"])
+                if topic_diversity_summary["warnings"]
+                else "none"
+            ),
+            "",
+            "| title | board_score | primary topic | topic families | diversity penalty |",
+            "| --- | ---: | --- | --- | ---: |",
+        ]
+    )
+    for row in topic_diversity_summary["selected_rows"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(row.get("primary_topic_family", "")),
+                    _table_cell(", ".join(row.get("topic_families", [])) or "other"),
+                    f"{int(row.get('topic_diversity_penalty') or 0):g}",
+                ]
+            )
+            + " |"
+        )
+    if not topic_diversity_summary["selected_rows"]:
+        lines.append("| none | 0 | none | none | 0 |")
+
+    lines.extend(
+        [
+            "",
             "## Review-Derived Board Adjustments",
             "",
             "| title | total_score | board_score | roles | adjustments | reasons |",
@@ -2833,9 +3337,10 @@ def _write_board_score_report(
             "",
             "## Board Score Distribution",
             "",
-            f"- total_candidate_count: {len(score_rows)}",
-            f"- eligible_count: {len(score_rows)}",
-            f"- selected_count: {len(selected_rows)}",
+            "- total_candidate_count: "
+            f"{payload['board_score_distribution']['total_candidate_count']}",
+            f"- eligible_count: {payload['board_score_distribution']['eligible_count']}",
+            f"- selected_count: {payload['board_score_distribution']['selected_count']}",
             f"- selected_board_score_floor: {selected_board_floor:g}",
             "",
             "### Top Board Score Candidates",
@@ -3025,6 +3530,22 @@ def _bundle_review_metadata_row(
         metadata["board_score"] = board_score.get("board_score")
         metadata["board_score_base"] = board_score.get("total_score")
         metadata["board_score_reasons"] = board_score.get("reasons", [])
+        metadata["board_score_before_topic_diversity"] = board_score.get(
+            "board_score_before_topic_diversity",
+            board_score.get("board_score"),
+        )
+        metadata["topic_families"] = board_score.get("topic_families", [])
+        metadata["primary_topic_family"] = board_score.get("primary_topic_family", "")
+        metadata["topic_confidence"] = board_score.get("topic_confidence", "")
+        metadata["topic_signals"] = board_score.get("topic_signals", {})
+        metadata["topic_diversity_rank_by_family"] = board_score.get(
+            "topic_diversity_rank_by_family",
+            {},
+        )
+        metadata["topic_diversity_penalty"] = board_score.get(
+            "topic_diversity_penalty",
+            0,
+        )
     if syuka_similarity:
         metadata["syuka_similarity"] = syuka_similarity
     return metadata
@@ -3500,6 +4021,7 @@ def render_daily_digest(
     editorial_overrides_path: Path | None = None,
     allow_reviewed_candidates: bool | None = None,
     use_board_score: bool | None = None,
+    use_topic_diversity: bool | None = None,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
     resolved_review_board_limit = (
@@ -3537,6 +4059,7 @@ def render_daily_digest(
         editorial_overrides_path=editorial_overrides_path,
         allow_reviewed_candidates=allow_reviewed_candidates,
         use_board_score=use_board_score,
+        use_topic_diversity=use_topic_diversity,
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -6301,6 +6824,13 @@ def main(
             help="Use internal review-board score ordering for bundle review rows.",
         ),
     ] = None,
+    use_topic_diversity: Annotated[
+        bool | None,
+        typer.Option(
+            "--use-topic-diversity/--no-topic-diversity",
+            help="Apply opt-in topic diversity soft penalties to review-board ordering.",
+        ),
+    ] = None,
 ) -> None:
     if alternate_review_board_only:
         alt_csv_path, metadata_path, report_path = render_alternate_review_board(
@@ -6332,6 +6862,7 @@ def main(
         editorial_overrides_path=editorial_overrides_path,
         allow_reviewed_candidates=allow_reviewed_candidates,
         use_board_score=use_board_score,
+        use_topic_diversity=use_topic_diversity,
     )
     bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(

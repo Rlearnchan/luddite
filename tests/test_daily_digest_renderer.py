@@ -1469,6 +1469,93 @@ def test_bundle_review_hard_blocks_product_review_shopping_guides(tmp_path) -> N
     )
 
 
+def test_bundle_review_topic_diversity_soft_caps_ai_overconcentration(tmp_path) -> None:
+    def candidate(
+        candidate_id: str,
+        title: str,
+        total_score: float,
+        *,
+        source: str = "연합뉴스 산업",
+        source_role: str = "public_wire",
+    ) -> dict:
+        return {
+            "candidate_id": candidate_id,
+            "title": title,
+            "summary": title,
+            "seed_url": f"https://example.com/{candidate_id}",
+            "source": source,
+            "source_role_class": source_role,
+            "seed_type": "ai_consumer_use_case" if "AI" in title else "life_change",
+            "story_role": "standalone_seed",
+            "seed_quality_classification": "standalone_seed",
+            "quality_flags": [],
+            "risk_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": total_score, "broadcast_potential_proxy": 5},
+        }
+
+    ai_rows = [
+        candidate("ai_meta", "메타, AI 유료 구독 도입…월 7.99달러부터", 70),
+        candidate("ai_shop", 'CJ온스타일 "대화형AI 통한 유입 4배 늘어"', 69),
+        candidate("ai_public", "AI로 공공 보고서와 현장 치안 책임 논란", 68),
+        candidate("ai_center", "AI 데이터센터 전력 사용량 급증", 67),
+        candidate("ai_video", "AI 역사 브이로그 콘텐츠 인기", 66),
+    ]
+    non_ai_rows = [
+        candidate(
+            "energy",
+            "Energy bills to rise for households in Great Britain",
+            66,
+            source="The Guardian Business",
+            source_role="section_news",
+        ),
+        candidate(
+            "youth_labor",
+            "청년 노동시장 이탈과 쉬었음 증가",
+            65,
+            source="한국은행",
+            source_role="research_note",
+        ),
+    ]
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [*ai_rows, *non_ai_rows],
+        [*ai_rows, *non_ai_rows],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=3,
+        use_board_score=True,
+        use_topic_diversity=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 3
+    assert any("청년" in row["제목"] for row in rows)
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["use_topic_diversity"] is True
+    topic_summary = report["topic_diversity"]
+    assert topic_summary["selected_topic_family_counts"]["ai_tech"] <= 2
+    assert any(
+        "topic_diversity_downrank" in row.get("why_excluded", [])
+        for row in report["suppressed_high_total_score_candidates"]
+    )
+    metadata = json.loads(
+        (tmp_path / "2026-05-27_bundle_review_sheet_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert all("topic_families" in row for row in metadata["rows"])
+
+
 def test_bundle_review_mismatch_guard_blocks_override_topic_mismatch(tmp_path) -> None:
     notion = {
         "candidate_id": "notion_ai",
