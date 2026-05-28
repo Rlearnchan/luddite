@@ -18,10 +18,24 @@ import typer
 from rich.console import Console
 
 from luddite import paths
+from luddite.agents.jibi.anny_handoff import (
+    build_anny_handoff_payload,
+    normalize_editorial_role,
+    write_anny_handoff_reports,
+)
 from luddite.agents.jibi.append_to_sheet import (
     BUNDLE_REVIEW_SHEET_COLUMNS,
     REVIEWER_COLUMNS,
     SHEET_COLUMNS,
+)
+from luddite.agents.jibi.board_scoring import (
+    board_mismatch_reasons as compute_board_mismatch_reasons,
+)
+from luddite.agents.jibi.board_scoring import (
+    compute_board_score,
+)
+from luddite.agents.jibi.board_selection import (
+    select_review_board_records,
 )
 from luddite.agents.jibi.review_board_copy import (
     build_review_board_copy,
@@ -29,6 +43,9 @@ from luddite.agents.jibi.review_board_copy import (
 )
 from luddite.agents.jibi.review_feedback import infer_review_feedback
 from luddite.agents.jibi.seed_quality import analyze_so_what
+from luddite.agents.jibi.topic_diversity import (
+    TOPIC_DIVERSITY_CONSTRAINED_FAMILIES as REPORT_TOPIC_DIVERSITY_CONSTRAINED_FAMILIES,
+)
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -966,7 +983,7 @@ def write_bundle_review_sheet_preview(
         top,
         near_miss_limit=max(bundle_near_miss_limit, review_board_limit * 5),
     )
-    bundle_records, suppressed_records, board_selection_report = _select_review_board_records(
+    bundle_records, suppressed_records, board_selection_report = select_review_board_records(
         all_bundle_records,
         history_index,
         candidate_by_id=candidate_by_id,
@@ -978,6 +995,23 @@ def write_bundle_review_sheet_preview(
         allow_reviewed_candidates=allow_reviewed,
         use_board_score=use_board_score_value,
         use_topic_diversity=use_topic_diversity_value,
+        representative_for_record=_record_representative_candidate,
+        reviewed_history_rows_for_record=_reviewed_history_rows_for_record,
+        editorial_override_for_row=(
+            lambda overrides, review_item_id, story_fingerprint: _editorial_override_for_row(
+                overrides,
+                review_item_id=review_item_id,
+                story_fingerprint=story_fingerprint,
+            )
+        ),
+        syuka_similarity_for_record=_syuka_similarity_for_record,
+        second_search_for_record=_second_search_for_record,
+    )
+    _enrich_board_selection_report_with_editorial_roles(
+        board_selection_report,
+        all_bundle_records,
+        candidate_by_id,
+        syuka_similarity_index,
     )
     metadata_rows: list[dict[str, Any]] = []
     with path.open("w", encoding="utf-8-sig", newline="") as output:
@@ -1025,12 +1059,12 @@ def write_bundle_review_sheet_preview(
                 review_item_id=review_item_id,
                 story_fingerprint=str(record.get("story_fingerprint") or ""),
             )
-            mismatch_reasons = _board_mismatch_reasons(record, representative, override)
+            mismatch_reasons = compute_board_mismatch_reasons(record, representative, override)
             board_score = (
                 board_selection_report.get("board_score_by_id", {}).get(
                     str(record.get("story_bundle_id") or ""),
                 )
-                or _board_score_info(
+                or compute_board_score(
                     record=record,
                     representative=representative,
                     history_rows=_reviewed_history_rows_for_record(record, history_index),
@@ -1058,6 +1092,18 @@ def write_bundle_review_sheet_preview(
             auto_title = str(row.get("제목") or "")
             auto_description = str(row.get("설명") or "")
             _apply_editorial_override(row, override)
+            record_id = str(record.get("story_bundle_id") or "")
+            selection_metadata = board_selection_report.get(
+                "selection_metadata_by_id",
+                {},
+            ).get(record_id, {})
+            editorial_role = normalize_editorial_role(
+                record=record,
+                representative=representative,
+                board_score=board_score,
+                selection_metadata=selection_metadata,
+                syuka_similarity=syuka_similarity,
+            )
             writer.writerow(row)
             metadata_rows.append(
                 _bundle_review_metadata_row(
@@ -1073,6 +1119,8 @@ def write_bundle_review_sheet_preview(
                     auto_description=auto_description,
                     editorial_override=override,
                     board_score=board_score,
+                    selection_metadata=selection_metadata,
+                    editorial_role=editorial_role,
                 )
             )
     _write_reviewed_candidate_guard_report(
@@ -1099,6 +1147,14 @@ def write_bundle_review_sheet_preview(
         rows=metadata_rows,
         digest_date=digest_date,
         registered_at=registered_at_value,
+    )
+    _write_anny_handoff_report(
+        board_csv_path=path,
+        digest_date=digest_date,
+        selected=bundle_records,
+        candidate_by_id=candidate_by_id,
+        board_selection_report=board_selection_report,
+        syuka_similarity_index=syuka_similarity_index,
     )
     _write_editorial_override_template(
         _editorial_override_template_path(digest_date),
@@ -1255,6 +1311,81 @@ def _board_score_report_path(board_csv_path: Path, digest_date: str) -> Path:
     except ValueError:
         return board_csv_path.parent / "reports" / f"jibi_board_score_{digest_date}.md"
     return paths.REPORTS_DIR / f"jibi_board_score_{digest_date}.md"
+
+
+def _anny_handoff_report_path(board_csv_path: Path, digest_date: str) -> Path:
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "reports" / f"jibi_anny_handoff_{digest_date}.json"
+    return paths.REPORTS_DIR / f"jibi_anny_handoff_{digest_date}.json"
+
+
+def _enrich_board_selection_report_with_editorial_roles(
+    selection_report: dict[str, Any],
+    records: list[dict[str, Any]],
+    candidate_by_id: dict[str, dict[str, Any]],
+    syuka_similarity_index: dict[str, dict[str, Any]],
+) -> None:
+    record_by_id = {str(record.get("story_bundle_id") or ""): record for record in records}
+    selected_ids = set(selection_report.get("selected_ids") or [])
+    selection_metadata_by_id = selection_report.get("selection_metadata_by_id") or {}
+    board_score_by_id = selection_report.get("board_score_by_id") or {}
+    for row in selection_report.get("score_rows") or []:
+        record_id = str(row.get("story_bundle_id") or "")
+        record = record_by_id.get(record_id, {})
+        representative = _record_representative_candidate(record, candidate_by_id) or {}
+        board_score = board_score_by_id.get(record_id, {})
+        syuka_similarity = _syuka_similarity_for_record(
+            record,
+            representative,
+            syuka_similarity_index,
+        )
+        role_payload = normalize_editorial_role(
+            record=record,
+            representative=representative,
+            board_score=board_score,
+            selection_metadata=selection_metadata_by_id.get(record_id, {}),
+            syuka_similarity=syuka_similarity,
+        )
+        row.update(role_payload)
+        if isinstance(board_score, dict):
+            board_score.update(role_payload)
+        selection_metadata = selection_metadata_by_id.get(record_id)
+        if isinstance(selection_metadata, dict):
+            selection_metadata.update(role_payload)
+    selection_report["selected_metadata"] = [
+        selection_metadata_by_id.get(str(record.get("story_bundle_id") or ""), {})
+        for record in records
+        if str(record.get("story_bundle_id") or "") in selected_ids
+    ]
+
+
+def _write_anny_handoff_report(
+    *,
+    board_csv_path: Path,
+    digest_date: str,
+    selected: list[dict[str, Any]],
+    candidate_by_id: dict[str, dict[str, Any]],
+    board_selection_report: dict[str, Any],
+    syuka_similarity_index: dict[str, dict[str, Any]],
+) -> tuple[Path, Path | None]:
+    json_path = _anny_handoff_report_path(board_csv_path, digest_date)
+    payload = build_anny_handoff_payload(
+        run_date=digest_date,
+        records=selected,
+        candidate_by_id=candidate_by_id,
+        board_score_by_id=board_selection_report.get("board_score_by_id") or {},
+        selection_metadata_by_id=board_selection_report.get("selection_metadata_by_id") or {},
+        syuka_similarity_index=syuka_similarity_index,
+        representative_for_record=_record_representative_candidate,
+        syuka_similarity_for_record=_syuka_similarity_for_record,
+    )
+    return write_anny_handoff_reports(
+        payload=payload,
+        json_path=json_path,
+        md_path=json_path.with_suffix(".md"),
+    )
 
 
 def _effective_review_history_path(
@@ -3168,6 +3299,24 @@ def _write_board_score_report(
         (float(row.get("board_score") or 0) for row in selected_rows),
         default=0,
     )
+    editorial_role_counts = Counter(
+        str(row.get("editorial_role") or "sub_block") for row in selected_rows
+    )
+    selection_bucket_counts = Counter(
+        str(row.get("selection_bucket") or "primary_fit") for row in selected_rows
+    )
+    strong_candidate_count = editorial_role_counts.get("main_seed", 0)
+    sub_block_count = editorial_role_counts.get("sub_block", 0)
+    hook_only_count = editorial_role_counts.get("hook_only", 0)
+    evidence_backfill_count = selection_bucket_counts.get("evidence_backfill", 0)
+    non_evidence_visible_count = strong_candidate_count + sub_block_count + hook_only_count
+    recommended_visible_board_size = min(
+        len(selected_rows),
+        max(
+            min(6, len(selected_rows)),
+            non_evidence_visible_count,
+        ),
+    )
     high_total_rows: list[dict[str, Any]] = []
     sorted_score_rows = sorted(
         score_rows,
@@ -3340,7 +3489,7 @@ def _write_board_score_report(
     ]
     topic_diversity_summary = {
         "use_topic_diversity": bool(selection_report.get("use_topic_diversity")),
-        "constrained_families": sorted(TOPIC_DIVERSITY_CONSTRAINED_FAMILIES),
+        "constrained_families": sorted(REPORT_TOPIC_DIVERSITY_CONSTRAINED_FAMILIES),
         "selected_topic_family_counts": _topic_family_counts(selected_rows),
         "selected_primary_topic_counts": _primary_topic_counts(selected_rows),
         "eligible_topic_family_counts": _topic_family_counts(eligible_score_rows),
@@ -3357,10 +3506,28 @@ def _write_board_score_report(
         "use_board_score": bool(selection_report.get("use_board_score")),
         "use_topic_diversity": bool(selection_report.get("use_topic_diversity")),
         "selected_count": len(selected_rows),
+        "recommended_visible_board_size": recommended_visible_board_size,
+        "strong_candidate_count": strong_candidate_count,
+        "sub_block_count": sub_block_count,
+        "hook_only_count": hook_only_count,
+        "evidence_backfill_count": evidence_backfill_count,
+        "fixed_10_backfill_used": bool(selection_report.get("fixed_10_backfill_used")),
+        "selection_bucket_counts": dict(sorted(selection_bucket_counts.items())),
+        "editorial_role_counts": dict(sorted(editorial_role_counts.items())),
         "score_rows_count": len(score_rows),
         "mismatch_guarded_count": len(mismatch_rows),
         "reviewed_suppressed_count": len(suppressed_review_rows),
         "hard_blocked_count": len(selection_report.get("hard_blocked") or []),
+        "board_selection_summary": {
+            "recommended_visible_board_size": recommended_visible_board_size,
+            "strong_candidate_count": strong_candidate_count,
+            "sub_block_count": sub_block_count,
+            "hook_only_count": hook_only_count,
+            "evidence_backfill_count": evidence_backfill_count,
+            "fixed_10_backfill_used": bool(selection_report.get("fixed_10_backfill_used")),
+            "selection_bucket_counts": dict(sorted(selection_bucket_counts.items())),
+            "editorial_role_counts": dict(sorted(editorial_role_counts.items())),
+        },
         "selected": selected_rows,
         "suppressed_high_total_score_candidates": high_total_rows[:25],
         "reviewed_candidate_suppression": suppressed_review_rows,
@@ -3406,6 +3573,12 @@ def _write_board_score_report(
         f"- use_board_score: {str(payload['use_board_score']).lower()}",
         f"- use_topic_diversity: {str(payload['use_topic_diversity']).lower()}",
         f"- selected_count: {payload['selected_count']}",
+        f"- recommended_visible_board_size: {payload['recommended_visible_board_size']}",
+        f"- strong_candidate_count: {payload['strong_candidate_count']}",
+        f"- sub_block_count: {payload['sub_block_count']}",
+        f"- hook_only_count: {payload['hook_only_count']}",
+        f"- evidence_backfill_count: {payload['evidence_backfill_count']}",
+        f"- fixed_10_backfill_used: {str(payload['fixed_10_backfill_used']).lower()}",
         f"- mismatch_guarded_count: {payload['mismatch_guarded_count']}",
         f"- reviewed_suppressed_count: {payload['reviewed_suppressed_count']}",
         f"- hard_blocked_count: {payload['hard_blocked_count']}",
@@ -3414,9 +3587,9 @@ def _write_board_score_report(
         "",
         (
             "| title | total_score | board_score | source_role | story_role | "
-            "seed_quality | selected reasons | risks |"
+            "seed_quality | editorial_role | selection_bucket | selected reasons | risks |"
         ),
-        "| --- | ---: | ---: | --- | --- | --- | --- | --- |",
+        "| --- | ---: | ---: | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for row in selected_rows:
         lines.append(
@@ -3429,6 +3602,8 @@ def _write_board_score_report(
                     _table_cell(row.get("source_role", "")),
                     _table_cell(row.get("story_role", "")),
                     _table_cell(row.get("seed_quality_classification", "")),
+                    _table_cell(row.get("editorial_role", "")),
+                    _table_cell(row.get("selection_bucket", "")),
                     _table_cell("; ".join(row.get("board_score_reasons", [])[:6])),
                     _table_cell("; ".join(row.get("mismatch_reasons", [])) or "-"),
                 ]
@@ -3436,7 +3611,7 @@ def _write_board_score_report(
             + " |"
         )
     if not selected_rows:
-        lines.append("| none | 0 | 0 | none | none | none | none | none |")
+        lines.append("| none | 0 | 0 | none | none | none | none | none | none | none |")
 
     lines.extend(
         [
@@ -3931,8 +4106,12 @@ def _bundle_review_metadata_row(
     auto_description: str = "",
     editorial_override: dict[str, Any] | None = None,
     board_score: dict[str, Any] | None = None,
+    selection_metadata: dict[str, Any] | None = None,
+    editorial_role: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     so_what = _candidate_so_what(candidate)
+    selection_metadata = selection_metadata or {}
+    editorial_role = editorial_role or {}
     metadata = {
         "ID": review_item_id,
         "review_item_id": review_item_id,
@@ -3982,6 +4161,14 @@ def _bundle_review_metadata_row(
             str(item) for item in record.get("evidence_candidate_ids", [])
         ],
         "candidate_count": int(record.get("candidate_count") or 0),
+        "selection_bucket": str(selection_metadata.get("selection_bucket") or ""),
+        "why_selected": str(selection_metadata.get("why_selected") or ""),
+        "why_not_stronger": str(selection_metadata.get("why_not_stronger") or ""),
+        "editorial_role": str(editorial_role.get("editorial_role") or ""),
+        "editorial_role_confidence": str(
+            editorial_role.get("editorial_role_confidence") or ""
+        ),
+        "why_not_main_seed": str(editorial_role.get("why_not_main_seed") or ""),
     }
     if board_score:
         metadata["board_score"] = board_score.get("board_score")
