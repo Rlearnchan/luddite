@@ -1556,6 +1556,132 @@ def test_bundle_review_topic_diversity_soft_caps_ai_overconcentration(tmp_path) 
     assert all("topic_families" in row for row in metadata["rows"])
 
 
+def test_bundle_review_downranks_sports_sponsorship_primary(tmp_path) -> None:
+    f1_sponsor = {
+        "candidate_id": "f1_sponsor",
+        "title": "럭셔리 구찌, 르노의 F1 팀 타이틀 스폰서 참여",
+        "summary": "럭셔리 브랜드가 포뮬러1 팀 스폰서로 참여한다.",
+        "seed_url": "https://example.com/f1",
+        "source": "연합인포맥스",
+        "source_role_class": "market_wire",
+        "seed_type": "other",
+        "story_role": "seed_with_supporting_links",
+        "seed_quality_classification": "conditional_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 90, "broadcast_potential_proxy": 5},
+    }
+    clean = {
+        "candidate_id": "clean_energy",
+        "title": "Energy bills to rise for households in Great Britain",
+        "summary": "Household energy bills may rise as energy prices change.",
+        "seed_url": "https://example.com/energy",
+        "source": "The Guardian Business",
+        "source_role_class": "section_news",
+        "seed_type": "life_change",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [f1_sponsor, clean],
+        [f1_sponsor, clean],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "F1" not in rows[0]["제목"]
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    f1_row = next(
+        row for row in report["do_not_rescue_with_links"] if row["title"] == f1_sponsor["title"]
+    )
+    assert "sports_primary_downrank" in f1_row["review_adjustments"]
+    assert f1_row["board_score"] < f1_row["total_score"]
+
+
+def test_bundle_review_treats_agreement_bulletin_as_evidence_backfill(tmp_path) -> None:
+    agreement = {
+        "candidate_id": "agreement",
+        "title": '주병기 "불공정관행 해소해야"…건설산업 상생협약 체결',
+        "summary": "건설산업 관계자들이 상생협약을 체결했다.",
+        "seed_url": "https://example.com/agreement",
+        "source": "연합인포맥스",
+        "source_role_class": "market_wire",
+        "seed_type": "other",
+        "story_role": "seed_with_supporting_links",
+        "seed_quality_classification": "conditional_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 90, "broadcast_potential_proxy": 5},
+    }
+    clean = {
+        "candidate_id": "clean_greenbelt",
+        "title": "개발제한구역 주민 생활비 보조 확대",
+        "summary": "도시 규제가 주민 생활비 지원으로 이어진다.",
+        "seed_url": "https://example.com/greenbelt",
+        "source": "연합뉴스 경제",
+        "source_role_class": "public_wire",
+        "seed_type": "other",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [agreement, clean],
+        [agreement, clean],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "협약" not in rows[0]["제목"]
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    agreement_row = next(
+        row
+        for row in report["suppressed_high_total_score_candidates"]
+        if row["title"] == agreement["title"]
+    )
+    assert "agreement_or_event_bulletin" in agreement_row["why_excluded"]
+    assert "agreement_or_event_bulletin" in " ".join(agreement_row["board_score_reasons"])
+
+
 def test_bundle_review_mismatch_guard_blocks_override_topic_mismatch(tmp_path) -> None:
     notion = {
         "candidate_id": "notion_ai",

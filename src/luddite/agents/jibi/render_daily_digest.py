@@ -108,12 +108,18 @@ BOARD_SCORE_PROMO_TEXT_TERMS = {
     "출시",
     "공개",
     "협력",
+    "협약",
+    "상생협약",
+    "협약 체결",
     "업무협약",
     "mou",
     "양성",
     "인증",
     "수상",
     "신제품",
+    "자문위원회",
+    "포럼",
+    "워크숍",
 }
 BOARD_SCORE_SYSTEM_TOPIC_TERMS = {
     "고용",
@@ -140,6 +146,11 @@ BOARD_SCORE_SPORTS_PRIMARY_TERMS = {
     "premier league",
     "manchester united",
     "fifa",
+    "f1",
+    "formula 1",
+    "formula one",
+    "포뮬러",
+    "모터스포츠",
     "월드컵",
     "올림픽",
     "챔피언스리그",
@@ -151,6 +162,10 @@ BOARD_SCORE_SPORTS_HOOK_TERMS = {
     "중계권",
     "광고",
     "스폰서",
+    "타이틀 스폰서",
+    "sponsor",
+    "sponsorship",
+    "title sponsor",
     "수수료",
     "이벤트",
     "관광",
@@ -1787,6 +1802,8 @@ def _record_board_quality_status(
         return "hard_blocked"
     if story_role == "evidence_for_larger_story" or seed_quality == "evidence_only":
         return "evidence_backfill"
+    if _board_score_agreement_or_event_bulletin_signal(title_text):
+        return "evidence_backfill"
     return "ok"
 
 
@@ -1855,6 +1872,26 @@ def _topic_term_in_text(term: str, text: str) -> bool:
     return normalized_term in text
 
 
+def _board_score_agreement_or_event_bulletin_signal(text: str) -> bool:
+    lowered = text.lower()
+    if bool(re.search(r"\bmou\b", lowered)):
+        return True
+    return any(
+        term in lowered
+        for term in (
+            "업무협약",
+            "상생협약",
+            "협약 체결",
+            "협약을 체결",
+            "협약",
+            "자문위원회",
+            "포럼",
+            "워크숍",
+            "세미나",
+        )
+    )
+
+
 def _history_review_context(history_rows: list[dict[str, Any]]) -> dict[str, list[str]]:
     adjustments: list[str] = []
     roles: list[str] = []
@@ -1892,31 +1929,29 @@ def _board_score_review_lesson_adjustments(
     failure_modes = set(review_context.get("review_failure_modes") or [])
     positive_signals = set(review_context.get("review_positive_signals") or [])
 
+    sports_signal = any(
+        _topic_term_in_text(term, source_text) for term in BOARD_SCORE_SPORTS_PRIMARY_TERMS
+    )
+    sports_hook_signal = any(
+        _topic_term_in_text(term, source_text) for term in BOARD_SCORE_SPORTS_HOOK_TERMS
+    )
     sports_primary = (
         "sports_primary_downrank" in adjustments
         or "sports_only" in quality_flags
         or seed_type == "sports"
-        or (
-            any(_topic_term_in_text(term, source_text) for term in BOARD_SCORE_SPORTS_PRIMARY_TERMS)
-            and not any(
-                _topic_term_in_text(term, source_text)
-                for term in BOARD_SCORE_SPORTS_HOOK_TERMS
-            )
-        )
+        or sports_signal
     )
-    sports_hook = sports_primary and any(
-        _topic_term_in_text(term, source_text) for term in BOARD_SCORE_SPORTS_HOOK_TERMS
-    )
+    sports_hook = sports_primary and sports_hook_signal
     if sports_primary:
         adjustments.add("sports_primary_downrank")
         if sports_hook or roles.intersection({"hook_only", "sub_block"}):
             roles.add("hook_only")
-            score_delta -= 25
-            reasons.append("-25 review_sports_hook_only_not_primary")
+            score_delta -= 45
+            reasons.append("-45 review_sports_hook_only_not_primary")
         else:
             roles.add("suppress")
-            score_delta -= 45
-            reasons.append("-45 review_sports_primary_downrank")
+            score_delta -= 60
+            reasons.append("-60 review_sports_primary_downrank")
 
     ai_grand = "ai_grand_discourse_downrank" in adjustments or any(
         _topic_term_in_text(term, source_text)
@@ -2237,6 +2272,9 @@ def _board_score_info(
     ):
         score -= 15
         reasons.append("-15 promo_or_announcement_text")
+    if _board_score_agreement_or_event_bulletin_signal(source_text):
+        score -= 30
+        reasons.append("-30 agreement_or_event_bulletin")
     if (
         source_role == "public_wire"
         and seed_type == "other"
@@ -2822,6 +2860,16 @@ def _write_board_score_report(
         reasons = list(reason_index.get(record_id) or [])
         if row.get("mismatch_reasons"):
             reasons.append("source_cluster_title_mismatch")
+        if any(
+            "agreement_or_event_bulletin" in str(reason)
+            for reason in row.get("board_score_reasons", [])
+        ):
+            reasons.append("agreement_or_event_bulletin")
+        if any(
+            "review_sports" in str(reason)
+            for reason in row.get("board_score_reasons", [])
+        ):
+            reasons.append("sports_primary_or_hook_downrank")
         if int(row.get("topic_diversity_penalty") or 0) < 0:
             reasons.append("topic_diversity_downrank")
         if not reasons and float(row.get("board_score") or 0) < selected_board_floor:
