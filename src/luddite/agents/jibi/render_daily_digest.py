@@ -2064,12 +2064,9 @@ def _story_angle_text(record: dict[str, Any], representative: dict[str, Any]) ->
         [
             str(representative.get("title") or ""),
             str(representative.get("summary") or ""),
-            str(representative.get("why_interesting") or ""),
-            " ".join(str(item) for item in representative.get("possible_expansions") or []),
             str(representative.get("seed_type") or ""),
             str(representative.get("source_role_class") or ""),
             str(record.get("bundle_title") or ""),
-            str(record.get("why_bundle") or ""),
             str(record.get("story_fingerprint") or ""),
             str(record.get("storyline_fit") or ""),
         ]
@@ -2149,7 +2146,10 @@ def _story_angle_frame_options(text: str) -> list[dict[str, Any]]:
             reasons=["physical_infrastructure_shift", "hidden_energy_bill"],
             needs=["데이터센터 전력 사용량", "지역 인허가", "전기요금·배출 산정 방식"],
         )
-    if _story_angle_has_any(text, {"무료배달", "배달앱", "배달비", "수수료", "점주"}):
+    if _story_angle_has_any(text, {"무료배달", "배달앱", "배달비"}) and _story_angle_has_any(
+        text,
+        {"수수료", "점주", "업주", "부담", "전가", "플랫폼"},
+    ):
         _story_angle_add_frame(
             frames,
             frame="공짜처럼 보이는 배달비는 누구의 손익계산서로 이동하나",
@@ -2157,7 +2157,20 @@ def _story_angle_frame_options(text: str) -> list[dict[str, Any]]:
             reasons=["hidden_cost_transfer", "platform_margin_scene"],
             needs=["수수료율", "점주 마진", "소비자 가격 전가 사례"],
         )
-    if _story_angle_has_any(text, {"전기요금", "에너지", "가스", "전력", "energy", "electricity"}):
+    if _story_angle_has_any(
+        text,
+        {
+            "전기요금",
+            "에너지 가격",
+            "가스값",
+            "연료비",
+            "전력요금",
+            "energy bills",
+            "electricity prices",
+            "energy price",
+            "ofgem",
+        },
+    ):
         _story_angle_add_frame(
             frames,
             frame="전쟁과 연료비는 어떤 경로로 집 전기요금이 되나",

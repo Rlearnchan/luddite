@@ -1759,6 +1759,52 @@ def test_bundle_review_angle_lab_downranks_generic_frames(tmp_path) -> None:
     assert frame_row["frame_options"][0]["frame"].startswith("공짜처럼 보이는 배달비")
 
 
+def test_bundle_review_angle_lab_ignores_generated_wrong_frame_text(tmp_path) -> None:
+    meta_subscription = {
+        "candidate_id": "meta_subscription",
+        "title": "메타, AI 유료 구독 도입…월 7.99달러부터",
+        "summary": "메타가 인공지능 서비스 유료 구독 모델을 처음으로 도입한다.",
+        "why_interesting": "플랫폼의 수수료·배달비·상인/노동자 부담 논쟁",
+        "possible_expansions": [
+            "플랫폼 무료/할인 경쟁의 비용 전가 구조",
+            "한국 배달/플랫폼 시장의 수수료 논쟁",
+        ],
+        "seed_url": "https://example.com/meta-ai",
+        "source": "연합뉴스 세계",
+        "source_role_class": "public_wire",
+        "seed_type": "platform_labor_market",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 75, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [meta_subscription],
+        [meta_subscription],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    row = report["selected"][0]
+    frames = row["frame_options"]
+    assert frames
+    assert frames[0]["frame"].startswith("무료 기능이 월 구독")
+    assert all("배달비" not in frame["frame"] for frame in frames)
+
+
 def test_bundle_review_mismatch_guard_blocks_override_topic_mismatch(tmp_path) -> None:
     notion = {
         "candidate_id": "notion_ai",
