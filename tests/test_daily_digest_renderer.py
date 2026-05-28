@@ -1270,7 +1270,7 @@ def test_bundle_review_board_score_metadata_and_opt_in_selection(tmp_path) -> No
     assert report["use_board_score"] is True
     assert any(
         row["title"] == "K뉴딜 아카데미 참여청년 모집"
-        and "board_score_downranked_below_selected_floor" in row["why_excluded"]
+        and "generic_frame_downrank" in row["why_excluded"]
         for row in report["suppressed_high_total_score_candidates"]
     )
 
@@ -1680,6 +1680,83 @@ def test_bundle_review_treats_agreement_bulletin_as_evidence_backfill(tmp_path) 
     )
     assert "agreement_or_event_bulletin" in agreement_row["why_excluded"]
     assert "agreement_or_event_bulletin" in " ".join(agreement_row["board_score_reasons"])
+
+
+def test_bundle_review_angle_lab_downranks_generic_frames(tmp_path) -> None:
+    generic_ai = {
+        "candidate_id": "generic_ai_youth",
+        "title": "AI가 청년 고용을 바꾼다",
+        "summary": "AI 확산이 청년 일자리와 고용에 영향을 준다는 분석이다.",
+        "seed_url": "https://example.com/generic-ai",
+        "source": "연합뉴스 산업",
+        "source_role_class": "public_wire",
+        "seed_type": "platform_labor_market",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 90, "broadcast_potential_proxy": 5},
+    }
+    delivery_cost = {
+        "candidate_id": "delivery_cost",
+        "title": "무료배달 수수료 부담에 점주들 반발",
+        "summary": "무료배달 비용이 배달앱 수수료와 점주 마진으로 옮겨간다는 지적이다.",
+        "seed_url": "https://example.com/delivery",
+        "source": "연합뉴스 경제",
+        "source_role_class": "public_wire",
+        "seed_type": "platform_labor_market",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 75, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [generic_ai, delivery_cost],
+        [generic_ai, delivery_cost],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert rows[0]["제목"] == "무료배달은 누가 내나: 배달앱 수수료와 업주 부담"
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    generic_row = next(
+        row
+        for row in report["angle_lab"]["generic_frame_rows"]
+        if row["title"] == generic_ai["title"]
+    )
+    assert generic_row["generic_frame_risk"] == "high"
+    assert "no_frame_shift" in generic_row["generic_frame_reasons"]
+    assert "generic_frame_downrank" in next(
+        row
+        for row in report["suppressed_high_total_score_candidates"]
+        if row["title"] == generic_ai["title"]
+    )["why_excluded"]
+
+    frame_row = next(
+        row
+        for row in report["angle_lab"]["frame_shift_rows"]
+        if "무료배달" in row["title"]
+    )
+    assert frame_row["angle_shift_score"] >= 4
+    assert frame_row["frame_options"][0]["frame"].startswith("공짜처럼 보이는 배달비")
 
 
 def test_bundle_review_mismatch_guard_blocks_override_topic_mismatch(tmp_path) -> None:
