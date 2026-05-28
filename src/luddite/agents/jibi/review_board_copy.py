@@ -276,10 +276,23 @@ def _is_generic_machine_title(title: str) -> bool:
 
 
 def _global_korean_title(text: str) -> str:
+    if _has_any(text, ("지식재산정보분석플랫폼", "특허·기술정보", "patent analytics")):
+        return "특허 검색도 AI가 하면 무엇이 달라지나"
     if _has_any(text, ("pope leo", "encyclical", "risks to humanity")):
         return "교황은 왜 AI 위험을 먼저 꺼냈나"
     if _has_any(text, ("ai slop", "fooled by ai slop")):
         return "AI 가짜 콘텐츠를 어떻게 걸러낼까"
+    if _has_any(text, ("time-travellers", "vlogging from history", "history vlog")) and _has_ai_signal(text):
+        return "AI가 역사를 브이로그로 만들기 시작했다"
+    if _has_any(text, ("samsung memory chip", "profit-sharing deal", "staff bonuses")) and _has_ai_signal(text):
+        return "AI 반도체 호황의 보너스는 누구에게 가나"
+    if _has_any(text, ("lawnmower hum", "sound of the summer")):
+        return "잔디깎이 소음에도 비용이 붙는 시대"
+    if _has_any(text, ("hot tubs", "air conditioning units", "air conditioning")) and _has_any(
+        text,
+        ("heatwave", "price rises", "price rise"),
+    ):
+        return "폭염이 에어컨과 물놀이 물가를 올릴 때"
     if _has_any(text, ("copyright", "voice", "taylor swift")) and _has_ai_signal(text):
         return "목소리도 AI 시대의 소유권이 될까"
     if _has_any(text, ("datacentre", "datacenter", "data centre", "데이터센터")) and (
@@ -358,6 +371,18 @@ def review_board_title(
         raw_title = str(candidate_title or candidate.get("title") or bundle_title)
     else:
         raw_title = str(bundle_title or candidate_title or candidate.get("title") or "")
+    if _has_any(text, ("지식재산정보분석플랫폼", "특허·기술정보", "patent analytics")):
+        return "특허 검색도 AI가 하면 무엇이 달라지나"
+    if _has_any(text, ("에너지 가격 충격 / 전기요금 / 생활비", "energy_price_living_cost")):
+        return "전기요금은 왜 전쟁과 가스값을 따라 움직이나"
+    if _has_any(text, ("스마트폰 시장", "메모리 부족", "메모리 부족 여파")):
+        return "AI 서버가 스마트폰 부품까지 빨아들이나"
+    if _has_any(text, ("cj온스타일", "대화형ai", "대화형 ai")):
+        return "쇼핑몰 유입도 AI와 대화하며 들어오는 시대"
+    if _has_any(text, ("메타, ai 유료 구독", "ai 유료 구독", "월 7.99달러")):
+        return "AI도 월 구독료를 받기 시작했다"
+    if _has_any(text, ("수출 9천억", "수출 9천억불", "반도체 외에도 숫자", "산업장관")):
+        return "반도체 말고도 수출 숫자가 좋아진다는 말"
     if "청년" in text and _has_any(text, ("쉬었음", "경제활동참가율", "노동시장")):
         return "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
     if _has_tokenization_signal(text):
@@ -453,7 +478,7 @@ def _question_first_description(
         next_sentence = f"보강할 때는 {next_focus}부터 확인하면 좋겠습니다."
     reason_sentence = _sentence(reason).replace("선정 이유는 ", "")
     parts = [
-        f"이 후보는 '{compact_text(question)}'라는 질문으로 볼 만합니다.",
+        f"{compact_text(question)} 이 질문으로 열 수 있습니다.",
         reason_sentence,
         next_sentence,
     ]
@@ -524,6 +549,13 @@ def _global_section_description(
     del record, related_titles, history_status
     text = _direct_copy_text({}, candidate, candidate_title)
     source = _source_subject_cue(candidate)
+    if _has_any(text, ("지식재산정보분석플랫폼", "특허·기술정보", "patent analytics")):
+        return (
+            "특허 검색은 원래 전문가와 기업 R&D 부서의 일처럼 보이지만, AI가 붙으면 이야기가 조금 달라집니다. "
+            f"{source} 기술·특허 정보를 더 쉽게 읽고 비교하는 플랫폼이 만들어지고 있다는 신호입니다. "
+            "행정 시스템 소개로 끝내기보다는, 중소기업이나 연구자가 기술 지형을 읽는 비용이 얼마나 낮아지는지 보는 쪽이 좋습니다. "
+            "보강할 때는 실제 이용 대상, 검색 가능한 데이터 범위, 민간 특허분석 서비스와의 차이, 기업 R&D 의사결정 사례를 확인하면 좋겠습니다."
+        )
     if _has_any(text, ("datacentre", "datacenter", "data centre", "데이터센터")) and (
         _has_ai_signal(text) or _has_any(text, ("emissions", "electricity", "전력", "배출"))
     ):
@@ -535,12 +567,51 @@ def _global_section_description(
             ),
             next_step="전력 사용량, 배출 산정 방식, 지역 인허가, 빅테크 투자 계획을 붙여 'AI 붐의 숨은 전기요금'으로 설명 가능한지 확인하는 것",
         )
+    if _has_any(text, ("hot tubs", "air conditioning units", "air conditioning")) and _has_any(
+        text,
+        ("heatwave", "price rises", "price rise"),
+    ):
+        return (
+            "폭염이 오면 사람들은 에어컨, 선풍기, 간이 수영장, 냉방 공사를 찾고 가격은 바로 움직입니다. "
+            f"{source} 기후 변화가 추상적인 환경 이슈가 아니라 여름 장바구니와 주거 비용으로 내려오는 장면을 보여줍니다. "
+            "다만 제품 추천이나 쇼핑 정보로 가면 안 되고, 더위가 소비 품목·재고·전력수요·저소득층 냉방 격차를 어떻게 바꾸는지로 좁혀야 합니다. "
+            "보강할 때는 냉방기기 가격 추이, 전력 피크, 폭염 취약계층 냉방비, 유통업체 재고 변화를 같이 확인하면 좋겠습니다."
+        )
+    if _has_any(text, ("스마트폰 시장", "메모리 부족", "메모리 부족 여파")):
+        return (
+            "AI 서버가 HBM과 고성능 메모리를 빨아들이면, 그 압박이 스마트폰 같은 익숙한 제품에도 번질 수 있습니다. "
+            f"{source} 스마트폰 시장 부진을 단순 소비 위축이 아니라 부품 수급과 AI 투자 쏠림의 여파로 볼 단서를 줍니다. "
+            "다만 단일 시장 전망으로만 보면 투자 메모에 가까우니, 메모리 가격·스마트폰 출하량·AI 서버 투자 사이의 연결이 실제로 확인되는지가 중요합니다. "
+            "보강할 때는 메모리 가격 전망, 주요 스마트폰 업체 출하량, AI 서버 투자 계획을 같이 보면 좋겠습니다."
+        )
+    if _has_any(text, ("cj온스타일", "대화형ai", "대화형 ai")):
+        return (
+            "사람들이 쇼핑몰에 들어가는 방식도 검색창에서 AI 대화로 조금씩 옮겨가고 있습니다. "
+            f"{source} 대화형 AI를 붙인 뒤 유입이 늘었다는 기업 사례를 보여줍니다. "
+            "회사 홍보로 끝내기보다는, 검색 광고·쇼핑 추천·상담 챗봇이 한 화면으로 합쳐질 때 소비자가 무엇을 더 쉽게 사고 무엇을 더 쉽게 속는지로 보면 좋습니다. "
+            "보강할 때는 전환율 숫자, 다른 커머스 사례, 소비자 보호와 광고 표시 기준을 확인하면 됩니다."
+        )
+    if _has_any(text, ("메타, ai 유료 구독", "ai 유료 구독", "월 7.99달러")):
+        return (
+            "AI 기능이 무료 부가서비스가 아니라 월 구독 상품으로 분리되기 시작했습니다. "
+            f"{source} 메타가 AI 유료 구독을 붙이는 흐름을 보여줍니다. "
+            "핵심은 '누가 돈을 내느냐'입니다. 업무용 AI는 회사가 내고, 개인용 AI는 사용자가 내는 구조가 되면 플랫폼의 수익 모델과 이용자 격차가 함께 바뀝니다. "
+            "보강할 때는 구독 가격, 무료 기능과 유료 기능의 차이, 경쟁 서비스 요금, 실제 이용자 반응을 보면 좋겠습니다."
+        )
+    if _has_any(text, ("수출 9천억", "수출 9천억불", "반도체 외에도 숫자", "산업장관")):
+        return (
+            "반도체 수출이 좋은 건 익숙한 이야기지만, 정부가 '반도체 말고도 숫자가 좋다'고 말할 때는 어디가 실제로 버티는지 봐야 합니다. "
+            f"{source} 올해 수출 전망을 낙관하는 공식 발언을 전합니다. "
+            "이 후보는 단독 seed라기보다 한국 수출 지형을 점검하는 근거에 가깝습니다. 자동차, 조선, 배터리, 전력기기처럼 반도체 밖 품목이 얼마나 받쳐주는지가 관건입니다. "
+            "보강할 때는 품목별 수출 증가율, 대미·대중 수출 비중, 환율과 관세 리스크를 같이 확인하면 좋겠습니다."
+        )
     if _has_any(
         text,
         (
             "energy bills",
             "electricity prices",
             "energy shock",
+            "energy price cap",
             "ofgem",
             "전기요금",
             "에너지 요금",
@@ -618,6 +689,27 @@ def _global_section_description(
                 "선정 이유는 기술 설명보다 사람들이 실제로 불편해하거나 반발하는 접점을 잡을 수 있기 때문입니다."
             ),
             next_step="저작권 분쟁, 플랫폼 정책, 학교/창작자 반발 사례, 숫자로 확인되는 이용 변화가 붙는지 보는 것",
+        )
+    if _has_any(text, ("time-travellers", "vlogging from history", "history vlog")) and _has_ai_signal(text):
+        return (
+            "AI가 만든 역사 인물이 여행 브이로그처럼 말을 걸기 시작하면, 사람들은 그걸 교육 콘텐츠로 볼까요, 아니면 그럴듯한 가짜 현장감으로 볼까요. "
+            f"{source} AI 영상의 위험만이 아니라 사람들이 왜 이런 콘텐츠를 편하게 소비하는지도 보여줍니다. "
+            "거대 저작권 논쟁으로 바로 뛰기보다, '재미있어서 보는데 어디까지 믿어야 하나'라는 가벼운 질문으로 여는 편이 좋습니다. "
+            "보강할 때는 실제 AI 역사 채널 사례, 조회수, 교육 현장 반응, 플랫폼 표시 정책을 같이 보면 서브 코너로 판단하기 쉬워집니다."
+        )
+    if _has_any(text, ("samsung memory chip", "profit-sharing deal", "staff bonuses")) and _has_ai_signal(text):
+        return (
+            "AI 반도체 호황은 회사 주가나 수출액만 움직이는 게 아니라, 내부 보상과 인력 경쟁도 바꿉니다. "
+            f"{source} 삼성 메모리칩 직원들이 AI 수익 배분 보너스를 받는다는 사례를 보여줍니다. "
+            "단순 해외 기업 복지 뉴스로 끝내기보다, AI 호황의 이익이 주주·회사·직원 사이에서 어떻게 나뉘는지를 보면 좋습니다. "
+            "보강할 때는 반도체 기업 성과급 기준, 인력 유출 경쟁, AI 서버 수요와 메모리 가격 흐름을 같이 확인하면 됩니다."
+        )
+    if _has_any(text, ("lawnmower hum", "sound of the summer")):
+        return (
+            "잔디깎이 소음은 사소한 이웃 갈등처럼 보이지만, 도시 생활에서는 조용함에도 비용과 규칙이 붙습니다. "
+            f"{source} 여름철 정원 관리, 소음 규제, 이웃 민원, 벌금 가능성이 만나는 작은 생활경제 장면입니다. "
+            "메인 seed로 밀기보다는 '생활 소음도 돈이 되는가' 같은 짧은 서브 소재로 보는 편이 안전합니다. "
+            "보강할 때는 소음 민원 통계, 지방정부 규제, 장비 전동화와 정원관리 시장 규모를 확인하면 됩니다."
         )
     if _has_any(text, ("pfas", "forever chemicals", "factory farming", "battery cows", "toxic")):
         return _question_first_description(
@@ -867,25 +959,19 @@ def _fallback_description(
     bundle_type = str(record.get("bundle_type") or "")
     question = _fallback_question(record, candidate, candidate_title)
     if bundle_type == "evidence_cluster":
-        opening = (
-            f"{source_subject} 단독 주제보다는 큰 이야기에 붙일 근거 자료로 보는 편이 안전합니다. "
-            "회의·현황·지원 같은 공식자료는 숫자와 정책 근거를 확인해주는 역할을 할 때 가치가 커집니다."
+        return (
+            f"{source_subject} 단독 주제로 밀기보다는 큰 이야기 옆에 붙일 근거에 가깝습니다. "
+            "회의·현황·지원 같은 공식자료는 자체가 재미있는 소재라기보다, 숫자와 정책 근거를 확인해줄 때 힘이 납니다. "
+            f"지금 확인할 질문은 '{compact_text(question)}'입니다. "
+            f"{_fallback_need_sentence(record=record, candidate=candidate, related_titles=related_titles, history_status=history_status)}"
         )
     else:
-        opening = (
-            f"{source}에서 출발한 후보로, 오늘 후보군 안에서는 이야기로 키울 여지가 있어 보입니다. "
-            "다만 기사 하나만으로 결론을 내리기보다 생활 영향, 구조적 배경, 반대 근거를 붙여야 방송 소재인지 판단할 수 있습니다."
+        return (
+            f"{source}에서 시작해볼 수는 있지만, 원문 하나만으로는 아직 결론을 내리기 이릅니다. "
+            f"핵심 질문은 '{compact_text(question)}'입니다. "
+            "생활 영향, 구조적 배경, 반대 근거가 붙어야 메인 seed인지 서브 소재인지 갈립니다. "
+            f"{_fallback_need_sentence(record=record, candidate=candidate, related_titles=related_titles, history_status=history_status)}"
         )
-    return _question_first_description(
-        question=question,
-        reason=opening,
-        next_step=_fallback_need_sentence(
-            record=record,
-            candidate=candidate,
-            related_titles=related_titles,
-            history_status=history_status,
-        ),
-    )
 
 
 def strip_internal_labels(value: str) -> str:

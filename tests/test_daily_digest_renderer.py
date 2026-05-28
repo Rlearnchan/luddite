@@ -557,13 +557,90 @@ def test_story_bundle_review_groups_bok_youth_labor(tmp_path) -> None:
     assert "merged_seed" not in rows[0]["설명"]
     assert "review_primary_and_bundle_supporting" not in rows[0]["설명"]
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in rows[0]["설명"]
-    assert rows[0]["점수"] == "A · 86점"
+    assert rows[0]["점수"] == "B · 86점"
     assert metadata["rows"][0]["ID"] == rows[0]["ID"]
     assert metadata["rows"][0]["source"] == "한국은행"
     assert metadata["rows"][0]["source_role"] == "research_note"
     assert metadata["rows"][0]["seed_type"] == "macro_research_note"
     assert metadata["rows"][0]["bundle_type"] == "merged_seed"
     assert metadata["rows"][0]["run_date"] == "2026-05-23"
+
+
+def test_story_bundle_review_groups_energy_living_cost_links(tmp_path) -> None:
+    bbc = {
+        "candidate_id": "energy_bbc",
+        "title": "Energy bills to rise for millions as impact of Iran war hits",
+        "summary": "Household energy bills may rise as war pressure reaches markets.",
+        "seed_url": "https://www.bbc.com/news/energy",
+        "source": "BBC News",
+        "source_role_class": "public_wire",
+        "seed_type": "policy_market_shock",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 61, "broadcast_potential_proxy": 5},
+    }
+    guardian_cap = {
+        "candidate_id": "energy_guardian_cap",
+        "title": "Energy price cap in Great Britain to rise from July",
+        "summary": "Gas and electricity bills are forecast to rise for households.",
+        "seed_url": "https://www.theguardian.com/energy-cap",
+        "source": "The Guardian Business",
+        "source_role_class": "section_news",
+        "seed_type": "policy_market_shock",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 60, "broadcast_potential_proxy": 5},
+    }
+    guardian_ofgem = {
+        "candidate_id": "energy_guardian_ofgem",
+        "title": "Ofgem should tell it straight: electricity prices will stay high",
+        "summary": "The regulator says household electricity prices may stay high.",
+        "seed_url": "https://www.theguardian.com/ofgem",
+        "source": "The Guardian Business",
+        "source_role_class": "section_news",
+        "seed_type": "life_change",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 59, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [bbc, guardian_cap, guardian_ofgem],
+        [bbc, guardian_cap, guardian_ofgem],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert rows[0]["제목"] == "전기요금은 왜 전쟁과 가스값을 따라 움직이나"
+
+    metadata = json.loads(
+        (tmp_path / "2026-05-27_bundle_review_sheet_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    row = metadata["rows"][0]
+    assert row["story_fingerprint"] == "energy_price_living_cost"
+    assert row["candidate_count"] == 3
+    assert len(row["supporting_candidate_ids"]) == 2
 
 
 def test_bundle_review_editorial_override_by_id_preserves_auto_copy(tmp_path) -> None:
@@ -1323,6 +1400,72 @@ def test_bundle_review_board_score_uses_review_derived_adjustments(tmp_path) -> 
         row["title"] == ai_video["title"]
         and "sub_block" in row["review_editorial_roles"]
         for row in report["hook_subblock_queue"]
+    )
+
+
+def test_bundle_review_hard_blocks_product_review_shopping_guides(tmp_path) -> None:
+    product_review = {
+        "candidate_id": "best_fans",
+        "title": "The best fans to keep you cool in 2026 – tried and tested",
+        "summary": "A shopping guide comparing fans during hot weather.",
+        "seed_url": "https://www.theguardian.com/best-fans",
+        "source": "The Guardian Technology",
+        "source_role_class": "section_news",
+        "seed_type": "life_change",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 95, "broadcast_potential_proxy": 5},
+    }
+    clean = {
+        "candidate_id": "heatwave_prices",
+        "title": "UK heatwave triggers price rises for air conditioning units",
+        "summary": "Heatwaves are changing summer spending and cooling costs.",
+        "seed_url": "https://example.com/heatwave-prices",
+        "source": "The Guardian Business",
+        "source_role_class": "section_news",
+        "seed_type": "life_change",
+        "story_role": "standalone_seed",
+        "seed_quality_classification": "standalone_seed",
+        "quality_flags": [],
+        "risk_flags": [],
+        "recommended_action": "gather_more_evidence",
+        "final_grade": "B",
+        "scores": {"total_score": 70, "broadcast_potential_proxy": 5},
+    }
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        [product_review, clean],
+        [product_review, clean],
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=1,
+        use_board_score=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert len(rows) == 1
+    assert "폭염" in rows[0]["제목"]
+
+    report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert any(
+        "product_review_or_shopping_guide" in item.get("reasons", [])
+        for item in report["board_mismatch_guard"] + report.get("hard_blocked", [])
+    )
+    assert report["board_score_distribution"]["eligible_count"] == 1
+    assert all(
+        item["title"] != product_review["title"]
+        for item in report["board_score_distribution"]["board_score_top_candidates"]
     )
 
 

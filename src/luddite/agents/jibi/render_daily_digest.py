@@ -136,6 +136,10 @@ BOARD_SCORE_SPORTS_PRIMARY_TERMS = {
     "축구",
     "야구",
     "농구",
+    "football",
+    "premier league",
+    "manchester united",
+    "fifa",
     "월드컵",
     "올림픽",
     "챔피언스리그",
@@ -167,8 +171,17 @@ BOARD_SCORE_CASUAL_AI_TERMS = {
     "편하게 즐",
     "ai 영상",
 }
+BOARD_SCORE_PRODUCT_REVIEW_TERMS = {
+    "best fans",
+    "tried and tested",
+    "best air conditioners",
+    "best air conditioning",
+    "product review",
+    "shopping guide",
+    "buying guide",
+}
 BOARD_SCORE_GRADE_CUTS = {
-    "A": 80,
+    "A": 90,
     "B": 60,
     "C": 40,
 }
@@ -1586,6 +1599,9 @@ def _record_board_quality_status(
     title_text = _source_text(representative) + " " + str(record.get("bundle_title") or "")
     if any(term in title_text for term in ("[부고]", "부친상", "모친상", "별세", "씨 별세")):
         return "hard_blocked"
+    lowered_title_text = title_text.lower()
+    if any(term in lowered_title_text for term in BOARD_SCORE_PRODUCT_REVIEW_TERMS):
+        return "hard_blocked"
     story_role = str(representative.get("story_role") or "")
     seed_quality = str(representative.get("seed_quality_classification") or "")
     if story_role == "demote_or_reject" or seed_quality == "reject_or_downrank":
@@ -1604,6 +1620,9 @@ def _hard_block_reasons(
     title_text = _source_text(representative) + " " + str(record.get("bundle_title") or "")
     if any(term in title_text for term in ("[부고]", "부친상", "모친상", "별세", "씨 별세")):
         reasons.append("obituary_or_personnel_notice")
+    lowered_title_text = title_text.lower()
+    if any(term in lowered_title_text for term in BOARD_SCORE_PRODUCT_REVIEW_TERMS):
+        reasons.append("product_review_or_shopping_guide")
     story_role = str(representative.get("story_role") or "")
     seed_quality = str(representative.get("seed_quality_classification") or "")
     if story_role == "demote_or_reject":
@@ -1713,12 +1732,12 @@ def _board_score_review_lesson_adjustments(
         adjustments.add("sports_primary_downrank")
         if sports_hook or roles.intersection({"hook_only", "sub_block"}):
             roles.add("hook_only")
-            score_delta -= 12
-            reasons.append("-12 review_sports_hook_only_not_primary")
+            score_delta -= 25
+            reasons.append("-25 review_sports_hook_only_not_primary")
         else:
             roles.add("suppress")
-            score_delta -= 35
-            reasons.append("-35 review_sports_primary_downrank")
+            score_delta -= 45
+            reasons.append("-45 review_sports_primary_downrank")
 
     ai_grand = "ai_grand_discourse_downrank" in adjustments or any(
         _topic_term_in_text(term, source_text)
@@ -2372,6 +2391,7 @@ def _write_board_score_report(
             reasons.append("outside_review_board_limit")
         high_total_rows.append({**row, "why_excluded": list(dict.fromkeys(reasons))})
     mismatch_by_id: dict[str, dict[str, Any]] = {}
+    hard_blocked_rows: list[dict[str, Any]] = []
     for item in selection_report.get("mismatch_blocked", []):
         record = _record_from_selection_item(item)
         override = item.get("override") if isinstance(item.get("override"), dict) else {}
@@ -2413,6 +2433,18 @@ def _write_board_score_report(
             },
         )
     mismatch_rows = list(mismatch_by_id.values())
+    for item in selection_report.get("hard_blocked", []):
+        record = _record_from_selection_item(item)
+        row = score_by_id.get(str(record.get("story_bundle_id") or ""), {})
+        hard_blocked_rows.append(
+            {
+                "title": str(row.get("visible_title") or row.get("title") or ""),
+                "primary_metadata_title": str(row.get("primary_title") or ""),
+                "source": str(row.get("source") or ""),
+                "story_fingerprint": str(record.get("story_fingerprint") or ""),
+                "reasons": list(dict.fromkeys(str(reason) for reason in item.get("reasons", []))),
+            }
+        )
     reconsideration_rows = []
     for row in suppressed_review_rows:
         score_row = score_by_id.get(str(row.get("story_bundle_id") or ""), {})
@@ -2428,8 +2460,19 @@ def _write_board_score_report(
                 "reconsideration_status": _reconsideration_status(score_row, row),
             }
         )
+    hard_blocked_ids = {
+        str(_record_from_selection_item(item).get("story_bundle_id") or "")
+        for item in selection_report.get("hard_blocked", [])
+    }
+    eligible_score_rows = [
+        row
+        for row in score_rows
+        if str(row.get("story_bundle_id") or "") not in hard_blocked_ids
+        and str(row.get("story_bundle_id") or "") not in mismatch_by_id
+        and not row.get("mismatch_reasons")
+    ]
     top_board_score_rows = sorted(
-        score_rows,
+        eligible_score_rows,
         key=lambda item: float(item.get("board_score") or 0),
         reverse=True,
     )[:15]
@@ -2483,13 +2526,14 @@ def _write_board_score_report(
         "reviewed_candidate_suppression": suppressed_review_rows,
         "reviewed_candidate_reconsideration_queue": reconsideration_rows,
         "board_mismatch_guard": mismatch_rows,
+        "hard_blocked": hard_blocked_rows,
         "review_derived_board_adjustments": review_adjustment_rows[:25],
         "hook_subblock_queue": hook_subblock_rows[:25],
         "do_not_rescue_with_links": do_not_rescue_rows[:25],
         "needs_new_angle": needs_new_angle_rows[:25],
         "board_score_distribution": {
             "total_candidate_count": len(score_rows),
-            "eligible_count": len(score_rows),
+            "eligible_count": len(eligible_score_rows),
             "selected_count": len(selected_rows),
             "selected_board_score_floor": selected_board_floor,
             "board_score_top_candidates": top_board_score_rows,
@@ -2651,6 +2695,30 @@ def _write_board_score_report(
         )
     if not mismatch_rows:
         lines.append("| none | none | none | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Hard Blocked",
+            "",
+            "| title | source | reasons |",
+            "| --- | --- | --- |",
+        ]
+    )
+    for row in hard_blocked_rows[:20]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(row.get("source", "")),
+                    _table_cell(", ".join(row.get("reasons", [])) or "hard_blocked"),
+                ]
+            )
+            + " |"
+        )
+    if not hard_blocked_rows:
+        lines.append("| none | none | none |")
 
     lines.extend(
         [
@@ -4687,6 +4755,41 @@ def _policy_status_or_meeting_release(candidate: dict[str, Any]) -> bool:
     return any(term in text for term in POLICY_STATUS_EVIDENCE_TERMS)
 
 
+def _energy_living_cost_bundle_signal(text: str) -> bool:
+    lowered = text.lower()
+    has_energy_price = any(
+        term in lowered
+        for term in (
+            "energy bills",
+            "energy bill",
+            "energy price cap",
+            "electricity prices",
+            "electricity bills",
+            "gas prices",
+            "ofgem",
+            "전기요금",
+            "전력요금",
+            "에너지 요금",
+            "가스요금",
+        )
+    )
+    has_living_cost_or_shock = any(
+        term in lowered
+        for term in (
+            "iran war",
+            "middle east",
+            "household",
+            "cost of living",
+            "생활비",
+            "가계",
+            "전쟁",
+            "중동",
+            "요금",
+        )
+    )
+    return has_energy_price and has_living_cost_or_shock
+
+
 def _story_bundle_rule(candidate: dict[str, Any]) -> dict[str, str]:
     text = _source_text(candidate)
     seed_type = str(candidate.get("seed_type") or "other")
@@ -4716,6 +4819,14 @@ def _story_bundle_rule(candidate: dict[str, Any]) -> dict[str, str]:
             "type": "needs_external_sources",
             "why": "공공 AI 활용, 치안, 행정 보고서, 직무 전환 후보를 함께 검토",
             "action": "split_or_bundle_after_human_review",
+        }
+    if _energy_living_cost_bundle_signal(text):
+        return {
+            "key": "energy_price_living_cost",
+            "title": "에너지 가격 충격 / 전기요금 / 생활비",
+            "type": "merged_seed",
+            "why": "전쟁, 가스·전력 가격, 규제기관 전망이 생활비로 번지는 같은 이야기",
+            "action": "review_primary_and_bundle_supporting",
         }
     if _policy_status_or_meeting_release(candidate):
         if any(term in text for term in ("고유가", "유가", "피해지원금", "지원금")):

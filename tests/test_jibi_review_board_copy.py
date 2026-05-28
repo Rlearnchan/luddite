@@ -27,7 +27,7 @@ def test_review_board_copy_youth_labor_matches_editorial_baseline() -> None:
     )
 
     assert copy.title == "일하지도, 구직하지도 않는 청년들: '쉬었음'의 경제학"
-    assert copy.description.startswith("이 후보는 '청년 실업률이 낮아도")
+    assert copy.description.startswith("청년 실업률이 낮아도")
     assert "실업률만 보면 안 보이는 노동시장 밖 청년" in copy.description
     assert "경제활동참가율" in copy.description
 
@@ -195,7 +195,7 @@ def test_review_board_copy_makes_tokenization_question_first() -> None:
     )
 
     assert copy.title == "집도, 채권도 쪼개 사고파는 시대: 자산 토큰화"
-    assert copy.description.startswith("이 후보는 '코인 가격이 아니라")
+    assert copy.description.startswith("코인 가격이 아니라")
     assert "누가 책임질까" in copy.description
     assert "최신 뉴스 hook" in copy.description
     assert "BOK는 핵심 근거" in copy.description
@@ -214,9 +214,79 @@ def test_review_board_copy_fallback_uses_story_role_research_action() -> None:
         },
     )
 
-    assert copy.description.startswith("이 후보는 '이 후보를 단독 주제로")
+    assert copy.description.startswith("연합뉴스 경제")
+    assert "핵심 질문은 '이 후보를 단독 주제로" in copy.description
     assert "최신 뉴스와 두 번째 출처" in copy.description
     assert "두 번째 출처와 숫자" in copy.description
+
+
+def test_review_board_copy_ai_patent_platform_uses_specific_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "AI 특허 분석 플랫폼"},
+        {
+            "title": "AI로 특허·기술정보 쉽게 분석…지식재산정보분석플랫폼 구축",
+            "summary": "AI가 특허와 기술 정보를 쉽게 분석하도록 돕는 플랫폼을 구축한다.",
+            "source": "연합뉴스 경제",
+            "source_role_class": "public_wire",
+            "seed_type": "public_ai_governance",
+        },
+    )
+
+    assert copy.title == "특허 검색도 AI가 하면 무엇이 달라지나"
+    assert "중소기업이나 연구자가 기술 지형을 읽는 비용" in copy.description
+    assert "이 후보를 단독 주제로" not in copy.description
+
+
+def test_review_board_copy_ai_history_vlog_uses_casual_use_case_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "AI generated time-travellers"},
+        {
+            "title": (
+                "We can stitch together our past: the AI-generated "
+                "time-travellers vlogging from history"
+            ),
+            "summary": "AI-generated historical characters make travel vlog style videos.",
+            "source": "The Guardian Technology",
+            "source_role_class": "section_news",
+            "seed_type": "ai_consumer_use_case",
+        },
+    )
+
+    assert copy.title == "AI가 역사를 브이로그로 만들기 시작했다"
+    assert "재미있어서 보는데 어디까지 믿어야 하나" in copy.description
+    assert "거대 저작권 논쟁" in copy.description
+
+
+def test_review_board_copy_samsung_memory_bonus_uses_profit_sharing_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "Samsung memory chip staff bonuses"},
+        {
+            "title": "Samsung memory chip staff in line for bonuses after AI profit-sharing deal",
+            "summary": "AI demand lifts profit sharing for memory chip workers.",
+            "source": "The Guardian Business",
+            "source_role_class": "section_news",
+            "seed_type": "ai_labor_market",
+        },
+    )
+
+    assert copy.title == "AI 반도체 호황의 보너스는 누구에게 가나"
+    assert "주주·회사·직원 사이에서 어떻게 나뉘는지" in copy.description
+
+
+def test_review_board_copy_lawnmower_noise_uses_sub_block_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "Lawnmower hum"},
+        {
+            "title": "Lawnmower hum: why the sound of the summer could cost you £5,000",
+            "summary": "Local councils may fine residents over summer lawnmower noise.",
+            "source": "The Guardian Environment",
+            "source_role_class": "section_news",
+            "seed_type": "life_change",
+        },
+    )
+
+    assert copy.title == "잔디깎이 소음에도 비용이 붙는 시대"
+    assert "짧은 서브 소재" in copy.description
 
 
 def test_review_board_copy_global_datacentre_uses_specific_frame() -> None:
@@ -237,7 +307,7 @@ def test_review_board_copy_global_datacentre_uses_specific_frame() -> None:
     )
 
     assert copy.title == "AI 데이터센터는 전력 먹는 공장인가"
-    assert copy.description.startswith("이 후보는 'AI 데이터센터는")
+    assert copy.description.startswith("AI 데이터센터는")
     assert "전력수요와 탄소회계" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
     assert "AI가 실제 조직 안으로" not in copy.description
@@ -260,7 +330,7 @@ def test_review_board_copy_global_energy_story_does_not_false_ai_on_straight() -
     )
 
     assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
-    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
+    assert copy.description.startswith("전기요금이 오래 비싸지면")
     assert "가계 지출, 기업 비용, 전력망 투자" in copy.description
     assert "AI가 실제 조직 안으로" not in copy.description
 
@@ -282,7 +352,7 @@ def test_review_board_copy_global_work_placement_uses_labor_frame() -> None:
     )
 
     assert copy.title == "첫 경력은 왜 점점 비싼 관문이 됐나"
-    assert copy.description.startswith("이 후보는 '청년의 첫 경력은")
+    assert copy.description.startswith("청년의 첫 경력은")
     assert "대학·기업·노동시장" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
 
@@ -304,7 +374,7 @@ def test_review_board_copy_global_public_wire_energy_uses_global_not_korea_bridg
     )
 
     assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
-    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
+    assert copy.description.startswith("전기요금이 오래 비싸지면")
     assert "에너지 가격 충격" in copy.description
     assert "한국 시청자" not in copy.description
 
@@ -324,7 +394,7 @@ def test_review_board_copy_global_ai_ethics_uses_specific_frame() -> None:
     )
 
     assert copy.title == "교황은 왜 AI 위험을 먼저 꺼냈나"
-    assert copy.description.startswith("이 후보는 'AI가 콘텐츠와 신뢰의 규칙을")
+    assert copy.description.startswith("AI가 콘텐츠와 신뢰의 규칙을")
     assert "창작자 권리, 목소리 소유권, 교육 현장" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
 
@@ -344,9 +414,73 @@ def test_review_board_copy_weather_retail_uses_consumer_frame() -> None:
     )
 
     assert copy.title == "날씨가 바꾸는 소비와 기업 실적"
-    assert copy.description.startswith("이 후보는 '날씨가 달라지면")
+    assert copy.description.startswith("날씨가 달라지면")
     assert "생활 소비를 바꾸는 장면" in copy.description
     assert "최신 뉴스와 두 번째 출처" not in copy.description
+
+
+def test_review_board_copy_heatwave_cooling_prices_uses_specific_frame() -> None:
+    copy = _copy(
+        {"bundle_title": "UK heatwave price rises"},
+        {
+            "title": "UK heatwave triggers price rises for hot tubs and air conditioning units",
+            "summary": "Retailers report higher prices for air conditioning units.",
+            "source": "The Guardian Business",
+            "source_role_class": "section_news",
+            "seed_type": "life_change",
+        },
+    )
+
+    assert copy.title == "폭염이 에어컨과 물놀이 물가를 올릴 때"
+    assert "제품 추천이나 쇼핑 정보로 가면 안 되고" in copy.description
+    assert "냉방기기 가격 추이" in copy.description
+
+
+def test_review_board_copy_current_board_candidates_use_specific_frames() -> None:
+    examples = [
+        (
+            {
+                "title": "스마트폰 시장, 메모리 부족 여파 사상 최악 조짐…삼성전자 비중↑",
+                "source": "연합인포맥스",
+                "source_role_class": "market_wire",
+            },
+            "AI 서버가 스마트폰 부품까지 빨아들이나",
+            "부품 수급과 AI 투자 쏠림",
+        ),
+        (
+            {
+                "title": 'CJ온스타일 "대화형AI 통한 유입 4배 늘어…데이터 최적화 효과"',
+                "source": "연합뉴스 산업",
+                "source_role_class": "public_wire",
+            },
+            "쇼핑몰 유입도 AI와 대화하며 들어오는 시대",
+            "검색 광고·쇼핑 추천·상담 챗봇",
+        ),
+        (
+            {
+                "title": "메타, AI 유료 구독 도입…월 7.99달러부터",
+                "source": "연합뉴스 세계",
+                "source_role_class": "public_wire",
+            },
+            "AI도 월 구독료를 받기 시작했다",
+            "누가 돈을 내느냐",
+        ),
+        (
+            {
+                "title": '김정관 산업장관 "올해 수출 9천억불 넘을 듯…반도체 외에도 숫자 좋아"',
+                "source": "연합인포맥스",
+                "source_role_class": "market_wire",
+            },
+            "반도체 말고도 수출 숫자가 좋아진다는 말",
+            "한국 수출 지형을 점검하는 근거",
+        ),
+    ]
+
+    for candidate, expected_title, expected_phrase in examples:
+        copy = _copy({"bundle_title": candidate["title"]}, candidate)
+        assert copy.title == expected_title
+        assert expected_phrase in copy.description
+        assert "원문 하나만으로는 아직 결론" not in copy.description
 
 
 def test_review_board_copy_corporate_cash_reallocation_avoids_investment_frame() -> None:
@@ -459,7 +593,7 @@ def test_review_board_copy_mou_bundle_does_not_override_unrelated_candidate_titl
 
     assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
     assert "근거 자료" not in copy.title
-    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
+    assert copy.description.startswith("전기요금이 오래 비싸지면")
 
 
 def test_review_board_copy_generic_machine_title_does_not_override_candidate_title() -> None:
@@ -479,7 +613,7 @@ def test_review_board_copy_generic_machine_title_does_not_override_candidate_tit
     )
 
     assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
-    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
+    assert copy.description.startswith("전기요금이 오래 비싸지면")
 
 
 def test_review_board_copy_does_not_treat_amount_as_mou() -> None:
@@ -500,7 +634,7 @@ def test_review_board_copy_does_not_treat_amount_as_mou() -> None:
 
     assert copy.title == "중동 전쟁이 전기요금으로 번지는 길"
     assert "근거 자료" not in copy.title
-    assert copy.description.startswith("이 후보는 '전기요금이 오래 비싸지면")
+    assert copy.description.startswith("전기요금이 오래 비싸지면")
 
 
 def test_review_board_copy_excludes_internal_labels() -> None:
