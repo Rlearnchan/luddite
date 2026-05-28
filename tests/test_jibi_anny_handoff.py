@@ -143,14 +143,16 @@ class JibiAnnyHandoffTests(unittest.TestCase):
         )
         self.assertEqual(duplicate["editorial_role"], "sub_block")
 
-        history_risk = normalize_editorial_role(
-            record=record,
-            representative=representative,
-            board_score={"board_score": 90, "history_statuses": ["rejected_before"]},
-            selection_metadata={"selection_bucket": "primary_fit"},
-            syuka_similarity=None,
-        )
-        self.assertEqual(history_risk["editorial_role"], "sub_block")
+        for history_status in ["rejected_before", "promoted_before", "reviewed_before"]:
+            with self.subTest(history_status=history_status):
+                history_risk = normalize_editorial_role(
+                    record=record,
+                    representative=representative,
+                    board_score={"board_score": 90, "history_statuses": [history_status]},
+                    selection_metadata={"selection_bucket": "primary_fit"},
+                    syuka_similarity=None,
+                )
+                self.assertEqual(history_risk["editorial_role"], "sub_block")
 
     def test_backfill_metadata_report_and_visible_columns_are_stable(self) -> None:
         clean = {
