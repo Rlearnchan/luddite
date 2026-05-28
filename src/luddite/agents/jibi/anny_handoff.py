@@ -10,6 +10,13 @@ from typing import Any
 HANDOFF_VERSION = "jibi_anny_seed_v0"
 
 EDITORIAL_ROLES = {"main_seed", "sub_block", "hook_only", "evidence"}
+NEGATIVE_REVIEW_ADJUSTMENTS = {
+    "sports_primary_downrank",
+    "ai_grand_discourse_downrank",
+    "past_topic_overlap_downrank",
+    "needs_new_angle",
+}
+ROLE_CONSTRAINTS = {"hook_only", "sub_block"}
 
 
 def _dedupe(values: list[Any]) -> list[str]:
@@ -52,6 +59,10 @@ def normalize_editorial_role(
     syuka_duplicate = _is_syuka_duplicate(syuka_similarity)
     angle_score = float(board_score.get("angle_shift_score") or 0)
     score = float(board_score.get("board_score") or board_score.get("total_score") or 0)
+    history_statuses = set(str(item) for item in board_score.get("history_statuses") or [])
+    history_risk = history_statuses.intersection(
+        {"rejected_before", "promoted_before", "reviewed_before"}
+    )
 
     if (
         story_role == "evidence_for_larger_story"
@@ -93,14 +104,23 @@ def normalize_editorial_role(
         }
 
     main_seed_signal = (
-        story_role == "standalone_seed"
-        or seed_quality == "standalone_seed"
-        or (angle_score >= 4 and source_role in {"research_note", "academic_explainer"})
+        (
+            story_role == "standalone_seed"
+            or seed_quality == "standalone_seed"
+        )
+        and score >= 65
+        and selection_bucket == "primary_fit"
+        and not history_risk
+    ) or (
+        angle_score >= 4
+        and score >= 70
+        and source_role in {"research_note", "academic_explainer"}
+        and not history_risk
     )
     if main_seed_signal and not syuka_duplicate:
         return {
             "editorial_role": "main_seed",
-            "editorial_role_confidence": "high" if score >= 70 else "medium",
+            "editorial_role_confidence": "high" if score >= 75 else "medium",
             "why_not_main_seed": "",
         }
 
@@ -109,6 +129,13 @@ def normalize_editorial_role(
             "editorial_role": "sub_block",
             "editorial_role_confidence": "medium",
             "why_not_main_seed": "past Syuka similarity suggests duplicate or follow-up risk",
+        }
+
+    if history_risk:
+        return {
+            "editorial_role": "sub_block",
+            "editorial_role_confidence": "medium",
+            "why_not_main_seed": "review history suggests rejection, prior use, or overlap risk",
         }
 
     return {
@@ -146,6 +173,41 @@ def past_video_context(syuka_similarity: dict[str, Any] | None) -> dict[str, str
     title = str(syuka_similarity.get("top_match_title") or "")
     reason = str(syuka_similarity.get("reason") or syuka_similarity.get("recommendation") or "")
     return {"match_type": match_type, "title": title, "reason": reason}
+
+
+def reviewer_objections(board_score: dict[str, Any]) -> list[str]:
+    review_adjustments = [
+        str(item) for item in board_score.get("review_adjustments") or []
+    ]
+    review_failure_modes = [
+        str(item) for item in board_score.get("review_failure_modes") or []
+    ]
+    return _dedupe(
+        [
+            *[
+                f"adjustment:{item}"
+                for item in review_adjustments
+                if item in NEGATIVE_REVIEW_ADJUSTMENTS
+            ],
+            *[f"failure:{item}" for item in review_failure_modes],
+        ]
+    )
+
+
+def review_role_constraints(board_score: dict[str, Any]) -> list[str]:
+    review_adjustments = [
+        str(item) for item in board_score.get("review_adjustments") or []
+    ]
+    review_editorial_roles = [
+        str(item) for item in board_score.get("review_editorial_roles") or []
+    ]
+    return _dedupe(
+        [
+            item
+            for item in [*review_adjustments, *review_editorial_roles]
+            if item in ROLE_CONSTRAINTS
+        ]
+    )
 
 
 def handoff_item(
@@ -189,12 +251,8 @@ def handoff_item(
             board_score=board_score,
         ),
         "past_video_context": past_video_context(syuka_similarity),
-        "reviewer_objections": _dedupe(
-            [
-                *[f"adjustment:{item}" for item in board_score.get("review_adjustments", [])],
-                *[f"failure:{item}" for item in board_score.get("review_failure_modes", [])],
-            ]
-        ),
+        "reviewer_objections": reviewer_objections(board_score),
+        "review_role_constraints": review_role_constraints(board_score),
         "review_positive_signals": board_score.get("review_positive_signals", []),
     }
 
