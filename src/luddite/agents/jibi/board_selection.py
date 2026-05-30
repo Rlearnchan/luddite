@@ -212,6 +212,29 @@ def select_review_board_records(
             if mismatch_reasons:
                 mismatch_blocked.append(item)
             continue
+        if (
+            use_board_score
+            and str(board_score.get("selection_lesson_role") or "") == "suppress"
+        ):
+            hard_blocked.append(
+                {
+                    "record": record,
+                    "board_score": board_score,
+                    "override": override_by_record_id.get(record_id, {}),
+                    "reasons": list(
+                        dict.fromkeys(
+                            [
+                                "selection_lesson_role=suppress",
+                                *[
+                                    str(lesson)
+                                    for lesson in board_score.get("selection_lessons", [])
+                                ],
+                            ]
+                        )
+                    ),
+                }
+            )
+            continue
         if board_status == "evidence_backfill":
             evidence_backfill.append(record)
             continue
