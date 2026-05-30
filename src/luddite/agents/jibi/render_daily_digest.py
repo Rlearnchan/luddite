@@ -46,6 +46,7 @@ from luddite.agents.jibi.review_board_copy import (
 )
 from luddite.agents.jibi.review_feedback import infer_review_feedback
 from luddite.agents.jibi.seed_quality import analyze_so_what
+from luddite.agents.jibi.selection_lessons import write_selection_calibration_report
 from luddite.agents.jibi.topic_diversity import (
     TOPIC_DIVERSITY_CONSTRAINED_FAMILIES as REPORT_TOPIC_DIVERSITY_CONSTRAINED_FAMILIES,
 )
@@ -798,6 +799,12 @@ def write_bundle_review_sheet_preview(
         second_search_index=second_search_index,
         path=_board_score_report_path(path, digest_date),
     )
+    _write_selection_calibration_report(
+        board_csv_path=path,
+        digest_date=digest_date,
+        selected=bundle_records,
+        board_selection_report=board_selection_report,
+    )
     _write_bundle_review_metadata(
         _bundle_review_metadata_path(path),
         rows=metadata_rows,
@@ -969,12 +976,41 @@ def _board_score_report_path(board_csv_path: Path, digest_date: str) -> Path:
     return paths.REPORTS_DIR / f"jibi_board_score_{digest_date}.md"
 
 
+def _selection_calibration_report_path(board_csv_path: Path, digest_date: str) -> Path:
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "reports" / (
+            f"jibi_selection_calibration_{digest_date}.md"
+        )
+    return paths.REPORTS_DIR / f"jibi_selection_calibration_{digest_date}.md"
+
+
 def _anny_handoff_report_path(board_csv_path: Path, digest_date: str) -> Path:
     try:
         board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
     except ValueError:
         return board_csv_path.parent / "reports" / f"jibi_anny_handoff_{digest_date}.json"
     return paths.REPORTS_DIR / f"jibi_anny_handoff_{digest_date}.json"
+
+
+def _write_selection_calibration_report(
+    *,
+    board_csv_path: Path,
+    digest_date: str,
+    selected: list[dict[str, Any]],
+    board_selection_report: dict[str, Any],
+) -> tuple[Path, Path]:
+    return write_selection_calibration_report(
+        run_date=digest_date,
+        score_rows=list(board_selection_report.get("score_rows") or []),
+        selected_ids=[
+            str(record.get("story_bundle_id") or "")
+            for record in selected
+            if record.get("story_bundle_id")
+        ],
+        markdown_path=_selection_calibration_report_path(board_csv_path, digest_date),
+    )
 
 
 def _enrich_board_selection_report_with_editorial_roles(
@@ -2058,6 +2094,10 @@ def _write_board_score_report(
         for row in score_rows
         if row.get("review_adjustments") or row.get("review_editorial_roles")
     ]
+    selection_lesson_rows = [row for row in score_rows if row.get("selection_lessons")]
+    needs_support_rows = [
+        row for row in score_rows if row.get("support_missing_requirements")
+    ]
     hook_subblock_rows = [
         row
         for row in review_adjustment_rows
@@ -2068,12 +2108,22 @@ def _write_board_score_report(
     ]
     do_not_rescue_rows = [
         row
-        for row in review_adjustment_rows
+        for row in [*review_adjustment_rows, *selection_lesson_rows]
         if set(row.get("review_adjustments") or []).intersection(
             {
                 "sports_primary_downrank",
                 "ai_grand_discourse_downrank",
                 "past_topic_overlap_downrank",
+            }
+        )
+        or set(row.get("selection_lessons") or []).intersection(
+            {
+                "sports_primary_downrank",
+                "ai_grand_discourse_downrank",
+                "foreign_company_ir_without_korea_bridge",
+                "past_syuka_overlap_needs_new_angle",
+                "advocacy_or_moral_journalism_downrank",
+                "title_hook_content_thin_downrank",
             }
         )
         or set(row.get("review_failure_modes") or []).intersection(
@@ -2131,6 +2181,24 @@ def _write_board_score_report(
         "mismatch_guarded_count": len(mismatch_rows),
         "reviewed_suppressed_count": len(suppressed_review_rows),
         "hard_blocked_count": len(selection_report.get("hard_blocked") or []),
+        "needs_second_source_count": sum(
+            1
+            for row in score_rows
+            if "needs_second_source" in set(row.get("selection_lessons") or [])
+        ),
+        "support_missing_count": len(needs_support_rows),
+        "syuka_false_positive_risk_count": sum(
+            1
+            for row in score_rows
+            if "syuka_similarity_false_positive_risk"
+            in set(row.get("selection_lessons") or [])
+        ),
+        "past_overlap_needs_new_angle_count": sum(
+            1
+            for row in score_rows
+            if "past_syuka_overlap_needs_new_angle"
+            in set(row.get("selection_lessons") or [])
+        ),
         "board_selection_summary": {
             "recommended_visible_board_size": recommended_visible_board_size,
             "strong_candidate_count": strong_candidate_count,
@@ -2148,6 +2216,8 @@ def _write_board_score_report(
         "board_mismatch_guard": mismatch_rows,
         "hard_blocked": hard_blocked_rows,
         "review_derived_board_adjustments": review_adjustment_rows[:25],
+        "selection_lesson_rows": selection_lesson_rows[:25],
+        "support_missing_rows": needs_support_rows[:25],
         "hook_subblock_queue": hook_subblock_rows[:25],
         "do_not_rescue_with_links": do_not_rescue_rows[:25],
         "needs_new_angle": needs_new_angle_rows[:25],
@@ -2195,6 +2265,8 @@ def _write_board_score_report(
         f"- mismatch_guarded_count: {payload['mismatch_guarded_count']}",
         f"- reviewed_suppressed_count: {payload['reviewed_suppressed_count']}",
         f"- hard_blocked_count: {payload['hard_blocked_count']}",
+        f"- needs_second_source_count: {payload['needs_second_source_count']}",
+        f"- support_missing_count: {payload['support_missing_count']}",
         "",
         "## Selected Board Candidates",
         "",
@@ -2499,6 +2571,64 @@ def _write_board_score_report(
     lines.extend(
         [
             "",
+            "## Selection Lessons",
+            "",
+            (
+                "| title | before | after | role | lessons | support requirements | "
+                "why not main seed |"
+            ),
+            "| --- | ---: | ---: | --- | --- | --- | --- |",
+        ]
+    )
+    for row in selection_lesson_rows[:20]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score_before_calibration') or 0):g}",
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(row.get("selection_lesson_role", "")),
+                    _table_cell(", ".join(row.get("selection_lessons", [])) or "-"),
+                    _table_cell(", ".join(row.get("support_requirements", [])) or "-"),
+                    _table_cell(row.get("why_not_main_seed", "")),
+                ]
+            )
+            + " |"
+        )
+    if not selection_lesson_rows:
+        lines.append("| none | 0 | 0 | none | none | none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Support Missing Queue",
+            "",
+            "| title | board_score | missing support | status |",
+            "| --- | ---: | --- | --- |",
+        ]
+    )
+    for row in needs_support_rows[:20]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                    _table_cell(
+                        ", ".join(row.get("support_missing_requirements", [])) or "-"
+                    ),
+                    _table_cell(row.get("support_status", "")),
+                ]
+            )
+            + " |"
+        )
+    if not needs_support_rows:
+        lines.append("| none | 0 | none | none |")
+
+    lines.extend(
+        [
+            "",
             "## Hook/Sub-block Queue",
             "",
             "| title | board_score | role | suggested use |",
@@ -2786,7 +2916,35 @@ def _bundle_review_metadata_row(
     if board_score:
         metadata["board_score"] = board_score.get("board_score")
         metadata["board_score_base"] = board_score.get("total_score")
+        metadata["board_score_before_calibration"] = board_score.get(
+            "board_score_before_calibration",
+            board_score.get("total_score"),
+        )
         metadata["board_score_reasons"] = board_score.get("reasons", [])
+        metadata["selection_lessons"] = board_score.get("selection_lessons", [])
+        metadata["selection_lesson_score_delta"] = board_score.get(
+            "selection_lesson_score_delta",
+            0,
+        )
+        metadata["selection_lesson_role"] = board_score.get("selection_lesson_role", "")
+        metadata["support_requirements"] = board_score.get("support_requirements", [])
+        metadata["support_requirement_details"] = board_score.get(
+            "support_requirement_details",
+            [],
+        )
+        metadata["support_fulfilled_requirements"] = board_score.get(
+            "support_fulfilled_requirements",
+            [],
+        )
+        metadata["support_missing_requirements"] = board_score.get(
+            "support_missing_requirements",
+            [],
+        )
+        metadata["support_status"] = board_score.get("support_status", "not_required")
+        metadata["why_not_main_seed_reasons"] = board_score.get(
+            "why_not_main_seed_reasons",
+            [],
+        )
         metadata["generic_frame_risk"] = board_score.get("generic_frame_risk", "low")
         metadata["generic_frame_reasons"] = board_score.get("generic_frame_reasons", [])
         metadata["angle_shift_score"] = board_score.get("angle_shift_score", 0)

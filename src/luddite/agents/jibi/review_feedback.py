@@ -112,6 +112,22 @@ NEXT_RESEARCH_ACTIONS = [
     "avoid_market_advice_frame",
     "keep_question_as_editorial_anchor",
 ]
+HISTORICAL_OUTCOME_LABELS = [
+    "produced_and_used",
+    "produced_not_used",
+    "not_produced",
+    "keep_for_later",
+    "unknown",
+]
+HISTORICAL_REASON_TAXONOMY = [
+    "worked_because_syuka_core_repertoire",
+    "worked_because_known_brand_plus_structural_shift",
+    "failed_because_too_single_company",
+    "failed_because_topic_too_obvious",
+    "failed_because_no_story_expansion",
+    "failed_because_low_channel_fit",
+    "failed_because_timing_or_staleness",
+]
 TAG_ALIASES = {
     "seed": "seed",
     "방송": "seed",
@@ -1682,6 +1698,160 @@ def _feedback_recommendations(summary: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
+def _first_row_value(row: dict[str, Any], names: list[str]) -> str:
+    for name in names:
+        value = str(row.get(name) or "").strip()
+        if value:
+            return value
+    lowered = {str(key).lower(): str(value).strip() for key, value in row.items()}
+    for name in names:
+        value = lowered.get(name.lower(), "")
+        if value:
+            return value
+    return ""
+
+
+def _positive_cell(value: str) -> bool:
+    text = value.strip().lower()
+    return text in {"o", "yes", "y", "true", "1", "제작", "사용", "활용", "채택"} or any(
+        term in text
+        for term in (
+            "제작됨",
+            "제작 완료",
+            "방송 활용",
+            "활용됨",
+            "사용됨",
+            "채택됨",
+        )
+    )
+
+
+def _negative_cell(value: str) -> bool:
+    text = value.strip().lower()
+    return text in {"x", "no", "n", "false", "0", "미제작", "미사용"} or any(
+        term in text
+        for term in (
+            "제작 안",
+            "제작않",
+            "미제작",
+            "활용 안",
+            "활용되지",
+            "사용 안",
+            "사용되지",
+            "미사용",
+            "불발",
+        )
+    )
+
+
+def historical_production_status(row: dict[str, Any]) -> str:
+    produced = _first_row_value(
+        row,
+        ["제작 여부", "제작여부", "제작", "produced", "production_status"],
+    )
+    reason = _first_row_value(row, ["이유", "reason", "notes"])
+    combined = " ".join([produced, reason]).lower()
+    if _positive_cell(produced) or (
+        "제작" in combined
+        and not any(term in combined for term in ("미제작", "제작 안", "제작않"))
+    ):
+        return "produced"
+    if _negative_cell(produced) or any(
+        term in combined for term in ("미제작", "제작 안", "제작않")
+    ):
+        return "not_produced"
+    return "unknown"
+
+
+def historical_broadcast_usage_status(row: dict[str, Any]) -> str:
+    used = _first_row_value(
+        row,
+        ["방송 활용 여부", "활용 여부", "방송활용", "사용 여부", "used", "usage_status"],
+    )
+    reason = _first_row_value(row, ["이유", "reason", "notes"])
+    combined = " ".join([used, reason]).lower()
+    if _positive_cell(used) or any(
+        term in combined for term in ("방송 활용", "실제 활용", "사용됨", "활용됨")
+    ):
+        return "used"
+    if _negative_cell(used) or any(
+        term in combined
+        for term in ("미사용", "활용 안", "활용되지", "사용 안", "사용되지")
+    ):
+        return "not_used"
+    return "unknown"
+
+
+def historical_selection_label(row: dict[str, Any]) -> str:
+    reason = _first_row_value(
+        row,
+        [
+            "이유",
+            "채택/사용/미사용 이유",
+            "미사용 이유",
+            "활용 이유",
+            "reason",
+            "notes",
+        ],
+    )
+    combined = str(reason).lower()
+    if any(term in combined for term in ("킵", "keep", "나중", "보류")):
+        return "keep_for_later"
+    production_status = historical_production_status(row)
+    usage_status = historical_broadcast_usage_status(row)
+    if production_status == "produced" and usage_status == "used":
+        return "produced_and_used"
+    if production_status == "produced" and usage_status == "not_used":
+        return "produced_not_used"
+    if production_status == "not_produced":
+        return "not_produced"
+    return "unknown"
+
+
+def historical_reason_labels(row: dict[str, Any]) -> list[str]:
+    text = " ".join(str(value or "") for value in row.values()).lower()
+    labels: list[str] = []
+    if any(
+        term in text
+        for term in (
+            "농업의 기업화",
+            "기업화",
+            "효율화",
+            "슈카월드 래퍼토리",
+            "제도",
+            "플랫폼",
+            "생활 문제",
+        )
+    ):
+        labels.append("worked_because_syuka_core_repertoire")
+    if any(
+        term in text
+        for term in (
+            "브랜드",
+            "유명 브랜드",
+            "페라리",
+            "테일러",
+            "구조적 변화",
+            "산업 전환",
+        )
+    ):
+        labels.append("worked_because_known_brand_plus_structural_shift")
+    if any(term in text for term in ("단일기업", "단일 기업", "회사 하나", "개별 회사")):
+        labels.append("failed_because_too_single_company")
+    if any(term in text for term in ("뻔", "너무 당연", "이미 잘 알려", "참신하지")):
+        labels.append("failed_because_topic_too_obvious")
+    if any(term in text for term in ("확장 안", "확장성", "얘기거리 부족", "단발", "단일 기사")):
+        labels.append("failed_because_no_story_expansion")
+    if any(
+        term in text
+        for term in ("슈카월드 톤", "채널 fit", "채널핏", "안 맞", "스포츠", "동물권")
+    ):
+        labels.append("failed_because_low_channel_fit")
+    if any(term in text for term in ("뒷북", "오래", "철지난", "시의성", "타이밍", "늦")):
+        labels.append("failed_because_timing_or_staleness")
+    return [label for label in HISTORICAL_REASON_TAXONOMY if label in set(labels)]
+
+
 def summarize_review_history_calibration(
     rows: list[dict[str, Any]],
     *,
@@ -1691,6 +1861,14 @@ def summarize_review_history_calibration(
     inferred_label_counts = _empty_inferred_label_counter()
     primary_label_counts = _empty_primary_label_counter()
     modifier_counts = _empty_modifier_counter()
+    historical_outcome_counts = Counter({label: 0 for label in HISTORICAL_OUTCOME_LABELS})
+    historical_reason_counts = Counter({label: 0 for label in HISTORICAL_REASON_TAXONOMY})
+    historical_production_status_counts = Counter(
+        {"produced": 0, "not_produced": 0, "unknown": 0}
+    )
+    historical_broadcast_usage_status_counts = Counter(
+        {"used": 0, "not_used": 0, "unknown": 0}
+    )
     reviewer_completion: dict[str, dict[str, int]] = defaultdict(
         lambda: {reviewer: 0 for reviewer in REVIEWER_COLUMNS}
     )
@@ -1709,6 +1887,15 @@ def summarize_review_history_calibration(
                 primary_label_counts[note["primary_inferred_label"]] += 1
                 for modifier in note["modifiers"]:
                     modifier_counts[modifier] += 1
+        historical_label = historical_selection_label(row)
+        production_status = historical_production_status(row)
+        usage_status = historical_broadcast_usage_status(row)
+        reason_labels = historical_reason_labels(row)
+        historical_outcome_counts[historical_label] += 1
+        historical_production_status_counts[production_status] += 1
+        historical_broadcast_usage_status_counts[usage_status] += 1
+        for reason_label in reason_labels:
+            historical_reason_counts[reason_label] += 1
         normalized_rows.append(
             {
                 "date": date_value,
@@ -1719,6 +1906,10 @@ def summarize_review_history_calibration(
                 "source": row.get("source", "unknown"),
                 "source_role": row.get("source_role", "unknown"),
                 "seed_type": row.get("seed_type", "unknown"),
+                "historical_production_status": production_status,
+                "historical_broadcast_usage_status": usage_status,
+                "historical_selection_label": historical_label,
+                "historical_reason_labels": reason_labels,
                 "reviewers": reviewer_notes,
             }
         )
@@ -1732,6 +1923,14 @@ def summarize_review_history_calibration(
         "inferred_label_counts": dict(inferred_label_counts),
         "primary_label_counts": dict(primary_label_counts),
         "modifier_counts": dict(modifier_counts),
+        "historical_outcome_counts": dict(historical_outcome_counts),
+        "historical_production_status_counts": dict(
+            historical_production_status_counts
+        ),
+        "historical_broadcast_usage_status_counts": dict(
+            historical_broadcast_usage_status_counts
+        ),
+        "historical_reason_counts": dict(historical_reason_counts),
         "source_feedback": _dimension_feedback_summary(rows, "source"),
         "source_role_feedback": _dimension_feedback_summary(rows, "source_role"),
         "seed_type_feedback": _dimension_feedback_summary(rows, "seed_type"),
@@ -1825,6 +2024,30 @@ def _history_markdown(summary: dict[str, Any]) -> str:
     lines.extend(["", "## Modifier Counts", ""])
     for modifier in REVIEW_MODIFIERS:
         lines.append(f"- {modifier}: {summary.get('modifier_counts', {}).get(modifier, 0)}")
+    lines.extend(["", "## Historical Selection Outcomes", ""])
+    for label in HISTORICAL_OUTCOME_LABELS:
+        lines.append(
+            f"- {label}: {summary.get('historical_outcome_counts', {}).get(label, 0)}"
+        )
+    lines.extend(["", "## Historical Production Status", ""])
+    for label in ["produced", "not_produced", "unknown"]:
+        lines.append(
+            "- "
+            f"{label}: "
+            f"{summary.get('historical_production_status_counts', {}).get(label, 0)}"
+        )
+    lines.extend(["", "## Historical Broadcast Usage Status", ""])
+    for label in ["used", "not_used", "unknown"]:
+        lines.append(
+            "- "
+            f"{label}: "
+            f"{summary.get('historical_broadcast_usage_status_counts', {}).get(label, 0)}"
+        )
+    lines.extend(["", "## Historical Reason Taxonomy", ""])
+    for label in HISTORICAL_REASON_TAXONOMY:
+        lines.append(
+            f"- {label}: {summary.get('historical_reason_counts', {}).get(label, 0)}"
+        )
     for heading, key in [
         ("Source-Level Feedback Summary", "source_feedback"),
         ("Source-Role Feedback Summary", "source_role_feedback"),
@@ -1924,9 +2147,9 @@ def render_review_history_calibration(
     paths_out = _write_history_calibration(
         summary,
         markdown_path=markdown_path
-        or paths.REPORTS_DIR / f"jibi_feedback_calibration_{date_value}.md",
+        or paths.REPORTS_DIR / f"jibi_historical_selection_lessons_{date_value}.md",
         json_path=json_path
-        or paths.REPORTS_DIR / f"jibi_feedback_calibration_{date_value}.json",
+        or paths.REPORTS_DIR / f"jibi_historical_selection_lessons_{date_value}.json",
     )
     return paths_out, summary
 
