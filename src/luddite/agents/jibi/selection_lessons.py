@@ -355,6 +355,7 @@ LESSON_SCORE_FAMILIES = {
     "sports_primary_downrank": "sports",
     "sports_business_hook_only": "sports",
 }
+ASCII_WORD_TERM_RE = re.compile(r"^[a-z0-9]+(?: [a-z0-9]+)*$")
 
 
 def _dedupe(values: list[Any] | set[Any]) -> list[str]:
@@ -378,8 +379,16 @@ def _text(record: dict[str, Any], representative: dict[str, Any]) -> str:
     return " ".join(str(piece or "") for piece in pieces).lower()
 
 
+def _has_term(text: str, term: str) -> bool:
+    normalized = term.lower()
+    if ASCII_WORD_TERM_RE.fullmatch(normalized):
+        phrase_pattern = re.escape(normalized).replace(r"\ ", r"\s+")
+        return bool(re.search(rf"(?<![0-9a-z]){phrase_pattern}(?![0-9a-z])", text))
+    return normalized in text
+
+
 def _has_any(text: str, terms: set[str]) -> bool:
-    return any(term.lower() in text for term in terms)
+    return any(_has_term(text, term) for term in terms)
 
 
 def _accepted_query_types(second_search: dict[str, Any] | None) -> set[str]:

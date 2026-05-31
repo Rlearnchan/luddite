@@ -176,6 +176,25 @@ def test_sports_business_hook_uses_family_override_not_double_penalty() -> None:
     assert result["selection_lesson_score_delta"] > -105
 
 
+def test_sports_short_tokens_do_not_match_inside_english_words() -> None:
+    for title, summary in [
+        (
+            "The best fans to keep you cool in 2026",
+            "Sweaty, sleepless nights are now common in summer heatwaves.",
+        ),
+        (
+            "Anthropic alliance with pope on AI harms",
+            "The technology may be replacing workers and exploiting the environment.",
+        ),
+    ]:
+        result = infer_selection_lessons(
+            record=_record(title),
+            representative=_candidate(title, summary),
+        )
+
+        assert "sports_primary_downrank" not in result["selection_lessons"]
+
+
 def test_board_score_exposes_support_requirements_and_blocks_main_seed() -> None:
     result = compute_board_score(
         record=_record("배달로봇은 왜 길에서 멈추나"),
