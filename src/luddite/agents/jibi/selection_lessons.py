@@ -351,6 +351,11 @@ SELECTION_LESSON_DEFINITIONS = {
 
 SELECTION_LESSONS = set(SELECTION_LESSON_DEFINITIONS)
 
+LESSON_SCORE_FAMILIES = {
+    "sports_primary_downrank": "sports",
+    "sports_business_hook_only": "sports",
+}
+
 
 def _dedupe(values: list[Any] | set[Any]) -> list[str]:
     return list(dict.fromkeys(str(value) for value in values if str(value).strip()))
@@ -500,6 +505,19 @@ def _add(
     return float(score_delta)
 
 
+def _family_score_delta(lessons: set[str], family: str) -> tuple[float, str]:
+    candidates = [
+        (lesson, SELECTION_LESSON_DEFINITIONS[lesson].score_delta)
+        for lesson in lessons
+        if LESSON_SCORE_FAMILIES.get(lesson) == family
+        and SELECTION_LESSON_DEFINITIONS[lesson].score_delta
+    ]
+    if not candidates:
+        return 0.0, ""
+    lesson, score_delta = max(candidates, key=lambda item: item[1])
+    return float(score_delta), f"{score_delta:+g} lesson_{lesson}"
+
+
 def infer_selection_lessons(
     *,
     record: dict[str, Any],
@@ -532,7 +550,7 @@ def infer_selection_lessons(
     )
     sports_business = sports_primary and _has_any(text, SPORTS_BUSINESS_TERMS)
     if sports_primary:
-        score_delta += _add(
+        _add(
             lessons=lessons,
             roles=roles,
             requirements=requirements,
@@ -541,10 +559,10 @@ def infer_selection_lessons(
             lesson="sports_primary_downrank",
             role="hook_only" if sports_business else "suppress",
             why_not="sports topic is weak as the primary story",
-            score_delta_override=0.0 if sports_business else None,
+            score_delta_override=0.0,
         )
         if sports_business:
-            score_delta += _add(
+            _add(
                 lessons=lessons,
                 roles=roles,
                 requirements=requirements,
@@ -553,7 +571,12 @@ def infer_selection_lessons(
                 lesson="sports_business_hook_only",
                 role="hook_only",
                 why_not="sports business angle can open a broader non-sports story",
+                score_delta_override=0.0,
             )
+        family_delta, family_reason = _family_score_delta(set(lessons), "sports")
+        if family_delta:
+            score_delta += family_delta
+            score_reasons.append(family_reason)
 
     ai_grand = _has_any(text, AI_GRAND_DISCOURSE_TERMS)
     casual_ai = _has_any(text, CASUAL_AI_USE_CASE_TERMS)
@@ -903,6 +926,7 @@ def infer_selection_lessons(
         "selection_lesson_role": recommended_role,
         "selection_lesson_role_hints": roles,
         "support_requirements": requirements,
+        "critical_support_requirements": critical_requirements,
         "support_requirement_details": support_requirement_details,
         "support_fulfilled_requirements": fulfilled,
         "support_missing_requirements": missing,
@@ -973,6 +997,7 @@ def _report_row(row: dict[str, Any]) -> dict[str, Any]:
         "editorial_role_after": _role_for_report(row),
         "selection_lessons": row.get("selection_lessons", []),
         "support_requirements": row.get("support_requirements", []),
+        "critical_support_requirements": row.get("critical_support_requirements", []),
         "support_requirement_details": row.get("support_requirement_details", []),
         "support_missing_requirements": row.get("support_missing_requirements", []),
         "why_not_main_seed": str(row.get("why_not_main_seed") or ""),

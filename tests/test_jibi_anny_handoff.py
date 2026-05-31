@@ -154,6 +154,74 @@ class JibiAnnyHandoffTests(unittest.TestCase):
                 )
                 self.assertEqual(history_risk["editorial_role"], "sub_block")
 
+    def test_only_critical_support_missing_blocks_main_seed(self) -> None:
+        record = {
+            "story_bundle_id": "story_bundle_standalone",
+            "bundle_title": "독립 후보",
+        }
+        representative = {
+            "source_role_class": "public_wire",
+            "story_role": "standalone_seed",
+            "seed_quality_classification": "standalone_seed",
+        }
+
+        optional_missing = normalize_editorial_role(
+            record=record,
+            representative=representative,
+            board_score={
+                "board_score": 90,
+                "history_statuses": [],
+                "support_missing_requirements": ["korea_bridge"],
+                "support_requirement_details": [
+                    {"key": "korea_bridge", "severity": "optional"}
+                ],
+            },
+            selection_metadata={"selection_bucket": "primary_fit"},
+            syuka_similarity=None,
+        )
+        self.assertEqual(optional_missing["editorial_role"], "main_seed")
+
+        critical_missing = normalize_editorial_role(
+            record=record,
+            representative=representative,
+            board_score={
+                "board_score": 90,
+                "history_statuses": [],
+                "support_missing_requirements": ["parallel_case"],
+                "support_requirement_details": [
+                    {"key": "parallel_case", "severity": "critical"}
+                ],
+            },
+            selection_metadata={"selection_bucket": "primary_fit"},
+            syuka_similarity=None,
+        )
+        self.assertEqual(critical_missing["editorial_role"], "sub_block")
+
+    def test_suppress_selection_lesson_does_not_revive_as_sub_block(self) -> None:
+        role = normalize_editorial_role(
+            record={
+                "story_bundle_id": "story_bundle_battery_cow",
+                "bundle_title": "배터리 소",
+            },
+            representative={
+                "source_role_class": "public_wire",
+                "story_role": "standalone_seed",
+                "seed_quality_classification": "standalone_seed",
+            },
+            board_score={
+                "board_score": 85,
+                "selection_lesson_role": "suppress",
+                "selection_lesson_role_hints": ["suppress"],
+                "why_not_main_seed": "moral/advocacy frame lacks mechanism",
+            },
+            selection_metadata={"selection_bucket": "primary_fit"},
+            syuka_similarity=None,
+        )
+
+        self.assertEqual(role["editorial_role"], "evidence")
+        self.assertEqual(role["editorial_role_confidence"], "low")
+        self.assertIn("moral/advocacy", role["why_not_main_seed"])
+
     def test_backfill_metadata_report_and_visible_columns_are_stable(self) -> None:
         clean = {
             "candidate_id": "clean_greenbelt",
@@ -316,6 +384,50 @@ class JibiAnnyHandoffTests(unittest.TestCase):
             )
             self.assertIn("K뉴딜", selected["title"])
             self.assertGreater(suppressed_ai["board_score"], selected["board_score"])
+
+    def test_use_board_score_false_does_not_revive_suppress_lesson_as_sub_block(
+        self,
+    ) -> None:
+        battery_cow = {
+            "candidate_id": "battery_cow",
+            "title": "배터리 소",
+            "summary": "동물권 폭로성 기사라 제목 훅은 강하지만 도덕 고발 중심이다.",
+            "seed_url": "https://example.com/battery-cow",
+            "source": "연합뉴스 산업",
+            "source_role_class": "public_wire",
+            "seed_type": "other",
+            "story_role": "standalone_seed",
+            "seed_quality_classification": "standalone_seed",
+            "quality_flags": [],
+            "risk_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 90, "broadcast_potential_proxy": 5},
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            csv_path = tmp_path / "2026-05-28_bundle_review_sheet.csv"
+            write_bundle_review_sheet_preview(
+                csv_path,
+                [battery_cow],
+                [battery_cow],
+                "2026-05-28",
+                review_history_path=tmp_path / "missing_history.jsonl",
+                review_board_limit=1,
+                use_board_score=False,
+            )
+
+            metadata = json.loads(
+                (tmp_path / "2026-05-28_bundle_review_sheet_metadata.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(metadata["rows"][0]["editorial_role"], "evidence")
+            self.assertEqual(
+                metadata["rows"][0]["editorial_role_confidence"],
+                "low",
+            )
 
 
 if __name__ == "__main__":

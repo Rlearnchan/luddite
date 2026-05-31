@@ -158,6 +158,24 @@ def test_2026_05_27_review_board_fixtures_map_to_expected_lessons() -> None:
         ), case["title"]
 
 
+def test_sports_business_hook_uses_family_override_not_double_penalty() -> None:
+    result = infer_selection_lessons(
+        record=_record("월드컵 티켓값이 왜 이렇게 비싸졌나"),
+        representative=_candidate(
+            "월드컵 티켓값이 왜 이렇게 비싸졌나",
+            "FIFA 월드컵 티켓 가격과 이벤트 비즈니스 이야기",
+        ),
+    )
+
+    assert {"sports_primary_downrank", "sports_business_hook_only"}.issubset(
+        result["selection_lessons"]
+    )
+    assert result["selection_lesson_role"] == "hook_only"
+    assert -60 <= result["selection_lesson_score_delta"] <= -40
+    assert result["selection_lesson_score_delta"] == -45
+    assert result["selection_lesson_score_delta"] > -105
+
+
 def test_board_score_exposes_support_requirements_and_blocks_main_seed() -> None:
     result = compute_board_score(
         record=_record("배달로봇은 왜 길에서 멈추나"),

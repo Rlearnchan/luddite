@@ -1713,11 +1713,15 @@ def _first_row_value(row: dict[str, Any], names: list[str]) -> str:
 
 def _positive_cell(value: str) -> bool:
     text = value.strip().lower()
+    if any(term in text for term in ("예정", "계획", "검토", "보류")):
+        return False
     return text in {"o", "yes", "y", "true", "1", "제작", "사용", "활용", "채택"} or any(
         term in text
         for term in (
             "제작됨",
             "제작 완료",
+            "제작했다",
+            "제작함",
             "방송 활용",
             "활용됨",
             "사용됨",
@@ -1733,11 +1737,22 @@ def _negative_cell(value: str) -> bool:
         for term in (
             "제작 안",
             "제작않",
+            "제작하지 않았",
+            "제작하지 않았다",
+            "제작 못",
+            "제작못",
+            "제작 불발",
             "미제작",
             "활용 안",
             "활용되지",
+            "활용하지 않았",
+            "활용하지 않았다",
             "사용 안",
             "사용되지",
+            "사용하지 않았",
+            "사용하지 않았다",
+            "방송에서 쓰지 않았",
+            "방송에서 쓰지 않았다",
             "미사용",
             "불발",
         )
@@ -1751,13 +1766,31 @@ def historical_production_status(row: dict[str, Any]) -> str:
     )
     reason = _first_row_value(row, ["이유", "reason", "notes"])
     combined = " ".join([produced, reason]).lower()
-    if _positive_cell(produced) or (
-        "제작" in combined
-        and not any(term in combined for term in ("미제작", "제작 안", "제작않"))
-    ):
+    production_positive_terms = (
+        "제작됨",
+        "제작 완료",
+        "제작했다",
+        "제작함",
+        "제작은 했",
+        "제작은 되었",
+    )
+    production_negative_terms = (
+        "미제작",
+        "제작 안",
+        "제작않",
+        "제작하지 않았",
+        "제작하지 않았다",
+        "제작 못",
+        "제작못",
+        "제작 불발",
+    )
+    tentative_terms = ("제작 예정", "제작 계획", "제작 검토", "제작 보류")
+    if any(term in combined for term in tentative_terms):
+        return "unknown"
+    if _positive_cell(produced) or any(term in combined for term in production_positive_terms):
         return "produced"
     if _negative_cell(produced) or any(
-        term in combined for term in ("미제작", "제작 안", "제작않")
+        term in combined for term in production_negative_terms
     ):
         return "not_produced"
     return "unknown"
@@ -1776,7 +1809,19 @@ def historical_broadcast_usage_status(row: dict[str, Any]) -> str:
         return "used"
     if _negative_cell(used) or any(
         term in combined
-        for term in ("미사용", "활용 안", "활용되지", "사용 안", "사용되지")
+        for term in (
+            "미사용",
+            "활용 안",
+            "활용되지",
+            "활용하지 않았",
+            "활용하지 않았다",
+            "사용 안",
+            "사용되지",
+            "사용하지 않았",
+            "사용하지 않았다",
+            "방송에서 쓰지 않았",
+            "방송에서 쓰지 않았다",
+        )
     ):
         return "not_used"
     return "unknown"

@@ -2928,6 +2928,10 @@ def _bundle_review_metadata_row(
         )
         metadata["selection_lesson_role"] = board_score.get("selection_lesson_role", "")
         metadata["support_requirements"] = board_score.get("support_requirements", [])
+        metadata["critical_support_requirements"] = board_score.get(
+            "critical_support_requirements",
+            [],
+        )
         metadata["support_requirement_details"] = board_score.get(
             "support_requirement_details",
             [],
