@@ -15,6 +15,12 @@ NEGATIVE_REVIEW_ADJUSTMENTS = {
     "ai_grand_discourse_downrank",
     "past_topic_overlap_downrank",
     "needs_new_angle",
+    "foreign_company_ir_without_korea_bridge",
+    "past_syuka_overlap_needs_new_angle",
+    "past_syuka_low_performance_risk",
+    "syuka_similarity_false_positive_risk",
+    "advocacy_or_moral_journalism_downrank",
+    "title_hook_content_thin_downrank",
 }
 ROLE_CONSTRAINTS = {"hook_only", "sub_block"}
 
@@ -35,6 +41,25 @@ def _is_syuka_duplicate(syuka_similarity: dict[str, Any] | None) -> bool:
     return str((syuka_similarity or {}).get("recommendation") or "") == "duplicate"
 
 
+def _critical_support_missing(board_score: dict[str, Any]) -> list[str]:
+    missing = [str(item) for item in board_score.get("support_missing_requirements") or []]
+    explicit_critical = {
+        str(item)
+        for item in board_score.get("critical_support_requirements") or []
+        if str(item).strip()
+    }
+    details = board_score.get("support_requirement_details") or []
+    critical_keys = {
+        str(item.get("key") or "")
+        for item in details
+        if isinstance(item, dict) and str(item.get("severity") or "") == "critical"
+    }
+    critical_keys.update(explicit_critical)
+    if critical_keys:
+        return [item for item in missing if item in critical_keys]
+    return []
+
+
 def normalize_editorial_role(
     *,
     record: dict[str, Any],
@@ -53,6 +78,11 @@ def normalize_editorial_role(
     review_roles = set(str(item) for item in board_score.get("review_editorial_roles") or [])
     review_adjustments = set(str(item) for item in board_score.get("review_adjustments") or [])
     frame_role_hints = _frame_role_hints(board_score)
+    lesson_role_hints = set(
+        str(item) for item in board_score.get("selection_lesson_role_hints") or []
+    )
+    lesson_role = str(board_score.get("selection_lesson_role") or "")
+    support_missing = _critical_support_missing(board_score)
     selection_bucket = str(selection_metadata.get("selection_bucket") or "")
     bundle_type = str(record.get("bundle_type") or "")
     source_role = str(representative.get("source_role_class") or "")
@@ -77,10 +107,20 @@ def normalize_editorial_role(
             "why_not_main_seed": "evidence_or_background_record",
         }
 
+    if lesson_role == "suppress" or "suppress" in lesson_role_hints:
+        return {
+            "editorial_role": "evidence",
+            "editorial_role_confidence": "low",
+            "why_not_main_seed": str(board_score.get("why_not_main_seed") or "")
+            or "selection lessons recommend suppressing this as a main seed",
+        }
+
     if (
         "hook_only" in review_roles
         or "hook_only" in review_adjustments
         or "hook_only" in frame_role_hints
+        or "hook_only" in lesson_role_hints
+        or lesson_role == "hook_only"
         or "sports_primary_downrank" in review_adjustments
     ):
         return {
@@ -95,12 +135,19 @@ def normalize_editorial_role(
         or "sub_block" in review_roles
         or "sub_block" in review_adjustments
         or "sub_block" in frame_role_hints
+        or "sub_block" in lesson_role_hints
+        or lesson_role == "sub_block"
+        or support_missing
         or selection_bucket == "role_cap_backfill"
     ):
+        why_not = str(board_score.get("why_not_main_seed") or "")
+        if support_missing and not why_not:
+            why_not = "support requirements missing: " + ", ".join(support_missing)
         return {
             "editorial_role": "sub_block",
             "editorial_role_confidence": "medium",
-            "why_not_main_seed": "needs supporting links, tighter frame, or main-story host",
+            "why_not_main_seed": why_not
+            or "needs supporting links, tighter frame, or main-story host",
         }
 
     main_seed_signal = (
@@ -157,7 +204,8 @@ def required_evidence(
         for need in frame.get("needs", [])
     ]
     candidate_needs = representative.get("evidence_needed") or []
-    return _dedupe([*frame_needs, *candidate_needs])
+    support_needs = board_score.get("support_requirements") or []
+    return _dedupe([*frame_needs, *candidate_needs, *support_needs])
 
 
 def past_video_context(syuka_similarity: dict[str, Any] | None) -> dict[str, str]:
@@ -179,6 +227,9 @@ def reviewer_objections(board_score: dict[str, Any]) -> list[str]:
     review_adjustments = [
         str(item) for item in board_score.get("review_adjustments") or []
     ]
+    selection_lessons = [
+        str(item) for item in board_score.get("selection_lessons") or []
+    ]
     review_failure_modes = [
         str(item) for item in board_score.get("review_failure_modes") or []
     ]
@@ -187,6 +238,11 @@ def reviewer_objections(board_score: dict[str, Any]) -> list[str]:
             *[
                 f"adjustment:{item}"
                 for item in review_adjustments
+                if item in NEGATIVE_REVIEW_ADJUSTMENTS
+            ],
+            *[
+                f"lesson:{item}"
+                for item in selection_lessons
                 if item in NEGATIVE_REVIEW_ADJUSTMENTS
             ],
             *[f"failure:{item}" for item in review_failure_modes],
@@ -254,6 +310,24 @@ def handoff_item(
         "reviewer_objections": reviewer_objections(board_score),
         "review_role_constraints": review_role_constraints(board_score),
         "review_positive_signals": board_score.get("review_positive_signals", []),
+        "selection_lessons": board_score.get("selection_lessons", []),
+        "support_requirements": board_score.get("support_requirements", []),
+        "critical_support_requirements": board_score.get(
+            "critical_support_requirements",
+            [],
+        ),
+        "support_requirement_details": board_score.get(
+            "support_requirement_details",
+            [],
+        ),
+        "support_missing_requirements": board_score.get(
+            "support_missing_requirements",
+            [],
+        ),
+        "why_not_main_seed_reasons": board_score.get(
+            "why_not_main_seed_reasons",
+            [],
+        ),
     }
 
 

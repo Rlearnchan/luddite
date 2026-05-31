@@ -8,6 +8,7 @@ from typing import Any
 from luddite.agents.jibi.append_to_sheet import REVIEWER_COLUMNS
 from luddite.agents.jibi.review_feedback import infer_review_feedback
 from luddite.agents.jibi.seed_quality import analyze_so_what
+from luddite.agents.jibi.selection_lessons import infer_selection_lessons
 from luddite.agents.jibi.story_angle import analyze_story_angle
 from luddite.agents.jibi.topic_diversity import infer_topic_profile, topic_term_in_text
 
@@ -327,9 +328,6 @@ def _board_score_review_lesson_adjustments(
     failure_modes = set(review_context.get("review_failure_modes") or [])
     positive_signals = set(review_context.get("review_positive_signals") or [])
 
-    sports_signal = any(
-        topic_term_in_text(term, source) for term in BOARD_SCORE_SPORTS_PRIMARY_TERMS
-    )
     sports_hook_signal = any(
         topic_term_in_text(term, source) for term in BOARD_SCORE_SPORTS_HOOK_TERMS
     )
@@ -337,7 +335,6 @@ def _board_score_review_lesson_adjustments(
         "sports_primary_downrank" in adjustments
         or "sports_only" in quality_flags
         or seed_type == "sports"
-        or sports_signal
     )
     sports_hook = sports_primary and sports_hook_signal
     if sports_primary:
@@ -351,14 +348,8 @@ def _board_score_review_lesson_adjustments(
             score_delta -= 60
             reasons.append("-60 review_sports_primary_downrank")
 
-    ai_grand = "ai_grand_discourse_downrank" in adjustments or any(
-        topic_term_in_text(term, source)
-        for term in BOARD_SCORE_AI_GRAND_DISCOURSE_TERMS
-    )
-    casual_ai = "casual_ai_use_case_bonus" in adjustments or any(
-        topic_term_in_text(term, source)
-        for term in BOARD_SCORE_CASUAL_AI_TERMS
-    )
+    ai_grand = "ai_grand_discourse_downrank" in adjustments
+    casual_ai = "casual_ai_use_case_bonus" in adjustments
     if ai_grand:
         adjustments.add("ai_grand_discourse_downrank")
         score_delta -= 18
@@ -532,6 +523,24 @@ def compute_board_score(
         score += review_delta
     reasons.extend(review_reasons)
 
+    board_score_before_calibration = round(max(0.0, score), 1)
+    selection_lesson_payload = infer_selection_lessons(
+        record=record,
+        representative=representative,
+        review_context=review_context,
+        syuka_similarity=syuka_similarity,
+        second_search=second_search,
+    )
+    selection_lesson_delta = float(
+        selection_lesson_payload.get("selection_lesson_score_delta") or 0
+    )
+    if selection_lesson_delta:
+        score += selection_lesson_delta
+    reasons.extend(
+        str(reason)
+        for reason in selection_lesson_payload.get("selection_lesson_score_reasons", [])
+    )
+
     history_statuses = {
         str(row.get("history_status") or "reviewed_before") for row in history_rows
     }
@@ -545,16 +554,41 @@ def compute_board_score(
         score -= 25
         reasons.append("-25 reviewed_before")
 
+    review_adjustment_compatible_lessons = {
+        "sports_primary_downrank",
+        "ai_grand_discourse_downrank",
+        "casual_ai_use_case_bonus",
+        "past_topic_overlap_downrank",
+        "hook_only",
+        "sub_block",
+    }
+    combined_review_adjustments = sorted(
+        set(review_adjustments).union(
+            lesson
+            for lesson in selection_lesson_payload.get("selection_lessons", [])
+            if lesson in review_adjustment_compatible_lessons
+        )
+    )
+    combined_review_roles = sorted(
+        set(review_editorial_roles).union(
+            role
+            for role in selection_lesson_payload.get("selection_lesson_role_hints", [])
+            if role
+        )
+    )
+
     return {
         "total_score": base_total_score,
+        "board_score_before_calibration": board_score_before_calibration,
         "board_score": round(max(0.0, score), 1),
         "reasons": reasons,
         "mismatch_reasons": mismatch_reasons,
         "history_statuses": sorted(history_statuses),
-        "review_adjustments": review_adjustments,
-        "review_editorial_roles": review_editorial_roles,
+        "review_adjustments": combined_review_adjustments,
+        "review_editorial_roles": combined_review_roles,
         "review_failure_modes": review_context.get("review_failure_modes", []),
         "review_positive_signals": review_context.get("review_positive_signals", []),
+        **selection_lesson_payload,
         **story_angle,
         **topic_profile,
     }
@@ -597,6 +631,10 @@ def board_score_report_row(
             representative.get("seed_quality_classification") or ""
         ),
         "total_score": board_score.get("total_score", 0),
+        "board_score_before_calibration": board_score.get(
+            "board_score_before_calibration",
+            board_score.get("total_score", 0),
+        ),
         "board_score": board_score.get("board_score", 0),
         "board_score_before_topic_diversity": board_score.get(
             "board_score_before_topic_diversity",
@@ -628,6 +666,43 @@ def board_score_report_row(
         "review_editorial_roles": board_score.get("review_editorial_roles", []),
         "review_failure_modes": board_score.get("review_failure_modes", []),
         "review_positive_signals": board_score.get("review_positive_signals", []),
+        "selection_lessons": board_score.get("selection_lessons", []),
+        "selection_lesson_score_delta": board_score.get(
+            "selection_lesson_score_delta",
+            0,
+        ),
+        "selection_lesson_score_reasons": board_score.get(
+            "selection_lesson_score_reasons",
+            [],
+        ),
+        "selection_lesson_role": board_score.get("selection_lesson_role", ""),
+        "selection_lesson_role_hints": board_score.get(
+            "selection_lesson_role_hints",
+            [],
+        ),
+        "support_requirements": board_score.get("support_requirements", []),
+        "critical_support_requirements": board_score.get(
+            "critical_support_requirements",
+            [],
+        ),
+        "support_requirement_details": board_score.get(
+            "support_requirement_details",
+            [],
+        ),
+        "support_fulfilled_requirements": board_score.get(
+            "support_fulfilled_requirements",
+            [],
+        ),
+        "support_missing_requirements": board_score.get(
+            "support_missing_requirements",
+            [],
+        ),
+        "support_status": board_score.get("support_status", "not_required"),
+        "why_not_main_seed": board_score.get("why_not_main_seed", ""),
+        "why_not_main_seed_reasons": board_score.get(
+            "why_not_main_seed_reasons",
+            [],
+        ),
         "history_statuses": board_score.get("history_statuses", []),
         "reviewers": list(
             dict.fromkeys(

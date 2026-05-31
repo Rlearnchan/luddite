@@ -4,6 +4,9 @@ import json
 from luddite.agents.jibi.append_to_sheet import BUNDLE_REVIEW_SHEET_COLUMNS
 from luddite.agents.jibi.review_feedback import (
     _rows_from_values,
+    historical_broadcast_usage_status,
+    historical_production_status,
+    historical_selection_label,
     infer_review_feedback,
     parse_review_tag,
     render_review_feedback_summary,
@@ -135,6 +138,37 @@ def test_infer_review_feedback_extracts_operator_failure_modes() -> None:
     assert "keep_question_as_editorial_anchor" in good_question[
         "next_research_actions"
     ]
+
+
+def test_historical_selection_keeps_production_and_usage_separate() -> None:
+    row = {
+        "제작 여부": "제작",
+        "방송 활용 여부": "미사용",
+        "이유": "제작은 했지만 방송 흐름에서 사용되지 않음",
+    }
+
+    assert historical_production_status(row) == "produced"
+    assert historical_broadcast_usage_status(row) == "not_used"
+    assert historical_selection_label(row) == "produced_not_used"
+
+
+def test_historical_production_status_handles_korean_negative_phrases() -> None:
+    for phrase in ["제작하지 않았다", "제작 못함", "제작 불발"]:
+        row = {"제작 여부": phrase, "이유": phrase}
+        assert historical_production_status(row) == "not_produced"
+
+
+def test_historical_broadcast_usage_status_handles_korean_negative_phrases() -> None:
+    for phrase in ["사용하지 않았다", "활용하지 않았다", "방송에서 쓰지 않았다"]:
+        row = {"방송 활용 여부": phrase, "이유": phrase}
+        assert historical_broadcast_usage_status(row) == "not_used"
+
+
+def test_historical_production_status_does_not_treat_planned_as_produced() -> None:
+    row = {"제작 여부": "제작 예정", "이유": "다음 주 제작 예정"}
+
+    assert historical_production_status(row) == "unknown"
+    assert historical_selection_label(row) == "unknown"
 
 
 def test_infer_review_feedback_extracts_today_editorial_roles() -> None:
@@ -381,6 +415,8 @@ def test_render_review_history_calibration_aggregates_multiday_feedback(tmp_path
                     "제목": "양파가 너무 많으면 정부는 무엇을 하나",
                     "메인 링크": onion_url,
                     "리뷰-성원": "reject — 보도자료 느낌",
+                    "제작 여부": "미제작",
+                    "이유": "단일 기사라 확장성 부족",
                     "ID": "2026-05-22:story_bundle_onion",
                     "story_fingerprint": "onion_story",
                 }
@@ -404,6 +440,9 @@ def test_render_review_history_calibration_aggregates_multiday_feedback(tmp_path
                     "메인 링크": platform_url,
                     "리뷰-성원": "seed — 업주 부담 구조 가능",
                     "리뷰-형찬": "reject — 아직 단일 기사",
+                    "제작 여부": "제작",
+                    "방송 활용 여부": "활용됨",
+                    "이유": "플랫폼 숨은 비용은 슈카월드 래퍼토리와 맞음",
                     "ID": "2026-05-23:story_bundle_platform",
                     "story_fingerprint": "platform_story",
                 },
@@ -465,8 +504,21 @@ def test_render_review_history_calibration_aggregates_multiday_feedback(tmp_path
     )
     assert onion["appearances"] == 2
     assert summary["strong_disagreement_rows"][0]["reason"] == "seed_vs_reject"
+    assert summary["historical_outcome_counts"]["not_produced"] == 1
+    assert summary["historical_outcome_counts"]["produced_and_used"] == 1
+    assert summary["historical_production_status_counts"]["produced"] == 1
+    assert summary["historical_production_status_counts"]["not_produced"] == 1
+    assert summary["historical_broadcast_usage_status_counts"]["used"] == 1
+    assert summary["historical_reason_counts"]["failed_because_no_story_expansion"] >= 1
+    assert (
+        summary["historical_reason_counts"]["worked_because_syuka_core_repertoire"]
+        == 1
+    )
     report = outputs.markdown_path.read_text(encoding="utf-8")
     assert "Source-Level Feedback Summary" in report
+    assert "Historical Selection Outcomes" in report
+    assert "Historical Production Status" in report
+    assert "Historical Broadcast Usage Status" in report
     assert "Report-Only Recommendations" in report
 
 
