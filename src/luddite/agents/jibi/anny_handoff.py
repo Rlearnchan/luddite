@@ -41,6 +41,25 @@ def _is_syuka_duplicate(syuka_similarity: dict[str, Any] | None) -> bool:
     return str((syuka_similarity or {}).get("recommendation") or "") == "duplicate"
 
 
+def _critical_support_missing(board_score: dict[str, Any]) -> list[str]:
+    missing = [str(item) for item in board_score.get("support_missing_requirements") or []]
+    explicit_critical = {
+        str(item)
+        for item in board_score.get("critical_support_requirements") or []
+        if str(item).strip()
+    }
+    details = board_score.get("support_requirement_details") or []
+    critical_keys = {
+        str(item.get("key") or "")
+        for item in details
+        if isinstance(item, dict) and str(item.get("severity") or "") == "critical"
+    }
+    critical_keys.update(explicit_critical)
+    if critical_keys:
+        return [item for item in missing if item in critical_keys]
+    return []
+
+
 def normalize_editorial_role(
     *,
     record: dict[str, Any],
@@ -63,9 +82,7 @@ def normalize_editorial_role(
         str(item) for item in board_score.get("selection_lesson_role_hints") or []
     )
     lesson_role = str(board_score.get("selection_lesson_role") or "")
-    support_missing = [
-        str(item) for item in board_score.get("support_missing_requirements") or []
-    ]
+    support_missing = _critical_support_missing(board_score)
     selection_bucket = str(selection_metadata.get("selection_bucket") or "")
     bundle_type = str(record.get("bundle_type") or "")
     source_role = str(representative.get("source_role_class") or "")
@@ -90,6 +107,14 @@ def normalize_editorial_role(
             "why_not_main_seed": "evidence_or_background_record",
         }
 
+    if lesson_role == "suppress" or "suppress" in lesson_role_hints:
+        return {
+            "editorial_role": "evidence",
+            "editorial_role_confidence": "low",
+            "why_not_main_seed": str(board_score.get("why_not_main_seed") or "")
+            or "selection lessons recommend suppressing this as a main seed",
+        }
+
     if (
         "hook_only" in review_roles
         or "hook_only" in review_adjustments
@@ -111,7 +136,7 @@ def normalize_editorial_role(
         or "sub_block" in review_adjustments
         or "sub_block" in frame_role_hints
         or "sub_block" in lesson_role_hints
-        or lesson_role in {"sub_block", "suppress"}
+        or lesson_role == "sub_block"
         or support_missing
         or selection_bucket == "role_cap_backfill"
     ):
@@ -287,6 +312,10 @@ def handoff_item(
         "review_positive_signals": board_score.get("review_positive_signals", []),
         "selection_lessons": board_score.get("selection_lessons", []),
         "support_requirements": board_score.get("support_requirements", []),
+        "critical_support_requirements": board_score.get(
+            "critical_support_requirements",
+            [],
+        ),
         "support_requirement_details": board_score.get(
             "support_requirement_details",
             [],

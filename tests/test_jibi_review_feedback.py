@@ -152,6 +152,25 @@ def test_historical_selection_keeps_production_and_usage_separate() -> None:
     assert historical_selection_label(row) == "produced_not_used"
 
 
+def test_historical_production_status_handles_korean_negative_phrases() -> None:
+    for phrase in ["제작하지 않았다", "제작 못함", "제작 불발"]:
+        row = {"제작 여부": phrase, "이유": phrase}
+        assert historical_production_status(row) == "not_produced"
+
+
+def test_historical_broadcast_usage_status_handles_korean_negative_phrases() -> None:
+    for phrase in ["사용하지 않았다", "활용하지 않았다", "방송에서 쓰지 않았다"]:
+        row = {"방송 활용 여부": phrase, "이유": phrase}
+        assert historical_broadcast_usage_status(row) == "not_used"
+
+
+def test_historical_production_status_does_not_treat_planned_as_produced() -> None:
+    row = {"제작 여부": "제작 예정", "이유": "다음 주 제작 예정"}
+
+    assert historical_production_status(row) == "unknown"
+    assert historical_selection_label(row) == "unknown"
+
+
 def test_infer_review_feedback_extracts_today_editorial_roles() -> None:
     hook = infer_review_feedback("기사 자체는 나쁘지 않음. 초반 후킹용으로 한 단 정도 가능")
     assert hook["review_signal"] == "conditional"

@@ -681,6 +681,10 @@ def board_score_report_row(
             [],
         ),
         "support_requirements": board_score.get("support_requirements", []),
+        "critical_support_requirements": board_score.get(
+            "critical_support_requirements",
+            [],
+        ),
         "support_requirement_details": board_score.get(
             "support_requirement_details",
             [],
