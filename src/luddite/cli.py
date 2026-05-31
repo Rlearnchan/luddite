@@ -80,6 +80,22 @@ from luddite.parsers.corpus_smoke import app as corpus_smoke_app
 from luddite.parsers.fetch_sheets import app as fetch_sheets_app
 from luddite.parsers.parse_pptx import app as parse_pptx_app
 from luddite.parsers.parse_storylines import app as parse_storylines_app
+from luddite.ppt.corpus import drive_manifest_app as build_ppt_corpus_drive_manifest_app
+from luddite.ppt.corpus import extract_slides_app as extract_ppt_corpus_slides_app
+from luddite.ppt.corpus import insight_reports_app as build_ppt_corpus_insight_reports_app
+from luddite.ppt.corpus import inventory_app as build_ppt_corpus_inventory_app
+from luddite.ppt.corpus import quality_report_app as build_ppt_corpus_quality_report_app
+from luddite.ppt.learning import build_drive_manifest_app as build_ppt_learning_drive_manifest_app
+from luddite.ppt.learning import build_inventory_app as build_ppt_learning_inventory_app
+from luddite.ppt.learning import combined_report_app as build_ppt_learning_report_app
+from luddite.ppt.learning import enrichment_queue_app as build_ppt_enrichment_queue_app
+from luddite.ppt.learning import extract_lessons_app as extract_jibi_seed_lessons_app
+from luddite.ppt.learning import extract_sources_app as extract_ppt_learning_sources_app
+from luddite.ppt.learning import match_broadcast_app as match_ppt_broadcast_usage_app
+from luddite.ppt.learning import quality_report_app as build_ppt_learning_quality_report_app
+from luddite.ppt.learning import slide_visual_app as build_ppt_slide_visual_memos_app
+from luddite.ppt.learning import source_fetch_app as fetch_ppt_source_memos_app
+from luddite.ppt.learning import story_arc_app as build_ppt_story_arc_memos_app
 
 app = typer.Typer(no_args_is_help=True)
 app.add_typer(parse_storylines_app, name="parse-storylines")
@@ -139,6 +155,22 @@ app.add_typer(jibi_source_experiment_app, name="compare-jibi-source-experiment")
 app.add_typer(syuka_snapshot_probe_app, name="probe-syuka-snapshot")
 app.add_typer(jibi_syuka_refresh_app, name="refresh-jibi-review-board-with-syuka")
 app.add_typer(probe_rss_sources_app, name="probe-rss-sources")
+app.add_typer(build_ppt_corpus_drive_manifest_app, name="build-ppt-corpus-drive-manifest")
+app.add_typer(build_ppt_corpus_inventory_app, name="build-ppt-corpus-inventory")
+app.add_typer(extract_ppt_corpus_slides_app, name="extract-ppt-corpus-slides")
+app.add_typer(build_ppt_corpus_quality_report_app, name="build-ppt-corpus-quality-report")
+app.add_typer(build_ppt_corpus_insight_reports_app, name="build-ppt-corpus-insight-reports")
+app.add_typer(build_ppt_learning_drive_manifest_app, name="build-ppt-learning-drive-manifest")
+app.add_typer(build_ppt_learning_inventory_app, name="build-ppt-learning-inventory")
+app.add_typer(extract_ppt_learning_sources_app, name="extract-ppt-learning-sources")
+app.add_typer(match_ppt_broadcast_usage_app, name="match-ppt-broadcast-usage")
+app.add_typer(extract_jibi_seed_lessons_app, name="extract-jibi-seed-lessons")
+app.add_typer(build_ppt_learning_report_app, name="build-ppt-learning-report")
+app.add_typer(build_ppt_learning_quality_report_app, name="build-ppt-learning-quality-report")
+app.add_typer(build_ppt_enrichment_queue_app, name="build-ppt-enrichment-queue")
+app.add_typer(fetch_ppt_source_memos_app, name="fetch-ppt-source-memos")
+app.add_typer(build_ppt_slide_visual_memos_app, name="build-ppt-slide-visual-memos")
+app.add_typer(build_ppt_story_arc_memos_app, name="build-ppt-story-arc-memos")
 
 
 @app.callback()

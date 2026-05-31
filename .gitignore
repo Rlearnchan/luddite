@@ -25,6 +25,17 @@ data/ppt/latest/raw/*
 !data/ppt/latest/raw/.gitkeep
 data/ppt/legacy/raw/*
 !data/ppt/legacy/raw/.gitkeep
+data/ppt_corpus/drive_archives/*
+!data/ppt_corpus/drive_archives/.gitkeep
+data/ppt_corpus/drive_raw/*
+!data/ppt_corpus/drive_raw/.gitkeep
+data/ppt_corpus/*.jsonl
+data/ppt_corpus/extracted/*
+!data/ppt_corpus/extracted/.gitkeep
+data/ppt_learning/drive_archives/*
+!data/ppt_learning/drive_archives/.gitkeep
+data/ppt_learning/drive_raw/*
+!data/ppt_learning/drive_raw/.gitkeep
 
 # Generated corpus artifacts can be recreated.
 data/manifests/*
