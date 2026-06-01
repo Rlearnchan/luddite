@@ -747,6 +747,22 @@ def board_score_report_row(
             "syuka_lesson_shared_terms",
             [],
         ),
+        "syuka_lesson_shared_terms_raw": board_score.get(
+            "syuka_lesson_shared_terms_raw",
+            [],
+        ),
+        "syuka_lesson_display_terms": board_score.get(
+            "syuka_lesson_display_terms",
+            [],
+        ),
+        "syuka_lesson_low_value_terms": board_score.get(
+            "syuka_lesson_low_value_terms",
+            [],
+        ),
+        "syuka_lesson_low_value_warning": board_score.get(
+            "syuka_lesson_low_value_warning",
+            False,
+        ),
         "syuka_lesson_concrete_terms": board_score.get(
             "syuka_lesson_concrete_terms",
             [],

@@ -53,6 +53,9 @@ from luddite.agents.jibi.selection_lessons import (
 from luddite.agents.jibi.topic_diversity import (
     TOPIC_DIVERSITY_CONSTRAINED_FAMILIES as REPORT_TOPIC_DIVERSITY_CONSTRAINED_FAMILIES,
 )
+from luddite.agents.jibi.visible_board_quality import (
+    evaluate_visible_board_row,
+)
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
 
@@ -714,6 +717,7 @@ def write_bundle_review_sheet_preview(
                 representative,
                 syuka_similarity_index,
             )
+            second_search = _second_search_for_record(record, second_search_index)
             override = _editorial_override_for_row(
                 editorial_overrides,
                 review_item_id=review_item_id,
@@ -730,7 +734,7 @@ def write_bundle_review_sheet_preview(
                     history_rows=_reviewed_history_rows_for_record(record, history_index),
                     mismatch_reasons=mismatch_reasons,
                     syuka_similarity=syuka_similarity,
-                    second_search=_second_search_for_record(record, second_search_index),
+                    second_search=second_search,
                 )
             )
             row = _bundle_review_row(
@@ -764,6 +768,46 @@ def write_bundle_review_sheet_preview(
                 selection_metadata=selection_metadata,
                 syuka_similarity=syuka_similarity,
             )
+            final_quality_context = {
+                **board_score,
+                **editorial_role,
+                "source_role": str(representative.get("source_role_class") or "unknown"),
+                "source_role_class": str(
+                    representative.get("source_role_class") or "unknown"
+                ),
+                "story_role": str(representative.get("story_role") or ""),
+                "seed_quality_classification": str(
+                    representative.get("seed_quality_classification") or ""
+                ),
+                "second_search_accepted_links_count": len(
+                    (second_search or {}).get("accepted_links") or []
+                ),
+            }
+            visible_quality = evaluate_visible_board_row(
+                row=row,
+                metadata=selection_metadata,
+                board_score=final_quality_context,
+            )
+            board_score.update(visible_quality)
+            score_row = next(
+                (
+                    item
+                    for item in board_selection_report.get("score_rows") or []
+                    if str(item.get("story_bundle_id") or "") == record_id
+                ),
+                None,
+            )
+            if isinstance(score_row, dict):
+                score_row.update(
+                    {
+                        "visible_title": str(row.get("제목") or ""),
+                        "visible_description": str(row.get("설명") or ""),
+                        "past_video": str(row.get("과거 영상") or ""),
+                        **visible_quality,
+                    }
+                )
+            if isinstance(selection_metadata, dict):
+                selection_metadata.update(visible_quality)
             writer.writerow(row)
             metadata_rows.append(
                 _bundle_review_metadata_row(
@@ -781,6 +825,7 @@ def write_bundle_review_sheet_preview(
                     board_score=board_score,
                     selection_metadata=selection_metadata,
                     editorial_role=editorial_role,
+                    visible_quality=visible_quality,
                 )
             )
     _write_reviewed_candidate_guard_report(
@@ -2113,7 +2158,7 @@ def _write_board_score_report(
         if str(row.get("syuka_lesson_match_type") or "none") != "none"
     ]
     generic_visible_copy_rows = [
-        row for row in score_rows if row.get("generic_visible_copy_warning")
+        row for row in selected_rows if row.get("generic_visible_copy_warning")
     ]
     quality_floor = recommend_quality_floor_visible_rows(selected_rows)
     hook_subblock_rows = [
@@ -2227,6 +2272,11 @@ def _write_board_score_report(
             for row in score_rows
             if str(row.get("syuka_lesson_match_type") or "") == "broad_adjacent"
         ),
+        "syuka_weak_adjacent_count": sum(
+            1
+            for row in score_rows
+            if str(row.get("syuka_lesson_match_type") or "") == "weak_adjacent"
+        ),
         "syuka_false_positive_count": sum(
             1
             for row in score_rows
@@ -2319,6 +2369,7 @@ def _write_board_score_report(
         f"- support_missing_count: {payload['support_missing_count']}",
         f"- syuka_concrete_overlap_count: {payload['syuka_concrete_overlap_count']}",
         f"- syuka_broad_adjacent_count: {payload['syuka_broad_adjacent_count']}",
+        f"- syuka_weak_adjacent_count: {payload['syuka_weak_adjacent_count']}",
         f"- syuka_false_positive_count: {payload['syuka_false_positive_count']}",
         "- generic_visible_copy_warning_count: "
         f"{payload['generic_visible_copy_warning_count']}",
@@ -2396,7 +2447,14 @@ def _write_board_score_report(
                 [
                     _table_cell(row.get("title", "")),
                     _table_cell(row.get("syuka_lesson_match_type", "")),
-                    _table_cell(", ".join(row.get("syuka_lesson_shared_terms", [])) or "-"),
+                    _table_cell(
+                        ", ".join(row.get("syuka_lesson_display_terms", []))
+                        or (
+                            "low-value shared terms hidden; needs human check"
+                            if row.get("syuka_lesson_low_value_warning")
+                            else "-"
+                        )
+                    ),
                     _table_cell(", ".join(row.get("syuka_lesson_match_reasons", [])) or "-"),
                 ]
             )
@@ -2998,10 +3056,12 @@ def _bundle_review_metadata_row(
     board_score: dict[str, Any] | None = None,
     selection_metadata: dict[str, Any] | None = None,
     editorial_role: dict[str, Any] | None = None,
+    visible_quality: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     so_what = _candidate_so_what(candidate)
     selection_metadata = selection_metadata or {}
     editorial_role = editorial_role or {}
+    visible_quality = visible_quality or {}
     metadata = {
         "ID": review_item_id,
         "review_item_id": review_item_id,
@@ -3059,6 +3119,39 @@ def _bundle_review_metadata_row(
             editorial_role.get("editorial_role_confidence") or ""
         ),
         "why_not_main_seed": str(editorial_role.get("why_not_main_seed") or ""),
+        "visible_quality_status": str(
+            visible_quality.get("visible_quality_status") or ""
+        ),
+        "visible_quality_score": visible_quality.get("visible_quality_score", 0),
+        "generic_visible_copy_warning": bool(
+            visible_quality.get("generic_visible_copy_warning")
+        ),
+        "generic_visible_copy_reasons": visible_quality.get(
+            "generic_visible_copy_reasons",
+            [],
+        ),
+        "visible_copy_specificity_score": visible_quality.get(
+            "visible_copy_specificity_score",
+            0,
+        ),
+        "visible_copy_specificity_reasons": visible_quality.get(
+            "visible_copy_specificity_reasons",
+            [],
+        ),
+        "would_hide_if_quality_floor_active": bool(
+            visible_quality.get("would_hide_if_quality_floor_active")
+        ),
+        "quality_floor_exclusion_reason": str(
+            visible_quality.get("quality_floor_exclusion_reason") or ""
+        ),
+        "seed_readiness_level": str(
+            visible_quality.get("seed_readiness_level") or ""
+        ),
+        "main_seed_candidate": bool(visible_quality.get("main_seed_candidate")),
+        "ready_seed_candidate": bool(visible_quality.get("ready_seed_candidate")),
+        "seed_readiness_reasons": visible_quality.get("seed_readiness_reasons", []),
+        "seed_readiness_blockers": visible_quality.get("seed_readiness_blockers", []),
+        "required_before_ready": visible_quality.get("required_before_ready", []),
     }
     if board_score:
         metadata["board_score"] = board_score.get("board_score")

@@ -253,6 +253,25 @@ def test_energy_price_and_heatwave_is_broad_adjacent_not_critical_overlap() -> N
     assert result["support_missing_requirements"] == []
 
 
+def test_syuka_low_value_terms_are_hidden_from_display_terms() -> None:
+    result = infer_selection_lessons(
+        record=_record("[세종은 지금] 구윤철이 꽂힌 'AI 업무혁신'"),
+        representative=_candidate(
+            "[세종은 지금] 구윤철이 꽂힌 'AI 업무혁신'",
+            "정부 AI 업무혁신 도입 기사",
+        ),
+        syuka_similarity={
+            "recommendation": "adjacent",
+            "matched_terms": ["세종은", "지금"],
+        },
+    )
+
+    assert result["syuka_lesson_match_type"] == "weak_adjacent"
+    assert result["syuka_lesson_display_terms"] == []
+    assert result["syuka_lesson_low_value_terms"] == ["세종은", "지금"]
+    assert result["syuka_lesson_low_value_warning"] is True
+
+
 def test_energy_bill_candidate_is_main_seed_candidate() -> None:
     score = compute_board_score(
         record=_record("전기요금은 왜 전쟁과 가스값을 따라 움직이나"),
