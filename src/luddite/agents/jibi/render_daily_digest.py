@@ -40,6 +40,7 @@ from luddite.agents.jibi.board_scoring import (
 from luddite.agents.jibi.board_selection import (
     select_review_board_records,
 )
+from luddite.agents.jibi.quality_replay import topic_concentration_diagnostics
 from luddite.agents.jibi.review_board_copy import (
     build_review_board_copy,
     review_board_title,
@@ -2227,6 +2228,7 @@ def _write_board_score_report(
             if int(row.get("topic_diversity_potential_penalty") or 0) < 0
         ][:25],
     }
+    topic_concentration_summary = topic_concentration_diagnostics(selected_rows)
     payload = {
         "run_date": digest_date,
         "use_board_score": bool(selection_report.get("use_board_score")),
@@ -2330,6 +2332,7 @@ def _write_board_score_report(
             )[:25],
         },
         "topic_diversity": topic_diversity_summary,
+        "topic_concentration": topic_concentration_summary,
         "board_score_distribution": {
             "total_candidate_count": len(score_rows),
             "eligible_count": len(eligible_score_rows),
@@ -2636,6 +2639,41 @@ def _write_board_score_report(
         )
     if not hard_blocked_rows:
         lines.append("| none | none | none |")
+
+    topic_concentration = payload["topic_concentration"]
+    lines.extend(
+        [
+            "",
+            "## Topic Concentration Warnings",
+            "",
+            "- topic_concentration_warning: "
+            + str(topic_concentration["topic_concentration_warning"]).lower(),
+            "- reasons: "
+            + (
+                ", ".join(topic_concentration["topic_concentration_reasons"])
+                if topic_concentration["topic_concentration_reasons"]
+                else "none"
+            ),
+            "",
+            "| topic | count | weakest row | suggested action |",
+            "| --- | ---: | --- | --- |",
+        ]
+    )
+    for row in topic_concentration["topic_concentration_rows"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("topic", "")),
+                    f"{int(row.get('count') or 0):g}",
+                    _table_cell(row.get("weakest_row", "")),
+                    _table_cell(row.get("suggested_action", "")),
+                ]
+            )
+            + " |"
+        )
+    if not topic_concentration["topic_concentration_rows"]:
+        lines.append("| none | 0 | none | none |")
 
     lines.extend(
         [
