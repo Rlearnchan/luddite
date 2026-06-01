@@ -1339,6 +1339,7 @@ def build_selection_calibration_report(
     run_date: str,
     score_rows: list[dict[str, Any]],
     selected_ids: list[str] | set[str],
+    quality_floor_report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     selected_id_set = {str(item) for item in selected_ids}
     selected_rows = [
@@ -1414,6 +1415,8 @@ def build_selection_calibration_report(
         if row.get("generic_visible_copy_warning")
     ][:25]
     quality_floor = recommend_quality_floor_visible_rows(selected_rows)
+    if quality_floor_report:
+        quality_floor = {**quality_floor, **quality_floor_report}
     return {
         "run_date": run_date,
         "selected_count": len(selected_rows),
@@ -1517,6 +1520,12 @@ def selection_calibration_markdown(payload: dict[str, Any]) -> str:
         f"{payload['generic_visible_copy_warning_count']}",
         "- quality_floor_recommended_visible_count: "
         f"{payload['quality_floor_recommended_visible_count']}",
+        f"- quality_floor_active: {str(payload.get('quality_floor_active', False)).lower()}",
+        f"- quality_floor_applied: {str(payload.get('quality_floor_applied', False)).lower()}",
+        "- selected_count_before_quality_floor: "
+        f"{payload.get('selected_count_before_quality_floor', payload['selected_count'])}",
+        "- quality_floor_actual_hidden_count: "
+        f"{payload.get('quality_floor_actual_hidden_count', 0)}",
         "",
         "## Reviewer Lesson Counts",
         "",
@@ -1698,11 +1707,13 @@ def write_selection_calibration_report(
     selected_ids: list[str] | set[str],
     markdown_path: Path,
     json_path: Path | None = None,
+    quality_floor_report: dict[str, Any] | None = None,
 ) -> tuple[Path, Path]:
     payload = build_selection_calibration_report(
         run_date=run_date,
         score_rows=score_rows,
         selected_ids=selected_ids,
+        quality_floor_report=quality_floor_report,
     )
     json_out = json_path or markdown_path.with_suffix(".json")
     markdown_path.parent.mkdir(parents=True, exist_ok=True)

@@ -2,6 +2,7 @@ from luddite.agents.jibi.visible_board_quality import (
     classify_seed_readiness,
     evaluate_visible_board_row,
     recommend_quality_floor_visible_rows,
+    select_quality_floor_visible_rows,
 )
 
 
@@ -71,3 +72,31 @@ def test_quality_floor_uses_final_visible_copy_not_pre_copy_title() -> None:
     assert result["quality_floor_excluded_rows"][0]["reason"] == (
         "generic_visible_copy_warning"
     )
+
+
+def test_quality_floor_selection_hides_lowest_quality_rows_but_keeps_floor() -> None:
+    rows = [
+        {
+            "story_bundle_id": f"ready_{index}",
+            "title": f"ready {index}",
+            "board_score": 90 - index,
+        }
+        for index in range(4)
+    ] + [
+        {
+            "story_bundle_id": f"generic_{index}",
+            "title": f"generic {index}",
+            "board_score": 70 - index,
+            "generic_visible_copy_warning": True,
+            "quality_floor_exclusion_reason": "generic_visible_copy_warning",
+        }
+        for index in range(6)
+    ]
+
+    result = select_quality_floor_visible_rows(rows)
+
+    assert result["quality_floor_selected_count"] == 6
+    assert result["quality_floor_hidden_count"] == 4
+    assert result["quality_floor_selected_indices"] == [0, 1, 2, 3, 4, 5]
+    assert result["quality_floor_hidden_rows"][0]["story_bundle_id"] == "generic_2"
+    assert result["quality_floor_included_with_warnings_count"] == 2

@@ -167,6 +167,11 @@ def replay_quality_for_date(run_date: str) -> dict[str, Any]:
     calibration = _load_json(path_map["calibration"])
     csv_rows = _load_csv_rows(path_map["csv"])
     rows = _metadata_rows(metadata) or _board_rows(board)
+    quality_floor_payload = (
+        metadata.get("quality_floor")
+        if isinstance(metadata.get("quality_floor"), dict)
+        else {}
+    )
     warnings = [
         f"missing:{name}"
         for name, path in path_map.items()
@@ -213,6 +218,35 @@ def replay_quality_for_date(run_date: str) -> dict[str, Any]:
             or sum(1 for row in rows if row.get("generic_visible_copy_warning"))
         ),
         "quality_floor_recommended_visible_count": int(
+            quality_floor_payload.get("quality_floor_recommended_visible_count")
+            or board.get("quality_floor_recommended_visible_count")
+            or calibration.get("quality_floor_recommended_visible_count")
+            or quality_floor.get("quality_floor_recommended_visible_count")
+            or 0
+        ),
+        "quality_floor_active": bool(
+            quality_floor_payload.get("quality_floor_active")
+            or board.get("quality_floor_active")
+            or calibration.get("quality_floor_active")
+        ),
+        "quality_floor_applied": bool(
+            quality_floor_payload.get("quality_floor_applied")
+            or board.get("quality_floor_applied")
+            or calibration.get("quality_floor_applied")
+        ),
+        "quality_floor_actual_hidden_count": int(
+            quality_floor_payload.get("quality_floor_actual_hidden_count")
+            or board.get("quality_floor_actual_hidden_count")
+            or calibration.get("quality_floor_actual_hidden_count")
+            or 0
+        ),
+        "selected_count_before_quality_floor": int(
+            quality_floor_payload.get("selected_count_before_quality_floor")
+            or board.get("selected_count_before_quality_floor")
+            or calibration.get("selected_count_before_quality_floor")
+            or selected_count
+        ),
+        "quality_floor_preview_recommended_visible_count": int(
             quality_floor.get("quality_floor_recommended_visible_count") or 0
         ),
         "quality_floor_excluded_count": int(
@@ -289,7 +323,11 @@ def quality_replay_markdown(payload: dict[str, Any]) -> str:
                     str(row.get("main_seed_candidate_count", 0)),
                     str(row.get("ready_seed_candidate_count", 0)),
                     str(row.get("generic_visible_copy_warning_count", 0)),
-                    str(row.get("quality_floor_recommended_visible_count", 0)),
+                    (
+                        f"{row.get('quality_floor_recommended_visible_count', 0)}"
+                        f" active={str(row.get('quality_floor_active', False)).lower()}"
+                        f" hidden={row.get('quality_floor_actual_hidden_count', 0)}"
+                    ),
                     "/".join(
                         str(row.get(key, 0))
                         for key in [

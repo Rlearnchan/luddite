@@ -21,6 +21,13 @@ def test_replay_jibi_quality_skips_missing_dates_and_reports_available_dates(
     (daily_dir / "2026-06-01_bundle_review_sheet_metadata.json").write_text(
         json.dumps(
             {
+                "quality_floor": {
+                    "quality_floor_active": True,
+                    "quality_floor_applied": True,
+                    "quality_floor_recommended_visible_count": 6,
+                    "quality_floor_actual_hidden_count": 4,
+                    "selected_count_before_quality_floor": 10,
+                },
                 "rows": [
                     {
                         "title": "AI 행정 책임",
@@ -59,6 +66,9 @@ def test_replay_jibi_quality_skips_missing_dates_and_reports_available_dates(
     assert payload["rows"][0]["available"] is False
     assert payload["rows"][1]["selected_count"] == 1
     assert payload["rows"][1]["generic_visible_copy_warning_count"] == 1
+    assert payload["rows"][1]["quality_floor_active"] is True
+    assert payload["rows"][1]["quality_floor_actual_hidden_count"] == 4
+    assert payload["rows"][1]["selected_count_before_quality_floor"] == 10
     assert payload["rows"][1]["syuka_weak_adjacent_count"] == 1
 
     md_path, json_path = write_quality_replay_report(
