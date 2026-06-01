@@ -1,7 +1,9 @@
 from luddite.agents.jibi.board_scoring import compute_board_score
 from luddite.agents.jibi.selection_lessons import (
     SELECTION_LESSONS,
+    detect_generic_visible_copy,
     infer_selection_lessons,
+    recommend_quality_floor_visible_rows,
 )
 
 
@@ -193,6 +195,162 @@ def test_sports_short_tokens_do_not_match_inside_english_words() -> None:
         )
 
         assert "sports_primary_downrank" not in result["selection_lessons"]
+        assert "sports_business_hook_only" not in result["selection_lessons"]
+
+
+def test_anthropic_pope_ai_harms_does_not_trigger_sports_downrank() -> None:
+    result = infer_selection_lessons(
+        record=_record("Anthropic’s alliance with pope on AI harms"),
+        representative=_candidate(
+            "Anthropic’s alliance with pope on AI harms",
+            "all in good faith or Vatican-washing?",
+        ),
+    )
+
+    assert "sports_primary_downrank" not in result["selection_lessons"]
+    assert "sports_business_hook_only" not in result["selection_lessons"]
+
+
+def test_ibk_ai_misselling_vs_ssg_automation_is_false_positive_not_overlap() -> None:
+    result = infer_selection_lessons(
+        record=_record("IBK기업은행 AI 불완전판매 탐지 시스템"),
+        representative=_candidate(
+            "IBK기업은행 AI 불완전판매 탐지 시스템",
+            "AI로 금융상품 불완전판매를 탐지하는 시스템",
+        ),
+        syuka_similarity={
+            "recommendation": "duplicate",
+            "top_match_title": "SSG닷컴 자동물류시스템 NE.O 센터",
+            "matched_terms": ["도입", "시스템"],
+            "reason": "broad keyword match",
+        },
+    )
+
+    assert result["syuka_lesson_match_type"] == "false_positive"
+    assert "syuka_similarity_false_positive_risk" in result["selection_lessons"]
+    assert "past_syuka_overlap_needs_new_angle" not in result["selection_lessons"]
+    assert "past_video_new_angle" not in result["critical_support_requirements"]
+
+
+def test_energy_price_and_heatwave_is_broad_adjacent_not_critical_overlap() -> None:
+    result = infer_selection_lessons(
+        record=_record("전기요금은 왜 전쟁과 가스값을 따라 움직이나"),
+        representative=_candidate(
+            "전기요금은 왜 전쟁과 가스값을 따라 움직이나",
+            "가스값과 전쟁, 전력망 투자가 가계 전기요금으로 이어진다",
+        ),
+        syuka_similarity={
+            "recommendation": "adjacent",
+            "top_match_title": "유럽이 40°C 폭염을 에어컨 없이 버텨야하는 이유",
+            "matched_terms": ["전기요금", "폭염", "냉방"],
+        },
+        second_search={"accepted_links": []},
+    )
+
+    assert result["syuka_lesson_match_type"] == "broad_adjacent"
+    assert "past_syuka_overlap_needs_new_angle" not in result["selection_lessons"]
+    assert "past_video_new_angle" not in result["critical_support_requirements"]
+    assert result["support_missing_requirements"] == []
+
+
+def test_syuka_low_value_terms_are_hidden_from_display_terms() -> None:
+    result = infer_selection_lessons(
+        record=_record("[세종은 지금] 구윤철이 꽂힌 'AI 업무혁신'"),
+        representative=_candidate(
+            "[세종은 지금] 구윤철이 꽂힌 'AI 업무혁신'",
+            "정부 AI 업무혁신 도입 기사",
+        ),
+        syuka_similarity={
+            "recommendation": "adjacent",
+            "matched_terms": ["세종은", "지금"],
+        },
+    )
+
+    assert result["syuka_lesson_match_type"] == "weak_adjacent"
+    assert result["syuka_lesson_display_terms"] == []
+    assert result["syuka_lesson_low_value_terms"] == ["세종은", "지금"]
+    assert result["syuka_lesson_low_value_warning"] is True
+
+
+def test_energy_bill_candidate_is_main_seed_candidate() -> None:
+    score = compute_board_score(
+        record=_record("전기요금은 왜 전쟁과 가스값을 따라 움직이나"),
+        representative=_candidate(
+            "전기요금은 왜 전쟁과 가스값을 따라 움직이나",
+            "가스값과 전쟁, 전력망 투자가 가계 전기요금으로 이어진다",
+        ),
+        history_rows=[],
+        mismatch_reasons=[],
+        syuka_similarity={
+            "recommendation": "adjacent",
+            "top_match_title": "유럽이 40°C 폭염을 에어컨 없이 버텨야하는 이유",
+            "matched_terms": ["전기요금", "폭염", "냉방"],
+        },
+        second_search=None,
+    )
+
+    assert score["syuka_lesson_match_type"] == "broad_adjacent"
+    assert score["main_seed_candidate"] is True
+
+
+def test_free_delivery_hidden_cost_is_main_seed_candidate() -> None:
+    score = compute_board_score(
+        record=_record("무료배달은 누가 내나"),
+        representative=_candidate(
+            "무료배달은 누가 내나",
+            "플랫폼 무료배달 경쟁의 비용이 점주와 소비자 가격으로 이동한다",
+        ),
+        history_rows=[],
+        mismatch_reasons=[],
+        syuka_similarity=None,
+        second_search=None,
+    )
+
+    assert "platform_hidden_cost_bonus" in score["selection_lessons"]
+    assert score["main_seed_candidate"] is True
+
+
+def test_generic_visible_title_gets_warning() -> None:
+    result = detect_generic_visible_copy(
+        {
+            "제목": "해외 후보, 한 가지 질문으로 더 좁혀볼 소재",
+            "설명": "원문 하나만으로는 아직 결론을 내리기 이릅니다.",
+        }
+    )
+
+    assert result["generic_visible_copy_warning"] is True
+    assert "generic_title:해외 후보" in result["generic_visible_copy_reasons"]
+
+
+def test_quality_floor_excludes_evidence_low_and_generic_rows() -> None:
+    rows = [
+        {"story_bundle_id": "strong", "title": "좋은 메인 후보", "board_score": 86},
+        {"story_bundle_id": "sub", "title": "좋은 서브 후보", "board_score": 74},
+        {
+            "story_bundle_id": "generic",
+            "title": "해외 후보",
+            "board_score": 82,
+            "generic_visible_copy_warning": True,
+        },
+        {
+            "story_bundle_id": "evidence_low",
+            "title": "근거 보강 후보",
+            "board_score": 58,
+            "editorial_role": "evidence",
+            "editorial_role_confidence": "low",
+        },
+        {
+            "story_bundle_id": "suppress",
+            "title": "억제 후보",
+            "board_score": 72,
+            "selection_lesson_role": "suppress",
+        },
+    ]
+
+    result = recommend_quality_floor_visible_rows(rows)
+
+    assert {"generic", "evidence_low", "suppress"}.issubset(result["excluded_ids"])
+    assert result["quality_floor_recommended_visible_count"] == 5
 
 
 def test_board_score_exposes_support_requirements_and_blocks_main_seed() -> None:

@@ -8,7 +8,12 @@ from typing import Any
 from luddite.agents.jibi.append_to_sheet import REVIEWER_COLUMNS
 from luddite.agents.jibi.review_feedback import infer_review_feedback
 from luddite.agents.jibi.seed_quality import analyze_so_what
-from luddite.agents.jibi.selection_lessons import infer_selection_lessons
+from luddite.agents.jibi.selection_lessons import (
+    detect_generic_visible_copy,
+    infer_selection_lessons,
+    infer_syuka_lesson_match,
+    seed_candidate_flags,
+)
 from luddite.agents.jibi.story_angle import analyze_story_angle
 from luddite.agents.jibi.topic_diversity import infer_topic_profile, topic_term_in_text
 
@@ -84,9 +89,26 @@ BOARD_SCORE_SYSTEM_TOPIC_TERMS = {
     "규제",
     "사각지대",
     "물가",
+    "가스값",
+    "무료배달",
+    "비용",
+    "수수료",
+    "전기요금",
     "전력",
+    "플랫폼",
     "교육",
     "의료",
+}
+
+BOARD_SCORE_DAILY_COST_BRIDGE_TERMS = {
+    "가계",
+    "가스값",
+    "무료배달",
+    "배달비",
+    "비용",
+    "수수료",
+    "전기요금",
+    "요금",
 }
 
 BOARD_SCORE_SPORTS_PRIMARY_TERMS = {
@@ -457,13 +479,24 @@ def compute_board_score(
             score += 3
             reasons.append("+3 broader_system_second_search")
 
+    syuka_diagnostic = infer_syuka_lesson_match(
+        record,
+        representative,
+        syuka_similarity,
+    )
     syuka_recommendation = str((syuka_similarity or {}).get("recommendation") or "")
-    if syuka_recommendation == "duplicate":
+    syuka_match_type = str(syuka_diagnostic.get("syuka_lesson_match_type") or "none")
+    if syuka_recommendation == "duplicate" and syuka_match_type == "concrete_overlap":
         score -= 25
-        reasons.append("-25 syuka_duplicate")
-    elif syuka_recommendation == "adjacent":
+        reasons.append("-25 syuka_duplicate_concrete_overlap")
+    elif syuka_recommendation == "adjacent" and syuka_match_type in {
+        "broad_adjacent",
+        "concrete_overlap",
+    }:
         score += 2
         reasons.append("+2 syuka_adjacent_context")
+    elif syuka_recommendation in {"duplicate", "adjacent", "needs_human_check"}:
+        reasons.append(f"+0 syuka_{syuka_match_type}_diagnostic")
 
     if story_role == "evidence_for_larger_story" or seed_quality == "evidence_only":
         score -= 18
@@ -471,7 +504,13 @@ def compute_board_score(
     if story_role == "demote_or_reject" or seed_quality == "reject_or_downrank":
         score -= 60
         reasons.append("-60 demote_or_reject")
-    if "weak_audience_bridge" in quality_flags or "weak_audience_bridge" in weakness:
+    daily_cost_bridge = any(
+        topic_term_in_text(term, source) for term in BOARD_SCORE_DAILY_COST_BRIDGE_TERMS
+    )
+    if (
+        "weak_audience_bridge" in quality_flags
+        or "weak_audience_bridge" in weakness
+    ) and not daily_cost_bridge:
         score -= 18
         reasons.append("-18 weak_audience_bridge")
     if quality_flags.intersection(BOARD_SCORE_PROMO_FLAGS):
@@ -577,10 +616,17 @@ def compute_board_score(
         )
     )
 
-    return {
+    final_score = round(max(0.0, score), 1)
+    generic_visible_payload = detect_generic_visible_copy(
+        {
+            "title": record.get("bundle_title") or record.get("primary_title") or "",
+            "description": record.get("why_bundle") or representative.get("summary") or "",
+        }
+    )
+    result = {
         "total_score": base_total_score,
         "board_score_before_calibration": board_score_before_calibration,
-        "board_score": round(max(0.0, score), 1),
+        "board_score": final_score,
         "reasons": reasons,
         "mismatch_reasons": mismatch_reasons,
         "history_statuses": sorted(history_statuses),
@@ -591,7 +637,10 @@ def compute_board_score(
         **selection_lesson_payload,
         **story_angle,
         **topic_profile,
+        **generic_visible_payload,
     }
+    result.update(seed_candidate_flags(result))
+    return result
 
 
 def _history_reviewers(row: dict[str, Any]) -> list[str]:
@@ -618,11 +667,17 @@ def board_score_report_row(
     override: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     title = str(record.get("bundle_title") or record.get("primary_title") or "")
-    return {
+    row = {
         "story_bundle_id": str(record.get("story_bundle_id") or ""),
         "story_fingerprint": str(record.get("story_fingerprint") or ""),
         "title": title,
         "visible_title": str((override or {}).get("title") or title),
+        "visible_description": str(
+            (override or {}).get("description")
+            or record.get("why_bundle")
+            or representative.get("summary")
+            or ""
+        ),
         "primary_title": str(representative.get("title") or ""),
         "source": str(representative.get("source") or ""),
         "source_role": candidate_role(representative),
@@ -680,6 +735,42 @@ def board_score_report_row(
             "selection_lesson_role_hints",
             [],
         ),
+        "syuka_lesson_match_type": board_score.get(
+            "syuka_lesson_match_type",
+            "none",
+        ),
+        "syuka_lesson_match_reasons": board_score.get(
+            "syuka_lesson_match_reasons",
+            [],
+        ),
+        "syuka_lesson_shared_terms": board_score.get(
+            "syuka_lesson_shared_terms",
+            [],
+        ),
+        "syuka_lesson_shared_terms_raw": board_score.get(
+            "syuka_lesson_shared_terms_raw",
+            [],
+        ),
+        "syuka_lesson_display_terms": board_score.get(
+            "syuka_lesson_display_terms",
+            [],
+        ),
+        "syuka_lesson_low_value_terms": board_score.get(
+            "syuka_lesson_low_value_terms",
+            [],
+        ),
+        "syuka_lesson_low_value_warning": board_score.get(
+            "syuka_lesson_low_value_warning",
+            False,
+        ),
+        "syuka_lesson_concrete_terms": board_score.get(
+            "syuka_lesson_concrete_terms",
+            [],
+        ),
+        "syuka_lesson_broad_terms": board_score.get(
+            "syuka_lesson_broad_terms",
+            [],
+        ),
         "support_requirements": board_score.get("support_requirements", []),
         "critical_support_requirements": board_score.get(
             "critical_support_requirements",
@@ -724,3 +815,13 @@ def board_score_report_row(
             }
         ),
     }
+    row.update(
+        detect_generic_visible_copy(
+            {
+                "title": row.get("visible_title", ""),
+                "description": row.get("visible_description", ""),
+            }
+        )
+    )
+    row.update(seed_candidate_flags({**board_score, **row}))
+    return row
