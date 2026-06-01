@@ -114,6 +114,8 @@ def test_selection_calibration_report_counts_lessons_and_support_missing(tmp_pat
     assert payload["suppress_candidate_count"] == 1
     assert payload["needs_second_source_count"] == 1
     assert payload["support_missing_count"] == 1
+    assert "main_seed_candidate_count" in payload
+    assert "quality_floor_recommended_visible_count" in payload
     assert payload["reviewer_lesson_counts"]["sports_primary_downrank"] == 1
     assert payload["selected"][0]["board_score_before"] == 80
     assert payload["top_10_before_calibration"][0]["title"] == "AI 역사 브이로그"
@@ -137,6 +139,9 @@ def test_selection_calibration_report_counts_lessons_and_support_missing(tmp_pat
 
     assert "support_missing_count: 1" in md_path.read_text(encoding="utf-8")
     assert "Top 10 Before Calibration" in md_path.read_text(encoding="utf-8")
+    assert "Main Seed Candidates" in md_path.read_text(encoding="utf-8")
+    assert "Syuka Similarity Diagnostics" in md_path.read_text(encoding="utf-8")
+    assert "Quality Floor Exclusions" in md_path.read_text(encoding="utf-8")
     written = json.loads(json_path.read_text(encoding="utf-8"))
     assert written["selected"][0]["support_requirements"] == ["parallel_case"]
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -52,6 +53,16 @@ SPORTS_BUSINESS_TERMS = {
     "이벤트 비즈니스",
     "관광",
     "도시 경제",
+}
+SPORTS_CONTEXT_GUARD_TERMS = {
+    "anthropic",
+    "pope",
+    "vatican",
+    "ai harms",
+    "copyright",
+    "workers",
+    "environment",
+    "저작권",
 }
 AI_GRAND_DISCOURSE_TERMS = {
     "ai 저작권",
@@ -137,6 +148,56 @@ PAST_SYUKA_OVERLAP_TERMS = {
     "이미 다룬",
     "이미 했던",
     "겹침",
+}
+SYUKA_BROAD_MATCH_TERMS = {
+    "ai",
+    "가격",
+    "price",
+    "prices",
+    "system",
+    "도입",
+    "냉방",
+    "비용",
+    "산업",
+    "시스템",
+    "시장",
+    "에어컨",
+    "요금",
+    "전기",
+    "전기요금",
+    "전력",
+    "정책",
+    "폭염",
+    "heatwave",
+    "cooling",
+}
+SYUKA_CONCRETE_MATCH_TERMS = {
+    "cbdc",
+    "rwa",
+    "sto",
+    "계란값",
+    "달걀값",
+    "근로소득",
+    "디지털 화폐",
+    "무료배달",
+    "무료 배달",
+    "배달 수수료",
+    "비경제활동",
+    "불완전판매",
+    "쉬었음",
+    "수수료",
+    "자산 토큰화",
+    "토큰화",
+}
+GENERIC_VISIBLE_COPY_PATTERNS = {
+    "해외 후보",
+    "한 가지 질문으로 더 좁혀볼 소재",
+    "해외 ai 이슈",
+    "신뢰와 책임의 변화",
+    "원문 하나만으로는 아직 결론",
+    "이 후보를 단독 주제로 만들려면",
+    "추가 독립 출처 1개 이상",
+    "생활 영향, 구조적 배경, 반대 근거가 붙어야",
 }
 LOW_PERFORMANCE_TERMS = {"조회수 폭망", "조회수 낮", "성과 낮", "low performance"}
 KOREA_BRIDGE_TERMS = {"한국", "국내", "우리나라", "korea", "korean"}
@@ -379,6 +440,17 @@ def _text(record: dict[str, Any], representative: dict[str, Any]) -> str:
     return " ".join(str(piece or "") for piece in pieces).lower()
 
 
+def _primary_story_text(record: dict[str, Any], representative: dict[str, Any]) -> str:
+    pieces = [
+        record.get("bundle_title"),
+        record.get("primary_title"),
+        record.get("why_bundle"),
+        representative.get("title"),
+        representative.get("summary"),
+    ]
+    return " ".join(str(piece or "") for piece in pieces).lower()
+
+
 def _has_term(text: str, term: str) -> bool:
     normalized = term.lower()
     if ASCII_WORD_TERM_RE.fullmatch(normalized):
@@ -436,36 +508,291 @@ def _token_set(value: str) -> set[str]:
     }
 
 
-def _syuka_false_positive_risk(
+def _normalise_term(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def _syuka_match_terms(syuka_similarity: dict[str, Any] | None) -> list[str]:
+    if not syuka_similarity:
+        return []
+    terms = syuka_similarity.get("matched_terms")
+    if not isinstance(terms, list):
+        terms = syuka_similarity.get("shared_terms")
+    if isinstance(terms, list):
+        return _dedupe([_normalise_term(term) for term in terms])
+    return []
+
+
+def _candidate_syuka_text(record: dict[str, Any], representative: dict[str, Any]) -> str:
+    return " ".join(
+        str(value or "")
+        for value in [
+            record.get("bundle_title"),
+            record.get("primary_title"),
+            record.get("why_bundle"),
+            representative.get("title"),
+            representative.get("summary"),
+        ]
+    )
+
+
+def _past_syuka_text(syuka_similarity: dict[str, Any] | None) -> str:
+    return " ".join(
+        str((syuka_similarity or {}).get(key) or "")
+        for key in [
+            "top_match_title",
+            "matched_title",
+            "title",
+            "reason",
+            "match_reason",
+        ]
+    )
+
+
+def _is_broad_syuka_term(term: str) -> bool:
+    normalised = _normalise_term(term)
+    if normalised in SYUKA_BROAD_MATCH_TERMS:
+        return True
+    tokens = _token_set(normalised)
+    return bool(tokens) and tokens.issubset(SYUKA_BROAD_MATCH_TERMS)
+
+
+def _is_concrete_syuka_term(term: str) -> bool:
+    normalised = _normalise_term(term)
+    if not normalised or _is_broad_syuka_term(normalised):
+        return False
+    for concrete in SYUKA_CONCRETE_MATCH_TERMS:
+        if concrete == normalised:
+            return True
+        if not ASCII_WORD_TERM_RE.fullmatch(concrete) and concrete in normalised:
+            return True
+    return False
+
+
+def infer_syuka_lesson_match(
     record: dict[str, Any],
     representative: dict[str, Any],
     syuka_similarity: dict[str, Any] | None,
-) -> bool:
+) -> dict[str, Any]:
+    """Classify past-Syuka similarity before turning it into support requirements."""
+
+    payload: dict[str, Any] = {
+        "syuka_lesson_match_type": "none",
+        "syuka_lesson_match_reasons": [],
+        "syuka_lesson_shared_terms": [],
+        "syuka_lesson_concrete_terms": [],
+        "syuka_lesson_broad_terms": [],
+    }
     if not syuka_similarity:
-        return False
+        return payload
     recommendation = str(syuka_similarity.get("recommendation") or "")
+    if recommendation not in {"duplicate", "adjacent", "needs_human_check"}:
+        return payload
+
+    shared_terms = _syuka_match_terms(syuka_similarity)
+    if not shared_terms:
+        candidate_tokens = _token_set(_candidate_syuka_text(record, representative))
+        past_tokens = _token_set(_past_syuka_text(syuka_similarity))
+        shared_terms = sorted(candidate_tokens.intersection(past_tokens))
+    broad_terms = [term for term in shared_terms if _is_broad_syuka_term(term)]
+    concrete_terms = [term for term in shared_terms if _is_concrete_syuka_term(term)]
+    reasons: list[str] = [f"recommendation:{recommendation}"]
+    if broad_terms:
+        reasons.append("shared_broad_terms:" + ",".join(broad_terms[:5]))
+    if concrete_terms:
+        reasons.append("shared_concrete_terms:" + ",".join(concrete_terms[:5]))
+
     if recommendation == "needs_human_check":
-        return True
-    if recommendation not in {"duplicate", "adjacent"}:
-        return False
-    candidate_tokens = _token_set(
-        " ".join(
-            str(value or "")
-            for value in [
-                record.get("bundle_title"),
-                representative.get("title"),
-                representative.get("summary"),
-            ]
-        )
+        match_type = "false_positive"
+        reasons.append("needs_human_check")
+    elif concrete_terms:
+        match_type = "concrete_overlap"
+    elif recommendation == "adjacent":
+        match_type = "broad_adjacent"
+        if not broad_terms and not shared_terms:
+            reasons.append("adjacent_without_shared_concrete_terms")
+    else:
+        match_type = "false_positive"
+        if not shared_terms:
+            reasons.append("duplicate_without_shared_terms")
+        elif broad_terms:
+            reasons.append("duplicate_only_broad_terms")
+
+    return {
+        **payload,
+        "syuka_lesson_match_type": match_type,
+        "syuka_lesson_match_reasons": _dedupe(reasons),
+        "syuka_lesson_shared_terms": _dedupe(shared_terms),
+        "syuka_lesson_concrete_terms": _dedupe(concrete_terms),
+        "syuka_lesson_broad_terms": _dedupe(broad_terms),
+    }
+
+
+def _syuka_false_positive_risk(match_payload: dict[str, Any]) -> bool:
+    return str(match_payload.get("syuka_lesson_match_type") or "") == "false_positive"
+
+
+def detect_generic_visible_copy(row: dict[str, Any]) -> dict[str, Any]:
+    title = " ".join(
+        str(row.get(key) or "")
+        for key in ["제목", "title", "visible_title", "bundle_title"]
+    ).lower()
+    description = " ".join(
+        str(row.get(key) or "")
+        for key in ["설명", "description", "visible_description", "why_bundle", "summary"]
+    ).lower()
+    reasons: list[str] = []
+    for pattern in GENERIC_VISIBLE_COPY_PATTERNS:
+        pattern_lower = pattern.lower()
+        if pattern_lower in title:
+            reasons.append(f"generic_title:{pattern}")
+        if pattern_lower in description:
+            reasons.append(f"generic_description:{pattern}")
+    return {
+        "generic_visible_copy_warning": bool(reasons),
+        "generic_visible_copy_reasons": _dedupe(reasons),
+    }
+
+
+def seed_candidate_flags(row: dict[str, Any]) -> dict[str, Any]:
+    score = float(row.get("board_score") or 0)
+    selection_role = str(row.get("selection_lesson_role") or "")
+    critical_missing = set(row.get("support_missing_requirements") or []).intersection(
+        set(row.get("critical_support_requirements") or [])
     )
-    past_tokens = _token_set(
-        " ".join(
-            str(syuka_similarity.get(key) or "")
-            for key in ["top_match_title", "matched_title", "reason"]
-        )
+    if not row.get("critical_support_requirements"):
+        critical_missing = set(row.get("support_missing_requirements") or [])
+    syuka_match_type = str(row.get("syuka_lesson_match_type") or "none")
+    support_fulfilled = set(row.get("support_fulfilled_requirements") or [])
+    concrete_overlap_blocked = (
+        syuka_match_type == "concrete_overlap"
+        and "past_video_new_angle" not in support_fulfilled
     )
-    shared = candidate_tokens.intersection(past_tokens)
-    return len(shared) <= 1
+    generic_warning = bool(row.get("generic_visible_copy_warning"))
+    generic_frame_risk = str(row.get("generic_frame_risk") or "low")
+    visible_title = str(row.get("visible_title") or row.get("title") or "")
+
+    main_reasons: list[str] = []
+    main_blockers: list[str] = []
+    if score >= 78:
+        main_reasons.append("board_score>=78")
+    else:
+        main_blockers.append("board_score<78")
+    if selection_role == "suppress":
+        main_blockers.append("selection_lesson_role=suppress")
+    if critical_missing:
+        main_blockers.append("critical_support_missing:" + ",".join(sorted(critical_missing)))
+    if generic_warning:
+        main_blockers.append("generic_visible_copy_warning")
+    if concrete_overlap_blocked:
+        main_blockers.append("syuka_concrete_overlap_needs_new_angle")
+    if syuka_match_type in {"none", "broad_adjacent", "false_positive"}:
+        main_reasons.append(f"syuka_match_type={syuka_match_type}")
+    if selection_role and selection_role != "suppress":
+        main_reasons.append(f"selection_lesson_role={selection_role}")
+    if not critical_missing:
+        main_reasons.append("no_critical_support_missing")
+
+    main_seed_candidate = not main_blockers
+    ready_reasons: list[str] = []
+    ready_blockers: list[str] = []
+    if score >= 82:
+        ready_reasons.append("board_score>=82")
+    else:
+        ready_blockers.append("board_score<82")
+    if critical_missing:
+        ready_blockers.append("critical_support_missing:" + ",".join(sorted(critical_missing)))
+    if str(row.get("support_status") or "") == "missing":
+        ready_blockers.append("support_status=missing")
+    if generic_frame_risk == "high":
+        ready_blockers.append("generic_frame_risk=high")
+    if generic_warning:
+        ready_blockers.append("generic_visible_copy_warning")
+    if syuka_match_type not in {"none", "broad_adjacent", "false_positive"}:
+        ready_blockers.append(f"syuka_match_type={syuka_match_type}")
+    if len(visible_title.strip()) < 6:
+        ready_blockers.append("visible_title_too_thin")
+    if visible_title.strip():
+        ready_reasons.append("visible_title_present")
+
+    return {
+        "main_seed_candidate": main_seed_candidate,
+        "ready_seed_candidate": main_seed_candidate and not ready_blockers,
+        "main_seed_candidate_reasons": _dedupe(main_reasons),
+        "ready_seed_candidate_reasons": _dedupe(ready_reasons),
+        "main_seed_candidate_blockers": _dedupe(main_blockers),
+        "ready_seed_candidate_blockers": _dedupe(ready_blockers),
+    }
+
+
+def _quality_floor_exclusion_reason(row: dict[str, Any]) -> str:
+    score = float(row.get("board_score") or row.get("board_score_after") or 0)
+    if score < 35:
+        return "board_score<35"
+    if str(row.get("selection_lesson_role") or "") == "suppress" or "suppress" in set(
+        row.get("selection_lesson_role_hints") or []
+    ):
+        return "selection_lesson_role=suppress"
+    if (
+        str(row.get("editorial_role") or "") == "evidence"
+        and str(row.get("editorial_role_confidence") or "") == "low"
+    ):
+        return "editorial_role=evidence_low"
+    if row.get("generic_visible_copy_warning"):
+        return "generic_visible_copy_warning"
+    critical_missing = set(row.get("support_missing_requirements") or []).intersection(
+        set(row.get("critical_support_requirements") or [])
+    )
+    if not row.get("critical_support_requirements"):
+        critical_missing = set(row.get("support_missing_requirements") or [])
+    if str(row.get("support_status") or "") == "missing" and critical_missing:
+        return "critical_support_missing"
+    return ""
+
+
+def recommend_quality_floor_visible_rows(
+    rows: list[dict[str, Any]],
+    *,
+    hard_min_visible_rows: int = 6,
+    target_visible_rows: int = 8,
+    max_visible_rows: int = 10,
+    fixed_10: bool | None = None,
+) -> dict[str, Any]:
+    if fixed_10 is None:
+        fixed_10 = os.environ.get("JIBI_FIXED_10_BOARD") == "1"
+    excluded_rows = []
+    for row in rows:
+        reason = _quality_floor_exclusion_reason(row)
+        if not reason:
+            continue
+        excluded_rows.append(
+            {
+                "story_bundle_id": str(row.get("story_bundle_id") or ""),
+                "title": str(row.get("title") or row.get("visible_title") or ""),
+                "reason": reason,
+                "board_score": row.get("board_score", row.get("board_score_after", 0)),
+            }
+        )
+    eligible_count = max(0, len(rows) - len(excluded_rows))
+    if fixed_10:
+        recommended_count = min(max_visible_rows, len(rows))
+    elif not rows:
+        recommended_count = 0
+    else:
+        floor = min(hard_min_visible_rows, len(rows))
+        recommended_count = min(
+            max_visible_rows,
+            max(floor, min(target_visible_rows, eligible_count)),
+        )
+    return {
+        "quality_floor_fixed_10": bool(fixed_10),
+        "quality_floor_recommended_visible_count": recommended_count,
+        "quality_floor_excluded_count": len(excluded_rows),
+        "quality_floor_excluded_rows": excluded_rows,
+        "excluded_ids": [
+            row["story_bundle_id"] for row in excluded_rows if row.get("story_bundle_id")
+        ],
+    }
 
 
 def _add(
@@ -552,12 +879,18 @@ def infer_selection_lessons(
 
     seed_type = str(representative.get("seed_type") or "").lower()
     quality_flags = set(str(flag) for flag in representative.get("quality_flags") or [])
+    primary_text = _primary_story_text(record, representative)
     sports_primary = (
         seed_type == "sports"
         or "sports_only" in quality_flags
-        or _has_any(text, SPORTS_PRIMARY_TERMS)
+        or _has_any(primary_text, SPORTS_PRIMARY_TERMS)
     )
-    sports_business = sports_primary and _has_any(text, SPORTS_BUSINESS_TERMS)
+    if sports_primary and _has_any(primary_text, SPORTS_CONTEXT_GUARD_TERMS) and not _has_any(
+        primary_text,
+        SPORTS_PRIMARY_TERMS - {"sports", "football"},
+    ):
+        sports_primary = False
+    sports_business = sports_primary and _has_any(primary_text, SPORTS_BUSINESS_TERMS)
     if sports_primary:
         _add(
             lessons=lessons,
@@ -768,8 +1101,13 @@ def infer_selection_lessons(
             role="suppress",
         )
 
-    syuka_recommendation = str((syuka_similarity or {}).get("recommendation") or "")
-    if syuka_recommendation in {"duplicate", "adjacent"} or _has_any(
+    syuka_match_payload = infer_syuka_lesson_match(
+        record,
+        representative,
+        syuka_similarity,
+    )
+    syuka_match_type = str(syuka_match_payload.get("syuka_lesson_match_type") or "none")
+    if syuka_match_type == "concrete_overlap" or _has_any(
         text,
         PAST_SYUKA_OVERLAP_TERMS,
     ):
@@ -797,7 +1135,7 @@ def infer_selection_lessons(
             role="sub_block",
             support=["past_video_new_angle"],
         )
-    if _syuka_false_positive_risk(record, representative, syuka_similarity):
+    if _syuka_false_positive_risk(syuka_match_payload):
         score_delta += _add(
             lessons=lessons,
             roles=roles,
@@ -946,6 +1284,7 @@ def infer_selection_lessons(
         else "not_checked"
         if requirements
         else "not_required",
+        **syuka_match_payload,
         "why_not_main_seed": "; ".join(_dedupe(why_not_main_seed)),
         "why_not_main_seed_reasons": _dedupe(
             [*why_not_main_seed_reasons, *[str(lesson) for lesson in lessons]]
@@ -1009,6 +1348,22 @@ def _report_row(row: dict[str, Any]) -> dict[str, Any]:
         "critical_support_requirements": row.get("critical_support_requirements", []),
         "support_requirement_details": row.get("support_requirement_details", []),
         "support_missing_requirements": row.get("support_missing_requirements", []),
+        "support_status": str(row.get("support_status") or ""),
+        "syuka_lesson_match_type": str(row.get("syuka_lesson_match_type") or "none"),
+        "syuka_lesson_match_reasons": row.get("syuka_lesson_match_reasons", []),
+        "syuka_lesson_shared_terms": row.get("syuka_lesson_shared_terms", []),
+        "syuka_lesson_concrete_terms": row.get("syuka_lesson_concrete_terms", []),
+        "syuka_lesson_broad_terms": row.get("syuka_lesson_broad_terms", []),
+        "generic_visible_copy_warning": bool(
+            row.get("generic_visible_copy_warning")
+        ),
+        "generic_visible_copy_reasons": row.get("generic_visible_copy_reasons", []),
+        "main_seed_candidate": bool(row.get("main_seed_candidate")),
+        "ready_seed_candidate": bool(row.get("ready_seed_candidate")),
+        "main_seed_candidate_reasons": row.get("main_seed_candidate_reasons", []),
+        "ready_seed_candidate_reasons": row.get("ready_seed_candidate_reasons", []),
+        "main_seed_candidate_blockers": row.get("main_seed_candidate_blockers", []),
+        "ready_seed_candidate_blockers": row.get("ready_seed_candidate_blockers", []),
         "why_not_main_seed": str(row.get("why_not_main_seed") or ""),
         "why_not_main_seed_reasons": row.get("why_not_main_seed_reasons", []),
     }
@@ -1073,10 +1428,37 @@ def build_selection_calibration_report(
         for row in score_rows
         if _pre_calibration_role(row) != _role_for_report(row)
     ][:25]
+    main_seed_candidates = [
+        _report_row(row)
+        for row in after_ranked
+        if row.get("main_seed_candidate")
+    ][:25]
+    ready_seed_candidates = [
+        _report_row(row)
+        for row in after_ranked
+        if row.get("ready_seed_candidate")
+    ][:25]
+    syuka_similarity_diagnostics = [
+        _report_row(row)
+        for row in after_ranked
+        if str(row.get("syuka_lesson_match_type") or "none") != "none"
+    ][:25]
+    generic_visible_copy_warnings = [
+        _report_row(row)
+        for row in after_ranked
+        if row.get("generic_visible_copy_warning")
+    ][:25]
+    quality_floor = recommend_quality_floor_visible_rows(selected_rows)
     return {
         "run_date": run_date,
         "selected_count": len(selected_rows),
         "recommended_visible_board_size": recommended_visible_board_size,
+        "main_seed_candidate_count": sum(
+            1 for row in score_rows if row.get("main_seed_candidate")
+        ),
+        "ready_seed_candidate_count": sum(
+            1 for row in score_rows if row.get("ready_seed_candidate")
+        ),
         "main_seed_count": selected_role_counts.get("main_seed", 0),
         "sub_block_count": selected_role_counts.get("sub_block", 0),
         "hook_only_count": selected_role_counts.get("hook_only", 0),
@@ -1095,16 +1477,39 @@ def build_selection_calibration_report(
             "syuka_similarity_false_positive_risk",
             0,
         ),
+        "syuka_concrete_overlap_count": sum(
+            1
+            for row in score_rows
+            if str(row.get("syuka_lesson_match_type") or "") == "concrete_overlap"
+        ),
+        "syuka_broad_adjacent_count": sum(
+            1
+            for row in score_rows
+            if str(row.get("syuka_lesson_match_type") or "") == "broad_adjacent"
+        ),
+        "syuka_false_positive_count": sum(
+            1
+            for row in score_rows
+            if str(row.get("syuka_lesson_match_type") or "") == "false_positive"
+        ),
+        "generic_visible_copy_warning_count": sum(
+            1 for row in score_rows if row.get("generic_visible_copy_warning")
+        ),
         "past_overlap_needs_new_angle_count": lesson_counts.get(
             "past_syuka_overlap_needs_new_angle",
             0,
         ),
+        **quality_floor,
         "reviewer_lesson_counts": dict(sorted(lesson_counts.items())),
         "top_10_before_calibration": [_report_row(row) for row in before_ranked[:10]],
         "top_10_after_calibration": [_report_row(row) for row in after_ranked[:10]],
         "dropped_by_calibration": dropped_by_calibration,
         "promoted_by_calibration": promoted_by_calibration,
         "role_changed_by_calibration": role_changed_by_calibration,
+        "main_seed_candidates": main_seed_candidates,
+        "ready_seed_candidates": ready_seed_candidates,
+        "syuka_similarity_diagnostics": syuka_similarity_diagnostics,
+        "generic_visible_copy_warnings": generic_visible_copy_warnings,
         "selected": selected_payload_rows,
     }
 
@@ -1122,6 +1527,8 @@ def selection_calibration_markdown(payload: dict[str, Any]) -> str:
         f"- selected_count: {payload['selected_count']}",
         f"- recommended_visible_board_size: {payload['recommended_visible_board_size']}",
         f"- main_seed_count: {payload['main_seed_count']}",
+        f"- main_seed_candidate_count: {payload['main_seed_candidate_count']}",
+        f"- ready_seed_candidate_count: {payload['ready_seed_candidate_count']}",
         f"- sub_block_count: {payload['sub_block_count']}",
         f"- hook_only_count: {payload['hook_only_count']}",
         f"- evidence_count: {payload['evidence_count']}",
@@ -1130,8 +1537,15 @@ def selection_calibration_markdown(payload: dict[str, Any]) -> str:
         f"- support_missing_count: {payload['support_missing_count']}",
         "- syuka_false_positive_risk_count: "
         f"{payload['syuka_false_positive_risk_count']}",
+        f"- syuka_concrete_overlap_count: {payload['syuka_concrete_overlap_count']}",
+        f"- syuka_broad_adjacent_count: {payload['syuka_broad_adjacent_count']}",
+        f"- syuka_false_positive_count: {payload['syuka_false_positive_count']}",
         "- past_overlap_needs_new_angle_count: "
         f"{payload['past_overlap_needs_new_angle_count']}",
+        "- generic_visible_copy_warning_count: "
+        f"{payload['generic_visible_copy_warning_count']}",
+        "- quality_floor_recommended_visible_count: "
+        f"{payload['quality_floor_recommended_visible_count']}",
         "",
         "## Reviewer Lesson Counts",
         "",
@@ -1140,6 +1554,92 @@ def selection_calibration_markdown(payload: dict[str, Any]) -> str:
         lines.append(f"- {lesson}: {count}")
     if not payload["reviewer_lesson_counts"]:
         lines.append("- none: 0")
+    lines.extend(
+        [
+            "",
+            "## Main Seed Candidates",
+            "",
+            "| title | board_score | why candidate | remaining risk |",
+            "| --- | ---: | --- | --- |",
+        ]
+    )
+    for row in payload.get("main_seed_candidates", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    f"{float(row.get('board_score_after') or 0):g}",
+                    _table_cell(", ".join(row.get("main_seed_candidate_reasons", [])) or "-"),
+                    _table_cell(", ".join(row.get("main_seed_candidate_blockers", [])) or "-"),
+                ]
+            )
+            + " |"
+        )
+    if not payload.get("main_seed_candidates"):
+        lines.append("| none | 0 | none | none |")
+    lines.extend(
+        [
+            "",
+            "## Syuka Similarity Diagnostics",
+            "",
+            "| title | match_type | shared terms | reason |",
+            "| --- | --- | --- | --- |",
+        ]
+    )
+    for row in payload.get("syuka_similarity_diagnostics", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(row.get("syuka_lesson_match_type", "")),
+                    _table_cell(", ".join(row.get("syuka_lesson_shared_terms", [])) or "-"),
+                    _table_cell(", ".join(row.get("syuka_lesson_match_reasons", [])) or "-"),
+                ]
+            )
+            + " |"
+        )
+    if not payload.get("syuka_similarity_diagnostics"):
+        lines.append("| none | none | none | none |")
+    lines.extend(
+        [
+            "",
+            "## Generic Visible Copy Warnings",
+            "",
+            "| title | warning reason | suggested action |",
+            "| --- | --- | --- |",
+        ]
+    )
+    for row in payload.get("generic_visible_copy_warnings", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(", ".join(row.get("generic_visible_copy_reasons", []))),
+                    "rewrite_visible_title_or_keep_as_evidence_backfill",
+                ]
+            )
+            + " |"
+        )
+    if not payload.get("generic_visible_copy_warnings"):
+        lines.append("| none | none | none |")
+    lines.extend(
+        [
+            "",
+            "## Quality Floor Exclusions",
+            "",
+            "| title | reason |",
+            "| --- | --- |",
+        ]
+    )
+    for row in payload.get("quality_floor_excluded_rows", []):
+        lines.append(
+            f"| {_table_cell(row.get('title', ''))} | {_table_cell(row.get('reason', ''))} |"
+        )
+    if not payload.get("quality_floor_excluded_rows"):
+        lines.append("| none | none |")
     for heading, key in [
         ("Top 10 Before Calibration", "top_10_before_calibration"),
         ("Top 10 After Calibration", "top_10_after_calibration"),
