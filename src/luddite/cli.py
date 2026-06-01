@@ -25,6 +25,7 @@ from luddite.agents.anny.slide_spec_experiment import (
 )
 from luddite.agents.jibi.append_to_sheet import app as append_jibi_sheet_app
 from luddite.agents.jibi.article_body import app as jibi_article_body_app
+from luddite.agents.jibi.board_copy_rewrite import app as jibi_board_copy_rewrite_app
 from luddite.agents.jibi.board_triage import (
     source_experiment_app as jibi_source_experiment_app,
 )
@@ -44,6 +45,7 @@ from luddite.agents.jibi.quality_replay import app as jibi_quality_replay_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
 from luddite.agents.jibi.review_feedback import app as jibi_review_feedback_app
 from luddite.agents.jibi.review_feedback import history_app as jibi_review_history_app
+from luddite.agents.jibi.rule_llm_disagreement import app as jibi_rule_llm_disagreement_app
 from luddite.agents.jibi.score_candidates import app as score_candidates_app
 from luddite.agents.jibi.syuka_refresh import app as jibi_syuka_refresh_app
 from luddite.agents.jibi.syuka_snapshot_probe import app as syuka_snapshot_probe_app
@@ -136,6 +138,8 @@ app.add_typer(
 app.add_typer(jibi_article_body_app, name="fetch-jibi-article-bodies")
 app.add_typer(jibi_evidence_pack_app, name="build-jibi-evidence-pack")
 app.add_typer(jibi_llm_editorial_judge_app, name="judge-jibi-evidence-pack")
+app.add_typer(jibi_rule_llm_disagreement_app, name="summarize-jibi-rule-llm-disagreement")
+app.add_typer(jibi_board_copy_rewrite_app, name="rewrite-jibi-board-copy")
 app.add_typer(jibi_ops_guard_app, name="jibi-ops-guard")
 app.add_typer(jibi_manual_run_summary_app, name="jibi-manual-run-summary")
 app.add_typer(jibi_review_feedback_app, name="summarize-jibi-review-board")

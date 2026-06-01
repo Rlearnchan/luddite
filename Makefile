@@ -27,12 +27,14 @@ JIBI_ARTICLE_BODY_FETCH_FLAGS ?=
 JIBI_LLM_JUDGE ?= 0
 JIBI_LLM_JUDGE_MAX_ITEMS ?= 10
 JIBI_LLM_JUDGE_MODEL ?= gpt-5-mini
+JIBI_LLM_COPY_REWRITE ?= 0
+JIBI_LLM_COPY_REWRITE_MAX_ITEMS ?= 10
 JIBI_HIDDEN_SUPPORT_SEARCH_CATEGORIES ?= news,webkr
 JIBI_HIDDEN_SUPPORT_SEARCH_MAX_CALLS ?= 60
 JIBI_HIDDEN_SUPPORT_SEARCH_RESULTS_PER_QUERY ?= 5
 JIBI_HIDDEN_SUPPORT_LINKS_PER_ROW ?= 3
 
-.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa render-pptx-contact-sheet summarize-pptx-contact-sheet-review check-pptx-contact-sheet-backend compare-slideability-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest jibi-mvp-rss-dry-run jibi-manual-update jibi-review-board-dry-run jibi-review-board-replace jibi-review-board-refresh-with-syuka jibi-review-board-replace-with-syuka jibi-quality-replay jibi-review-board-alternate-dry-run jibi-syuka-snapshot-probe jibi-source-experiment-guardian jibi-review-feedback jibi-second-search-plan jibi-second-search-local jibi-second-search-web jibi-second-search-intake jibi-hidden-support-search jibi-hidden-support-intake jibi-review-feedback-loop jibi-review-history-feedback jibi-content-enrichment-review jibi-article-body-fetch jibi-evidence-pack jibi-llm-editorial-judge append-jibi-sheet append-jibi-bundle-review-sheet probe-rss-sources
+.PHONY: setup test test-corpus lint doctor doctor-corpus parse-storylines parse-pptx fetch-sheets manifest corpus-smoke validate-golden eval-jibi-seeds eval-anny-reconstruction validate-anny-dry-run validate-anny-enriched-dry-run validate-anny-api-experiment run-anny-api-experiment run-anny-slide-spec-experiment run-anny-api-experiment-finance-v1 review-anny-api-finance-v1-claim-hygiene revalidate-anny-api-finance-v1 eval-piti-deck-plan build-piti-deck-plans build-piti-slide-specs validate-piti-slide-spec render-piti-storyboards render-piti-pptx render-piti-slide-spec-pptx render-piti-visual-qa render-pptx-contact-sheet summarize-pptx-contact-sheet-review check-pptx-contact-sheet-backend compare-slideability-visual-qa extract-pptx-style import-articles fetch-rss-articles normalize-candidates score-candidates cluster-jibi-candidates build-anny-input-bundles prepare-anny-input-bundles prepare-anny-dry-run prepare-anny-finance-dry-run plan-anny-evidence review-anny-fact-check compare-anny-dry-runs compare-anny-enriched-dry-runs anny-run-storyline render-anny-storyline-samples render-daily-digest jibi-digest jibi-mvp-rss-dry-run jibi-manual-update jibi-review-board-dry-run jibi-review-board-replace jibi-review-board-refresh-with-syuka jibi-review-board-replace-with-syuka jibi-quality-replay jibi-review-board-alternate-dry-run jibi-syuka-snapshot-probe jibi-source-experiment-guardian jibi-review-feedback jibi-second-search-plan jibi-second-search-local jibi-second-search-web jibi-second-search-intake jibi-hidden-support-search jibi-hidden-support-intake jibi-review-feedback-loop jibi-review-history-feedback jibi-content-enrichment-review jibi-article-body-fetch jibi-evidence-pack jibi-llm-editorial-judge jibi-rule-llm-disagreement jibi-board-copy-rewrite append-jibi-sheet append-jibi-bundle-review-sheet probe-rss-sources
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -439,6 +441,18 @@ jibi-llm-editorial-judge:
 		PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite judge-jibi-evidence-pack \
 		--date $(JIBI_DATE) \
 		--max-items $(JIBI_LLM_JUDGE_MAX_ITEMS) \
+		--model $(JIBI_LLM_JUDGE_MODEL)
+
+jibi-rule-llm-disagreement:
+	PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite summarize-jibi-rule-llm-disagreement \
+		--date $(JIBI_DATE)
+
+jibi-board-copy-rewrite:
+	JIBI_LLM_COPY_REWRITE=$(JIBI_LLM_COPY_REWRITE) \
+		JIBI_LLM_JUDGE_MODEL=$(JIBI_LLM_JUDGE_MODEL) \
+		PYTHONPATH=$(PYTHONPATH) $(VENV_PYTHON) -m luddite rewrite-jibi-board-copy \
+		--date $(JIBI_DATE) \
+		--max-items $(JIBI_LLM_COPY_REWRITE_MAX_ITEMS) \
 		--model $(JIBI_LLM_JUDGE_MODEL)
 
 append-jibi-sheet:

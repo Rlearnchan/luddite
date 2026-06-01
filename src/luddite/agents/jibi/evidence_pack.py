@@ -203,7 +203,9 @@ def build_evidence_pack(
                 )
         item = {
             "run_date": run_date,
+            "review_item_id": row.get("ID") or row.get("review_item_id") or "",
             "story_bundle_id": row.get("story_bundle_id") or row.get("ID") or "",
+            "story_fingerprint": row.get("story_fingerprint") or "",
             "visible_title": row.get("title") or "",
             "visible_description": row.get("description") or "",
             "main_url": row.get("main_link") or "",

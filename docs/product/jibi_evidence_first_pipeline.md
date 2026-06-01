@@ -28,6 +28,21 @@ make jibi-llm-editorial-judge JIBI_DATE=2026-06-01 \
   JIBI_LLM_JUDGE_MAX_ITEMS=10
 ```
 
+Summarize rule-vs-LLM disagreements:
+
+```bash
+make jibi-rule-llm-disagreement JIBI_DATE=2026-06-01
+```
+
+Generate renderer-compatible copy rewrite previews without applying them:
+
+```bash
+make jibi-board-copy-rewrite JIBI_DATE=2026-06-01 \
+  JIBI_LLM_COPY_REWRITE=1 \
+  JIBI_LLM_JUDGE_MODEL=gpt-5-mini \
+  JIBI_LLM_COPY_REWRITE_MAX_ITEMS=10
+```
+
 ## Outputs
 
 - `data/jibi/article_cache/article_bodies.jsonl`
@@ -37,6 +52,10 @@ make jibi-llm-editorial-judge JIBI_DATE=2026-06-01 \
 - `outputs/reports/jibi_evidence_pack_YYYY-MM-DD.json`
 - `outputs/reports/jibi_llm_editorial_judge_YYYY-MM-DD.md`
 - `outputs/reports/jibi_llm_editorial_judge_YYYY-MM-DD.json`
+- `outputs/reports/jibi_rule_llm_disagreement_YYYY-MM-DD.md`
+- `outputs/reports/jibi_rule_llm_disagreement_YYYY-MM-DD.json`
+- `outputs/reports/jibi_board_copy_rewrite_YYYY-MM-DD.md`
+- `outputs/editorial_overrides/jibi_review_board_YYYY-MM-DD.evidence_preview.json`
 
 The cache may contain full article body text and stays local/gitignored. Reports
 do not print full body text.
@@ -48,4 +67,5 @@ do not print full body text.
 - No syuka-ops DB writes.
 - No LLM-driven automatic selection.
 - LLM judge is off by default and report-only when enabled.
-
+- Copy rewrite previews are not written to the default live override path unless
+  an operator explicitly passes `--output-json`.
