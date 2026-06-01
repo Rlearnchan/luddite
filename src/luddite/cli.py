@@ -37,6 +37,7 @@ from luddite.agents.jibi.daily_digest import app as jibi_digest_app
 from luddite.agents.jibi.manual_ops import app as jibi_manual_run_summary_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
 from luddite.agents.jibi.ops_safety import app as jibi_ops_guard_app
+from luddite.agents.jibi.quality_replay import app as jibi_quality_replay_app
 from luddite.agents.jibi.render_daily_digest import app as render_daily_digest_app
 from luddite.agents.jibi.review_feedback import app as jibi_review_feedback_app
 from luddite.agents.jibi.review_feedback import history_app as jibi_review_history_app
@@ -138,6 +139,7 @@ app.add_typer(jibi_source_runner_app, name="run-jibi-source-experiment")
 app.add_typer(jibi_source_experiment_app, name="compare-jibi-source-experiment")
 app.add_typer(syuka_snapshot_probe_app, name="probe-syuka-snapshot")
 app.add_typer(jibi_syuka_refresh_app, name="refresh-jibi-review-board-with-syuka")
+app.add_typer(jibi_quality_replay_app, name="replay-jibi-quality")
 app.add_typer(probe_rss_sources_app, name="probe-rss-sources")
 
 
