@@ -1275,6 +1275,100 @@ def test_bundle_review_board_score_metadata_and_opt_in_selection(tmp_path) -> No
     )
 
 
+def test_bundle_review_quality_floor_opt_in_is_preview_only_after_copy_render(
+    tmp_path,
+) -> None:
+    def candidate(index: int) -> dict:
+        return {
+            "candidate_id": f"quality_floor_{index}",
+            "title": f"생활비 구조 변화 후보 {index}",
+            "summary": f"생활비와 제도 변화가 가계에 미치는 영향 {index}",
+            "seed_url": f"https://example.com/quality-floor-{index}",
+            "source": "연합뉴스 산업",
+            "source_role_class": "section_news",
+            "seed_type": "life_change",
+            "story_role": "standalone_seed",
+            "seed_quality_classification": "standalone_seed",
+            "quality_flags": [],
+            "risk_flags": [],
+            "recommended_action": "gather_more_evidence",
+            "final_grade": "B",
+            "scores": {"total_score": 90 - index, "broadcast_potential_proxy": 5},
+        }
+
+    candidates = [candidate(index) for index in range(10)]
+    csv_path = tmp_path / "2026-05-27_bundle_review_sheet.csv"
+    write_bundle_review_sheet_preview(
+        csv_path,
+        candidates,
+        candidates,
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        review_board_limit=10,
+        use_board_score=True,
+    )
+    metadata_path = tmp_path / "2026-05-27_bundle_review_sheet_metadata.json"
+    first_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    override_path = tmp_path / "overrides.json"
+    override_path.write_text(
+        json.dumps(
+            {
+                "items": {
+                    row["ID"]: {
+                        "title": "해외 후보, 한 가지 질문으로 더 좁혀볼 소재",
+                        "description": "원문 하나만으로는 아직 결론을 내리기 이릅니다.",
+                    }
+                    for row in first_metadata["rows"][:4]
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    write_bundle_review_sheet_preview(
+        csv_path,
+        candidates,
+        candidates,
+        "2026-05-27",
+        review_history_path=tmp_path / "missing_history.jsonl",
+        editorial_overrides_path=override_path,
+        review_board_limit=10,
+        use_board_score=True,
+        use_quality_floor=True,
+    )
+
+    with csv_path.open(encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    board_report = json.loads(
+        (tmp_path / "reports" / "jibi_board_score_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    preview_report = json.loads(
+        (tmp_path / "reports" / "jibi_quality_floor_preview_2026-05-27.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert len(rows) == 10
+    assert metadata["quality_floor"]["quality_floor_active"] is True
+    assert metadata["quality_floor"]["quality_floor_preview_only"] is True
+    assert metadata["quality_floor"]["quality_floor_applied"] is False
+    assert metadata["quality_floor"]["selected_count_before_quality_floor"] == 10
+    assert metadata["quality_floor"]["visible_selected_count"] == 10
+    assert all(
+        row["quality_floor_selected_for_visible"] is True for row in metadata["rows"]
+    )
+    assert all(
+        row["quality_floor_removed_from_visible"] is False for row in metadata["rows"]
+    )
+    assert board_report["selected_count"] == 10
+    assert board_report["quality_floor_actual_hidden_count"] == 0
+    assert preview_report["quality_floor_hidden_count"] == 4
+
+
 def test_bundle_review_board_score_uses_review_derived_adjustments(tmp_path) -> None:
     history_path = tmp_path / "jibi_review_board_history.jsonl"
     history_path.write_text(

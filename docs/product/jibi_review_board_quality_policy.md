@@ -65,6 +65,14 @@ preview.
 The quality floor is report-only until operators explicitly enable it. It should
 show which rows would be hidden if a variable 6-10 row board were active.
 
+When `JIBI_USE_QUALITY_FLOOR=1` or `--use-quality-floor` is set, Jibi still keeps
+the live bundle review CSV at the requested row count. It only marks
+`quality_floor_preview_only=true`, `would_hide_if_quality_floor_active`, and
+quality-floor hidden reasons in metadata/reports. Actual row-count reduction is
+deferred until article-body evidence and LLM judge reports prove that the row is
+not merely weak from missing context. The operator preview remains available at
+`outputs/reports/jibi_quality_floor_preview_YYYY-MM-DD.md`.
+
 Rows may be excluded by the quality floor for:
 
 - `generic_visible_copy_warning`
@@ -88,4 +96,3 @@ after reviewing:
 - Anny handoff
 - bundle review metadata
 - quality replay report across recent dates
-

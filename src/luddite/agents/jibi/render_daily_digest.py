@@ -56,6 +56,7 @@ from luddite.agents.jibi.topic_diversity import (
 )
 from luddite.agents.jibi.visible_board_quality import (
     evaluate_visible_board_row,
+    select_quality_floor_visible_rows,
 )
 from luddite.utils.jsonl import read_jsonl
 from luddite.utils.urls import canonicalize_url
@@ -605,6 +606,7 @@ def write_bundle_review_sheet_preview(
     allow_reviewed_candidates: bool | None = None,
     use_board_score: bool | None = None,
     use_topic_diversity: bool | None = None,
+    use_quality_floor: bool | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = BUNDLE_REVIEW_SHEET_COLUMNS
@@ -640,6 +642,11 @@ def write_bundle_review_sheet_preview(
         use_topic_diversity
         if use_topic_diversity is not None
         else _env_bool("JIBI_USE_TOPIC_DIVERSITY", False)
+    )
+    use_quality_floor_value = (
+        use_quality_floor
+        if use_quality_floor is not None
+        else _env_bool("JIBI_USE_QUALITY_FLOOR", False)
     )
     second_search_index = _load_second_search_intake_index(paths.REPORTS_DIR)
     all_bundle_records = _story_bundle_records(
@@ -677,158 +684,217 @@ def write_bundle_review_sheet_preview(
         candidate_by_id,
         syuka_similarity_index,
     )
-    metadata_rows: list[dict[str, Any]] = []
+    rendered_entries: list[dict[str, Any]] = []
+    for record in bundle_records:
+        primary_id = str(record.get("primary_candidate_id") or "")
+        representative_id = primary_id
+        if not representative_id:
+            representative_id = next(
+                iter(
+                    [
+                        *record.get("supporting_candidate_ids", []),
+                        *record.get("evidence_candidate_ids", []),
+                    ]
+                ),
+                "",
+            )
+        representative = candidate_by_id.get(representative_id, {})
+        fit = ""
+        reason = str(record["why_bundle"])
+        if representative:
+            fit, reason, _action = _storyline_fit_classification(
+                representative,
+                candidates,
+            )
+        history_status = _record_history_status(record, history_index)
+        primary_title = record.get("primary_title") or representative.get("title") or ""
+        review_item_id = f"{digest_date}:{record['story_bundle_id']}"
+        review_title = _human_review_title(
+            record,
+            representative,
+            str(primary_title),
+        )
+        sub_links = _related_bundle_links(record, candidate_by_id, limit=3)
+        jibi_judgment = _bundle_judgment(record, fit)
+        joined_reason = _join_distinct_reason(str(record["why_bundle"]), reason)
+        syuka_similarity = _syuka_similarity_for_record(
+            record,
+            representative,
+            syuka_similarity_index,
+        )
+        second_search = _second_search_for_record(record, second_search_index)
+        override = _editorial_override_for_row(
+            editorial_overrides,
+            review_item_id=review_item_id,
+            story_fingerprint=str(record.get("story_fingerprint") or ""),
+        )
+        mismatch_reasons = compute_board_mismatch_reasons(record, representative, override)
+        board_score = (
+            board_selection_report.get("board_score_by_id", {}).get(
+                str(record.get("story_bundle_id") or ""),
+            )
+            or compute_board_score(
+                record=record,
+                representative=representative,
+                history_rows=_reviewed_history_rows_for_record(record, history_index),
+                mismatch_reasons=mismatch_reasons,
+                syuka_similarity=syuka_similarity,
+                second_search=second_search,
+            )
+        )
+        row = _bundle_review_row(
+            digest_date=digest_date,
+            registered_at=registered_at_value,
+            review_item_id=review_item_id,
+            review_title=review_title,
+            candidate=representative,
+            candidate_title=primary_title,
+            jibi_judgment=jibi_judgment,
+            reason=joined_reason,
+            sub_links=sub_links,
+            related_titles=_related_bundle_titles(record),
+            record=record,
+            history_status=history_status,
+            syuka_similarity=syuka_similarity,
+            board_score=board_score,
+        )
+        auto_title = str(row.get("제목") or "")
+        auto_description = str(row.get("설명") or "")
+        _apply_editorial_override(row, override)
+        record_id = str(record.get("story_bundle_id") or "")
+        selection_metadata = board_selection_report.get(
+            "selection_metadata_by_id",
+            {},
+        ).get(record_id, {})
+        editorial_role = normalize_editorial_role(
+            record=record,
+            representative=representative,
+            board_score=board_score,
+            selection_metadata=selection_metadata,
+            syuka_similarity=syuka_similarity,
+        )
+        final_quality_context = {
+            **board_score,
+            **editorial_role,
+            "source_role": str(representative.get("source_role_class") or "unknown"),
+            "source_role_class": str(representative.get("source_role_class") or "unknown"),
+            "story_role": str(representative.get("story_role") or ""),
+            "seed_quality_classification": str(
+                representative.get("seed_quality_classification") or ""
+            ),
+            "second_search_accepted_links_count": len(
+                (second_search or {}).get("accepted_links") or []
+            ),
+        }
+        visible_quality = evaluate_visible_board_row(
+            row=row,
+            metadata=selection_metadata,
+            board_score=final_quality_context,
+        )
+        board_score.update(visible_quality)
+        score_row = next(
+            (
+                item
+                for item in board_selection_report.get("score_rows") or []
+                if str(item.get("story_bundle_id") or "") == record_id
+            ),
+            None,
+        )
+        if isinstance(score_row, dict):
+            score_row.update(
+                {
+                    "visible_title": str(row.get("제목") or ""),
+                    "visible_description": str(row.get("설명") or ""),
+                    "past_video": str(row.get("과거 영상") or ""),
+                    **visible_quality,
+                }
+            )
+        if isinstance(selection_metadata, dict):
+            selection_metadata.update(visible_quality)
+        metadata_row = _bundle_review_metadata_row(
+            row=row,
+            record=record,
+            candidate=representative,
+            review_item_id=review_item_id,
+            registered_at=registered_at_value,
+            run_date=digest_date,
+            sub_links=sub_links,
+            syuka_similarity=syuka_similarity,
+            auto_title=auto_title,
+            auto_description=auto_description,
+            editorial_override=override,
+            board_score=board_score,
+            selection_metadata=selection_metadata,
+            editorial_role=editorial_role,
+            visible_quality=visible_quality,
+        )
+        rendered_entries.append(
+            {
+                "record": record,
+                "row": row,
+                "metadata_row": metadata_row,
+                "board_score": board_score,
+                "score_row": score_row if isinstance(score_row, dict) else {},
+                "selection_metadata": selection_metadata
+                if isinstance(selection_metadata, dict)
+                else {},
+                "visible_quality": visible_quality,
+            }
+        )
+
+    quality_floor_rows = [
+        {
+            **entry["selection_metadata"],
+            **entry["board_score"],
+            **entry["visible_quality"],
+            "story_bundle_id": str(entry["record"].get("story_bundle_id") or ""),
+            "title": str(entry["row"].get("제목") or entry["metadata_row"].get("title") or ""),
+            "visible_title": str(entry["row"].get("제목") or ""),
+            "visible_description": str(entry["row"].get("설명") or ""),
+            "board_score": entry["board_score"].get("board_score", 0),
+        }
+        for entry in rendered_entries
+    ]
+    quality_floor_selection = select_quality_floor_visible_rows(quality_floor_rows)
+    quality_floor_selected_indices = set(
+        quality_floor_selection.get("quality_floor_selected_indices") or []
+    )
+    visible_entries = list(rendered_entries)
+    quality_floor_context = {
+        **quality_floor_selection,
+        "quality_floor_active": bool(use_quality_floor_value),
+        "quality_floor_preview_only": True,
+        "quality_floor_applied": False,
+        "selected_count_before_quality_floor": len(rendered_entries),
+        "visible_selected_count": len(visible_entries),
+        "quality_floor_actual_hidden_count": 0,
+    }
+    for index, entry in enumerate(rendered_entries):
+        kept_by_floor = index in quality_floor_selected_indices
+        floor_reason = str(
+            quality_floor_rows[index].get("quality_floor_exclusion_reason") or ""
+        )
+        flags = {
+            "quality_floor_active": bool(use_quality_floor_value),
+            "quality_floor_original_position": index + 1,
+            "quality_floor_selected_for_visible": True,
+            "quality_floor_removed_from_visible": False,
+            "quality_floor_hidden_reason": floor_reason
+            or ("above_target_visible_count" if not kept_by_floor else ""),
+        }
+        entry["metadata_row"].update(flags)
+        entry["board_score"].update(flags)
+        entry["score_row"].update(flags)
+        entry["selection_metadata"].update(flags)
+
     with path.open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        for record in bundle_records:
-            primary_id = str(record.get("primary_candidate_id") or "")
-            representative_id = primary_id
-            if not representative_id:
-                representative_id = next(
-                    iter(
-                        [
-                            *record.get("supporting_candidate_ids", []),
-                            *record.get("evidence_candidate_ids", []),
-                        ]
-                    ),
-                    "",
-                )
-            representative = candidate_by_id.get(representative_id, {})
-            fit = ""
-            reason = str(record["why_bundle"])
-            if representative:
-                fit, reason, _action = _storyline_fit_classification(
-                    representative,
-                    candidates,
-                )
-            history_status = _record_history_status(record, history_index)
-            primary_title = record.get("primary_title") or representative.get("title") or ""
-            review_item_id = f"{digest_date}:{record['story_bundle_id']}"
-            review_title = _human_review_title(
-                record,
-                representative,
-                str(primary_title),
-            )
-            sub_links = _related_bundle_links(record, candidate_by_id, limit=3)
-            jibi_judgment = _bundle_judgment(record, fit)
-            joined_reason = _join_distinct_reason(str(record["why_bundle"]), reason)
-            syuka_similarity = _syuka_similarity_for_record(
-                record,
-                representative,
-                syuka_similarity_index,
-            )
-            second_search = _second_search_for_record(record, second_search_index)
-            override = _editorial_override_for_row(
-                editorial_overrides,
-                review_item_id=review_item_id,
-                story_fingerprint=str(record.get("story_fingerprint") or ""),
-            )
-            mismatch_reasons = compute_board_mismatch_reasons(record, representative, override)
-            board_score = (
-                board_selection_report.get("board_score_by_id", {}).get(
-                    str(record.get("story_bundle_id") or ""),
-                )
-                or compute_board_score(
-                    record=record,
-                    representative=representative,
-                    history_rows=_reviewed_history_rows_for_record(record, history_index),
-                    mismatch_reasons=mismatch_reasons,
-                    syuka_similarity=syuka_similarity,
-                    second_search=second_search,
-                )
-            )
-            row = _bundle_review_row(
-                digest_date=digest_date,
-                registered_at=registered_at_value,
-                review_item_id=review_item_id,
-                review_title=review_title,
-                candidate=representative,
-                candidate_title=primary_title,
-                jibi_judgment=jibi_judgment,
-                reason=joined_reason,
-                sub_links=sub_links,
-                related_titles=_related_bundle_titles(record),
-                record=record,
-                history_status=history_status,
-                syuka_similarity=syuka_similarity,
-                board_score=board_score,
-            )
-            auto_title = str(row.get("제목") or "")
-            auto_description = str(row.get("설명") or "")
-            _apply_editorial_override(row, override)
-            record_id = str(record.get("story_bundle_id") or "")
-            selection_metadata = board_selection_report.get(
-                "selection_metadata_by_id",
-                {},
-            ).get(record_id, {})
-            editorial_role = normalize_editorial_role(
-                record=record,
-                representative=representative,
-                board_score=board_score,
-                selection_metadata=selection_metadata,
-                syuka_similarity=syuka_similarity,
-            )
-            final_quality_context = {
-                **board_score,
-                **editorial_role,
-                "source_role": str(representative.get("source_role_class") or "unknown"),
-                "source_role_class": str(
-                    representative.get("source_role_class") or "unknown"
-                ),
-                "story_role": str(representative.get("story_role") or ""),
-                "seed_quality_classification": str(
-                    representative.get("seed_quality_classification") or ""
-                ),
-                "second_search_accepted_links_count": len(
-                    (second_search or {}).get("accepted_links") or []
-                ),
-            }
-            visible_quality = evaluate_visible_board_row(
-                row=row,
-                metadata=selection_metadata,
-                board_score=final_quality_context,
-            )
-            board_score.update(visible_quality)
-            score_row = next(
-                (
-                    item
-                    for item in board_selection_report.get("score_rows") or []
-                    if str(item.get("story_bundle_id") or "") == record_id
-                ),
-                None,
-            )
-            if isinstance(score_row, dict):
-                score_row.update(
-                    {
-                        "visible_title": str(row.get("제목") or ""),
-                        "visible_description": str(row.get("설명") or ""),
-                        "past_video": str(row.get("과거 영상") or ""),
-                        **visible_quality,
-                    }
-                )
-            if isinstance(selection_metadata, dict):
-                selection_metadata.update(visible_quality)
-            writer.writerow(row)
-            metadata_rows.append(
-                _bundle_review_metadata_row(
-                    row=row,
-                    record=record,
-                    candidate=representative,
-                    review_item_id=review_item_id,
-                    registered_at=registered_at_value,
-                    run_date=digest_date,
-                    sub_links=sub_links,
-                    syuka_similarity=syuka_similarity,
-                    auto_title=auto_title,
-                    auto_description=auto_description,
-                    editorial_override=override,
-                    board_score=board_score,
-                    selection_metadata=selection_metadata,
-                    editorial_role=editorial_role,
-                    visible_quality=visible_quality,
-                )
-            )
+        for entry in visible_entries:
+            writer.writerow(entry["row"])
+    bundle_records = [entry["record"] for entry in visible_entries]
+    metadata_rows = [entry["metadata_row"] for entry in visible_entries]
+    board_selection_report["quality_floor"] = quality_floor_context
     _write_reviewed_candidate_guard_report(
         digest_date=digest_date,
         selected=bundle_records,
@@ -854,11 +920,17 @@ def write_bundle_review_sheet_preview(
         selected=bundle_records,
         board_selection_report=board_selection_report,
     )
+    _write_quality_floor_operator_preview(
+        board_csv_path=path,
+        digest_date=digest_date,
+        quality_floor=quality_floor_context,
+    )
     _write_bundle_review_metadata(
         _bundle_review_metadata_path(path),
         rows=metadata_rows,
         digest_date=digest_date,
         registered_at=registered_at_value,
+        quality_floor=quality_floor_context,
     )
     _write_anny_handoff_report(
         board_csv_path=path,
@@ -1035,6 +1107,16 @@ def _selection_calibration_report_path(board_csv_path: Path, digest_date: str) -
     return paths.REPORTS_DIR / f"jibi_selection_calibration_{digest_date}.md"
 
 
+def _quality_floor_preview_report_path(board_csv_path: Path, digest_date: str) -> Path:
+    try:
+        board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
+    except ValueError:
+        return board_csv_path.parent / "reports" / (
+            f"jibi_quality_floor_preview_{digest_date}.md"
+        )
+    return paths.REPORTS_DIR / f"jibi_quality_floor_preview_{digest_date}.md"
+
+
 def _anny_handoff_report_path(board_csv_path: Path, digest_date: str) -> Path:
     try:
         board_csv_path.resolve().relative_to(paths.DAILY_DIGEST_DIR.resolve())
@@ -1059,7 +1141,89 @@ def _write_selection_calibration_report(
             if record.get("story_bundle_id")
         ],
         markdown_path=_selection_calibration_report_path(board_csv_path, digest_date),
+        quality_floor_report=board_selection_report.get("quality_floor")
+        if isinstance(board_selection_report.get("quality_floor"), dict)
+        else None,
     )
+
+
+def _write_quality_floor_operator_preview(
+    *,
+    board_csv_path: Path,
+    digest_date: str,
+    quality_floor: dict[str, Any],
+) -> tuple[Path, Path]:
+    markdown_path = _quality_floor_preview_report_path(board_csv_path, digest_date)
+    json_path = markdown_path.with_suffix(".json")
+    markdown_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(
+        json.dumps(quality_floor, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    lines = [
+        f"# Jibi Quality Floor Preview — {digest_date}",
+        "",
+        "Operator preview for the opt-in variable visible board. "
+        "Actual row hiding is deferred; Google Sheet replace is not performed by this report.",
+        "",
+        f"- quality_floor_active: {str(quality_floor.get('quality_floor_active')).lower()}",
+        "- quality_floor_preview_only: "
+        f"{str(quality_floor.get('quality_floor_preview_only', True)).lower()}",
+        f"- quality_floor_applied: {str(quality_floor.get('quality_floor_applied')).lower()}",
+        "- selected_count_before_quality_floor: "
+        f"{quality_floor.get('selected_count_before_quality_floor', 0)}",
+        f"- visible_selected_count: {quality_floor.get('visible_selected_count', 0)}",
+        "- quality_floor_recommended_visible_count: "
+        f"{quality_floor.get('quality_floor_recommended_visible_count', 0)}",
+        "- quality_floor_actual_hidden_count: "
+        f"{quality_floor.get('quality_floor_actual_hidden_count', 0)}",
+        "- quality_floor_included_with_warnings_count: "
+        f"{quality_floor.get('quality_floor_included_with_warnings_count', 0)}",
+        "",
+        "## Hidden If Applied",
+        "",
+        "| title | reason | board_score |",
+        "| --- | --- | ---: |",
+    ]
+    for row in quality_floor.get("quality_floor_hidden_rows", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(row.get("reason", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                ]
+            )
+            + " |"
+        )
+    if not quality_floor.get("quality_floor_hidden_rows"):
+        lines.append("| none | none | 0 |")
+    lines.extend(
+        [
+            "",
+            "## Included With Warnings",
+            "",
+            "| title | reason | board_score |",
+            "| --- | --- | ---: |",
+        ]
+    )
+    for row in quality_floor.get("quality_floor_included_with_warnings", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(row.get("reason", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                ]
+            )
+            + " |"
+        )
+    if not quality_floor.get("quality_floor_included_with_warnings"):
+        lines.append("| none | none | 0 |")
+    markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return markdown_path, json_path
 
 
 def _enrich_board_selection_report_with_editorial_roles(
@@ -1169,11 +1333,13 @@ def _write_bundle_review_metadata(
     rows: list[dict[str, Any]],
     digest_date: str,
     registered_at: str,
+    quality_floor: dict[str, Any] | None = None,
 ) -> None:
     payload = {
         "run_date": digest_date,
         "registered_at": registered_at,
         "visible_columns": BUNDLE_REVIEW_SHEET_COLUMNS,
+        "quality_floor": quality_floor or {},
         "rows": rows,
     }
     path.write_text(
@@ -2042,6 +2208,11 @@ def _write_board_score_report(
             reasons.append("generic_frame_downrank")
         if int(row.get("topic_diversity_penalty") or 0) < 0:
             reasons.append("topic_diversity_downrank")
+        if row.get("quality_floor_removed_from_visible"):
+            reasons.append(
+                "quality_floor_removed_from_visible:"
+                + str(row.get("quality_floor_hidden_reason") or "quality_floor")
+            )
         if not reasons and float(row.get("board_score") or 0) < selected_board_floor:
             reasons.append("board_score_downranked_below_selected_floor")
         if not reasons:
@@ -2162,6 +2333,9 @@ def _write_board_score_report(
         row for row in selected_rows if row.get("generic_visible_copy_warning")
     ]
     quality_floor = recommend_quality_floor_visible_rows(selected_rows)
+    quality_floor_report = selection_report.get("quality_floor")
+    if isinstance(quality_floor_report, dict):
+        quality_floor = {**quality_floor, **quality_floor_report}
     hook_subblock_rows = [
         row
         for row in review_adjustment_rows
@@ -2378,6 +2552,12 @@ def _write_board_score_report(
         f"{payload['generic_visible_copy_warning_count']}",
         "- quality_floor_recommended_visible_count: "
         f"{payload['quality_floor_recommended_visible_count']}",
+        f"- quality_floor_active: {str(payload.get('quality_floor_active', False)).lower()}",
+        f"- quality_floor_applied: {str(payload.get('quality_floor_applied', False)).lower()}",
+        "- selected_count_before_quality_floor: "
+        f"{payload.get('selected_count_before_quality_floor', payload['selected_count'])}",
+        "- quality_floor_actual_hidden_count: "
+        f"{payload.get('quality_floor_actual_hidden_count', 0)}",
         "",
         "## Selected Board Candidates",
         "",
@@ -2505,6 +2685,30 @@ def _write_board_score_report(
         )
     if not payload.get("quality_floor_excluded_rows"):
         lines.append("| none | none |")
+
+    lines.extend(
+        [
+            "",
+            "## Quality Floor Hidden Rows",
+            "",
+            "| title | reason | board_score |",
+            "| --- | --- | ---: |",
+        ]
+    )
+    for row in payload.get("quality_floor_hidden_rows", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _table_cell(row.get("title", "")),
+                    _table_cell(row.get("reason", "")),
+                    f"{float(row.get('board_score') or 0):g}",
+                ]
+            )
+            + " |"
+        )
+    if not payload.get("quality_floor_hidden_rows"):
+        lines.append("| none | none | 0 |")
 
     lines.extend(
         [
@@ -3718,6 +3922,7 @@ def render_daily_digest(
     allow_reviewed_candidates: bool | None = None,
     use_board_score: bool | None = None,
     use_topic_diversity: bool | None = None,
+    use_quality_floor: bool | None = None,
 ) -> tuple[Path, Path, list[dict[str, Any]]]:
     date_value = _digest_date(digest_date)
     resolved_review_board_limit = (
@@ -3756,6 +3961,7 @@ def render_daily_digest(
         allow_reviewed_candidates=allow_reviewed_candidates,
         use_board_score=use_board_score,
         use_topic_diversity=use_topic_diversity,
+        use_quality_floor=use_quality_floor,
     )
     write_quality_report(
         paths.REPORTS_DIR / f"jibi_quality_{date_value}.md",
@@ -6527,6 +6733,13 @@ def main(
             help="Apply opt-in topic diversity soft penalties to review-board ordering.",
         ),
     ] = None,
+    use_quality_floor: Annotated[
+        bool | None,
+        typer.Option(
+            "--use-quality-floor/--no-quality-floor",
+            help="Apply opt-in variable 6-10 row quality floor to the visible board.",
+        ),
+    ] = None,
 ) -> None:
     if alternate_review_board_only:
         alt_csv_path, metadata_path, report_path = render_alternate_review_board(
@@ -6559,6 +6772,7 @@ def main(
         allow_reviewed_candidates=allow_reviewed_candidates,
         use_board_score=use_board_score,
         use_topic_diversity=use_topic_diversity,
+        use_quality_floor=use_quality_floor,
     )
     bundle_review_csv_path = output_dir / f"{_digest_date(digest_date)}_bundle_review_sheet.csv"
     console.print(

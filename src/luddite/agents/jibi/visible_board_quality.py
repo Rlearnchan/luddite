@@ -345,3 +345,99 @@ def recommend_quality_floor_visible_rows(
             row["story_bundle_id"] for row in excluded_rows if row.get("story_bundle_id")
         ],
     }
+
+
+def _quality_floor_fallback_rank(row: dict[str, Any]) -> tuple[int, float, float]:
+    reason = _quality_floor_exclusion_reason(row)
+    severity = {
+        "selection_lesson_role=suppress": 100,
+        "board_score<35": 95,
+        "generic_visible_copy_warning": 90,
+        "critical_support_missing": 80,
+        "editorial_role=evidence_low": 70,
+        "weak_adjacent_only_with_generic_copy": 65,
+        "ready_status=not_seed": 60,
+    }.get(reason, 50)
+    return (
+        severity,
+        -_score(row),
+        -float(row.get("visible_quality_score") or 0),
+    )
+
+
+def select_quality_floor_visible_rows(
+    rows: list[dict[str, Any]],
+    *,
+    hard_min_visible_rows: int = 6,
+    target_visible_rows: int = 8,
+    max_visible_rows: int = 10,
+    fixed_10: bool | None = None,
+) -> dict[str, Any]:
+    """Return the opt-in variable visible-board selection for final visible rows."""
+
+    recommendation = recommend_quality_floor_visible_rows(
+        rows,
+        hard_min_visible_rows=hard_min_visible_rows,
+        target_visible_rows=target_visible_rows,
+        max_visible_rows=max_visible_rows,
+        fixed_10=fixed_10,
+    )
+    if recommendation["quality_floor_fixed_10"]:
+        selected_indices = list(range(min(max_visible_rows, len(rows))))
+    else:
+        recommended_count = int(
+            recommendation["quality_floor_recommended_visible_count"] or 0
+        )
+        annotated = [
+            {
+                "index": index,
+                "row": row,
+                "reason": _quality_floor_exclusion_reason(row),
+            }
+            for index, row in enumerate(rows)
+        ]
+        eligible = [item for item in annotated if not item["reason"]]
+        fallback = sorted(
+            [item for item in annotated if item["reason"]],
+            key=lambda item: _quality_floor_fallback_rank(item["row"]),
+        )
+        selected_items = [*eligible[:recommended_count]]
+        if len(selected_items) < recommended_count:
+            selected_items.extend(fallback[: recommended_count - len(selected_items)])
+        selected_indices = sorted(int(item["index"]) for item in selected_items)
+
+    selected_index_set = set(selected_indices)
+    hidden_indices = [
+        index for index in range(len(rows)) if index not in selected_index_set
+    ]
+    included_with_warnings = [
+        {
+            "story_bundle_id": str(row.get("story_bundle_id") or ""),
+            "title": str(row.get("title") or row.get("visible_title") or row.get("제목") or ""),
+            "reason": _quality_floor_exclusion_reason(row),
+            "board_score": row.get("board_score", row.get("board_score_after", 0)),
+        }
+        for index, row in enumerate(rows)
+        if index in selected_index_set and _quality_floor_exclusion_reason(row)
+    ]
+    hidden_rows = [
+        {
+            "story_bundle_id": str(row.get("story_bundle_id") or ""),
+            "title": str(row.get("title") or row.get("visible_title") or row.get("제목") or ""),
+            "reason": _quality_floor_exclusion_reason(row) or "above_target_visible_count",
+            "board_score": row.get("board_score", row.get("board_score_after", 0)),
+            "visible_quality_status": str(row.get("visible_quality_status") or ""),
+        }
+        for index, row in enumerate(rows)
+        if index in hidden_indices
+    ]
+    return {
+        **recommendation,
+        "quality_floor_selected_indices": selected_indices,
+        "quality_floor_hidden_indices": hidden_indices,
+        "quality_floor_selected_count": len(selected_indices),
+        "quality_floor_hidden_count": len(hidden_indices),
+        "quality_floor_hidden_rows": hidden_rows,
+        "quality_floor_included_with_warnings": included_with_warnings,
+        "quality_floor_included_with_warnings_count": len(included_with_warnings),
+    }
