@@ -859,38 +859,26 @@ def write_bundle_review_sheet_preview(
     quality_floor_selected_indices = set(
         quality_floor_selection.get("quality_floor_selected_indices") or []
     )
-    visible_entries = [
-        entry
-        for index, entry in enumerate(rendered_entries)
-        if not use_quality_floor_value or index in quality_floor_selected_indices
-    ]
+    visible_entries = list(rendered_entries)
     quality_floor_context = {
         **quality_floor_selection,
         "quality_floor_active": bool(use_quality_floor_value),
-        "quality_floor_applied": bool(
-            use_quality_floor_value and len(visible_entries) < len(rendered_entries)
-        ),
+        "quality_floor_preview_only": True,
+        "quality_floor_applied": False,
         "selected_count_before_quality_floor": len(rendered_entries),
         "visible_selected_count": len(visible_entries),
-        "quality_floor_actual_hidden_count": (
-            len(rendered_entries) - len(visible_entries)
-            if use_quality_floor_value
-            else 0
-        ),
+        "quality_floor_actual_hidden_count": 0,
     }
     for index, entry in enumerate(rendered_entries):
         kept_by_floor = index in quality_floor_selected_indices
-        actual_visible = not use_quality_floor_value or kept_by_floor
         floor_reason = str(
             quality_floor_rows[index].get("quality_floor_exclusion_reason") or ""
         )
         flags = {
             "quality_floor_active": bool(use_quality_floor_value),
             "quality_floor_original_position": index + 1,
-            "quality_floor_selected_for_visible": bool(actual_visible),
-            "quality_floor_removed_from_visible": bool(
-                use_quality_floor_value and not kept_by_floor
-            ),
+            "quality_floor_selected_for_visible": True,
+            "quality_floor_removed_from_visible": False,
             "quality_floor_hidden_reason": floor_reason
             or ("above_target_visible_count" if not kept_by_floor else ""),
         }
@@ -1176,9 +1164,11 @@ def _write_quality_floor_operator_preview(
         f"# Jibi Quality Floor Preview — {digest_date}",
         "",
         "Operator preview for the opt-in variable visible board. "
-        "Google Sheet replace is not performed by this report.",
+        "Actual row hiding is deferred; Google Sheet replace is not performed by this report.",
         "",
         f"- quality_floor_active: {str(quality_floor.get('quality_floor_active')).lower()}",
+        "- quality_floor_preview_only: "
+        f"{str(quality_floor.get('quality_floor_preview_only', True)).lower()}",
         f"- quality_floor_applied: {str(quality_floor.get('quality_floor_applied')).lower()}",
         "- selected_count_before_quality_floor: "
         f"{quality_floor.get('selected_count_before_quality_floor', 0)}",

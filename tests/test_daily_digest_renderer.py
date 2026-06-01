@@ -1275,7 +1275,7 @@ def test_bundle_review_board_score_metadata_and_opt_in_selection(tmp_path) -> No
     )
 
 
-def test_bundle_review_quality_floor_opt_in_reduces_visible_rows_after_copy_render(
+def test_bundle_review_quality_floor_opt_in_is_preview_only_after_copy_render(
     tmp_path,
 ) -> None:
     def candidate(index: int) -> dict:
@@ -1352,16 +1352,20 @@ def test_bundle_review_quality_floor_opt_in_reduces_visible_rows_after_copy_rend
         )
     )
 
-    assert len(rows) == 6
+    assert len(rows) == 10
     assert metadata["quality_floor"]["quality_floor_active"] is True
-    assert metadata["quality_floor"]["quality_floor_applied"] is True
+    assert metadata["quality_floor"]["quality_floor_preview_only"] is True
+    assert metadata["quality_floor"]["quality_floor_applied"] is False
     assert metadata["quality_floor"]["selected_count_before_quality_floor"] == 10
-    assert metadata["quality_floor"]["visible_selected_count"] == 6
+    assert metadata["quality_floor"]["visible_selected_count"] == 10
     assert all(
         row["quality_floor_selected_for_visible"] is True for row in metadata["rows"]
     )
-    assert board_report["selected_count"] == 6
-    assert board_report["quality_floor_actual_hidden_count"] == 4
+    assert all(
+        row["quality_floor_removed_from_visible"] is False for row in metadata["rows"]
+    )
+    assert board_report["selected_count"] == 10
+    assert board_report["quality_floor_actual_hidden_count"] == 0
     assert preview_report["quality_floor_hidden_count"] == 4
 
 
