@@ -24,6 +24,7 @@ from luddite.agents.anny.slide_spec_experiment import (
     app as anny_slide_spec_experiment_app,
 )
 from luddite.agents.jibi.append_to_sheet import app as append_jibi_sheet_app
+from luddite.agents.jibi.article_body import app as jibi_article_body_app
 from luddite.agents.jibi.board_triage import (
     source_experiment_app as jibi_source_experiment_app,
 )
@@ -34,6 +35,8 @@ from luddite.agents.jibi.board_triage import triage_app as jibi_board_triage_app
 from luddite.agents.jibi.cluster_candidates import app as cluster_jibi_candidates_app
 from luddite.agents.jibi.content_enrichment import app as jibi_content_enrichment_app
 from luddite.agents.jibi.daily_digest import app as jibi_digest_app
+from luddite.agents.jibi.evidence_pack import app as jibi_evidence_pack_app
+from luddite.agents.jibi.llm_editorial_judge import app as jibi_llm_editorial_judge_app
 from luddite.agents.jibi.manual_ops import app as jibi_manual_run_summary_app
 from luddite.agents.jibi.normalize_candidates import app as normalize_candidates_app
 from luddite.agents.jibi.ops_safety import app as jibi_ops_guard_app
@@ -130,6 +133,9 @@ app.add_typer(
     jibi_content_enrichment_app,
     name="render-jibi-content-enrichment-review",
 )
+app.add_typer(jibi_article_body_app, name="fetch-jibi-article-bodies")
+app.add_typer(jibi_evidence_pack_app, name="build-jibi-evidence-pack")
+app.add_typer(jibi_llm_editorial_judge_app, name="judge-jibi-evidence-pack")
 app.add_typer(jibi_ops_guard_app, name="jibi-ops-guard")
 app.add_typer(jibi_manual_run_summary_app, name="jibi-manual-run-summary")
 app.add_typer(jibi_review_feedback_app, name="summarize-jibi-review-board")

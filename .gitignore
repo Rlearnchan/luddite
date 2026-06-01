@@ -41,6 +41,8 @@ data/inbox/articles/*
 data/candidates/*.jsonl
 data/candidates/*.md
 !data/candidates/.gitkeep
+data/jibi/article_cache/*
+!data/jibi/article_cache/.gitkeep
 eval/reports/*
 !eval/reports/.gitkeep
 outputs/
